@@ -11,22 +11,22 @@ services:
     volumes:
       - odoo-db-data:/var/lib/postgresql/data
   odoo_web:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: odoo:18.0
     depends_on:
       - db
     ports:
       - "8069:8069"
     environment:
-      - HOST=db
-      - PORT=5432
-      - USER=odoo
-      - PASSWORD=odoo
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_USER=odoo
+      - DB_PASSWORD=odoo
     volumes:
-      - ../odoo:/usr/lib/python3/dist-packages/odoo
-      - ../addons:/mnt/extra-addons
       - odoo-web-data:/var/lib/odoo
+      - ../custom_addons:/mnt/custom_addons
+      - ./config:/etc/odoo
+    command: >
+      sh -c "sleep 10; /usr/bin/odoo --dev=all -c /etc/odoo/odoo.conf"
 volumes:
   odoo-db-data:
   odoo-web-data:
