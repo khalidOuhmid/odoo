@@ -1,0 +1,813 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template for document CSS styles -->
+    <template id="document_card_styles">
+        <style>
+            /* Document card styling */
+            .o_document_card {
+                transition: box-shadow 0.22s cubic-bezier(.4,0,.2,1), transform 0.13s;
+                border-radius: 14px;
+                overflow: hidden;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+                border: none;
+                background: #fff;
+            }
+            .o_document_card:hover {
+                transform: translateY(-2px) scale(1.01);
+                box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+            }
+            .o_document_card .card-header {
+                font-size: 1.13rem;
+                font-weight: 700;
+                background: linear-gradient(90deg, #f8fafc 0%, #e3f0ff 100%);
+                border-bottom: none;
+                border-radius: 14px 14px 0 0;
+                padding: 1.1rem 1.7rem;
+                letter-spacing: 0.01em;
+            }
+            .o_document_card .card-title {
+                font-size: 1.08em;
+                letter-spacing: 0.01em;
+            }
+            .o_document_card .card-body {
+                padding: 1.5rem 1.5rem 1.2rem 1.5rem;
+                background: #f9fbfd;
+            }
+            .o_document_card .input-group-text {
+                background: #f8fafc;
+                border-radius: 8px 0 0 8px;
+            }
+            .o_document_card .input-group input {
+                border-radius: 0 8px 8px 0;
+            }
+            .o_document_card .btn-group .btn,
+            .o_document_card .btn {
+                border-radius: 50px;
+                font-weight: 600;
+                font-size: 0.98em;
+                transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+            }
+            .o_document_card .btn-outline-primary.document-preview-btn {
+                border-color: #007bff;
+                color: #007bff;
+                background: #fff;
+            }
+            .o_document_card .btn-outline-primary.document-preview-btn:hover {
+                background: #007bff;
+                color: #fff;
+            }
+            .o_document_card .btn-success {
+                background: linear-gradient(90deg, #28a745 0%, #218838 100%);
+                border: none;
+            }
+            .o_document_card .btn-danger {
+                background: linear-gradient(90deg, #dc3545 0%, #b52a27 100%);
+                border: none;
+            }
+            .o_document_card .btn-secondary {
+                background: #f8fafc;
+                color: #222;
+                border: 1px solid #cfd8dc;
+            }
+            .o_document_card .btn-secondary:hover {
+                background: #e3f0ff;
+                color: #007bff;
+            }
+            .o_document_card .btn:focus {
+                outline: 2px solid #007bff;
+                outline-offset: 2px;
+            }
+            .o_document_card .document-upload-zone .o_input_file {
+                border: 2.5px dashed #cfd8dc;
+                padding: 1.1rem;
+                border-radius: 10px;
+                text-align: center;
+                background: #f8fafc;
+                transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+            }
+            .o_document_card .document-upload-zone .o_input_file:hover,
+            .o_document_card .document-upload-zone .o_input_file:focus-within {
+                border-color: #007bff;
+                background: #e3f0ff;
+                box-shadow: 0 0 0 2px #007bff33;
+            }
+            .o_document_card .small.text-muted {
+                font-size: 0.97em;
+                color: #6c757d !important;
+            }
+            .o_document_card .fw-bold {
+                font-weight: 700 !important;
+            }
+            .o_document_card .alert {
+                font-size: 1.01rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 8px #d9534f11;
+            }
+            .o_document_card .alert-heading {
+                font-size: 1.08em;
+                font-weight: 700;
+            }
+            .o_document_card .text-danger { color: #d9534f !important; }
+            .o_document_card .text-warning { color: #ff9800 !important; }
+            .o_document_card .text-success { color: #28a745 !important; }
+            .o_document_card .text-info { color: #17a2b8 !important; }
+            .o_document_card .badge {
+                font-size: 1em;
+                padding: 0.55em 1em;
+                border-radius: 12px;
+            }
+            .o_document_card .badge.bg-danger { background: #d9534f !important; }
+            .o_document_card .badge.bg-warning { background: #ffc107 !important; color: #222 !important; }
+            .o_document_card .badge.bg-success { background: #28a745 !important; }
+            .o_document_card .badge.bg-info { background: #17a2b8 !important; }
+            .o_document_card .badge.bg-secondary { background: #6c757d !important; }
+            .o_document_card .fa {
+                font-size: 1.18em;
+                vertical-align: middle;
+            }
+            .o_document_dashboard {
+                background: #f8fafc;
+                border-radius: 12px;
+                padding: 1.2rem 1.5rem 1rem 1.5rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 2px 8px #007bff11;
+            }
+            .o_document_dashboard .alert {
+                margin-bottom: 0.7rem;
+            }
+            .o_document_dashboard .form-check label {
+                font-weight: 500;
+                color: #222;
+            }
+            .o_document_dashboard .btn {
+                margin-left: 1.2rem;
+            }
+            .o_document_card .input-group .input-group-text.bg-danger,
+            .o_document_card .input-group .input-group-text.bg-warning {
+                border-radius: 0 8px 8px 0;
+            }
+            @media (max-width: 991px) {
+                .o_document_card { min-height: 0; }
+                .o_document_card .card-body { padding: 1.1rem; }
+            }
+        </style>
+    </template>
+
+    <record id="view_partner_form_custom_documents" model="ir.ui.view">
+        <field name="name">res.partner.form.custom.documents</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="function" position="after">
+                <field name="contact_type" widget="radio" options="{'horizontal': true}"/>
+                <!-- Remplacement du champ lot (Selection) par lots (Many2many) -->
+                <field name="lots" widget="many2many_tags" options="{'no_create': False}" 
+                       invisible="contact_type != 'sous_traitant'" 
+                       required="contact_type == 'sous_traitant'"/>
+            </field>
+
+            <!-- Add a notebook page for documents -->
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Documents" invisible="contact_type != 'sous_traitant'">
+                    <!-- Used for conditionally showing alert messages -->
+                    <field name="has_expired_documents" invisible="1"/>
+                    <field name="has_expiring_documents" invisible="1"/>
+                    <field name="disable_document_emails" invisible="1"/>
+                    
+                    <!-- Dashboard style alerts -->
+                    <div class="o_document_dashboard mb-4">
+                        <!-- Email notifications toggle -->
+                        <div class="form-group mb-3 d-flex align-items-center">
+                            <div class="form-check me-3">
+                                <field name="disable_document_emails" widget="boolean_toggle"/>
+                                <label for="disable_document_emails" class="ms-2">Désactiver les emails de notification pour ce sous-traitant</label>
+                            </div>
+                            <button name="action_send_missing_documents_email"
+                                    type="object"
+                                    string="Envoyer rappel documents manquants"
+                                    class="btn btn-secondary btn-sm"
+                                    icon="fa-paper-plane"
+                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"/>
+                        </div>
+                        
+                        <div class="alert alert-danger d-flex align-items-center mb-2" role="alert"
+                             invisible="not has_expired_documents">
+                            <i class="fa fa-exclamation-circle fa-2x me-3"/>
+                            <div>
+                                <h4 class="alert-heading">Documents expirés</h4>
+                                <p class="mb-0">Ce sous-traitant a des documents expirés qui nécessitent une
+                                    mise à jour immédiate.
+                                </p>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-warning d-flex align-items-center mb-2" role="alert"
+                             invisible="not has_expiring_documents">
+                            <i class="fa fa-clock-o fa-2x me-3"/>
+                            <div>
+                                <h4 class="alert-heading">Documents qui vont expirer prochainement</h4>
+                                <p class="mb-0">Certains documents de ce sous-traitant vont expirer dans les 30
+                                    prochains jours.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Champs invisibles pour le statut manuel -->
+                    <field name="document_identity_card_manual_status" invisible="1"/>
+                    <field name="document_URSSAF_manual_status" invisible="1"/>
+                    <field name="document_KBIS_manual_status" invisible="1"/>
+                    <field name="document_insurance_manual_status" invisible="1"/>
+                    <field name="document_RIB_manual_status" invisible="1"/>
+                    
+                    <!-- Document cards with improved design -->
+                    <div class="row mt-3">
+                        <!-- Carte d'identité -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card shadow-sm h-100 o_document_card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span class="card-title fw-bold mb-0 d-flex align-items-center">
+                                        <i class="me-2 fa fa-check-circle text-success" invisible="document_identity_card_status != 'valid'"/>
+                                        <i class="me-2 fa fa-exclamation-circle text-danger" invisible="document_identity_card_status != 'expired'"/>
+                                        <i class="me-2 fa fa-clock-o text-warning" invisible="document_identity_card_status != 'expiring'"/>
+                                        <i class="me-2 fa fa-question-circle text-info" invisible="document_identity_card_status != 'to_check'"/>
+                                        <i class="me-2 fa fa-times-circle text-danger" invisible="document_identity_card_status != 'rejected'"/>
+                                        <i class="me-2 fa fa-id-card-o" invisible="document_identity_card_status in ('valid', 'expired', 'expiring', 'to_check', 'rejected')"/>
+                                        Carte d'identité
+                                    </span>
+                                    <field name="document_identity_card_status" widget="badge"
+                                           options="{'mapping': {'valid': 'success', 'expiring': 'warning', 'expired': 'danger', 'to_check': 'info', 'rejected': 'danger'}}"
+                                           nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="flex-grow-1 document-upload-zone">
+                                                <field name="document_identity_card"
+                                                       filename="document_identity_card_filename"
+                                                       widget="binary" class="w-100"
+                                                       placeholder="Cliquez pour charger un document"/>
+                                            </div>
+                                            <div class="ms-2 document-actions"
+                                                 invisible="not document_identity_card">
+                                                <button 
+                                                    type="object" 
+                                                    name="preview_document" 
+                                                    context="{'doc_type': 'identity_card'}"
+                                                    class="btn btn-sm btn-outline-primary document-preview-btn"
+                                                    title="Prévisualiser">
+                                                    <i class="fa fa-file-pdf-o me-1"/>Voir
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted" invisible="not document_identity_card">
+                                            <i class="fa fa-file-pdf-o me-1"/>
+                                            <field name="document_identity_card_filename" readonly="1" class="d-inline"/>
+                                        </div>
+                                        <div class="small text-muted" invisible="document_identity_card">
+                                            <i class="fa fa-info-circle me-1"/>Aucun fichier chargé
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="document_identity_card_expiry" class="fw-bold text-muted small mb-1">Date d'expiration</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fa fa-calendar"/>
+                                            </span>
+                                            <field name="document_identity_card_expiry"
+                                                   placeholder="Sélectionnez une date" force_save="1"/>
+                                            <span class="input-group-text bg-danger text-white"
+                                                  invisible="document_identity_card_status != 'expired'">
+                                                <i class="fa fa-exclamation-triangle" title="Document expiré"/>
+                                            </span>
+                                            <span class="input-group-text bg-warning text-white"
+                                                  invisible="document_identity_card_status != 'expiring'">
+                                                <i class="fa fa-clock-o" title="Expire bientôt"/>
+                                            </span>
+                                        </div>
+                                        <div class="mt-1 text-danger fw-bold"
+                                             invisible="document_identity_card_status != 'expired'">
+                                            <i class="fa fa-exclamation-circle me-1"/>Ce document est expiré
+                                        </div>
+                                        <div class="mt-1 text-warning fw-bold"
+                                             invisible="document_identity_card_status != 'expiring'">
+                                            <i class="fa fa-clock-o me-1"/>Ce document expire bientôt
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end align-items-center mt-3"
+                                         invisible="not document_identity_card">
+                                        <div class="small text-muted me-2"
+                                             invisible="document_identity_card_status != 'valid'">
+                                            <i class="fa fa-check-circle text-success me-1"/>Document validé
+                                        </div>
+                                        <div class="small text-muted me-2"
+                                             invisible="document_identity_card_status != 'rejected'">
+                                            <i class="fa fa-times-circle text-danger me-1"/>Document rejeté
+                                        </div>
+                                        <div class="btn-group" role="group"
+                                             invisible="document_identity_card_status != 'to_check'">
+                                            <button type="object" name="validate_document"
+                                                    context="{'doc_type': 'identity_card'}"
+                                                    class="btn btn-sm btn-success"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-check me-1"/>Valider
+                                            </button>
+                                            <button type="object" name="reject_document"
+                                                    context="{'doc_type': 'identity_card'}"
+                                                    class="btn btn-sm btn-danger"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-times me-1"/>Rejeter
+                                            </button>
+                                        </div>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'identity_card', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_identity_card_status != 'valid'">
+                                            <i class="fa fa-refresh me-1"/>Examiner
+                                        </button>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'identity_card', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_identity_card_status != 'rejected'">
+                                            <i class="fa fa-refresh me-1"/>Réexaminer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- URSSAF -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card shadow-sm h-100 o_document_card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span class="card-title fw-bold mb-0 d-flex align-items-center">
+                                        <i class="me-2 fa fa-check-circle text-success" invisible="document_URSSAF_status != 'valid'"/>
+                                        <i class="me-2 fa fa-exclamation-circle text-danger" invisible="document_URSSAF_status != 'expired'"/>
+                                        <i class="me-2 fa fa-clock-o text-warning" invisible="document_URSSAF_status != 'expiring'"/>
+                                        <i class="me-2 fa fa-question-circle text-info" invisible="document_URSSAF_status != 'to_check'"/>
+                                        <i class="me-2 fa fa-times-circle text-danger" invisible="document_URSSAF_status != 'rejected'"/>
+                                        <i class="me-2 fa fa-id-card-o" invisible="document_URSSAF_status in ('valid', 'expired', 'expiring', 'to_check', 'rejected')"/>
+                                        URSSAF
+                                    </span>
+                                    <field name="document_URSSAF_status" widget="badge"
+                                           options="{'mapping': {'valid': 'success', 'expiring': 'warning', 'expired': 'danger', 'to_check': 'info', 'rejected': 'danger'}}"
+                                           nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="flex-grow-1 document-upload-zone">
+                                                <field name="document_URSSAF"
+                                                       filename="document_URSSAF_filename"
+                                                       widget="binary" class="w-100"
+                                                       placeholder="Cliquez pour charger un document"/>
+                                            </div>
+                                            <div class="ms-2 document-actions"
+                                                 invisible="not document_URSSAF">
+                                                <button 
+                                                    type="object" 
+                                                    name="preview_document" 
+                                                    context="{'doc_type': 'urssaf'}"
+                                                    class="btn btn-sm btn-outline-primary document-preview-btn"
+                                                    title="Prévisualiser">
+                                                    <i class="fa fa-file-pdf-o me-1"/>Voir
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted" invisible="not document_URSSAF">
+                                            <i class="fa fa-file-pdf-o me-1"/>
+                                            <field name="document_URSSAF_filename" readonly="1" class="d-inline"/>
+                                        </div>
+                                        <div class="small text-muted" invisible="document_URSSAF">
+                                            <i class="fa fa-info-circle me-1"/>Aucun fichier chargé
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="document_URSSAF_expiry" class="fw-bold text-muted small mb-1">Date d'expiration</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fa fa-calendar"/>
+                                            </span>
+                                            <field name="document_URSSAF_expiry"
+                                                   placeholder="Sélectionnez une date" force_save="1"/>
+                                            <span class="input-group-text bg-danger text-white"
+                                                  invisible="document_URSSAF_status != 'expired'">
+                                                <i class="fa fa-exclamation-triangle" title="Document expiré"/>
+                                            </span>
+                                            <span class="input-group-text bg-warning text-white"
+                                                  invisible="document_URSSAF_status != 'expiring'">
+                                                <i class="fa fa-clock-o" title="Expire bientôt"/>
+                                            </span>
+                                        </div>
+                                        <div class="mt-1 text-danger fw-bold"
+                                             invisible="document_URSSAF_status != 'expired'">
+                                            <i class="fa fa-exclamation-circle me-1"/>Ce document est expiré
+                                        </div>
+                                        <div class="mt-1 text-warning fw-bold"
+                                             invisible="document_URSSAF_status != 'expiring'">
+                                            <i class="fa fa-clock-o me-1"/>Ce document expire bientôt
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end align-items-center mt-3"
+                                         invisible="not document_URSSAF">
+                                        <div class="small text-muted me-2"
+                                             invisible="document_URSSAF_status != 'valid'">
+                                            <i class="fa fa-check-circle text-success me-1"/>Document validé
+                                        </div>
+                                        <div class="small text-muted me-2"
+                                             invisible="document_URSSAF_status != 'rejected'">
+                                            <i class="fa fa-times-circle text-danger me-1"/>Document rejeté
+                                        </div>
+                                        <div class="btn-group" role="group"
+                                             invisible="document_URSSAF_status != 'to_check'">
+                                            <button type="object" name="validate_document"
+                                                    context="{'doc_type': 'urssaf'}"
+                                                    class="btn btn-sm btn-success"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-check me-1"/>Valider
+                                            </button>
+                                            <button type="object" name="reject_document"
+                                                    context="{'doc_type': 'urssaf'}"
+                                                    class="btn btn-sm btn-danger"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-times me-1"/>Rejeter
+                                            </button>
+                                        </div>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'urssaf', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_URSSAF_status != 'valid'">
+                                            <i class="fa fa-refresh me-1"/>Examiner
+                                        </button>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'urssaf', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_URSSAF_status != 'rejected'">
+                                            <i class="fa fa-refresh me-1"/>Réexaminer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- KBIS -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card shadow-sm h-100 o_document_card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span class="card-title fw-bold mb-0 d-flex align-items-center">
+                                        <i class="me-2 fa fa-check-circle text-success" invisible="document_KBIS_status != 'valid'"/>
+                                        <i class="me-2 fa fa-exclamation-circle text-danger" invisible="document_KBIS_status != 'expired'"/>
+                                        <i class="me-2 fa fa-clock-o text-warning" invisible="document_KBIS_status != 'expiring'"/>
+                                        <i class="me-2 fa fa-question-circle text-info" invisible="document_KBIS_status != 'to_check'"/>
+                                        <i class="me-2 fa fa-times-circle text-danger" invisible="document_KBIS_status != 'rejected'"/>
+                                        <i class="me-2 fa fa-id-card-o" invisible="document_KBIS_status in ('valid', 'expired', 'expiring', 'to_check', 'rejected')"/>
+                                        KBIS
+                                    </span>
+                                    <field name="document_KBIS_status" widget="badge"
+                                           options="{'mapping': {'valid': 'success', 'expiring': 'warning', 'expired': 'danger', 'to_check': 'info', 'rejected': 'danger'}}"
+                                           nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="flex-grow-1 document-upload-zone">
+                                                <field name="document_KBIS"
+                                                       filename="document_KBIS_filename"
+                                                       widget="binary" class="w-100"
+                                                       placeholder="Cliquez pour charger un document"/>
+                                            </div>
+                                            <div class="ms-2 document-actions"
+                                                 invisible="not document_KBIS">
+                                                <button 
+                                                    type="object" 
+                                                    name="preview_document" 
+                                                    context="{'doc_type': 'kbis'}"
+                                                    class="btn btn-sm btn-outline-primary document-preview-btn"
+                                                    title="Prévisualiser">
+                                                    <i class="fa fa-file-pdf-o me-1"/>Voir
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted" invisible="not document_KBIS">
+                                            <i class="fa fa-file-pdf-o me-1"/>
+                                            <field name="document_KBIS_filename" readonly="1" class="d-inline"/>
+                                        </div>
+                                        <div class="small text-muted" invisible="document_KBIS">
+                                            <i class="fa fa-info-circle me-1"/>Aucun fichier chargé
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="document_KBIS_expiry" class="fw-bold text-muted small mb-1">Date d'expiration</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fa fa-calendar"/>
+                                            </span>
+                                            <field name="document_KBIS_expiry"
+                                                   placeholder="Sélectionnez une date" force_save="1"/>
+                                            <span class="input-group-text bg-danger text-white"
+                                                  invisible="document_KBIS_status != 'expired'">
+                                                <i class="fa fa-exclamation-triangle" title="Document expiré"/>
+                                            </span>
+                                            <span class="input-group-text bg-warning text-white"
+                                                  invisible="document_KBIS_status != 'expiring'">
+                                                <i class="fa fa-clock-o" title="Expire bientôt"/>
+                                            </span>
+                                        </div>
+                                        <div class="mt-1 text-danger fw-bold"
+                                             invisible="document_KBIS_status != 'expired'">
+                                            <i class="fa fa-exclamation-circle me-1"/>Ce document est expiré
+                                        </div>
+                                        <div class="mt-1 text-warning fw-bold"
+                                             invisible="document_KBIS_status != 'expiring'">
+                                            <i class="fa fa-clock-o me-1"/>Ce document expire bientôt
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end align-items-center mt-3"
+                                         invisible="not document_KBIS">
+                                        <div class="small text-muted me-2"
+                                             invisible="document_KBIS_status != 'valid'">
+                                            <i class="fa fa-check-circle text-success me-1"/>Document validé
+                                        </div>
+                                        <div class="small text-muted me-2"
+                                             invisible="document_KBIS_status != 'rejected'">
+                                            <i class="fa fa-times-circle text-danger me-1"/>Document rejeté
+                                        </div>
+                                        <div class="btn-group" role="group"
+                                             invisible="document_KBIS_status != 'to_check'">
+                                            <button type="object" name="validate_document"
+                                                    context="{'doc_type': 'kbis'}"
+                                                    class="btn btn-sm btn-success"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-check me-1"/>Valider
+                                            </button>
+                                            <button type="object" name="reject_document"
+                                                    context="{'doc_type': 'kbis'}"
+                                                    class="btn btn-sm btn-danger"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-times me-1"/>Rejeter
+                                            </button>
+                                        </div>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'kbis', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_KBIS_status != 'valid'">
+                                            <i class="fa fa-refresh me-1"/>Examiner
+                                        </button>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'kbis', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_KBIS_status != 'rejected'">
+                                            <i class="fa fa-refresh me-1"/>Réexaminer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Assurance -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card shadow-sm h-100 o_document_card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span class="card-title fw-bold mb-0 d-flex align-items-center">
+                                        <i class="me-2 fa fa-check-circle text-success" invisible="document_insurance_status != 'valid'"/>
+                                        <i class="me-2 fa fa-exclamation-circle text-danger" invisible="document_insurance_status != 'expired'"/>
+                                        <i class="me-2 fa fa-clock-o text-warning" invisible="document_insurance_status != 'expiring'"/>
+                                        <i class="me-2 fa fa-question-circle text-info" invisible="document_insurance_status != 'to_check'"/>
+                                        <i class="me-2 fa fa-times-circle text-danger" invisible="document_insurance_status != 'rejected'"/>
+                                        <i class="me-2 fa fa-id-card-o" invisible="document_insurance_status in ('valid', 'expired', 'expiring', 'to_check', 'rejected')"/>
+                                        Assurance
+                                    </span>
+                                    <field name="document_insurance_status" widget="badge"
+                                           options="{'mapping': {'valid': 'success', 'expiring': 'warning', 'expired': 'danger', 'to_check': 'info', 'rejected': 'danger'}}"
+                                           nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="flex-grow-1 document-upload-zone">
+                                                <field name="document_insurance"
+                                                       filename="document_insurance_filename"
+                                                       widget="binary" class="w-100"
+                                                       placeholder="Cliquez pour charger un document"/>
+                                            </div>
+                                            <div class="ms-2 document-actions"
+                                                 invisible="not document_insurance">
+                                                <button 
+                                                    type="object" 
+                                                    name="preview_document" 
+                                                    context="{'doc_type': 'insurance'}"
+                                                    class="btn btn-sm btn-outline-primary document-preview-btn"
+                                                    title="Prévisualiser">
+                                                    <i class="fa fa-file-pdf-o me-1"/>Voir
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted" invisible="not document_insurance">
+                                            <i class="fa fa-file-pdf-o me-1"/>
+                                            <field name="document_insurance_filename" readonly="1" class="d-inline"/>
+                                        </div>
+                                        <div class="small text-muted" invisible="document_insurance">
+                                            <i class="fa fa-info-circle me-1"/>Aucun fichier chargé
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="document_insurance_expiry" class="fw-bold text-muted small mb-1">Date d'expiration</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">
+                                                <i class="fa fa-calendar"/>
+                                            </span>
+                                            <field name="document_insurance_expiry"
+                                                   placeholder="Sélectionnez une date" force_save="1"/>
+                                            <span class="input-group-text bg-danger text-white"
+                                                  invisible="document_insurance_status != 'expired'">
+                                                <i class="fa fa-exclamation-triangle" title="Document expiré"/>
+                                            </span>
+                                            <span class="input-group-text bg-warning text-white"
+                                                  invisible="document_insurance_status != 'expiring'">
+                                                <i class="fa fa-clock-o" title="Expire bientôt"/>
+                                            </span>
+                                        </div>
+                                        <div class="mt-1 text-danger fw-bold"
+                                             invisible="document_insurance_status != 'expired'">
+                                            <i class="fa fa-exclamation-circle me-1"/>Ce document est expiré
+                                        </div>
+                                        <div class="mt-1 text-warning fw-bold"
+                                             invisible="document_insurance_status != 'expiring'">
+                                            <i class="fa fa-clock-o me-1"/>Ce document expire bientôt
+                                        </div>
+                                    </div>
+                                    <div class="d-flex justify-content-end align-items-center mt-3"
+                                         invisible="not document_insurance">
+                                        <div class="small text-muted me-2"
+                                             invisible="document_insurance_status != 'valid'">
+                                            <i class="fa fa-check-circle text-success me-1"/>Document validé
+                                        </div>
+                                        <div class="small text-muted me-2"
+                                             invisible="document_insurance_status != 'rejected'">
+                                            <i class="fa fa-times-circle text-danger me-1"/>Document rejeté
+                                        </div>
+                                        <div class="btn-group" role="group"
+                                             invisible="document_insurance_status != 'to_check'">
+                                            <button type="object" name="validate_document"
+                                                    context="{'doc_type': 'insurance'}"
+                                                    class="btn btn-sm btn-success"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-check me-1"/>Valider
+                                            </button>
+                                            <button type="object" name="reject_document"
+                                                    context="{'doc_type': 'insurance'}"
+                                                    class="btn btn-sm btn-danger"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-times me-1"/>Rejeter
+                                            </button>
+                                        </div>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'insurance', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_insurance_status != 'valid'">
+                                            <i class="fa fa-refresh me-1"/>Examiner
+                                        </button>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'insurance', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_insurance_status != 'rejected'">
+                                            <i class="fa fa-refresh me-1"/>Réexaminer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <!-- RIB -->
+                        <div class="col-lg-6 col-md-12 mb-4">
+                            <div class="card shadow-sm h-100 o_document_card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <span class="card-title fw-bold mb-0 d-flex align-items-center">
+                                        <i class="me-2 fa fa-check-circle text-success" invisible="document_RIB_status != 'valid'"/>
+                                        <i class="me-2 fa fa-question-circle text-info" invisible="document_RIB_status != 'to_check'"/>
+                                        <i class="me-2 fa fa-times-circle text-danger" invisible="document_RIB_status != 'rejected'"/>
+                                        <i class="me-2 fa fa-credit-card" invisible="document_RIB_status in ('valid', 'to_check', 'rejected')"/>
+                                        RIB
+                                    </span>
+                                    <field name="document_RIB_status" widget="badge"
+                                           options="{'mapping': {'valid': 'success', 'to_check': 'info', 'rejected': 'danger', 'missing': 'secondary'}}"
+                                           nolabel="1" readonly="1"/>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <div class="flex-grow-1 document-upload-zone">
+                                                <field name="document_RIB"
+                                                       filename="document_RIB_filename"
+                                                       widget="binary" class="w-100"
+                                                       placeholder="Cliquez pour charger un document"/>
+                                            </div>
+                                            <div class="ms-2 document-actions"
+                                                 invisible="not document_RIB">
+                                                <button 
+                                                    type="object" 
+                                                    name="preview_document" 
+                                                    context="{'doc_type': 'rib'}"
+                                                    class="btn btn-sm btn-outline-primary document-preview-btn"
+                                                    title="Prévisualiser">
+                                                    <i class="fa fa-file-pdf-o me-1"/>Voir
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="small text-muted" invisible="not document_RIB">
+                                            <i class="fa fa-file-pdf-o me-1"/>
+                                            <field name="document_RIB_filename" readonly="1" class="d-inline"/>
+                                        </div>
+                                        <div class="small text-muted" invisible="document_RIB">
+                                            <i class="fa fa-info-circle me-1"/>Aucun fichier chargé
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Note no expiry date field for RIB -->
+                                    <div class="alert alert-info" invisible="document_RIB">
+                                        <i class="fa fa-info-circle me-1"></i>
+                                        <strong>Document sans date d'expiration.</strong>
+                                        <div>Le RIB est valable jusqu'à ce que les coordonnées bancaires changent.</div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-end align-items-center mt-3">
+                                        <button name="action_send_rib_request_email"
+                                                type="object"
+                                                string="Demander RIB"
+                                                class="btn btn-sm btn-primary me-2"
+                                                icon="fa-envelope-o"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_RIB_status in ('to_check', 'rejected')"/>
+                                        <div class="small text-muted me-2"
+                                             invisible="document_RIB_status != 'valid'">
+                                            <i class="fa fa-check-circle text-success me-1"/>Document validé
+                                        </div>
+                                        <div class="small text-muted me-2"
+                                             invisible="document_RIB_status != 'rejected'">
+                                            <i class="fa fa-times-circle text-danger me-1"/>Document rejeté
+                                        </div>
+                                        
+                                        <!-- Validation buttons for RIB -->
+                                        <div class="btn-group" role="group"
+                                             invisible="not document_RIB or document_RIB_status != 'to_check'">
+                                            <button type="object" name="validate_document"
+                                                    context="{'doc_type': 'rib'}"
+                                                    class="btn btn-sm btn-success"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-check me-1"/>Valider
+                                            </button>
+                                            <button type="object" name="reject_document"
+                                                    context="{'doc_type': 'rib'}"
+                                                    class="btn btn-sm btn-danger"
+                                                    groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general">
+                                                <i class="fa fa-times me-1"/>Rejeter
+                                            </button>
+                                        </div>
+                                        
+                                        <!-- Reset buttons -->
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'rib', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_RIB_status != 'valid'">
+                                            <i class="fa fa-refresh me-1"/>Examiner
+                                        </button>
+                                        <button type="object" name="validate_document"
+                                                context="{'doc_type': 'rib', 'reset': True}"
+                                                class="btn btn-sm btn-secondary"
+                                                groups="base.group_system,blg_contacts_extension.group_conductrice_travaux,blg_contacts_extension.group_directeur_general"
+                                                invisible="document_RIB_status != 'rejected'">
+                                            <i class="fa fa-refresh me-1"/>Réexaminer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </page>
+                
+                <!-- Nouvel onglet Archives -->
+                <page string="Archives de documents" invisible="contact_type != 'sous_traitant'">
+                    <field name="document_archive_ids" readonly="1">
+                        <list>
+                            <field name="create_date" string="Date d'archivage"/>
+                            <field name="document_type" string="Type"/>
+                            <field name="name" string="Nom du fichier"/>
+                            <field name="create_uid" string="Archivé par"/>
+                            <button name="action_view_document" type="object" string="Voir" class="btn btn-sm btn-outline-primary" icon="fa-eye"/>
+                        </list>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

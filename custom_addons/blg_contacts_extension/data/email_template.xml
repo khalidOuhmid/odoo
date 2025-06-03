@@ -1,0 +1,63 @@
+<odoo>
+    <data>
+        <record id="email_template_document_expiry" model="mail.template">
+            <field name="name">Notification d'expiration de document - Sous-traitant</field>
+            <field name="model_id" ref="model_res_partner"/>
+            <field name="email_from">${user.email_formatted|safe}</field>
+            <field name="email_to">${object.email|safe}</field>
+            <field name="subject">BLG Groupe : Notification importante concernant vos documents - {{ object.name }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
+                    <p>Bonjour <t t-out="object.name or ''"></t>,</p>
+                    <p>Nous vous contactons concernant la gestion de vos documents administratifs en tant que partenaire de BLG Groupe.</p>
+                    
+                    <div style="padding: 15px; margin: 20px 0px; border-radius: 8px; border: 1px solid #ddd;">
+                        <t t-if="ctx.get('status') == 'expiré'">
+                            <div style="background-color: #FFE6E6; border-left: 5px solid #D9534F; padding: 15px; border-radius: 5px;">
+                                <h3 style="color: #D9534F; margin-top: 0; font-size: 18px;">Document Expiré</h3>
+                                <p>
+                                    Votre document <strong style="color: #333;"><t t-out="ctx.get('doc_name')"/></strong> 
+                                    est <strong style="color: #D9534F;">expiré</strong> depuis le 
+                                    <strong><t t-out="ctx.get('expiry_date')"/></strong>.
+                                </p>
+                                <p>Cette situation requiert votre action <strong>immédiate</strong> pour régulariser votre dossier.</p>
+                            </div>
+                        </t>
+                        <t t-elif="ctx.get('status') == 'sur le point d\'expirer'">
+                            <div style="background-color: #FFF8E6; border-left: 5px solid #F0AD4E; padding: 15px; border-radius: 5px;">
+                                <h3 style="color: #F0AD4E; margin-top: 0; font-size: 18px;">Expiration Imminente de Document</h3>
+                                <p>
+                                    Votre document <strong style="color: #333;"><t t-out="ctx.get('doc_name')"/></strong> 
+                                    arrivera à <strong style="color: #F0AD4E;">expiration</strong> le 
+                                    <strong><t t-out="ctx.get('expiry_date')"/></strong>.
+                                </p>
+                                <p>Nous vous invitons à le renouveler avant cette date afin d'assurer la continuité de notre collaboration.</p>
+                            </div>
+                        </t>
+                    </div>
+                    
+                    <p>Pour maintenir la conformité de votre dossier et poursuivre notre collaboration sans interruption, veuillez mettre à jour ce document dès que possible via le lien sécurisé ci-dessous. Ce lien est valable 7 jours :</p>
+                    <p style="margin: 25px 0px; text-align: center;">
+                        <a t-att-href="ctx.get('upload_url')"
+                           style="background-color: #007bff; color: white; padding: 12px 25px; text-decoration: none; border-radius: 5px; font-size: 16px; display: inline-block; font-weight: bold;">
+                            Mettre à jour mon document
+                        </a>
+                    </p>
+                    <div style="margin: 16px 0px; padding: 16px; background-color: #f9f9f9; border-left: 3px solid #007bff; border-radius: 5px;">
+                        <p style="margin: 0px; padding: 0px;">
+                            <strong>Document concerné :</strong> <t t-out="ctx.get('doc_name')"/><br/>
+                            <strong>Date d'expiration :</strong> <t t-out="ctx.get('expiry_date')"/>
+                        </p>
+                    </div>
+                    <p>Si vous avez des questions ou si vous avez déjà procédé à cette mise à jour, veuillez nous en informer.</p>
+                    <p>Cordialement,</p>
+                    <p>L'équipe BLG Groupe</p>
+                    <div style="margin-top: 32px; font-size: 12px; color: #888888; text-align: center;">
+                        <p>Ce message est généré automatiquement. Pour toute question, veuillez contacter notre service administratif.</p>
+                    </div>
+                </div>
+            </field>
+            <field name="auto_delete">False</field>
+        </record>
+    </data>
+</odoo>
