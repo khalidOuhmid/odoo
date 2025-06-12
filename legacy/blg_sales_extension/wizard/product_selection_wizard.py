@@ -39,12 +39,18 @@ class BlgProductSelectionWizard(models.TransientModel):
     # Produits et sélection
     available_product_ids = fields.Many2many(
         'product.product',
+        relation='wizard_available_product_rel',
+        column1='wizard_id',
+        column2='product_id',
         compute='_compute_available_products',
         string='Produits disponibles'
     )
     
     filtered_product_ids = fields.Many2many(
         'product.product',
+        relation='wizard_filtered_product_rel',
+        column1='wizard_id',
+        column2='product_id',
         compute='_compute_filtered_products',
         string='Produits filtrés et paginés'
     )
@@ -70,13 +76,106 @@ class BlgProductSelectionWizard(models.TransientModel):
     # Description personnalisée pour l'ensemble
     custom_description = fields.Html('Description personnalisée', placeholder="Ajoutez des notes spécifiques pour cette sélection...")
 
-    @api.depends('search_term', 'category_filter', 'price_min', 'price_max', 'show_all_products', 'lot_id', 'sort_by')
+    # Enhanced lot-specific filtering - FIX: Make it safer
+    lot_type_id = fields.Many2one('blg.lot.type', string='Type de lot', compute='_compute_lot_type_id', store=False)
+    lot_filter_ids = fields.Many2many('blg_contacts_extension.lot', string='Filtrer par lots',
+                                     related='order_id.lot_selection_ids')
+    
+    # Show products specific to selected lot
+    show_lot_specific_products = fields.Boolean('Produits spécifiques au lot', default=True,
+                                               help="Afficher uniquement les produits recommandés pour ce lot")
+    
+    # Ajout des champs pour la navigation multi-lots
+    chantier_lot_ids = fields.Many2many('blg_contacts_extension.lot', string='Lots du chantier')
+    current_lot_index = fields.Integer('Index du lot actuel', default=0)
+    has_next_lot = fields.Boolean('A un lot suivant', compute='_compute_lot_navigation')
+    has_previous_lot = fields.Boolean('A un lot précédent', compute='_compute_lot_navigation')
+    lot_progress = fields.Char('Progression', compute='_compute_lot_navigation')
+    
+    @api.depends('lot_id')
+    def _compute_lot_type_id(self):
+        """Compute the lot type from lot_id safely"""
+        for wizard in self:
+            try:
+                # Initialize to False first
+                wizard.lot_type_id = False
+                
+                # Check if lot_id exists and has type_id field
+                if wizard.lot_id and wizard.lot_id.id:
+                    # Check if the lot model has type_id field
+                    if hasattr(wizard.lot_id, 'type_id'):
+                        lot_type = wizard.lot_id.type_id
+                        # Ensure the type_id is valid before assignment
+                        if lot_type and lot_type.id:
+                            # Verify the record exists in database
+                            existing_type = self.env['blg.lot.type'].browse(lot_type.id).exists()
+                            if existing_type:
+                                wizard.lot_type_id = existing_type.id
+            except Exception as e:
+                # Log the error but don't break the flow
+                _logger = self.env['ir.logging']._logger
+                _logger.warning(f"Error computing lot_type_id for wizard {wizard.id}: {str(e)}")
+                wizard.lot_type_id = False
+    
+    @api.onchange('lot_id', 'show_lot_specific_products')
+    def _onchange_lot_filter(self):
+        """Update filtering when lot changes"""
+        if self.lot_id and self.show_lot_specific_products:
+            self.show_all_products = False
+        self._compute_available_products()
+
+    @api.depends('search_term', 'category_filter', 'price_min', 'price_max', 
+                'show_all_products', 'lot_id', 'sort_by', 'show_lot_specific_products')
     def _compute_available_products(self):
-        """Calculer les produits disponibles selon les filtres avancés"""
+        """Calculate available products with enhanced lot filtering"""
         for wizard in self:
             domain = [('sale_ok', '=', True), ('active', '=', True)]
             
-            # Filtre par recherche étendue
+            # Enhanced lot-specific product filtering - SAFER VERSION
+            if not wizard.show_all_products and wizard.lot_id and wizard.show_lot_specific_products:
+                lot_products = []
+                
+                try:
+                    # Check if lot has type_id and it has products
+                    if (hasattr(wizard.lot_id, 'type_id') and 
+                        wizard.lot_id.type_id and 
+                        hasattr(wizard.lot_id.type_id, 'product_ids')):
+                        
+                        type_products = wizard.lot_id.type_id.product_ids.filtered(
+                            lambda p: p.sale_ok and p.active
+                        )
+                        if type_products:
+                            lot_products.extend(type_products.ids)
+                    
+                    # Check for tagged products if the field exists
+                    if hasattr(self.env['product.product'], 'lot_type_ids'):
+                        try:
+                            lot_type_id = wizard.lot_id.type_id.id if (
+                                hasattr(wizard.lot_id, 'type_id') and wizard.lot_id.type_id
+                            ) else False
+                            
+                            if lot_type_id:
+                                tagged_products = self.env['product.product'].search([
+                                    ('lot_type_ids', 'in', lot_type_id),
+                                    ('sale_ok', '=', True),
+                                    ('active', '=', True)
+                                ])
+                                if tagged_products:
+                                    lot_products.extend(tagged_products.ids)
+                        except Exception:
+                            # Field doesn't exist or other error, skip
+                            pass
+                    
+                    if lot_products:
+                        # Remove duplicates
+                        lot_products = list(set(lot_products))
+                        domain.append(('id', 'in', lot_products))
+                        
+                except Exception as e:
+                    # If any error in lot-specific filtering, fall back to all products
+                    pass
+            
+            # Rest of the search logic
             if wizard.search_term:
                 search_domain = [
                     '|', '|', '|',
@@ -87,34 +186,31 @@ class BlgProductSelectionWizard(models.TransientModel):
                 ]
                 domain.extend(search_domain)
             
-            # Filtre par catégorie
+            # Category filter with child_of operator - compatible with Odoo 18
             if wizard.category_filter:
                 domain.append(('categ_id', 'child_of', wizard.category_filter.id))
             
-            # Filtre par prix
+            # Price range filters
             if wizard.price_min > 0:
                 domain.append(('list_price', '>=', wizard.price_min))
             if wizard.price_max < 999999:
                 domain.append(('list_price', '<=', wizard.price_max))
             
-            # Filtre par lot si pas "tous les produits"
-            if not wizard.show_all_products and wizard.lot_id:
-                if wizard.lot_id.type_id and wizard.lot_id.type_id.product_ids:
-                    lot_product_ids = wizard.lot_id.type_id.product_ids.filtered(
-                        lambda p: p.sale_ok and p.active
-                    ).ids
-                    if lot_product_ids:
-                        domain.append(('id', 'in', lot_product_ids))
-            
-            # Définir l'ordre de tri
-            order = 'name'
+            # Sort order handling - improved for Odoo 18
+            order = 'name ASC'
             if wizard.sort_by:
                 if 'desc' in wizard.sort_by:
-                    order = wizard.sort_by.replace(' desc', '') + ' desc'
+                    field_name = wizard.sort_by.replace(' desc', '')
+                    order = f'{field_name} DESC'
                 else:
-                    order = wizard.sort_by
+                    order = f'{wizard.sort_by} ASC'
             
-            wizard.available_product_ids = self.env['product.product'].search(domain, order=order)
+            # Use limit for better performance in large datasets
+            wizard.available_product_ids = self.env['product.product'].search(
+                domain, 
+                order=order,
+                limit=10000  # Prevent excessive memory usage
+            )
 
     @api.depends('available_product_ids', 'current_page', 'page_size')
     def _compute_filtered_products(self):
@@ -152,6 +248,30 @@ class BlgProductSelectionWizard(models.TransientModel):
                 wizard.total_pages = max(1, (wizard.total_products + wizard.page_size - 1) // wizard.page_size)
             else:
                 wizard.total_pages = 1
+
+    # Nouvelle méthode pour charger les lots liés au chantier
+    @api.model
+    def default_get(self, fields):
+        """Override default_get to initialize chantier_lot_ids"""
+        res = super().default_get(fields)
+        
+        # Get chantier lots from the order if available
+        if 'order_id' in res and res['order_id']:
+            try:
+                order = self.env['sale.order'].browse(res['order_id'])
+                if order.exists() and order.blg_chantier_id:
+                    chantier = order.blg_chantier_id
+                    if hasattr(chantier, 'lot_ids') and chantier.lot_ids:
+                        # Get lots from the chantier's lot_ids (which are blg.chantier.lot records)
+                        chantier_lots = chantier.lot_ids.mapped('lot_id').filtered(lambda l: l.active)
+                        if chantier_lots:
+                            res['chantier_lot_ids'] = [(6, 0, chantier_lots.ids)]
+            except Exception as e:
+                # If there's any error accessing the chantier or lots, just continue
+                # This prevents the wizard from breaking if relationships are not properly set up
+                pass
+        
+        return res
 
     def action_search_products(self):
         """Rechercher des produits - reset pagination"""
@@ -196,12 +316,27 @@ class BlgProductSelectionWizard(models.TransientModel):
             'context': self.env.context,
         }
 
-    def action_add_product_to_selection(self):
-        """Ajouter un produit à la sélection - appelé depuis les boutons produit"""
+    def action_add_product_from_kanban(self):
+        """Add a product to the selection from kanban view - FIXED METHOD"""
+        # Get product_id from context or from the record itself
         product_id = self.env.context.get('product_id')
+        
+        # If no product_id in context, try to get it from active_id
         if not product_id:
-            return
-            
+            product_id = self.env.context.get('active_id')
+        
+        if not product_id:
+            # If still no product_id, return without error
+            return self._reload_view()
+        
+        return self._add_product_to_selection(product_id)
+
+    def add_product_from_kanban(self):
+        """Alternative method name for kanban button calls"""
+        return self.action_add_product_from_kanban()
+
+    def _add_product_to_selection(self, product_id):
+        """Helper method to add a product to selection"""
         existing_line = self.selection_line_ids.filtered(lambda l: l.product_id.id == product_id)
         
         if existing_line:
@@ -213,9 +348,18 @@ class BlgProductSelectionWizard(models.TransientModel):
                 'product_id': product_id,
                 'quantity': 1.0,
                 'description': product.name,
+                'unit_price': product.list_price,
             })
         
         return self._reload_view()
+
+    def action_add_product_to_selection(self):
+        """Add a product to the selection based on product_id from context"""
+        product_id = self.env.context.get('product_id')
+        if not product_id:
+            return self._reload_view()
+        
+        return self._add_product_to_selection(product_id)
 
     def action_quick_add_multiple(self):
         """Ajout rapide de plusieurs produits en une fois"""
@@ -304,6 +448,12 @@ class BlgProductSelectionWizard(models.TransientModel):
             }
             section_line = self.env['sale.order.line'].create(section_vals)
 
+        # Ensure lot is linked to the quote
+        if self.lot_id not in self.order_id.lot_selection_ids:
+            self.order_id.write({
+                'lot_selection_ids': [(4, self.lot_id.id)]
+            })
+
         # Obtenir la séquence après la section
         sequence = section_line.sequence + 1
 
@@ -315,7 +465,9 @@ class BlgProductSelectionWizard(models.TransientModel):
             # Ajouter info localisation si spécifiée
             room_info = ""
             if line.room_type:
-                room_display = dict(line._fields['room_type'].selection).get(line.room_type, line.room_type)
+                # Utiliser _description_selection pour obtenir les libellés de sélection
+                selection_dict = dict(self.env['blg.product.selection.line']._fields['room_type'].selection)
+                room_display = selection_dict.get(line.room_type, line.room_type)
                 room_info = f" - {room_display}"
                 if line.room_number:
                     room_info += f" {line.room_number}"
@@ -347,11 +499,65 @@ class BlgProductSelectionWizard(models.TransientModel):
             }
             self.env['sale.order.line'].create(note_vals)
 
+        # Confirmer la sélection et gérer la navigation multi-lots
+        result = super().action_confirm_selection()
+        
+        # Si on a des lots suivants, proposer de continuer
+        if self.has_next_lot:
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'blg.lot.navigation.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_order_id': self.order_id.id,
+                    'default_current_lot_id': self.lot_id.id,
+                    'chantier_lot_ids': self.chantier_lot_ids.ids,
+                    'current_lot_index': self.current_lot_index,
+                    'completed_lot_name': self.lot_id.name,
+                }
+            }
+        
+        return result
+
+    @api.depends('chantier_lot_ids', 'current_lot_index', 'lot_id')
+    def _compute_lot_navigation(self):
+        """Calculer la navigation entre les lots"""
+        for wizard in self:
+            if wizard.chantier_lot_ids:
+                wizard.has_previous_lot = wizard.current_lot_index > 0
+                wizard.has_next_lot = wizard.current_lot_index < len(wizard.chantier_lot_ids) - 1
+                wizard.lot_progress = f"Lot {wizard.current_lot_index + 1} / {len(wizard.chantier_lot_ids)}"
+            else:
+                wizard.has_previous_lot = False
+                wizard.has_next_lot = False
+                wizard.lot_progress = ""
+
+    def action_previous_lot(self):
+        """Passer au lot précédent"""
+        if self.has_previous_lot and self.chantier_lot_ids:
+            previous_lot = self.chantier_lot_ids.sorted('sequence')[self.current_lot_index - 1]
+            return self._navigate_to_lot(previous_lot, self.current_lot_index - 1)
+
+    def action_next_lot(self):
+        """Passer au lot suivant"""
+        if self.has_next_lot and self.chantier_lot_ids:
+            next_lot = self.chantier_lot_ids.sorted('sequence')[self.current_lot_index + 1]
+            return self._navigate_to_lot(next_lot, self.current_lot_index + 1)
+
+    def _navigate_to_lot(self, lot, index):
+        """Naviguer vers un lot spécifique"""
         return {
-            'type': 'ir.actions.act_window_close',
-            'infos': {
-                'title': _('Produits ajoutés avec succès'),
-                'message': _('%d produits ont été ajoutés au devis pour le lot %s') % (lines_added, self.lot_id.name)
+            'name': f'Sélection de produits - {lot.name}',
+            'type': 'ir.actions.act_window',
+            'res_model': 'blg.product.selection.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_lot_id': lot.id,
+                'default_order_id': self.order_id.id,
+                'chantier_lot_ids': self.chantier_lot_ids.ids,
+                'current_lot_index': index,
             }
         }
 

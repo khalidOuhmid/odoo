@@ -5,8 +5,27 @@
         <field name="name">blg.product.selection.wizard.form</field>
         <field name="model">blg.product.selection.wizard</field>
         <field name="arch" type="xml">
-            <form string="Sélection de produits">
+            <form>
                 <header>
+                    <!-- Navigation multi-lots -->
+                    <div class="lot-navigation" invisible="not chantier_lot_ids">
+                        <button name="action_previous_lot" string="‹ Lot précédent" 
+                                type="object" class="btn-secondary"
+                                invisible="not has_previous_lot"/>
+                        <span class="lot-progress badge bg-info">
+                            <field name="lot_progress" readonly="1"/>
+                        </span>
+                        <button name="action_next_lot" string="Lot suivant ›" 
+                                type="object" class="btn-secondary"
+                                invisible="not has_next_lot"/>
+                    </div>
+                    
+                    <!-- Champs cachés pour la navigation -->
+                    <field name="chantier_lot_ids" invisible="1"/>
+                    <field name="current_lot_index" invisible="1"/>
+                    <field name="has_next_lot" invisible="1"/>
+                    <field name="has_previous_lot" invisible="1"/>
+                    
                     <button name="action_confirm_selection" string="✓ Confirmer la sélection" 
                             type="object" class="btn-primary" 
                             invisible="selection_count == 0"/>
@@ -25,6 +44,7 @@
                     <div class="oe_title mb-3">
                         <h1>
                             <field name="lot_id" readonly="1" class="oe_inline"/>
+                            <field name="lot_type_id" invisible="1"/>
                         </h1>
                         <h3 class="text-muted">
                             Sélection de produits pour le devis 
@@ -65,15 +85,20 @@
                                 <div class="col-md-3">
                                     <field name="view_mode" widget="radio" options="{'horizontal': true}"/>
                                 </div>
-                                <div class="col-md-3">
-                                    <field name="show_all_products" string="Tous les produits"/>
-                                    <field name="show_stock" string="Afficher stock"/>
-                                </div>
-                                <div class="col-md-3">
-                                    <button name="action_clear_filters" string="🗑 Effacer filtres" 
-                                            type="object" class="btn btn-secondary btn-sm"/>
-                                    <button name="action_create_quick_product" string="➕ Nouveau produit" 
-                                            type="object" class="btn btn-success btn-sm"/>
+                                <div class="col-md-6">
+                                    <div class="d-flex justify-content-between">
+                                        <div>
+                                            <field name="show_lot_specific_products" string="Produits recommandés"/>
+                                            <field name="show_all_products" string="Tous les produits"/>
+                                            <field name="show_stock" string="Afficher stock"/>
+                                        </div>
+                                        <div>
+                                            <button name="action_clear_filters" string="🗑 Effacer filtres" 
+                                                    type="object" class="btn btn-secondary btn-sm"/>
+                                            <button name="action_create_quick_product" string="➕ Nouveau produit" 
+                                                    type="object" class="btn btn-success btn-sm"/>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -103,16 +128,16 @@
                             <!-- Pagination et statistiques -->
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <div>
-                                    <span class="badge badge-info">
+                                    <span class="badge bg-info">
                                         <field name="total_products" readonly="1"/> produits trouvés
                                     </span>
-                                    <span class="text-muted ml-2">
+                                    <span class="text-muted ms-2">
                                         Page <field name="current_page" readonly="1"/> / <field name="total_pages" readonly="1"/>
                                     </span>
                                 </div>
                                 <div>
                                     <field name="page_size" class="form-control d-inline" style="width: 80px;"/>
-                                    <span class="ml-1">par page</span>
+                                    <span class="ms-1">par page</span>
                                 </div>
                             </div>
 
@@ -122,8 +147,8 @@
                                     <button name="action_prev_page" string="‹ Précédent" type="object" 
                                             class="btn btn-outline-secondary" 
                                             invisible="current_page &lt;= 1"/>
-                                    <span class="btn btn-outline-info" readonly="1">
-                                        <field name="current_page"/> / <field name="total_pages"/>
+                                    <span class="btn btn-outline-info">
+                                        <field name="current_page" readonly="1"/> / <field name="total_pages" readonly="1"/>
                                     </span>
                                     <button name="action_next_page" string="Suivant ›" type="object" 
                                             class="btn btn-outline-secondary"
@@ -131,68 +156,48 @@
                                 </div>
                             </div>
 
-                            <!-- Affichage des produits avec widget kanban -->
-                            <field name="filtered_product_ids" widget="kanban" nolabel="1" 
-                                   invisible="view_mode != 'kanban'">
-                                <kanban>
-                                    <field name="name"/>
-                                    <field name="default_code"/>
-                                    <field name="list_price"/>
-                                    <field name="categ_id"/>
-                                    <field name="qty_available"/>
-                                    <field name="description_sale"/>
-                                    <templates>
-                                        <t t-name="kanban-box">
-                                            <div class="oe_kanban_card col-md-4 mb-3">
-                                                <div class="card h-100">
-                                                    <img t-att-src="kanban_image('product.product', 'image_256', record.id.raw_value)"
-                                                         class="card-img-top" style="height: 150px; object-fit: cover;"/>
-                                                    <div class="card-body">
-                                                        <h6 class="card-title" t-esc="record.name.value"/>
-                                                        <p class="card-text">
-                                                            <small class="text-muted" t-esc="record.default_code.value"/>
-                                                            <br/>
-                                                            <span class="badge badge-secondary" t-esc="record.categ_id.value"/>
-                                                        </p>
-                                                        <div class="d-flex justify-content-between align-items-center">
-                                                            <strong class="text-primary" t-esc="record.list_price.value"/> €
-                                                            <button type="action" name="%(blg_sales_extension.action_add_product_to_selection_server)d"
-                                                                    class="btn btn-success btn-sm"
-                                                                    context="{'wizard_id': parent.id, 'product_id': id}">
-                                                                ➕
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </t>
-                                    </templates>
-                                </kanban>
-                            </field>
-
-                            <!-- Affichage des produits avec widget list -->
-                            <field name="filtered_product_ids" widget="one2many_list" nolabel="1" 
-                                   invisible="view_mode != 'list'">
-                                <tree create="false" edit="false" delete="false">
-                                    <field name="image_128" widget="image" string="Image" options="{'size': [40, 40]}"/>
-                                    <field name="name" string="Produit"/>
+                            <!-- FIXED: Remove problematic kanban view with buttons -->
+                            <!-- Affichage des produits avec widget list simple -->
+                            <field name="filtered_product_ids" nolabel="1" readonly="1">
+                                <list create="false" edit="false" delete="false" decoration-info="True">
+                                    <field name="display_name" string="Produit"/>
                                     <field name="default_code" string="Référence"/>
                                     <field name="categ_id" string="Catégorie"/>
                                     <field name="list_price" string="Prix" widget="monetary"/>
-                                    <field name="qty_available" string="Stock" invisible="context.get('hide_stock', True)"/>
-                                    <button name="%(blg_sales_extension.action_add_product_to_selection_server)d" string="➕ Ajouter" 
-                                            type="action" class="btn btn-success btn-sm"
-                                            context="{'wizard_id': parent.id, 'product_id': id}"/>
-                                </tree>
+                                    <field name="qty_available" string="Stock" column_invisible="not context.get('show_stock', False)"/>
+                                    <field name="id" invisible="1"/>
+                                </list>
                             </field>
+
+                            <!-- Add selection buttons outside the list -->
+                            <div class="mt-3" invisible="total_products == 0">
+                                <div class="alert alert-info">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-8">
+                                            <p class="mb-0">
+                                                <i class="fa fa-info-circle me-2"/>
+                                                Pour ajouter des produits à votre sélection, utilisez les boutons ci-dessous :
+                                            </p>
+                                        </div>
+                                        <div class="col-md-4 text-end">
+                                            <div class="btn-group">
+                                                <button name="action_add_all_visible" string="➕ Ajouter tous les produits visibles" 
+                                                        type="object" class="btn btn-primary btn-sm"
+                                                        title="Ajouter tous les produits de cette page"/>
+                                                <button name="action_create_quick_product" string="🆕 Nouveau produit" 
+                                                        type="object" class="btn btn-success btn-sm"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
 
                             <!-- Message si aucun produit -->
                             <div class="alert alert-warning" invisible="total_products > 0">
                                 <h5>🔍 Aucun produit trouvé</h5>
-                                <p>Essayez de modifier vos critères de recherche ou 
-                                   <button name="action_create_quick_product" string="créer un nouveau produit" 
-                                           type="object" class="btn btn-link p-0"/>
-                                </p>
+                                <p class="mb-3">Essayez de modifier vos critères de recherche ou créez un nouveau produit.</p>
+                                <button name="action_create_quick_product" string="🆕 Créer un nouveau produit" 
+                                        type="object" class="btn btn-success"/>
                             </div>
                         </page>
 
@@ -205,7 +210,7 @@
 
                             <!-- Liste des produits sélectionnés -->
                             <field name="selection_line_ids" nolabel="1">
-                                <tree editable="bottom" create="false" delete="true">
+                                <list editable="bottom" create="0" delete="1">
                                     <field name="sequence" widget="handle"/>
                                     <field name="product_id" readonly="1"/>
                                     <field name="product_code" readonly="1"/>
@@ -224,7 +229,7 @@
                                     <button name="action_remove_line" string="🗑" type="object" 
                                             title="Supprimer" class="btn btn-link text-danger"
                                             confirm="Supprimer cette ligne ?"/>
-                                </tree>
+                                </list>
                             </field>
 
                             <!-- Récapitulatif de la sélection -->
@@ -261,6 +266,10 @@
                             <div class="alert alert-info" invisible="selection_count > 0">
                                 <h5>🛒 Sélection vide</h5>
                                 <p>Parcourez le catalogue pour ajouter des produits à votre sélection.</p>
+                                <p class="mb-0">
+                                    <strong>Conseil :</strong> Utilisez le bouton "➕ Ajouter tous les produits visibles" 
+                                    dans l'onglet Catalogue pour sélectionner rapidement plusieurs produits.
+                                </p>
                             </div>
                         </page>
                     </notebook>
@@ -274,7 +283,7 @@
         <field name="name">blg.product.selection.line.form</field>
         <field name="model">blg.product.selection.line</field>
         <field name="arch" type="xml">
-            <form string="Détails du produit sélectionné">
+            <form>
                 <sheet>
                     <div class="oe_title">
                         <h1><field name="product_id" readonly="1"/></h1>

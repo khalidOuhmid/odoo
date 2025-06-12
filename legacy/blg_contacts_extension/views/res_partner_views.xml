@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template CSS optimisé -->
+    <template id="document_card_styles">
+        <style>
+            .o_document_card {
+            transition: all 0.2s ease;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+            background: #fff;
+            }
+            .o_document_card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+            }
+            .o_document_status_badge {
+            font-size: 0.85em;
+            padding: 0.4em 0.8em;
+            border-radius: 20px;
+            }
+            .o_document_actions .btn {
+            border-radius: 20px;
+            font-size: 0.85em;
+            padding: 0.4em 0.8em;
+            }
+        </style>
+    </template>
+
+    <record id="view_partner_form_documents_extension" model="ir.ui.view">
+        <field name="name">res.partner.form.documents.extension</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Ajout du type de contact après la fonction -->
+            <field name="function" position="after">
+                <field name="is_subcontractor" widget="boolean_toggle"/>
+                <field name="speciality_ids" widget="many2many_tags"
+                       attrs="{'invisible': [('is_subcontractor', '=', False)]}"
+                       placeholder="Spécialités du sous-traitant"/>
+            </field>
+
+            <!-- Onglet Documents dynamique -->
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Documents" attrs="{'invisible': [('is_subcontractor', '=', False)]}">
+
+                    <!-- Champs techniques invisibles -->
+                    <group invisible="1">
+                        <field name="documents_complete"/>
+                        <field name="disable_document_emails"/>
+                    </group>
+
+                    <!-- Dashboard de statut -->
+                    <div class="alert alert-info mb-3" attrs="{'invisible': [('documents_complete', '=', True)]}">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-info-circle fa-2x me-3"/>
+                            <div>
+                                <h5 class="mb-1">Documents incomplets</h5>
+                                <p class="mb-0">Ce sous-traitant doit compléter ses documents obligatoires.</p>
+                            </div>
+                            <div class="ms-auto">
+                                <button name="action_send_document_request" type="object"
+                                        class="btn btn-primary btn-sm">
+                                    <i class="fa fa-envelope me-1"/>Envoyer rappel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Barre de progression -->
+                    <div class="mb-4">
+                        <label class="fw-bold mb-2">Complétude des documents</label>
+                        <field name="document_completion" widget="progressbar" readonly="1"/>
+                    </div>
+
+                    <!-- Liste dynamique des documents -->
+                    <field name="document_ids" context="{'default_partner_id': active_id}">
+                        <tree editable="bottom" create="true" delete="true">
+                            <field name="document_type_id" required="1"/>
+                            <field name="issue_date"/>
+                            <field name="expiry_date"
+                                   attrs="{'required': [('document_type_id.validity_days', '>', 0)]}"/>
+                            <field name="state" widget="badge"
+                                   decoration-success="state == 'valid'"
+                                   decoration-warning="state == 'expiring'"
+                                   decoration-danger="state == 'expired'"
+                                   decoration-info="state == 'to_check'"/>
+                            <field name="attachment_id" widget="binary" filename="attachment_name"/>
+                            <button name="action_validate_document" type="object"
+                                    icon="fa-check" title="Valider"
+                                    attrs="{'invisible': [('state', '!=', 'to_check')]}"/>
+                            <button name="action_reject_document" type="object"
+                                    icon="fa-times" title="Rejeter"
+                                    attrs="{'invisible': [('state', '!=', 'to_check')]}"/>
+                            <button name="action_preview_document" type="object"
+                                    icon="fa-eye" title="Prévisualiser"
+                                    attrs="{'invisible': [('attachment_id', '=', False)]}"/>
+                        </tree>
+                    </field>
+
+                    <!-- Actions rapides -->
+                    <div class="mt-3">
+                        <button name="action_add_mandatory_documents" type="object"
+                                class="btn btn-secondary me-2">
+                            <i class="fa fa-plus me-1"/>Ajouter documents obligatoires
+                        </button>
+                        <button name="action_check_all_documents" type="object"
+                                class="btn btn-info me-2">
+                            <i class="fa fa-search me-1"/>Vérifier tous les documents
+                        </button>
+                        <field name="disable_document_emails" widget="boolean_toggle"
+                               string="Désactiver notifications"/>
+                    </div>
+                </page>
+
+                <!-- Onglet Archives -->
+                <page string="Archives" attrs="{'invisible': [('is_subcontractor', '=', False)]}">
+                    <field name="document_archive_ids" readonly="1">
+                        <tree>
+                            <field name="create_date" string="Date d'archivage"/>
+                            <field name="document_type" string="Type"/>
+                            <field name="original_filename" string="Nom du fichier"/>
+                            <field name="archived_by" string="Archivé par"/>
+                            <field name="archive_reason" string="Raison"/>
+                            <button name="action_restore_document" type="object"
+                                    icon="fa-undo" title="Restaurer"/>
+                            <button name="action_view_archived_document" type="object"
+                                    icon="fa-eye" title="Voir"/>
+                        </tree>
+                    </field>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue Kanban pour les documents (optionnelle) -->
+    <record id="view_partner_documents_kanban" model="ir.ui.view">
+        <field name="name">partner.document.kanban</field>
+        <field name="model">partner.document</field>
+        <field name="arch" type="xml">
+            <kanban>
+                <field name="document_type_id"/>
+                <field name="state"/>
+                <field name="expiry_date"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_card o_document_card">
+                            <div class="o_kanban_content">
+                                <div class="d-flex justify-content-between mb-2">
+                                    <strong>
+                                        <field name="document_type_id"/>
+                                    </strong>
+                                    <span class="badge o_document_status_badge"
+                                          t-attf-class="badge-#{record.state.raw_value == 'valid' ? 'success' : record.state.raw_value == 'expired' ? 'danger' : 'warning'}">
+                                        <field name="state"/>
+                                    </span>
+                                </div>
+                                <div t-if="record.expiry_date.value">
+                                    <small class="text-muted">Expire le :
+                                        <field name="expiry_date"/>
+                                    </small>
+                                </div>
+                                <div class="o_document_actions mt-2">
+                                    <button name="action_validate_document" type="object"
+                                            class="btn btn-sm btn-success"
+                                            t-if="record.state.raw_value == 'to_check'">
+                                        Valider
+                                    </button>
+                                    <button name="action_preview_document" type="object"
+                                            class="btn btn-sm btn-outline-primary">
+                                        Voir
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+</odoo>

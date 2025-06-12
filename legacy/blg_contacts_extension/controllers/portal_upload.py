@@ -5,41 +5,8 @@ blg_contacts_extension.controllers.portal_upload
 This module provides a secure public portal for BLG Groupe partners (subcontractors)
 to upload required legal documents using a token-authenticated interface.
 
-Features:
----------
-- Secure upload via unique tokens with expiration.
-- Handles document status, expiry, and validation.
-- Renders upload forms, error, and success pages.
-- Integrates with document configuration and partner models.
-
-Classes:
---------
-PortalDocumentUpload (http.Controller)
-    Handles HTTP routes for document upload, token validation, and form processing.
-
-Key Methods:
-------------
-- portal_document_upload: Main entry point for the upload portal.
-- _validate_token: Validates upload tokens and retrieves the partner.
-- _prepare_document_context: Prepares document status and context for the form.
-- _should_include_document: Determines if a document should be requested.
-- _process_document_uploads: Handles file upload, validation, and saving.
-- _validate_expiry_date: Validates document expiry dates.
-- _prepare_document_values: Prepares values for saving uploaded documents.
-
 Author: BLG IT Team
 Last updated: 2023-12-11
-"""
-
-"""
-Secure Public Portal for Document Uploads by BLG Partners.
-
-This module provides a secure way for subcontractors to upload required
-legal documents through a token-authenticated portal interface.
-
-Author: BLG IT Team
-Last updated: 2023-12-11
-
 Odoo 18 Compatible
 """
 
@@ -61,100 +28,68 @@ class PortalDocumentUpload(http.Controller):
     Controller handling secure document uploads through a public portal interface.
     """
 
-    @http.route(['/documents/upload/<string:token>'], type='http', auth="public", website=True)
+    # Configuration des types de fichiers autorisés
+    ALLOWED_MIMETYPES = {
+        'application/pdf': '.pdf',
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+    }
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
+
+    @http.route(['/documents/upload/<string:token>'], type='http', auth="public", website=True, csrf=False)
     def portal_document_upload(self, token, **kw):
         """
         Main entry point for the document upload portal.
-        
-        Args:
-            token: Authentication token for identifying the partner
-            kw: Additional request parameters
-            
-        Returns:
-            Rendered template for document upload or appropriate status page
         """
-        partner = self._validate_token(token)
-        if not partner:
-            return request.render('blg_contacts_extension.document_upload_error', {
-                'datetime': datetime,
-            })
-
-        # Get document configurations and determine which ones need to be uploaded
-        doc_configs = document_config.DOCUMENT_CONFIGS
-        today = fields.Date.today()
+        _logger.info("Tentative d'accès à l'upload avec token: %s", token[:10] + "...")
         
-        # Parse special request flags
-        is_rib_request = kw.get('rib_request') == '1'
-        is_reminder = kw.get('reminder') == '1'
-
-        # Get all document statuses for the partner
-        document_context = self._prepare_document_context(partner, doc_configs, today, is_rib_request, is_reminder)
-        
-        # If no documents need uploading, show the appropriate template
-        if not document_context['document_types']:
-            return request.render('blg_contacts_extension.document_upload_no_documents', {
-                'partner': partner,
-                'datetime': datetime,
-            })
-
-        # Process form submission
-        if request.httprequest.method == 'POST':
-            processed_docs, errors = self._process_document_uploads(
-                partner, 
-                document_context['document_types'], 
-                document_context['doc_has_expiry'],
-                document_context['critical_documents'],
-                document_context['doc_expired'],
-                doc_configs,
-                kw,
-                today
-            )
-            
-            # If documents were successfully processed with no errors
-            if processed_docs and not errors:
-                # Calculate if all critical documents were processed
-                critical_docs_count = sum(1 for doc_type in document_context['document_types'] 
-                                        if document_context['critical_documents'].get(doc_type, False))
-                critical_docs_processed = sum(1 for doc_type in processed_docs 
-                                            if document_context['critical_documents'].get(doc_type, False))
-                
-                # Invalidate token if all required documents are now provided
-                if critical_docs_count > 0 and critical_docs_processed >= critical_docs_count:
-                    partner.sudo().write({
-                        'upload_token': False,
-                        'token_expiration': False
-                    })
-                    _logger.info(f"All {critical_docs_count} critical documents processed for partner {partner.id}. Token invalidated.")
-                
-                # Render success template
-                return request.render('blg_contacts_extension.document_upload_success', {
-                    'uploaded_docs': [document_context['document_types'].get(dt) for dt in processed_docs],
-                    'all_documents_processed': critical_docs_count == 0 or critical_docs_processed >= critical_docs_count,
-                    'datetime': datetime,
+        try:
+            partner = self._validate_token(token)
+            if not partner:
+                return request.render('blg_contacts_extension.document_upload_error', {
+                    'error': _("Token invalide ou expiré"),
                 })
-            
-            # Update context with any errors and processed documents for re-rendering the form
-            document_context['error'] = errors
-            document_context['uploaded_docs'] = processed_docs
 
-        # Add necessary template variables
-        document_context.update({
-            'partner': partner,
-            'datetime': datetime,
-            'today': today,
-        })
-        
-        return request.render('blg_contacts_extension.document_upload_form', document_context)
+            # Get document configurations and determine which ones need to be uploaded
+            doc_configs = document_config.DOCUMENT_CONFIGS
+            today = fields.Date.today()
+            
+            # Parse special request flags
+            is_rib_request = kw.get('rib_request') == '1'
+            is_reminder = kw.get('reminder') == '1'
+
+            # Get all document statuses for the partner
+            document_context = self._prepare_document_context(partner, doc_configs, today, is_rib_request, is_reminder)
+            
+            # If no documents need uploading, show the appropriate template
+            if not document_context['document_types']:
+                return request.render('blg_contacts_extension.document_upload_no_documents', {
+                    'partner': partner,
+                })
+
+            # Process form submission
+            if request.httprequest.method == 'POST':
+                return self._handle_document_submission(partner, document_context, doc_configs, kw, today)
+
+            # Add necessary template variables
+            document_context.update({
+                'partner': partner,
+                'today': today,
+                'max_file_size_mb': self.MAX_FILE_SIZE // 1024 // 1024,
+                'allowed_extensions': list(self.ALLOWED_MIMETYPES.values())
+            })
+            
+            return request.render('blg_contacts_extension.document_upload_form', document_context)
+
+        except Exception as e:
+            _logger.error("Erreur inattendue upload: %s", e, exc_info=True)
+            return request.render('blg_contacts_extension.document_upload_error', {
+                'error': _("Une erreur inattendue s'est produite")
+            })
 
     def _validate_token(self, token: str) -> Optional[Any]:
         """
         Validate the upload token and return the associated partner if valid.
-        
-        Args:
-            token: The token to validate
-            
-        Returns:
-            The partner if token is valid, None otherwise
         """
         try:
             # Try both decoded and raw token
@@ -179,16 +114,6 @@ class PortalDocumentUpload(http.Controller):
     def _prepare_document_context(self, partner, doc_configs, today, is_rib_request, is_reminder) -> Dict[str, Any]:
         """
         Prepare context dictionaries for document statuses.
-        
-        Args:
-            partner: The partner for which to prepare the document context
-            doc_configs: Document configuration dictionary
-            today: Current date
-            is_rib_request: Flag indicating if RIB document is specifically requested
-            is_reminder: Flag indicating if this is a reminder request
-            
-        Returns:
-            Dictionary containing document status information
         """
         document_types = {}
         doc_expired = {}
@@ -248,16 +173,6 @@ class PortalDocumentUpload(http.Controller):
     def _should_include_document(self, doc_type, status, manual_status, is_rib_request, is_reminder) -> bool:
         """
         Determine if a document should be included in the upload form.
-        
-        Args:
-            doc_type: Document type identifier
-            status: Current document status
-            manual_status: Manual override status
-            is_rib_request: Flag indicating if RIB document is specifically requested
-            is_reminder: Flag indicating if this is a reminder request
-            
-        Returns:
-            True if document should be included, False otherwise
         """
         # Special case for RIB
         if doc_type == 'rib':
@@ -277,24 +192,62 @@ class PortalDocumentUpload(http.Controller):
             
         return False
 
+    def _handle_document_submission(self, partner, document_context, doc_configs, form_data, today):
+        """
+        Handle form submission and process documents.
+        """
+        processed_docs, errors = self._process_document_uploads(
+            partner, 
+            document_context['document_types'], 
+            document_context['doc_has_expiry'],
+            document_context['critical_documents'],
+            document_context['doc_expired'],
+            doc_configs,
+            form_data,
+            today
+        )
+        
+        # If documents were successfully processed with no errors
+        if processed_docs and not errors:
+            # Calculate if all critical documents were processed
+            critical_docs_count = sum(1 for doc_type in document_context['document_types'] 
+                                    if document_context['critical_documents'].get(doc_type, False))
+            critical_docs_processed = sum(1 for doc_type in processed_docs 
+                                        if document_context['critical_documents'].get(doc_type, False))
+            
+            # Invalidate token if all required documents are now provided
+            if critical_docs_count > 0 and critical_docs_processed >= critical_docs_count:
+                partner.sudo().write({
+                    'upload_token': False,
+                    'token_expiration': False
+                })
+                _logger.info(f"All {critical_docs_count} critical documents processed for partner {partner.id}. Token invalidated.")
+            
+            # Render success template
+            return request.render('blg_contacts_extension.document_upload_success', {
+                'uploaded_docs': {dt: document_context['document_types'].get(dt) for dt in processed_docs},
+                'total_uploaded': len(processed_docs),
+                'partner': partner,
+                'all_documents_processed': critical_docs_count == 0 or critical_docs_processed >= critical_docs_count,
+            })
+        
+        # Update context with any errors and processed documents for re-rendering the form
+        document_context['error'] = errors
+        document_context['uploaded_docs'] = processed_docs
+        document_context.update({
+            'partner': partner,
+            'today': today,
+            'max_file_size_mb': self.MAX_FILE_SIZE // 1024 // 1024,
+            'allowed_extensions': list(self.ALLOWED_MIMETYPES.values())
+        })
+        
+        return request.render('blg_contacts_extension.document_upload_form', document_context)
+
     def _process_document_uploads(self, partner, document_types, doc_has_expiry, 
                                  critical_documents, doc_expired, doc_configs, 
                                  form_data, today) -> Tuple[List[str], Dict[str, str]]:
         """
-        Process uploaded documents.
-        
-        Args:
-            partner: Partner for whom documents are being uploaded
-            document_types: Dictionary of document types to process
-            doc_has_expiry: Dictionary indicating which documents have expiration dates
-            critical_documents: Dictionary indicating which documents are critical
-            doc_expired: Dictionary indicating which documents are expired
-            doc_configs: Document configuration dictionary
-            form_data: Form data from request
-            today: Current date
-            
-        Returns:
-            Tuple containing list of processed document types and dictionary of errors
+        Process uploaded documents with enhanced validation.
         """
         processed_docs = []
         errors = {}
@@ -309,20 +262,12 @@ class PortalDocumentUpload(http.Controller):
             _logger.info(f"Processing upload for {doc_type} by partner ID {partner.id} ({partner.name})")
             
             try:
-                # Read file content once and reuse it to avoid file pointer issues
-                doc_file.seek(0)  # Make sure we're at the beginning of the file
+                # Validate file
+                self._validate_uploaded_file(doc_file, doc_name)
+                
+                # Read file content
+                doc_file.seek(0)
                 file_content_bytes = doc_file.read()
-                if not file_content_bytes:
-                    errors[doc_type] = f"Le fichier {doc_name} semble vide."
-                    continue
-                
-                # Check file format
-                original_filename = doc_file.filename
-                if not original_filename.lower().endswith('.pdf'):
-                    errors[doc_type] = f"Le document {doc_name} doit être un fichier PDF. Format détecté: {original_filename.split('.')[-1]}"
-                    continue
-                
-                # Encode file content once
                 file_content_b64 = base64.b64encode(file_content_bytes)
                 
                 # Validate expiry date if needed
@@ -340,33 +285,50 @@ class PortalDocumentUpload(http.Controller):
                     errors[doc_type] = expiry_result['error']
                     continue
                 
-                # Prepare and save document with proper error handling
+                # Prepare and save document
                 document_values = self._prepare_document_values(
                     partner, 
                     doc_type, 
                     doc_name,
-                    file_content_b64,  # Pass encoded content instead of file object
+                    file_content_b64,
                     config, 
                     expiry_result['expiry_date'], 
                     today
                 )
                 
-                try:
-                    # Save the document with more verbose error handling
-                    partner.sudo().write(document_values)
-                    processed_docs.append(doc_type)
-                    _logger.info(f"Document {doc_type} successfully uploaded for partner ID {partner.id}")
+                # Save the document
+                partner.sudo().write(document_values)
+                processed_docs.append(doc_type)
+                _logger.info(f"Document {doc_type} successfully uploaded for partner ID {partner.id}")
                     
-                except Exception as e:
-                    _logger.error(f"Error writing {doc_type} to partner {partner.id}: {str(e)}", exc_info=True)
-                    error_message = str(e) if str(e) else f"Erreur lors de l'enregistrement de {doc_name}"
-                    errors[doc_type] = f"Erreur: {error_message}"
-                    
+            except ValidationError as e:
+                errors[doc_type] = str(e)
             except Exception as e:
                 _logger.error(f"Unexpected error processing {doc_type} for partner {partner.id}: {str(e)}", exc_info=True)
                 errors[doc_type] = f"Une erreur inattendue s'est produite: {str(e)}"
                 
         return processed_docs, errors
+
+    def _validate_uploaded_file(self, file, doc_name):
+        """
+        Validate an uploaded file.
+        """
+        # Check file size
+        file.seek(0, 2)
+        file_size = file.tell()
+        file.seek(0)
+
+        if file_size > self.MAX_FILE_SIZE:
+            raise ValidationError(_("Fichier trop volumineux pour %s (max %sMB)") % (doc_name, self.MAX_FILE_SIZE // 1024 // 1024))
+
+        if file_size == 0:
+            raise ValidationError(_("Fichier vide pour %s") % doc_name)
+
+        # Check MIME type
+        content_type = file.content_type or 'application/octet-stream'
+        if content_type not in self.ALLOWED_MIMETYPES:
+            allowed_extensions = ', '.join(self.ALLOWED_MIMETYPES.values())
+            raise ValidationError(_("Type de fichier non autorisé pour %s. Extensions autorisées: %s") % (doc_name, allowed_extensions))
 
     def _validate_expiry_date(self, doc_type, doc_name, expiry_date_str,
                              has_expiry, is_critical, is_expired, today) -> Dict[str, Any]:
