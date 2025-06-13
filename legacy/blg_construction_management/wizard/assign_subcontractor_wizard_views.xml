@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Vue du wizard d'assignation de sous-traitants -->
+    <record id="view_assign_subcontractor_wizard_form" model="ir.ui.view">
+        <field name="name">blg.assign.subcontractor.wizard.form</field>
+        <field name="model">blg.assign.subcontractor.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Assigner des sous-traitants</h1>
+                        <h3 class="text-muted">
+                            Chantier : <field name="chantier_id" readonly="1" class="oe_inline"/>
+                        </h3>
+                    </div>
+                    
+                    <group>
+                        <field name="lot_ids" widget="many2many_checkboxes"/>
+                    </group>
+                    
+                    <group string="Sous-traitants disponibles">
+                        <field name="subcontractor_ids" widget="many2many_checkboxes"/>
+                    </group>
+                </sheet>
+                
+                <footer>
+                    <button name="action_assign_subcontractors" string="Assigner" 
+                            type="object" class="btn-primary"/>
+                    <button string="Annuler" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action pour ouvrir le wizard -->
+    <record id="action_assign_subcontractor_wizard" model="ir.actions.act_window">
+        <field name="name">Assigner des sous-traitants</field>
+        <field name="res_model">blg.assign.subcontractor.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

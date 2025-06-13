@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Migration will be handled by _auto_init method in res_partner model -->
+        <!-- This ensures it only runs during module installation/upgrade -->
+    </data>
+</odoo>

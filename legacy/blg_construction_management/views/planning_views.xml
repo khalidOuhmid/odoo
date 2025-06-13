@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Calendar View for Construction Projects -->
+    <record id="view_blg_chantier_planning_calendar" model="ir.ui.view">
+        <field name="name">blg.chantier.planning.calendar</field>
+        <field name="model">blg.chantier</field>
+        <field name="arch" type="xml">
+            <calendar string="Planification chantiers" date_start="date_start_contract">
+                <field name="name"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Planning Action for Chantiers -->
+    <record id="action_blg_planning_chantier" model="ir.actions.act_window">
+        <field name="name">Planning Chantiers</field>
+        <field name="res_model">blg.chantier</field>
+        <field name="view_mode">calendar,list</field>
+        <field name="view_id" ref="view_blg_chantier_planning_calendar"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créer votre premier chantier pour voir le planning !
+            </p>
+        </field>
+    </record>
+    
+    <!-- Planning Action for Lots -->
+    <record id="action_blg_planning_lot" model="ir.actions.act_window">
+        <field name="name">Planning Lots de travaux</field>
+        <field name="res_model">blg.chantier.lot</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Ajoutez des lots de travaux à vos chantiers pour voir le planning détaillé !
+            </p>
+        </field>
+    </record>
+</odoo>
