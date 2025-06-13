@@ -2,7 +2,7 @@ from odoo import models, fields, api, _
 
 class LotExtension(models.Model):
     _inherit = 'lot'
-    _name="construction.lot.extension"
+    _name="lot"
 
     price = fields.Monetary('Prix', required=True)
     subcontractor_ids = fields.Many2one('res.partner', string='Subcontractor',)

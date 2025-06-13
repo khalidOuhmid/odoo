@@ -13,7 +13,8 @@
     'license': 'LGPL-3',
     'depends': [
         'base',
-        'construction_lots'
+        'contacts',
+        'construction_lots',
     ],
     'data': [
     ],

@@ -2,7 +2,7 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from datetime import datetime, timedelta
 
-class Chantier:
+class Chantier(models.Model):
     _name = 'construction.chantier'
     _description = 'Construction Project'
     _inherit = ['mail.thread', 'mail.activity.mixin']
@@ -10,7 +10,7 @@ class Chantier:
     #===========Attributes==========#
     name = fields.Char('Project Name', required=True)
     stage = fields.Many2one('construction.stage', 'Stage')
-    lots_ids = fields.Many2many('construction.lot.extension')
+    lots_ids = fields.Many2many('lot')
     chapter_name = fields.Char('Chapter Name', compute='_compute_chapter_name')
     user_ids = fields.Many2many('res.users', string='Project Users')
     description = fields.Text('Description')
@@ -44,7 +44,7 @@ class Chantier:
         compute='_compute_duration_actual',
         store=True
     )
-
+    total_cost = fields.Monetary('Coût total', compute='_compute_total_cost', store=True)
     address = fields.Text('Adresse du chantier')
     city = fields.Char('Ville')
     zip_code = fields.Char('Code postal')
@@ -121,11 +121,8 @@ class Chantier:
     @api.depends('lots_ids.subcontractor_ids')
     def _compute_subcontractors(self):
         for record in self:
-            subcontractors = []
-            for lot in record.lots_ids:
-                for subcontractor in lot.subcontractor_ids:
-                    subcontractors.append(subcontractor)
-        return list(set(subcontractors))
+            all_subcontractors = record.lots_ids.mapped('subcontractor_ids')
+            record.subcontractors = all_subcontractors
 
     @api.depends('lots_ids.cost', 'lots_ids.is_finished')
 

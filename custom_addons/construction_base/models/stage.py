@@ -44,7 +44,12 @@ class Stage(models.Model):
     color = fields.Integer(
         'Color Index', default=0, help="Color for kanban styling (0-11)"
     )
+    chantier_ids = fields.One2many('construction.chantier', 'stage_id', string='Chantiers')
 
+    @api.depends('chantier_ids')
+    def _compute_chantier_count(self):
+        for record in self:
+            record.chantier_count = len(record.chantier_ids)
     # ============= Relations ============= #
     chapter_id = fields.Many2one('construction.chapter', 'Chapter', required=True, ondelete='cascade')
 
