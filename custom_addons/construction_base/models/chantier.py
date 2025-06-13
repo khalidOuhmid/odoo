@@ -124,7 +124,7 @@ class Chantier(models.Model):
             all_subcontractors = record.lots_ids.mapped('subcontractor_ids')
             record.subcontractors = all_subcontractors
 
-    @api.depends('lots_ids.cost', 'lots_ids.is_finished')
+    @api.depends('lots_ids.price', 'lots_ids.is_finished')
 
     def _compute_construction_progression(self ):
         """
@@ -133,7 +133,7 @@ class Chantier(models.Model):
             total_cost = 0
             total_progress = 0
             for lot in record.lots_ids:
-                total_cost += lot.cost
+                total_cost += lot.price
                 if lot.is_finished:
                     total_progress += lot.progress
             record.progress = total_progress / len(record.lots_ids) if record.lots_ids else 0

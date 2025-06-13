@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vue Kanban Compacte pour la Gestion -->
+        <record id="view_construction_chantier_management_kanban" model="ir.ui.view">
+            <field name="name">construction.chantier.management.kanban</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="stage_id" quick_create="false"
+                        group_expand="1" group_create="false" group_delete="false" group_edit="false"
+                        class="blg_modern_kanban o_kanban_with_chapters">
+
+                    <!-- Champs essentiels -->
+                    <field name="id"/>
+                    <field name="stage_id"/>
+                    <field name="chapter_name"/>
+                    <field name="name"/>
+                    <field name="address"/>
+                    <field name="user_ids"/>
+                    <field name="date_end_contract"/>
+                    <field name="date_start_contract"/>
+                    <field name="progress"/>
+                    <field name="days_remaining"/>
+                    <field name="total_cost"/>
+                    <field name="currency_id"/>
+                    <field name="activity_ids"/>
+                    <field name="activity_state"/>
+                    <field name="state"/>
+                    <field name="create_date"/>
+
+                    <!-- Champs de visibilité -->
+                    <field name="show_schedule_visit"/>
+                    <field name="show_create_quote"/>
+                    <field name="show_assign_subcontractors"/>
+                    <field name="show_mark_not_pursued"/>
+
+                    <progressbar field="activity_state"
+                               colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
+
+                    <templates>
+                        <!-- Carte Compacte et Moderne -->
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_global_click blg_card"
+                                 t-attf-class="#{record.days_remaining.raw_value &lt; 0 ? 'urgent' :
+                                               record.days_remaining.raw_value &lt; 7 ? 'warning' :
+                                               record.progress.raw_value == 100 ? 'completed' : 'normal'}">
+
+                                <!-- En-tête compact -->
+                                <div class="card-header">
+                                    <div class="project-info">
+                                        <h4 class="project-name">
+                                            <field name="name"/>
+                                        </h4>
+                                        <!-- Ajout du nom du chapitre -->
+                                        <div class="chapter-name">
+                                            <i class="fa fa-bookmark"/>
+                                            <field name="chapter_name"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Status indicator -->
+                                    <div class="status-dot"
+                                         t-attf-title="#{record.days_remaining.raw_value &lt; 0 ? 'En retard' :
+                                                       record.days_remaining.raw_value &lt; 7 ? 'Urgent' :
+                                                       record.progress.raw_value == 100 ? 'Terminé' : 'En cours'}">
+                                    </div>
+
+                                    <!-- Menu actions minimal -->
+                                    <div class="card-menu">
+                                        <div class="o_dropdown_kanban dropdown">
+                                            <a class="dropdown-toggle" role="button"
+                                               data-bs-toggle="dropdown" href="#" aria-label="Actions">
+                                                <i class="fa fa-ellipsis-v"/>
+                                            </a>
+                                            <div class="dropdown-menu dropdown-menu-end">
+                                                <a role="menuitem" type="edit" class="dropdown-item">
+                                                    <i class="fa fa-edit"/> Modifier
+                                                </a>
+                                                <a role="menuitem" name="action_mark_not_pursued" type="object" class="dropdown-item text-danger"
+                                                   t-if="record.show_mark_not_pursued.raw_value">
+                                                    <i class="fa fa-times"/> Marquer sans suite
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Corps principal -->
+                                <div class="card-body">
+                                    <!-- Adresse si présente -->
+                                    <div class="project-address" t-if="record.address.raw_value">
+                                        <i class="fa fa-map-marker"/>
+                                        <span><t t-esc="record.address.value"/></span>
+                                    </div>
+
+                                    <!-- Métrics en ligne -->
+                                    <div class="metrics-row">
+                                        <!-- Budget -->
+                                        <div class="metric" t-if="record.total_cost.raw_value">
+                                            <i class="fa fa-euro text-success"/>
+                                            <field name="total_cost" widget="monetary"/>
+                                        </div>
+
+                                        <!-- Échéance -->
+                                        <div class="metric deadline">
+                                            <i t-attf-class="fa fa-clock-o #{record.days_remaining.raw_value &lt; 0 ? 'text-danger' :
+                                                              record.days_remaining.raw_value &lt; 7 ? 'text-warning' : 'text-muted'}"/>
+                                            <span t-attf-class="#{record.days_remaining.raw_value &lt; 0 ? 'text-danger' :
+                                                                record.days_remaining.raw_value &lt; 7 ? 'text-warning' : ''}">
+                                                <t t-if="record.days_remaining.raw_value &lt; 0">
+                                                    <t t-esc="Math.abs(record.days_remaining.raw_value)"/>j retard
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-esc="record.days_remaining.raw_value"/>j
+                                                </t>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Barre de progression simple -->
+                                    <div class="progress-bar-container">
+                                        <div class="progress-info">
+                                            <span class="progress-label">Avancement</span>
+                                            <span class="progress-value"><t t-esc="record.progress.raw_value"/>%</span>
+                                        </div>
+                                        <div class="progress-bar">
+                                            <div class="progress-fill"
+                                                 t-attf-style="width: #{record.progress.raw_value}%"
+                                                 t-attf-class="#{record.progress.raw_value == 100 ? 'completed' :
+                                                               record.progress.raw_value >= 50 ? 'good' : 'normal'}">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Pied de carte minimal -->
+                                <div class="card-footer">
+                                    <div class="team-section">
+                                        <field name="user_ids" widget="many2many_avatar_user"
+                                               options="{'display_name': False, 'max_avatars': 3}"/>
+                                    </div>
+                                    <div class="activity-section">
+                                        <field name="activity_ids" widget="kanban_activity"/>
+                                    </div>
+                                    <div class="date-section">
+                                        <small class="text-muted">
+                                            <field name="create_date" widget="date"/>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Vue Liste Avancée pour la Gestion Professionnelle -->
+        <record id="view_construction_chantier_management_tree" model="ir.ui.view">
+            <field name="name">construction.chantier.management.tree</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <list string="Gestion des Chantiers"
+                      sample="1" multi_edit="1" export_xlsx="1" editable="bottom"
+                      decoration-danger="days_remaining &lt; 0 and date_end_contract"
+                      decoration-warning="days_remaining &lt; 7 and days_remaining &gt;= 0"
+                      decoration-success="progress == 100"
+                      decoration-muted="state in ['completed', 'abandoned']"
+                      decoration-info="progress &gt; 0 and progress &lt; 25"
+                      decoration-bf="days_remaining &lt; 0">
+
+                    <!-- Colonnes principales optimisées -->
+                    <field name="name" string="Projet" required="1"/>
+                    <field name="address" string="Chantier" required="1"/>
+                    <field name="chapter_name" string="Phase" readonly="1"/>
+                    <field name="stage_id" string="Étape" widget="badge" readonly="1"/>
+
+                    <!-- Métriques financières -->
+                    <field name="total_cost" widget="monetary" string="Budget" sum="Budget Total"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="progress" widget="progressbar" string="Avancement %" readonly="1"/>
+
+                    <!-- Planning -->
+                    <field name="date_start_contract" string="Début" optional="show"/>
+                    <field name="date_end_contract" string="Échéance" required="1"/>
+                    <field name="days_remaining" string="J. restants" readonly="1"
+                           decoration-danger="days_remaining &lt; 0"
+                           decoration-warning="days_remaining &lt; 7"/>
+
+                    <!-- Équipe et responsabilité -->
+                    <field name="user_ids" widget="many2many_avatar_user" string="Équipe"/>
+                    <field name="state" string="État" widget="badge"/>
+
+                    <!-- Dates étendues (masquées par défaut) -->
+                    <field name="date_start_actual" string="Début effectif" optional="hide"/>
+                    <field name="date_end_actual" string="Fin effective" optional="hide"/>
+                    <field name="create_date" string="Créé le" readonly="1" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Vue Calendrier Optimisée pour Construction -->
+        <record id="view_construction_chantier_management_calendar" model="ir.ui.view">
+            <field name="name">construction.chantier.management.calendar</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <calendar string="Planning Chantiers"
+                          date_start="date_start_contract"
+                          date_stop="date_end_contract"
+                          color="stage_id"
+                          mode="month"
+                          event_open_popup="true"
+                          event_limit="5">
+
+                    <field name="name"/>
+                    <field name="address"/>
+                    <field name="progress"/>
+                    <field name="stage_id"/>
+                    <field name="chapter_name"/>
+                    <field name="user_ids"/>
+                    <field name="days_remaining"/>
+                    <field name="total_cost"/>
+                </calendar>
+            </field>
+        </record>
+
+        <!-- Vue Graphique pour Tableaux de Bord -->
+        <record id="view_construction_chantier_management_graph" model="ir.ui.view">
+            <field name="name">construction.chantier.management.graph</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <graph string="Tableau de Bord Chantiers" type="bar" stacked="True">
+                    <field name="chapter_name" type="row"/>
+                    <field name="stage_id" type="col"/>
+                    <field name="total_cost" type="measure"/>
+                    <field name="id" type="measure" string="Nombre de projets"/>
+                </graph>
+            </field>
+        </record>
+
+        <!-- Vue Pivot pour Analyse Avancée -->
+        <record id="view_construction_chantier_management_pivot" model="ir.ui.view">
+            <field name="name">construction.chantier.management.pivot</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <pivot string="Analyse des Chantiers" display_quantity="1">
+                    <field name="chapter_name" type="row"/>
+                    <field name="stage_id" type="col"/>
+                    <field name="total_cost" type="measure"/>
+                    <field name="progress" type="measure"/>
+                    <field name="days_remaining" type="measure"/>
+                    <field name="id" type="measure" string="Nombre"/>
+                </pivot>
+            </field>
+        </record>
+
+        <!-- Action Principale optimisée -->
+        <record id="action_construction_chantier_management" model="ir.actions.act_window">
+            <field name="name">Gestion des Chantiers</field>
+            <field name="res_model">construction.chantier</field>
+            <field name="view_mode">kanban,list,form,calendar,graph,pivot</field>
+            <field name="context">{
+                'search_default_active_projects': 1,
+                'group_by': 'stage_id'
+            }</field>
+            <field name="help" type="html">
+                <div class="o_view_nocontent_empty_folder">
+                    <div class="text-center">
+                        <i class="fa fa-building fa-3x text-muted mb-3"/>
+                        <h3>Aucun chantier trouvé</h3>
+                        <p class="text-muted">
+                            Commencez par créer votre premier projet de construction
+                        </p>
+                        <button class="btn btn-primary">
+                            <i class="fa fa-plus"/> Nouveau Chantier
+                        </button>
+                    </div>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>
