@@ -73,7 +73,7 @@ class Chapter(models.Model):
         return {
             'type': 'ir.actions.act_window',
             'name': f'Projects - {self.name}',
-            'res_model': 'chantier.chantier',
+            'res_model': 'construction.chantier',
             'view_mode': 'kanban,tree,form',
             'domain': [('stage_id.chapter_id', '=', self.id)],
             'context': {'default_chapter_id': self.id}

@@ -1,3 +1,5 @@
+from numpy.testing._private.utils import origin
+
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from datetime import datetime, timedelta
@@ -50,13 +52,13 @@ class Chantier(models.Model):
     zip_code = fields.Char('Code postal')
     country_id = fields.Many2one('res.country', string='Pays')
     phone = fields.Char('Téléphone du chantier')
-
+    currency_id = fields.Many2one('res.currency', string='Currency',
+                                  default=lambda self: self.env.company.currency_id)
     surface_m2 = fields.Float('Surface (m²)')
     nb_levels = fields.Integer('Nombre d\'étages')
     permit_number = fields.Char('Numéro de permis')
     permit_date = fields.Date('Date du permis')
 
-    user_ids = fields.Many2many('res.users', string='Équipe interne')
     available_subcontractors = fields.Many2many(
         'res.partner',
         string='Sous-traitants disponibles',
@@ -68,6 +70,7 @@ class Chantier(models.Model):
     sale_order_count = fields.Integer('Nombre de devis/commandes', compute='_compute_counts', store=True)
     subcontractor_count = fields.Integer('Nombre de sous-traitants', compute='_compute_counts', store=True)
     stage_validation_info = fields.Text(
+
         'Info de validation',
         compute='_compute_stage_validation_info',
         help="Informations sur les conditions pour passer à l'étape suivante"
@@ -85,6 +88,13 @@ class Chantier(models.Model):
         ('progress_range', 'CHECK(progress >= 0 AND progress <= 100)',
          'La progression doit être entre 0 et 100%'),
     ]
+
+    @api.constrains('date_start_contract', 'date_end_contract')
+    def _check_contract_dates(self):
+        for record in self:
+            if record.date_start_contract and record.date_end_contract:
+                if record.date_start_contract > record.date_end_contract:
+                    raise ValidationError(_("La date de début ne peut pas être postérieure à la date de fin."))
 
     @api.depends('stage', 'stage.chapter_id', 'stage.chapter_id.name')
     def _compute_chapter_name(self):
@@ -112,7 +122,7 @@ class Chantier(models.Model):
             if record.date_start_actual and record.date_end_actual:
                 delta = record.date_end_actual - record.date_start_actual
                 record.duration_actual = delta.days + 1
-            elif record.date_start_actual and record.state == 'in_progress':
+            elif record.date_start_actual and record.state == 'active':
                 delta = fields.Date.today() - record.date_start_actual
                 record.duration_actual = delta.days + 1
             else:
@@ -135,8 +145,104 @@ class Chantier(models.Model):
             for lot in record.lots_ids:
                 total_cost += lot.price
                 if lot.is_finished:
-                    total_progress += lot.progress
+                    total_progress += lot.price
             record.progress = total_progress / len(record.lots_ids) if record.lots_ids else 0
             record.total_cost = total_cost
+
+    @api.depends('date_end_contract')
+    def _compute_days_remaining(self):
+        today = fields.Date.context_today(self)
+        for record in self:
+            if record.date_end_contract:
+                delta = record.date_end_contract - today
+                record.days_remaining = delta.days if delta.days > 0 else 0
+            else:
+                record.days_remaining = 0
+
+    @api.depends('lots_ids.price')
+    def _compute_total_cost(self):
+        for record in self:
+            record.total_cost = sum(record.lots_ids.mapped('price'))
+
+    @api.depends('state', 'stage', 'stage.chapter_id')
+    def _compute_action_visibility(self):
+        """Détermine quelles actions sont visibles selon l'état et l'étape du chantier"""
+        for record in self:
+            # Par défaut, masquer toutes les actions
+            record.show_schedule_visit = False
+            record.show_create_quote = False
+            record.show_assign_subcontractors = False
+            record.show_mark_not_pursued = False
+
+            if not record.stage:
+                continue
+
+            # Logique basée sur l'état du chantier
+            if record.state in ['active']:
+                # Planifier une visite - toujours disponible pour les chantiers actifs
+                record.show_schedule_visit = True
+
+                # Créer un devis - selon l'étape
+                if record.stage and record.stage.chapter_id:
+                    chapter_name = record.stage.chapter_id.name
+                    if chapter_name in ['Étude', 'Conception', 'Devis']:
+                        record.show_create_quote = True
+
+                # Assigner des sous-traitants - pour les phases d'exécution
+                if record.stage and record.stage.chapter_id:
+                    chapter_name = record.stage.chapter_id.name
+                    if chapter_name in ['Exécution', 'Réalisation', 'Travaux']:
+                        record.show_assign_subcontractors = True
+
+            # Marquer sans suite - disponible pour les états draft et active
+            if record.state in ['abandoned', 'active']:
+                record.show_mark_not_pursued = True
+
+    @api.depends('stage', 'stage.chapter_id', 'lots_ids', 'document_ids', 'visit_ids')
+    def _compute_stage_validation_info(self):
+        """Calcule les informations de validation pour passer à l'étape suivante"""
+        for record in self:
+            info_lines = []
+
+            chapter_name = record.chapter_id.name
+            stage_name = record.stage.name
+            # TODO
+
+    @api.depends('lots_ids', 'subcontractors')
+    def _compute_available_subcontractors(self):
+        for record in self:
+            if not record.lots_ids:
+                record.available_subcontractors = self.env['res.partner']
+                continue
+
+            # Utiliser les méthodes existantes de votre modèle res.partner
+            available_subcontractors = self.env['res.partner']
+
+            for lot in record.lots_ids:
+                # Utiliser la méthode filter_subcontractors de votre modèle
+                lot_subcontractors = self.env['res.partner'].get_subcontractors_by_lot(lot.id)
+                available_subcontractors |= lot_subcontractors
+
+            # Exclure ceux déjà assignés
+            available_subcontractors = available_subcontractors - record.subcontractors
+
+            record.available_subcontractors = available_subcontractors
+
+    @api.depends('subcontractors', 'lots_ids')
+    def _compute_counts(self):
+        """Calcule les différents compteurs du chantier"""
+        for record in self:
+            # Compter les sous-traitants (qui viennent des lots via _compute_subcontractors)
+            record.subcontractor_count = len(record.subcontractors) if record.subcontractors else 0
+
+            # Pour sale_order_count, chercher les devis liés à ce chantier
+            # Méthode 1: Par référence au nom du chantier dans sale.order
+            sale_orders = self.env['sale.order'].search([
+                '|',
+                ('origin', 'ilike', record.name),
+                ('client_order_ref', 'ilike', record.name)
+            ])
+            record.sale_order_count = len(sale_orders)
+
 
 

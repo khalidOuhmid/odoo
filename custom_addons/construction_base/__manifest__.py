@@ -15,6 +15,7 @@
         'base',
         'contacts',
         'construction_lots',
+        'sale'
     ],
     'data': [
     ],
