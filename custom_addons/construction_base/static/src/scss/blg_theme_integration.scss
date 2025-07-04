@@ -1,0 +1,419 @@
+/* BLG Theme Integration - Construction Base */
+
+/* Variables thématiques BLG */
+:root {
+    /* Couleurs principales BLG */
+    --blg-primary: #007bff;
+    --blg-primary-dark: #0056b3;
+    --blg-secondary: #6c757d;
+    --blg-success: #28a745;
+    --blg-warning: #ffc107;
+    --blg-danger: #dc3545;
+    --blg-info: #17a2b8;
+    
+    /* Couleurs construction spécifiques */
+    --construction-ground: #8B4513;
+    --construction-concrete: #D3D3D3;
+    --construction-steel: #708090;
+    --construction-wood: #DEB887;
+    
+    /* Shadows et radius BLG */
+    --blg-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --blg-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --blg-shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.2);
+    --blg-radius: 8px;
+    --blg-radius-lg: 12px;
+    
+    /* Typography BLG */
+    --blg-font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    --blg-font-weight-normal: 400;
+    --blg-font-weight-medium: 500;
+    --blg-font-weight-bold: 600;
+    --blg-font-weight-heavy: 700;
+}
+
+/* Override général pour l'harmonie BLG */
+.blg_modern_kanban {
+    font-family: var(--blg-font-family);
+    
+    /* Style des groupes avec identité BLG */
+    .o_kanban_group {
+        .o_kanban_group_header {
+            background: linear-gradient(135deg, var(--blg-primary) 0%, var(--blg-primary-dark) 100%);
+            
+            /* Logo/icône BLG dans l'en-tête */
+            .o_column_title {
+                &::before {
+                    content: '🏗️';
+                    margin-right: 8px;
+                    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+                }
+            }
+            
+            .o_kanban_counter {
+                background: rgba(255, 255, 255, 0.95);
+                color: var(--blg-primary);
+                font-weight: var(--blg-font-weight-bold);
+                border: 2px solid rgba(255, 255, 255, 0.3);
+            }
+        }
+    }
+    
+    /* Cartes avec identité construction */
+    .blg_card {
+        /* Texture subtile de construction */
+        &::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 40px;
+            height: 40px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="rgba(0,123,255,0.05)"><path d="M2 2h16v16H2V2zm2 2v12h12V4H4zm2 2h8v8H6V6z"/></svg>');
+            opacity: 0.3;
+            pointer-events: none;
+        }
+        
+        /* En-tête avec branding subtil */
+        .card-header {
+            border-bottom: 2px solid rgba(var(--blg-primary), 0.1);
+            
+            .project-info {
+                .project-name {
+                    color: #1a1a1a;
+                    font-weight: var(--blg-font-weight-heavy);
+                    
+                    /* Icône de construction devant le nom */
+                    &::before {
+                        content: '🔨';
+                        margin-right: 6px;
+                        font-size: 14px;
+                        opacity: 0.7;
+                    }
+                }
+                
+                .chapter-name {
+                    background: linear-gradient(135deg, rgba(var(--blg-primary), 0.1) 0%, rgba(var(--blg-primary), 0.05) 100%);
+                    border: 1px solid rgba(var(--blg-primary), 0.2);
+                    color: var(--blg-primary-dark);
+                    font-weight: var(--blg-font-weight-bold);
+                }
+            }
+        }
+        
+        /* Corps avec métriques construction */
+        .card-body {
+            .project-address {
+                background: linear-gradient(135deg, rgba(139, 69, 19, 0.05) 0%, rgba(139, 69, 19, 0.02) 100%);
+                border-left: 3px solid var(--construction-ground);
+                
+                i {
+                    color: var(--construction-ground);
+                }
+            }
+            
+            .metrics-row {
+                .metric {
+                    background: linear-gradient(135deg, rgba(248, 249, 250, 0.9) 0%, rgba(233, 236, 239, 0.8) 100%);
+                    border: 1px solid rgba(0, 0, 0, 0.05);
+                    
+                    /* Icônes colorées selon le type */
+                    .fa-euro {
+                        color: var(--blg-success) !important;
+                        text-shadow: 0 1px 2px rgba(40, 167, 69, 0.2);
+                    }
+                    
+                    .fa-clock-o {
+                        &.text-danger {
+                            text-shadow: 0 1px 2px rgba(220, 53, 69, 0.3);
+                        }
+                        
+                        &.text-warning {
+                            text-shadow: 0 1px 2px rgba(255, 193, 7, 0.3);
+                        }
+                    }
+                }
+            }
+            
+            /* Barre de progression BLG branded */
+            .progress-bar-container {
+                .progress-info {
+                    .progress-label {
+                        color: var(--blg-secondary);
+                        font-weight: var(--blg-font-weight-medium);
+                    }
+                    
+                    .progress-value {
+                        background: linear-gradient(135deg, var(--blg-primary) 0%, var(--blg-primary-dark) 100%);
+                        color: white;
+                        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+                    }
+                }
+                
+                .progress-bar {
+                    background: rgba(var(--blg-secondary), 0.2);
+                    
+                    .progress-fill {
+                        &.normal {
+                            background: linear-gradient(90deg, var(--blg-primary) 0%, var(--blg-primary-dark) 100%);
+                            box-shadow: 0 1px 3px rgba(0, 123, 255, 0.3);
+                        }
+                        
+                        &.good {
+                            background: linear-gradient(90deg, var(--blg-success) 0%, #1e7e34 100%);
+                            box-shadow: 0 1px 3px rgba(40, 167, 69, 0.3);
+                        }
+                        
+                        &.completed {
+                            background: linear-gradient(90deg, var(--blg-success) 0%, #20c997 100%);
+                            box-shadow: 0 1px 3px rgba(40, 167, 69, 0.4);
+                            
+                            /* Effet de célébration pour les projets terminés */
+                            &::before {
+                                content: '✨';
+                                position: absolute;
+                                right: -20px;
+                                top: -10px;
+                                animation: celebration 2s infinite;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        /* États avec couleurs BLG harmonisées */
+        &.urgent {
+            box-shadow: 0 0 0 1px var(--blg-danger), var(--blg-shadow-md);
+            
+            &:hover {
+                box-shadow: 0 0 0 2px var(--blg-danger), var(--blg-shadow-lg);
+            }
+        }
+        
+        &.warning {
+            box-shadow: 0 0 0 1px var(--blg-warning), var(--blg-shadow-md);
+            
+            &:hover {
+                box-shadow: 0 0 0 2px var(--blg-warning), var(--blg-shadow-lg);
+            }
+        }
+        
+        &.completed {
+            box-shadow: 0 0 0 1px var(--blg-success), var(--blg-shadow-md);
+            
+            &:hover {
+                box-shadow: 0 0 0 2px var(--blg-success), var(--blg-shadow-lg);
+            }
+            
+            /* Badge de réussite */
+            &::before {
+                content: '✓';
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                background: var(--blg-success);
+                color: white;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 10px;
+                font-weight: var(--blg-font-weight-heavy);
+                box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+                z-index: 10;
+            }
+        }
+        
+        &.normal {
+            box-shadow: 0 0 0 1px var(--blg-primary), var(--blg-shadow-md);
+            
+            &:hover {
+                box-shadow: 0 0 0 2px var(--blg-primary), var(--blg-shadow-lg);
+            }
+        }
+    }
+    
+    /* Pied de carte avec style BLG */
+    .card-footer {
+        background: linear-gradient(135deg, rgba(248, 249, 250, 0.95) 0%, rgba(233, 236, 239, 0.9) 100%);
+        border-top: 2px solid rgba(var(--blg-primary), 0.1);
+        
+        .team-section {
+            .o_field_many2many_avatar_user .o_tag {
+                border: 3px solid white;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+                
+                &:hover {
+                    border-color: var(--blg-primary);
+                    transform: scale(1.2);
+                }
+            }
+        }
+        
+        .activity-section {
+            .o_kanban_activity {
+                .fa {
+                    color: var(--blg-primary);
+                    
+                    &.text-success {
+                        color: var(--blg-success) !important;
+                    }
+                    
+                    &.text-warning {
+                        color: var(--blg-warning) !important;
+                    }
+                    
+                    &.text-danger {
+                        color: var(--blg-danger) !important;
+                    }
+                }
+            }
+        }
+        
+        .date-section small {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(248, 249, 250, 0.8) 100%);
+            border: 1px solid rgba(var(--blg-primary), 0.1);
+            color: var(--blg-secondary);
+            font-weight: var(--blg-font-weight-medium);
+        }
+    }
+}
+
+/* Empty state avec branding BLG */
+.o_view_nocontent_empty_folder {
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.02) 0%, rgba(0, 86, 179, 0.01) 100%);
+    border: 2px dashed rgba(var(--blg-primary), 0.2);
+    
+    i {
+        color: var(--blg-primary);
+        background: linear-gradient(135deg, rgba(0, 123, 255, 0.1) 0%, rgba(0, 86, 179, 0.05) 100%);
+        border-radius: 50%;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    
+    h3 {
+        color: var(--blg-primary-dark);
+        font-weight: var(--blg-font-weight-heavy);
+    }
+    
+    p {
+        color: var(--blg-secondary);
+        font-weight: var(--blg-font-weight-medium);
+    }
+    
+    .btn {
+        background: linear-gradient(135deg, var(--blg-primary) 0%, var(--blg-primary-dark) 100%);
+        box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+        font-weight: var(--blg-font-weight-bold);
+        
+        &:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 123, 255, 0.4);
+        }
+    }
+}
+
+/* Animations spéciales BLG */
+@keyframes celebration {
+    0%, 100% {
+        transform: scale(1) rotate(0deg);
+        opacity: 1;
+    }
+    25% {
+        transform: scale(1.2) rotate(90deg);
+        opacity: 0.8;
+    }
+    50% {
+        transform: scale(1.1) rotate(180deg);
+        opacity: 0.6;
+    }
+    75% {
+        transform: scale(1.3) rotate(270deg);
+        opacity: 0.8;
+    }
+}
+
+/* Mode print pour rapports */
+@media print {
+    .blg_modern_kanban {
+        background: white !important;
+        
+        .blg_card {
+            break-inside: avoid;
+            box-shadow: none !important;
+            border: 1px solid #ccc !important;
+            margin-bottom: 10px;
+            
+            .card-header {
+                background: #f8f9fa !important;
+                -webkit-print-color-adjust: exact;
+            }
+            
+            .status-dot,
+            .card-menu {
+                display: none;
+            }
+        }
+        
+        .o_kanban_group_header {
+            background: #007bff !important;
+            color: white !important;
+            -webkit-print-color-adjust: exact;
+        }
+    }
+}
+
+/* Accessibilité renforcée */
+@media (prefers-reduced-motion: reduce) {
+    .blg_modern_kanban {
+        .blg_card {
+            transition: none;
+            
+            &:hover {
+                transform: none;
+            }
+        }
+        
+        .progress-fill::after {
+            animation: none;
+        }
+        
+        .status-dot {
+            animation: none !important;
+        }
+    }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+    .blg_modern_kanban {
+        .blg_card {
+            border: 2px solid #000;
+            
+            &.urgent {
+                border-color: #ff0000;
+            }
+            
+            &.warning {
+                border-color: #ffaa00;
+            }
+            
+            &.completed {
+                border-color: #00aa00;
+            }
+            
+            &.normal {
+                border-color: #0000ff;
+            }
+        }
+        
+        .card-header .project-name {
+            color: #000 !important;
+            font-weight: 900;
+        }
+    }
+} 

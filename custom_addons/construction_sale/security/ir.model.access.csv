@@ -1,0 +1,16 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_construction_product_wizard,construction.product.wizard,model_construction_product_wizard,base.group_user,1,1,1,1
+access_construction_product_line,construction.product.line,model_construction_product_line,base.group_user,1,1,1,1
+access_construction_quick_product_wizard,construction.quick.product.wizard,model_construction_quick_product_wizard,base.group_user,1,1,1,1
+access_construction_quote_builder_wizard,construction.quote.builder.wizard,model_construction_quote_builder_wizard,base.group_user,1,1,1,1
+access_construction_quote_product_wizard,construction.quote.product.wizard,model_construction_quote_product_wizard,base.group_user,1,1,1,1
+access_construction_import_email_wizard,construction.import.email.wizard,model_construction_import_email_wizard,base.group_user,1,1,1,1
+access_blg_quick_product_wizard,blg.quick.product.wizard,model_blg_quick_product_wizard,base.group_user,1,1,1,1
+access_blg_product_selection_wizard,blg.product.selection.wizard,model_blg_product_selection_wizard,base.group_user,1,1,1,1
+access_blg_create_quote_wizard,blg.create.quote.wizard,model_blg_create_quote_wizard,base.group_user,1,1,1,1
+access_blg_lot_navigation_wizard,blg.lot.navigation.wizard,model_blg_lot_navigation_wizard,base.group_user,1,1,1,1
+access_blg_product_selection_line,blg.product.selection.line,model_blg_product_selection_line,base.group_user,1,1,1,1
+access_chantier_compatibility,chantier,model_chantier,base.group_user,1,1,1,1
+access_blg_stage_compatibility,blg.stage,model_blg_stage,base.group_user,1,1,1,1
+access_blg_chapter_compatibility,blg.chapter,model_blg_chapter,base.group_user,1,1,1,1
+access_blg_lot_type_compatibility,blg.lot.type,model_blg_lot_type,base.group_user,1,1,1,1

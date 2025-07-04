@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Menu principal -->
+    <menuitem
+        id="menu_construction_root"
+        name="Construction"
+        sequence="10"/>
+
+    <!-- Action -->
+    <record id="action_construction_chantier" model="ir.actions.act_window">
+        <field name="name">Chantiers</field>
+        <field name="res_model">construction.chantier</field>
+        <field name="view_mode">kanban,form,list</field>
+    </record>
+
+    <!-- Menu avec l'action -->
+    <menuitem
+        id="menu_construction_chantier"
+        name="Chantiers"
+        action="action_construction_chantier"
+        parent="menu_construction_root"
+        sequence="10"/>
+
+<!--    &lt;!&ndash; Menu pour les visites &ndash;&gt;-->
+<!--    <menuitem-->
+<!--        id="menu_construction_visit"-->
+<!--        name="Visites"-->
+<!--        action="construction_base.action_visit"-->
+<!--        parent="menu_construction_root"-->
+<!--        sequence="20"/>-->
+</odoo>

@@ -1,21 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Vue Kanban Compacte pour la Gestion -->
+        <!-- Vue Kanban Moderne et Professionnelle pour la Gestion des Chantiers -->
         <record id="view_construction_chantier_management_kanban" model="ir.ui.view">
             <field name="name">construction.chantier.main.kanban</field>
             <field name="model">construction.chantier</field>
             <field name="arch" type="xml">
-                <kanban default_group_by="stage_id" quick_create="false"
-                        group_expand="1" group_create="false" group_delete="false" group_edit="false"
-                        class="blg_modern_kanban o_kanban_with_chapters">
+                <kanban default_group_by="stage_id"
+                        js_class="blg_chapter_kanban"
+                        quick_create="false"
+                        group_expand="_read_group_stage_id"
+                        group_create="false" group_delete="false" group_edit="false"
+                        class="blg_modern_kanban o_kanban_with_chapters"
+                        on_create="quick_create"
+                        create="1">
 
                     <!-- Champs essentiels -->
                     <field name="id"/>
-                    <field name="stage"/>
+                    <field name="stage_id"/>
                     <field name="chapter_name"/>
                     <field name="name"/>
                     <field name="address"/>
+                    <field name="client"/>
                     <field name="user_ids"/>
                     <field name="date_end_contract"/>
                     <field name="date_start_contract"/>
@@ -26,6 +32,9 @@
                     <field name="activity_state"/>
                     <field name="state"/>
                     <field name="create_date"/>
+                    <field name="currency_id"/>
+                    <field name="deadline_status"/>
+                    <field name="deadline_color"/>
 
                     <!-- Champs de visibilité -->
                     <field name="show_schedule_visit"/>
@@ -37,31 +46,25 @@
                                  colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
 
                     <templates>
-                        <!-- Carte Compacte et Moderne -->
+                        <!-- Carte Moderne et Interactive -->
                         <t t-name="kanban-box">
                             <div class="oe_kanban_global_click blg_card"
-                                 t-attf-class="#{record.days_remaining.raw_value &lt; 0 ? 'urgent' :
-                                               record.days_remaining.raw_value &lt; 7 ? 'warning' :
-                                               record.progress.raw_value === 100 ? 'completed' : 'normal'}">
+                                 t-attf-class="#{record.deadline_status.raw_value}">
 
-                                <!-- En-tête compact -->
+                                <!-- En-tête simplifié -->
                                 <div class="card-header">
                                     <div class="project-info">
                                         <h4 class="project-name">
                                             <field name="name"/>
                                         </h4>
-                                        <!-- Ajout du nom du chapitre -->
+                                        
+                                        <div class="client-info" t-if="record.client.raw_value">
+                                            <field name="client"/>
+                                        </div>
+                                        
                                         <div class="chapter-name">
-                                            <i class="fa fa-bookmark"/>
                                             <field name="chapter_name"/>
                                         </div>
-                                    </div>
-
-                                    <!-- Status indicator -->
-                                    <div class="status-dot"
-                                         t-attf-title="#{record.days_remaining.raw_value &lt; 0 ? 'En retard' :
-                                                       record.days_remaining.raw_value &lt; 7 ? 'Urgent' :
-                                                       record.progress.raw_value === 100 ? 'Terminé' : 'En cours'}">
                                     </div>
 
                                     <!-- Menu actions minimal -->
@@ -75,57 +78,52 @@
                                                 <a role="menuitem" type="edit" class="dropdown-item">
                                                     <i class="fa fa-edit"/> Modifier
                                                 </a>
-
+                                                <a role="menuitem" type="delete" class="dropdown-item">
+                                                    <i class="fa fa-trash-o"/> Supprimer
+                                                </a>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Corps principal -->
+                                <!-- Corps principal allégé -->
                                 <div class="card-body">
-                                    <!-- Adresse si présente -->
+                                    <!-- Adresse -->
                                     <div class="project-address" t-if="record.address.raw_value">
                                         <i class="fa fa-map-marker"/>
                                         <span><t t-esc="record.address.value"/></span>
                                     </div>
 
-                                    <!-- Métrics en ligne -->
+                                    <!-- Métriques essentielles seulement -->
                                     <div class="metrics-row">
-                                        <!-- Budget -->
                                         <div class="metric" t-if="record.total_cost.raw_value">
-                                            <i class="fa fa-euro text-success"/>
+                                            <i class="fa fa-euro"/>
                                             <field name="total_cost" widget="monetary"/>
                                         </div>
-
-                                        <!-- Échéance -->
-                                        <div class="metric deadline">
-                                            <i t-attf-class="fa fa-clock-o #{record.days_remaining.raw_value &lt; 0 ? 'text-danger' :
+                                        
+                                        <div class="metric">
+                                            <i t-attf-class="fa fa-clock-o #{record.days_remaining.raw_value &lt; 0 ? 'text-danger' : 
                                                               record.days_remaining.raw_value &lt; 7 ? 'text-warning' : 'text-muted'}"/>
-                                            <span t-attf-class="#{record.days_remaining.raw_value &lt; 0 ? 'text-danger' :
+                                            <span t-attf-class="#{record.days_remaining.raw_value &lt; 0 ? 'text-danger' : 
                                                                 record.days_remaining.raw_value &lt; 7 ? 'text-warning' : ''}">
                                                 <t t-if="record.days_remaining.raw_value &lt; 0">
                                                     <t t-esc="Math.abs(record.days_remaining.raw_value)"/>j retard
                                                 </t>
                                                 <t t-else="">
-                                                    <t t-esc="record.days_remaining.raw_value"/>j
+                                                    <t t-esc="record.days_remaining.raw_value"/>j restants
                                                 </t>
                                             </span>
                                         </div>
                                     </div>
-
+                                    
                                     <!-- Barre de progression simple -->
-                                    <div class="progress-bar-container">
-                                        <div class="progress-info">
-                                            <span class="progress-label">Avancement</span>
-                                            <span class="progress-value"><t t-esc="record.progress.raw_value"/>%</span>
-                                        </div>
-                                        <div class="progress-bar">
-                                            <div class="progress-fill"
-                                                 t-attf-style="width: #{record.progress.raw_value}%"
-                                                 t-attf-class="#{record.progress.raw_value === 100 ? 'completed' :
-                                                               record.progress.raw_value >= 50 ? 'good' : 'normal'}">
+                                    <div class="progress-section">
+                                        <div class="progress-bar-bg">
+                                            <div class="progress-bar-fill"
+                                                 t-attf-style="width: #{record.progress.raw_value}%">
                                             </div>
                                         </div>
+                                        <small class="progress-text"><t t-esc="record.progress.raw_value"/>%</small>
                                     </div>
                                 </div>
 
@@ -135,13 +133,9 @@
                                         <field name="user_ids" widget="many2many_avatar_user"
                                                options="{'display_name': False, 'max_avatars': 3}"/>
                                     </div>
+                                    
                                     <div class="activity-section">
                                         <field name="activity_ids" widget="kanban_activity"/>
-                                    </div>
-                                    <div class="date-section">
-                                        <small class="text-muted">
-                                            <field name="create_date" widget="date"/>
-                                        </small>
                                     </div>
                                 </div>
                             </div>
@@ -152,8 +146,8 @@
         </record>
 
         <!-- Vue Liste Avancée pour la Gestion Professionnelle -->
-        <record id="view_construction_chantier_management_tree" model="ir.ui.view">
-            <field name="name">construction.chantier.management.tree</field>
+        <record id="view_construction_chantier_management_list" model="ir.ui.view">
+            <field name="name">construction.chantier.management.list</field>
             <field name="model">construction.chantier</field>
             <field name="arch" type="xml">
                 <list string="Gestion des Chantiers"
@@ -169,7 +163,7 @@
                     <field name="name" string="Projet" required="1"/>
                     <field name="address" string="Chantier" required="1"/>
                     <field name="chapter_name" string="Phase" readonly="1"/>
-                    <field name="stage" string="Étape" widget="badge" readonly="1"/>
+                    <field name="stage_id" string="Étape" widget="badge" readonly="1"/>
 
                     <!-- Métriques financières -->
                     <field name="total_cost" widget="monetary" string="Budget" sum="Budget Total"/>
@@ -202,7 +196,6 @@
                 <calendar string="Planning Chantiers"
                           date_start="date_start_contract"
                           date_stop="date_end_contract"
-                          color="stage"
                           mode="month"
                           event_open_popup="true"
                           event_limit="5">
@@ -210,7 +203,7 @@
                     <field name="name"/>
                     <field name="address"/>
                     <field name="progress"/>
-                    <field name="stage"/>
+                    <field name="stage_id"/>
                     <field name="chapter_name"/>
                     <field name="user_ids"/>
                     <field name="days_remaining"/>
@@ -226,7 +219,7 @@
             <field name="arch" type="xml">
                 <graph string="Tableau de Bord Chantiers" type="bar" stacked="True">
                     <field name="chapter_name" type="row"/>
-                    <field name="stage" type="col"/>
+                    <field name="stage_id" type="col"/>
                     <field name="total_cost" type="measure"/>
                     <field name="id" type="measure" string="Nombre de projets"/>
                 </graph>
@@ -240,7 +233,7 @@
             <field name="arch" type="xml">
                 <pivot string="Analyse des Chantiers" display_quantity="1">
                     <field name="chapter_name" type="row"/>
-                    <field name="stage" type="col"/>
+                    <field name="stage_id" type="col"/>
                     <field name="total_cost" type="measure"/>
                     <field name="progress" type="measure"/>
                     <field name="days_remaining" type="measure"/>
@@ -274,5 +267,6 @@
                 </div>
             </field>
         </record>
+
     </data>
 </odoo>

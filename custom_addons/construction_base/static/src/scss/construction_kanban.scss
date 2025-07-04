@@ -1,0 +1,556 @@
+/* Modern Compact Kanban for BLG Construction */
+
+.blg_modern_kanban {
+    background: #f8f9fa;
+    padding: 8px;
+    
+    /* Groupes kanban optimisés */
+    .o_kanban_group {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        margin: 8px;
+        min-width: 280px;
+        max-width: 320px;
+        
+        /* Désactiver le drag and drop des groupes */
+        .o_kanban_group_header {
+            background: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+            padding: 12px 16px;
+            border-radius: 8px 8px 0 0;
+            cursor: default !important;
+            
+            .o_column_title {
+                font-weight: 600;
+                font-size: 14px;
+                color: #495057;
+                cursor: default !important;
+                pointer-events: none;
+            }
+            
+            .o_kanban_counter {
+                background: #6c757d;
+                color: white;
+                border-radius: 12px;
+                padding: 2px 8px;
+                font-size: 11px;
+                font-weight: 500;
+            }
+        }
+    }
+    
+    /* Cartes de projet compactes */
+    .blg_card {
+        margin: 8px;
+        border-radius: 6px;
+        background: white;
+        border: 1px solid #e9ecef;
+        transition: all 0.2s ease;
+        position: relative;
+        cursor: pointer;
+        
+        &:hover {
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-1px);
+        }
+        
+        /* Status styling avec bordure gauche */
+        &.urgent {
+            border-left: 4px solid #dc3545;
+            
+            .status-dot {
+                background: #dc3545;
+            }
+        }
+        
+        &.warning {
+            border-left: 4px solid #ffc107;
+            
+            .status-dot {
+                background: #ffc107;
+            }
+        }
+        
+        &.completed {
+            border-left: 4px solid #28a745;
+            
+            .status-dot {
+                background: #28a745;
+            }
+        }
+        
+        &.normal {
+            border-left: 4px solid #007bff;
+            
+            .status-dot {
+                background: #007bff;
+            }
+        }
+    }
+    
+    /* En-tête de carte */
+    .card-header {
+        padding: 12px;
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        border-bottom: 1px solid #f8f9fa;
+        
+        .project-info {
+            flex: 1;
+            min-width: 0;
+            
+            .project-name {
+                font-size: 14px;
+                font-weight: 600;
+                color: #212529;
+                margin: 0 0 4px 0;
+                line-height: 1.2;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            
+            .client-name {
+                font-size: 12px;
+                color: #6c757d;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                margin-bottom: 4px;
+            }
+            
+            /* Style pour le nom du chapitre */
+            .chapter-name {
+                font-size: 11px;
+                color: #007bff;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                
+                i {
+                    margin-right: 4px;
+                    width: 10px;
+                    font-size: 10px;
+                }
+            }
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin: 4px 8px 0 8px;
+            flex-shrink: 0;
+        }
+        
+        .card-menu {
+            .dropdown-toggle {
+                border: none;
+                background: none;
+                color: #6c757d;
+                padding: 2px 4px;
+                
+                &:hover {
+                    color: #495057;
+                    background: #f8f9fa;
+                    border-radius: 3px;
+                }
+            }
+        }
+    }
+    
+    /* Corps de carte */
+    .card-body {
+        padding: 0 12px 12px 12px;
+        
+        .project-address {
+            font-size: 11px;
+            color: #6c757d;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            
+            i {
+                margin-right: 4px;
+                width: 10px;
+            }
+            
+            span {
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        }
+        
+        .project-tags {
+            margin-bottom: 8px;
+            
+            .o_field_many2many_tags {
+                .badge {
+                    font-size: 9px;
+                    padding: 2px 6px;
+                    border-radius: 8px;
+                    margin-right: 2px;
+                }
+            }
+        }
+        
+        .metrics-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            
+            .metric {
+                display: flex;
+                align-items: center;
+                font-size: 11px;
+                
+                i {
+                    margin-right: 4px;
+                    width: 12px;
+                    text-align: center;
+                }
+            }
+        }
+        
+        .progress-bar-container {
+            margin-bottom: 8px;
+            
+            .progress-info {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 4px;
+                
+                .progress-label {
+                    font-size: 10px;
+                    color: #6c757d;
+                    font-weight: 500;
+                }
+                
+                .progress-value {
+                    font-size: 11px;
+                    font-weight: 600;
+                    color: #495057;
+                }
+            }
+            
+            .progress-bar {
+                height: 4px;
+                background: #e9ecef;
+                border-radius: 2px;
+                overflow: hidden;
+                
+                .progress-fill {
+                    height: 100%;
+                    border-radius: 2px;
+                    transition: width 0.3s ease;
+                    
+                    &.normal {
+                        background: #007bff;
+                    }
+                    
+                    &.good {
+                        background: #28a745;
+                    }
+                    
+                    &.completed {
+                        background: #28a745;
+                    }
+                }
+            }
+        }
+        
+        .indicators {
+            display: flex;
+            justify-content: space-around;
+            
+            .indicator {
+                display: flex;
+                align-items: center;
+                font-size: 10px;
+                color: #6c757d;
+                
+                i {
+                    margin-right: 3px;
+                    width: 12px;
+                    text-align: center;
+                }
+                
+                span {
+                    font-weight: 500;
+                }
+            }
+        }
+    }
+    
+    /* Pied de carte */
+    .card-footer {
+        padding: 8px 12px;
+        background: #f8f9fa;
+        border-top: 1px solid #e9ecef;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-radius: 0 0 6px 6px;
+        
+        .team-section,
+        .activity-section,
+        .date-section {
+            flex: 1;
+        }
+        
+        .activity-section {
+            text-align: center;
+        }
+        
+        .date-section {
+            text-align: right;
+            
+            small {
+                font-size: 9px;
+            }
+        }
+        
+        .team-section {
+            .o_field_many2many_avatar_user {
+                .o_tag {
+                    margin-right: 2px;
+                    
+                    img {
+                        width: 20px;
+                        height: 20px;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Styles pour l'organisation par chapitres */
+.o_kanban_with_chapters {
+    .blg-chapter-kanban-container {
+        width: 100%;
+        
+        .chapter-section {
+            margin-bottom: 2rem;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: white;
+            
+            .chapter-header {
+                background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+                color: white;
+                padding: 1rem;
+                border-radius: 8px 8px 0 0;
+                
+                .chapter-header-content {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    
+                    .chapter-title-section {
+                        display: flex;
+                        align-items: center;
+                        gap: 0.5rem;
+                        
+                        i {
+                            font-size: 1.25rem;
+                        }
+                        
+                        .chapter-title {
+                            font-size: 1.1rem;
+                            font-weight: 600;
+                            margin: 0;
+                        }
+                        
+                        .chapter-badge {
+                            background: rgba(255, 255, 255, 0.2);
+                            padding: 0.25rem 0.5rem;
+                            border-radius: 12px;
+                            font-size: 0.75rem;
+                        }
+                    }
+                    
+                    .chapter-progress-container {
+                        min-width: 100px;
+                        
+                        .chapter-progress-bar {
+                            height: 4px;
+                            background: rgba(255, 255, 255, 0.3);
+                            border-radius: 2px;
+                            overflow: hidden;
+                            
+                            .chapter-progress-fill {
+                                height: 100%;
+                                background: white;
+                                border-radius: 2px;
+                                transition: width 0.3s ease;
+                            }
+                        }
+                    }
+                }
+            }
+            
+            .stages-container {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 1rem;
+                padding: 1rem;
+                
+                .stage-column {
+                    flex: 1;
+                    min-width: 280px;
+                    
+                    .enhanced-stage-group {
+                        border: 1px solid #e9ecef;
+                        border-radius: 6px;
+                        
+                        .enhanced-stage-header {
+                            background: #f8f9fa;
+                            border-bottom: 1px solid #e9ecef;
+                            padding: 0.75rem;
+                            
+                            .stage-indicator {
+                                display: inline-block;
+                                margin-right: 0.5rem;
+                                
+                                i {
+                                    color: #007bff;
+                                    font-size: 0.75rem;
+                                }
+                            }
+                        }
+                        
+                        &.empty-stage {
+                            .empty-stage-body {
+                                padding: 2rem;
+                                text-align: center;
+                                
+                                .empty-stage-message {
+                                    color: #6c757d;
+                                    font-style: italic;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Empty state simple */
+.o_view_nocontent_empty_folder {
+    padding: 60px 20px;
+    
+    i {
+        opacity: 0.5;
+    }
+    
+    h3 {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 8px;
+    }
+    
+    p {
+        margin-bottom: 20px;
+    }
+}
+
+/* Responsive pour mobile */
+@media (max-width: 768px) {
+    .blg_modern_kanban {
+        .o_kanban_group {
+            min-width: 260px;
+            max-width: 280px;
+            margin: 4px;
+        }
+        
+        .blg_card {
+            margin: 4px;
+            
+            .card-header {
+                padding: 10px;
+                
+                .project-info {
+                    .project-name {
+                        font-size: 13px;
+                    }
+                    
+                    .client-name {
+                        font-size: 11px;
+                    }
+                    
+                    .chapter-name {
+                        font-size: 10px;
+                    }
+                }
+            }
+            
+            .card-body {
+                padding: 0 10px 10px 10px;
+            }
+            
+            .card-footer {
+                padding: 6px 10px;
+            }
+        }
+    }
+    
+    .o_kanban_with_chapters {
+        .blg-chapter-kanban-container {
+            .chapter-section {
+                .stages-container {
+                    flex-direction: column;
+                    
+                    .stage-column {
+                        min-width: 100%;
+                    }
+                }
+            }
+        }
+    }
+}
+
+/* Optimisation pour beaucoup de cartes */
+.blg_modern_kanban {
+    .o_kanban_group {
+        /* Scroll optimisé pour les colonnes avec beaucoup de cartes */
+        .o_kanban_record {
+            /* Hauteur fixe pour optimiser le scroll */
+            min-height: auto;
+        }
+    }
+    
+    /* Mode compact pour les listes longues */
+    &.compact-mode {
+        .blg_card {
+            margin: 4px 8px;
+            
+            .card-header {
+                padding: 8px;
+            }
+            
+            .card-body {
+                padding: 0 8px 8px 8px;
+                
+                .progress-bar-container,
+                .indicators,
+                .project-tags {
+                    margin-bottom: 6px;
+                }
+            }
+            
+            .card-footer {
+                padding: 6px 8px;
+            }
+        }
+    }
+} 

@@ -1,0 +1,581 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vue Formulaire Professionnelle BTP -->
+        <record id="view_construction_chantier_form_pro" model="ir.ui.view">
+            <field name="name">construction.chantier.form.professional</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <form string="Chantier" class="o_chantier_form">
+                    <header>
+                        <!-- Boutons de workflow intelligents -->
+                        <button name="action_move_to_next_stage" string="▶ Étape suivante" type="object" 
+                                class="oe_highlight" icon="fa-arrow-right"
+                                invisible="state in ['abandoned', 'completed']"/>
+                        <button name="action_move_to_previous_stage" string="◀ Étape précédente" type="object"
+                                class="btn-secondary" icon="fa-arrow-left"
+                                invisible="state in ['abandoned', 'completed']"/>
+                        
+                        <!-- Actions rapides contextuelles -->
+                        <button name="action_schedule_visit" string="📅 Planifier visite" type="object" 
+                                class="btn-info" invisible="not show_schedule_visit"/>
+                        <button name="action_create_intelligent_quote" string="💰 Créer devis" type="object"
+                                class="btn-success" invisible="not show_create_quote"/>
+                        
+                        <!-- Barre de statut -->
+                        <field name="state" widget="statusbar" statusbar_visible="active,suspended,completed"/>
+                    </header>
+
+                    <sheet>
+                        <!-- Boutons intelligents (statistiques) -->
+                        <div class="oe_button_box" name="button_box">
+                            <button name="action_view_all_visits" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_value"><field name="visit_ids" widget="statinfo"/></span>
+                                    <span class="o_stat_text">Visites</span>
+                                </div>
+                            </button>
+                            
+                            <button name="action_view_budget" type="object" class="oe_stat_button" icon="fa-euro">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_value"><field name="total_cost" widget="monetary"/></span>
+                                    <span class="o_stat_text">Budget</span>
+                                </div>
+                            </button>
+                            
+                            <button name="action_view_subcontractors" type="object" class="oe_stat_button" icon="fa-users">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_value"><field name="subcontractor_count"/></span>
+                                    <span class="o_stat_text">Sous-traitants</span>
+                                </div>
+                            </button>
+                            
+                            <button name="action_view_quotations" type="object" class="oe_stat_button" icon="fa-file-text-o">
+                                <div class="o_field_widget o_stat_info">
+                                    <span class="o_stat_value"><field name="quotation_count"/></span>
+                                    <span class="o_stat_text">Devis</span>
+                                </div>
+                            </button>
+                        </div>
+
+                        <!-- Rubans de statut -->
+                        <widget name="web_ribbon" title="Terminé" bg_color="bg-success" invisible="state != 'completed'"/>
+                        <widget name="web_ribbon" title="Suspendu" bg_color="bg-warning" invisible="state != 'suspended'"/>
+                        <widget name="web_ribbon" title="Abandonné" bg_color="bg-danger" invisible="state != 'abandoned'"/>
+
+                        <!-- Titre et informations principales -->
+                        <div class="oe_title">
+                            <label for="name" class="oe_edit_only"/>
+                            <h1><field name="name" placeholder="Ex: Rénovation Villa Dupont" required="1"/></h1>
+                            <h3><field name="client" placeholder="Sélectionner un client" required="1"/></h3>
+                            <div class="text-muted">
+                                <field name="reference" readonly="1"/>
+                            </div>
+                        </div>
+
+                        <!-- Informations principales en colonnes -->
+                        <group>
+                            <group string="📍 Localisation &amp; Contact">
+                                <field name="address" placeholder="Adresse complète du chantier" required="1"/>
+                                <field name="city"/>
+                                <field name="zip_code"/>
+                                <field name="phone" placeholder="Téléphone du chantier"/>
+                            </group>
+                            
+                            <group string="🔄 Workflow &amp; Progression">
+                                <field name="chapter_name" readonly="1" widget="badge"/>
+                                <field name="stage_id" readonly="1" widget="badge"/>
+                                <field name="progress" widget="progressbar"/>
+                                <field name="days_remaining" 
+                                       decoration-danger="days_remaining &lt; 0"
+                                       decoration-warning="days_remaining &lt; 7"
+                                       decoration-success="days_remaining &gt; 30"/>
+                                <field name="deadline_status" readonly="1" widget="badge"/>
+                            </group>
+                        </group>
+
+                        <!-- Section validation workflow avec style moderne -->
+                        <group string="✅ Validation du workflow" name="workflow_validation" class="workflow-section">
+                            <field name="stage_validation_info" readonly="1" widget="text" nolabel="1"
+                                   class="workflow-info-text"/>
+                        </group>
+
+                        <!-- Planning détaillé -->
+                        <group string="📅 Planning du projet">
+                            <group string="Dates contractuelles">
+                                <field name="date_start_contract"/>
+                                <field name="date_end_contract"/>
+                                <field name="duration_planned" readonly="1"/>
+                                <field name="client_approval_date"/>
+                            </group>
+                            <group string="Dates réelles">
+                                <field name="date_start_actual"/>
+                                <field name="date_end_actual"/>
+                                <field name="duration_actual" readonly="1" 
+                                       decoration-danger="duration_actual &gt; duration_planned"/>
+                                <field name="date_start_internal"/>
+                                <field name="date_end_internal"/>
+                            </group>
+                        </group>
+
+                        <!-- Onglets modernisés -->
+                        <notebook>
+                            <!-- Onglet Détails du projet -->
+                            <page string="📋 Détails du projet" name="project_details">
+                                <group>
+                                    <group string="👥 Équipe &amp; Responsabilités">
+                                        <field name="user_ids" widget="many2many_tags"/>
+                                        <field name="tag_ids" widget="many2many_tags" 
+                                               options="{'color_field': 'color', 'no_create_edit_menu': True}"/>
+                                    </group>
+                                    <group string="📏 Caractéristiques techniques">
+                                        <field name="surface_m2"/>
+                                        <field name="nb_levels"/>
+                                        <field name="permit_number"/>
+                                        <field name="permit_date"/>
+                                    </group>
+                                </group>
+                                
+                                <separator string="Description détaillée des travaux"/>
+                                <field name="description" placeholder="Description complète des travaux à réaliser..." nolabel="1"/>
+                                
+                                <separator string="Notes internes"/>
+                                <field name="notes" placeholder="Notes internes, remarques, points d'attention..." nolabel="1"/>
+                            </page>
+                            
+                            <!-- Onglet Visites techniques -->
+                            <page string="🔍 Visites techniques" name="visits">
+                                <field name="visit_ids">
+                                    <list editable="bottom" decoration-success="state == 'completed'" 
+                                          decoration-warning="state == 'planned'" decoration-info="state == 'draft'">
+                                        <field name="name"/>
+                                        <field name="date"/>
+                                        <field name="visit_type"/>
+                                        <field name="state" widget="badge"/>
+                                        <field name="notes"/>
+                                        <field name="report"/>
+                                    </list>
+                                </field>
+                                <div class="mt-3">
+                                    <button name="action_schedule_visit" type="object"
+                                            string="➕ Planifier nouvelle visite" class="btn btn-primary"/>
+                                </div>
+                            </page>
+
+                            <!-- Onglet Lots de travaux -->
+                            <page string="🏗️ Lots de travaux" name="lots">
+                                <field name="lots_ids">
+                                    <list editable="bottom" decoration-success="is_finished" 
+                                          decoration-muted="not is_finished">
+                                        <field name="name"/>
+                                        <field name="code"/>
+                                        <field name="price" widget="monetary" sum="Total"/>
+                                        <field name="is_finished" widget="boolean_toggle"/>
+                                        <field name="subcontractor_ids"/>
+                                    </list>
+                                </field>
+                                <div class="mt-3">
+                                    <button name="action_view_budget" type="object"
+                                            string="💰 Voir budget détaillé" class="btn btn-info"/>
+                                </div>
+                            </page>
+
+                            <!-- Onglet Devis et commandes -->
+                            <page string="💰 Devis &amp; Commandes" name="quotations">
+                                <field name="quotation_ids">
+                                    <list decoration-success="state == 'sale'" decoration-info="state == 'sent'"
+                                          decoration-warning="state == 'draft'" decoration-muted="state == 'cancel'">
+                                        <field name="name"/>
+                                        <field name="date_order"/>
+                                        <field name="state" widget="badge"/>
+                                        <field name="amount_total" widget="monetary" sum="Total"/>
+                                        <field name="validity_date"/>
+                                    </list>
+                                </field>
+                                <div class="mt-3">
+                                    <button name="action_create_intelligent_quote" type="object"
+                                            string="➕ Créer nouveau devis" class="btn btn-success"/>
+                                </div>
+                            </page>
+
+                            <!-- Onglet Documents -->
+                            <page string="📁 Documents" name="documents">
+                                <field name="document_ids">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="document_type"/>
+                                        <field name="create_date"/>
+                                        <field name="filename"/>
+                                    </list>
+                                </field>
+                            </page>
+
+                            <!-- Onglet Sous-traitants -->
+                            <page string="👷 Sous-traitants" name="subcontractors">
+                                <field name="subcontractors">
+                                    <list>
+                                        <field name="name"/>
+                                        <field name="phone"/>
+                                        <field name="email"/>
+                                        <field name="is_company"/>
+                                    </list>
+                                </field>
+                                <div class="mt-3">
+                                    <button name="action_view_subcontractors" type="object"
+                                            string="👥 Gérer sous-traitants" class="btn btn-secondary"/>
+                                </div>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    
+                    <!-- Chatter pour communications -->
+                    <chatter/>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vue Liste Professionnelle avec décorations avancées -->
+        <record id="view_construction_chantier_list_pro" model="ir.ui.view">
+            <field name="name">construction.chantier.list.professional</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <list string="Gestion des Chantiers" 
+                      sample="1" multi_edit="1" export_xlsx="1" editable="bottom"
+                      decoration-danger="days_remaining &lt; 0 and date_end_contract"
+                      decoration-warning="days_remaining &lt; 7 and days_remaining &gt;= 0"
+                      decoration-success="progress == 100"
+                      decoration-muted="state in ['completed', 'abandoned']"
+                      decoration-info="progress &gt; 0 and progress &lt; 25"
+                      decoration-bf="days_remaining &lt; 0">
+
+                    <!-- Colonnes principales optimisées -->
+                    <field name="name" string="Projet" required="1"/>
+                    <field name="client" string="Client" required="1"/>
+                    <field name="address" string="Chantier" required="1"/>
+                    <field name="chapter_name" string="Phase" readonly="1" widget="badge"/>
+                    <field name="stage_id" string="Étape" widget="badge" readonly="1"/>
+
+                    <!-- Métriques financières -->
+                    <field name="total_cost" widget="monetary" string="Budget" sum="Budget Total"/>
+                    <field name="progress" widget="progressbar" string="Avancement %" readonly="1"/>
+
+                    <!-- Planning -->
+                    <field name="date_start_contract" string="Début" optional="show"/>
+                    <field name="date_end_contract" string="Échéance" required="1"/>
+                    <field name="days_remaining" string="J. restants" readonly="1" 
+                           decoration-danger="days_remaining &lt; 0"
+                           decoration-warning="days_remaining &lt; 7"/>
+
+                    <!-- Indicateurs d'activité -->
+                    <field name="visit_ids" string="Visites" widget="statinfo" readonly="1"/>
+                    <field name="subcontractor_count" string="S-T" readonly="1"/>
+                    <field name="quotation_count" string="Devis" readonly="1"/>
+
+                    <!-- Équipe et responsabilité -->
+                    <field name="user_ids" widget="many2many_avatar_user" string="Équipe"/>
+                    <field name="state" string="État" widget="badge"/>
+
+                    <!-- Colonnes optionnelles -->
+                    <field name="city" string="Ville" optional="hide"/>
+                    <field name="surface_m2" string="Surface (m²)" optional="hide"/>
+                    <field name="date_start_actual" string="Début effectif" optional="hide"/>
+                    <field name="duration_planned" string="Durée prévue" optional="hide"/>
+                    <field name="create_date" string="Créé le" readonly="1" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Vue Kanban Professionnelle -->
+        <record id="view_construction_chantier_kanban_pro" model="ir.ui.view">
+            <field name="name">construction.chantier.kanban.professional</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="stage_id" quick_create="false"
+                        group_expand="_read_group_stage_id" group_create="false" group_delete="false" group_edit="false"
+                        class="o_construction_kanban o_kanban_with_chapters">
+
+                    <!-- Champs essentiels -->
+                    <field name="id"/>
+                    <field name="stage_id"/>
+                    <field name="chapter_name"/>
+                    <field name="name"/>
+                    <field name="client"/>
+                    <field name="address"/>
+                    <field name="user_ids"/>
+                    <field name="tag_ids"/>
+                    <field name="date_end_contract"/>
+                    <field name="date_start_contract"/>
+                    <field name="progress"/>
+                    <field name="days_remaining"/>
+                    <field name="total_cost"/>
+                    <field name="activity_ids"/>
+                    <field name="activity_state"/>
+                    <field name="state"/>
+                    <field name="deadline_status"/>
+                    <field name="deadline_color"/>
+                    <field name="subcontractor_count"/>
+                    <field name="quotation_count"/>
+                    <field name="visit_ids"/>
+                    <field name="create_date"/>
+
+                    <!-- Champs de visibilité -->
+                    <field name="show_schedule_visit"/>
+                    <field name="show_create_quote"/>
+                    <field name="show_assign_subcontractors"/>
+
+                    <progressbar field="activity_state"
+                                 colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
+
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_global_click o_construction_card"
+                                 t-attf-class="#{record.deadline_status.raw_value}">
+
+                                <!-- En-tête de carte -->
+                                <div class="card-header">
+                                    <div class="project-info">
+                                        <h4 class="project-name">
+                                            <field name="name"/>
+                                        </h4>
+                                        <div class="client-name">
+                                            <i class="fa fa-user"/>
+                                            <field name="client"/>
+                                        </div>
+                                        <div class="chapter-name">
+                                            <i class="fa fa-bookmark"/>
+                                            <field name="chapter_name"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Indicateur de statut -->
+                                    <div class="status-indicators">
+                                        <div class="status-dot" 
+                                             t-attf-class="#{record.deadline_status.raw_value}"
+                                             t-attf-title="#{record.deadline_status.raw_value}">
+                                        </div>
+                                    </div>
+
+                                    <!-- Menu actions -->
+                                    <div class="card-menu">
+                                        <div class="o_dropdown_kanban dropdown">
+                                            <a class="dropdown-toggle" role="button"
+                                               data-bs-toggle="dropdown" href="#" aria-label="Actions">
+                                                <i class="fa fa-ellipsis-v"/>
+                                            </a>
+                                            <div class="dropdown-menu dropdown-menu-end">
+                                                <a role="menuitem" type="edit" class="dropdown-item">
+                                                    <i class="fa fa-edit"/> Modifier
+                                                </a>
+                                                <div class="dropdown-divider"/>
+                                                <a t-if="record.show_schedule_visit.raw_value"
+                                                   name="action_schedule_visit" type="object" class="dropdown-item">
+                                                    <i class="fa fa-calendar"/> Planifier visite
+                                                </a>
+                                                <a t-if="record.show_create_quote.raw_value"
+                                                   name="action_create_intelligent_quote" type="object" class="dropdown-item">
+                                                    <i class="fa fa-file-text-o"/> Créer devis
+                                                </a>
+                                                <a t-if="record.show_assign_subcontractors.raw_value"
+                                                   name="action_view_subcontractors" type="object" class="dropdown-item">
+                                                    <i class="fa fa-users"/> Sous-traitants
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Corps de carte -->
+                                <div class="card-body">
+                                    <!-- Adresse -->
+                                    <div class="project-address" t-if="record.address.raw_value">
+                                        <i class="fa fa-map-marker"/>
+                                        <span><t t-esc="record.address.value"/></span>
+                                    </div>
+
+                                    <!-- Tags -->
+                                    <div class="project-tags" t-if="record.tag_ids.raw_value.length">
+                                        <field name="tag_ids" widget="many2many_tags" 
+                                               options="{'color_field': 'color', 'no_create': True}"/>
+                                    </div>
+
+                                    <!-- Métriques -->
+                                    <div class="metrics-row">
+                                        <!-- Budget -->
+                                        <div class="metric" t-if="record.total_cost.raw_value">
+                                            <i class="fa fa-euro text-success"/>
+                                            <field name="total_cost" widget="monetary"/>
+                                        </div>
+
+                                        <!-- Échéance -->
+                                        <div class="metric deadline">
+                                            <i class="fa fa-clock-o" t-attf-class="fa fa-clock-o #{record.deadline_color.raw_value == 1 ? 'text-danger' : record.deadline_color.raw_value == 2 ? 'text-warning' : 'text-muted'}"/>
+                                            <span t-attf-class="#{record.deadline_color.raw_value == 1 ? 'text-danger' : record.deadline_color.raw_value == 2 ? 'text-warning' : ''}">
+                                                <t t-if="record.days_remaining.raw_value == 0">
+                                                    En retard
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-esc="record.days_remaining.raw_value"/>j
+                                                </t>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Barre de progression -->
+                                    <div class="progress-section">
+                                        <div class="progress-info">
+                                            <span class="progress-label">Avancement</span>
+                                            <span class="progress-value"><t t-esc="record.progress.raw_value"/>%</span>
+                                        </div>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar"
+                                                 t-attf-style="width: #{record.progress.raw_value}%"
+                                                 t-attf-class="#{record.progress.raw_value === 100 ? 'bg-success' :
+                                                               record.progress.raw_value >= 75 ? 'bg-info' :
+                                                               record.progress.raw_value >= 50 ? 'bg-primary' : 'bg-warning'}">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Indicateurs compacts -->
+                                    <div class="indicators">
+                                        <div class="indicator" title="Visites">
+                                            <i class="fa fa-calendar"/>
+                                            <span><field name="visit_ids" widget="statinfo"/></span>
+                                        </div>
+                                        <div class="indicator" title="Sous-traitants">
+                                            <i class="fa fa-users"/>
+                                            <span><field name="subcontractor_count"/></span>
+                                        </div>
+                                        <div class="indicator" title="Devis">
+                                            <i class="fa fa-file-text-o"/>
+                                            <span><field name="quotation_count"/></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Pied de carte -->
+                                <div class="card-footer bg-light">
+                                    <div class="team-section">
+                                        <field name="user_ids" widget="many2many_avatar_user"
+                                               options="{'display_name': False, 'max_avatars': 3}"/>
+                                    </div>
+                                    <div class="activity-section">
+                                        <field name="activity_ids" widget="kanban_activity"/>
+                                    </div>
+                                    <div class="date-section">
+                                        <small class="text-muted">
+                                            <field name="create_date" widget="date"/>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Vue Recherche Avancée -->
+        <record id="view_construction_chantier_search_pro" model="ir.ui.view">
+            <field name="name">construction.chantier.search.professional</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <search string="Rechercher Chantiers">
+                    <field name="name" string="Nom du projet" filter_domain="[('name', 'ilike', self)]"/>
+                    <field name="client" string="Client"/>
+                    <field name="address" string="Adresse" filter_domain="[('address', 'ilike', self)]"/>
+                    <field name="city" string="Ville"/>
+                    <field name="stage_id" string="Étape"/>
+                    <field name="chapter_name" string="Phase"/>
+                    <field name="user_ids" string="Équipe"/>
+
+                    <!-- Filtres prédéfinis intelligents -->
+                    <filter string="🏃 Mes projets" name="my_projects" domain="[('user_ids', 'in', uid)]"/>
+                    <filter string="⚡ Projets actifs" name="active_projects" domain="[('state', '=', 'active')]"/>
+                    <separator/>
+                    <filter string="🔴 En retard" name="overdue"
+                            domain="[('days_remaining', '&lt;', 0), ('date_end_contract', '!=', False)]"/>
+                    <filter string="🟠 Urgent (7j)" name="urgent"
+                            domain="[('days_remaining', '&lt;', 7), ('days_remaining', '&gt;=', 0)]"/>
+                    <filter string="🟡 Attention (30j)" name="warning"
+                            domain="[('days_remaining', '&lt;', 30), ('days_remaining', '&gt;=', 7)]"/>
+                    <separator/>
+                    <filter string="✅ Terminés" name="completed" domain="[('state', '=', 'completed')]"/>
+                    <filter string="⏸️ Suspendus" name="suspended" domain="[('state', '=', 'suspended')]"/>
+                    <filter string="❌ Abandonnés" name="abandoned" domain="[('state', '=', 'abandoned')]"/>
+                    <separator/>
+                    <filter string="🆘 Sans responsable" name="no_user" domain="[('user_ids', '=', False)]"/>
+                    <filter string="📈 Progression &gt; 50%" name="progress_good" domain="[('progress', '&gt;', 50)]"/>
+                    <filter string="💰 Budget &gt; 50k" name="big_budget" domain="[('total_cost', '&gt;', 50000)]"/>
+
+                    <!-- Groupements intelligents -->
+                    <separator/>
+                    <group expand="0" string="📊 Grouper par">
+                        <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
+                        <filter string="Phase" name="group_chapter" context="{'group_by': 'chapter_name'}"/>
+                        <filter string="Étape" name="group_stage" context="{'group_by': 'stage_id'}"/>
+                        <filter string="Client" name="group_client" context="{'group_by': 'client'}"/>
+                        <filter string="Ville" name="group_city" context="{'group_by': 'city'}"/>
+                        <filter string="Responsable" name="group_user" context="{'group_by': 'user_ids'}"/>
+                        <filter string="Mois de création" name="group_create_month"
+                                context="{'group_by': 'create_date:month'}"/>
+                        <filter string="Échéance (mois)" name="group_deadline_month"
+                                context="{'group_by': 'date_end_contract:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Actions spécialisées -->
+        <record id="action_construction_chantier_pro" model="ir.actions.act_window">
+            <field name="name">🏗️ Gestion des Chantiers</field>
+            <field name="res_model">construction.chantier</field>
+            <field name="view_mode">kanban,list,form,calendar,graph,pivot</field>
+            <field name="view_id" ref="view_construction_chantier_kanban_pro"/>
+            <field name="search_view_id" ref="view_construction_chantier_search_pro"/>
+            <field name="context">{
+                'search_default_active_projects': 1,
+                'group_by': 'stage_id'
+            }</field>
+            <field name="help" type="html">
+                <div class="o_view_nocontent_empty_folder">
+                    <div class="text-center">
+                        <i class="fa fa-building fa-3x text-muted mb-3"/>
+                        <h3>Aucun chantier en cours</h3>
+                        <p class="text-muted">
+                            Créez votre premier projet de construction pour commencer
+                        </p>
+                        <button class="btn btn-primary">
+                            <i class="fa fa-plus"/> Nouveau Chantier
+                        </button>
+                    </div>
+                </div>
+            </field>
+        </record>
+
+        <!-- Action Dashboard -->
+        <record id="action_construction_dashboard" model="ir.actions.act_window">
+            <field name="name">📊 Tableau de Bord</field>
+            <field name="res_model">construction.chantier</field>
+            <field name="view_mode">kanban,graph,pivot</field>
+            <field name="view_id" ref="view_construction_chantier_kanban_pro"/>
+            <field name="search_view_id" ref="view_construction_chantier_search_pro"/>
+            <field name="context">{
+                'search_default_active_projects': 1,
+                'search_default_my_projects': 1
+            }</field>
+        </record>
+
+        <!-- Action Planning -->
+        <record id="action_construction_planning" model="ir.actions.act_window">
+            <field name="name">📅 Planning Construction</field>
+            <field name="res_model">construction.chantier</field>
+            <field name="view_mode">calendar,kanban,list,form</field>
+            <field name="search_view_id" ref="view_construction_chantier_search_pro"/>
+            <field name="context">{
+                'search_default_active_projects': 1
+            }</field>
+        </record>
+
+    </data>
+</odoo>

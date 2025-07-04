@@ -5,7 +5,8 @@ from odoo.exceptions import ValidationError
 class Visit(models.Model):
     _name = 'construction.visit'
     _description = 'Construction Visit'
-
+    _inherit = ['mail.thread', 'mail.activity.mixin']
+    _order = 'date desc'
     name = fields.Char('Name', required=True, translate=True)
     description = fields.Text('Description', translate=True)
     chantier_id = fields.Many2one('construction.chantier', string='Chantier', required=True, ondelete='cascade')

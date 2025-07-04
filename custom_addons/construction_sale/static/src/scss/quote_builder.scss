@@ -1,0 +1,46 @@
+.cart_summary {
+    padding: 10px;
+    margin-bottom: 20px;
+
+    .alert {
+        margin-bottom: 0;
+    }
+}
+
+.lot_buttons {
+    .lot_card {
+        .btn {
+            border-radius: 8px;
+            font-weight: bold;
+
+            &:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            }
+        }
+    }
+}
+
+.quote_builder_form {
+    .panel {
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    .panel-heading {
+        border-radius: 8px 8px 0 0;
+    }
+}
+
+// Style pour les lignes du panier
+.cart_line {
+    &.option {
+        background-color: #fff3cd;
+        border-left: 4px solid #ffc107;
+    }
+
+    &.alternative {
+        background-color: #e2e3e5;
+        border-left: 4px solid #6c757d;
+    }
+}

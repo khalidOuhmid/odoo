@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Extension de la vue formulaire sale.order -->
+        <record id="view_order_form_construction" model="ir.ui.view">
+            <field name="name">sale.order.form.construction</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                <!-- Ajouter le champ chantier dans l'en-tête -->
+                <field name="partner_id" position="after">
+                    <field name="chantier_id" readonly="state not in ['draft', 'sent']"/>
+                </field>
+                
+                <!-- Ajouter les lots après le chantier -->
+                <field name="chantier_id" position="after">
+                    <field name="lot_ids" widget="many2many_tags" 
+                           invisible="not chantier_id"/>
+                </field>
+                
+                <!-- Ajouter une note d'aide pour l'utilisation des lots -->
+                <xpath expr="//field[@name='order_line']" position="after">
+                    <div class="alert alert-info" invisible="not chantier_id" role="alert">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <strong><i class="fa fa-lightbulb-o"/> Aide pour les devis par lots :</strong>
+                                <ul class="mb-0 mt-2">
+                                    <li>Utilisez <strong>"📋 Organiser par lots"</strong> pour créer les sections automatiquement</li>
+                                    <li>Cliquez <strong>"➕ Ajouter produit"</strong> pour ajouter des produits par lot</li>
+                                    <li>Chaque produit peut être localisé (pièce, étage, numéro)</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-4 text-right">
+                                <small class="text-muted">
+                                    <i class="fa fa-tags"/> Lots configurés dans ce devis
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </xpath>
+                
+                <!-- Ajouter des boutons dans l'en-tête pour la gestion par lots -->
+                <button name="action_quotation_send" position="before">
+                    <button name="action_create_lot_sections" type="object" 
+                            string="📋 Organiser par lots" class="btn-secondary"
+                            invisible="not chantier_id or state not in ['draft', 'sent']"/>
+                    <button name="action_add_product_by_lot" type="object" 
+                            string="➕ Ajouter produit" class="btn-primary"
+                            invisible="not chantier_id or state not in ['draft', 'sent']"/>
+                </button>
+            </field>
+        </record>
+
+        <!-- Vue wizard de sélection de lot -->
+        <record id="view_lot_selection_wizard_form" model="ir.ui.view">
+            <field name="name">construction.lot.selection.wizard.form</field>
+            <field name="model">construction.lot.selection.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Sélectionner un lot">
+                    <sheet>
+                        <group>
+                            <field name="sale_order_id" invisible="1"/>
+                            <field name="lot_ids" invisible="1"/>
+                            <field name="selected_lot_id" domain="[('id', 'in', lot_ids)]" required="1"/>
+                        </group>
+                        <div class="alert alert-info">
+                            <i class="fa fa-info-circle"/> Sélectionnez le lot pour lequel vous voulez ajouter un produit.
+                        </div>
+                    </sheet>
+                    <footer>
+                        <button name="action_open_product_wizard" 
+                                string="Continuer" 
+                                type="object" 
+                                class="btn-primary"/>
+                        <button string="Annuler" 
+                                class="btn-secondary" 
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action pour le wizard de sélection de lot -->
+        <record id="action_lot_selection_wizard" model="ir.actions.act_window">
+            <field name="name">Sélectionner un lot</field>
+            <field name="res_model">construction.lot.selection.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+        <!-- Extension de la vue formulaire des devis -->
+        <record id="view_sale_order_form_construction_split" model="ir.ui.view">
+            <field name="name">sale.order.form.construction.split</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                
+                <!-- Ajouter les boutons dans l'en-tête -->
+                <xpath expr="//button[@name='action_quotation_send']" position="after">
+                    <!-- Bouton découper le devis -->
+                    <button name="action_split_quote" 
+                            type="object" 
+                            class="btn-warning" 
+                            string="Découper en lots"
+                            invisible="state not in ['draft', 'sent', 'sale', 'validated'] or not chantier_id"
+                            help="Découper ce devis en bons de commande par lots et sous-traitants">
+                        <i class="fa fa-scissors"/>
+                    </button>
+                </xpath>
+
+                <!-- Ajouter bouton voir bons de commande après les autres boutons -->
+                <xpath expr="//button[@name='action_quotation_send']" position="after">
+                    <button name="action_view_purchase_orders" 
+                            type="object" 
+                            class="btn-info" 
+                            string="Bons de commande"
+                            invisible="purchase_order_count == 0">
+                        <i class="fa fa-file-text-o"/>
+                    </button>
+                </xpath>
+
+                <!-- Ajouter les états personnalisés dans la statusbar -->
+                <xpath expr="//field[@name='state']" position="attributes">
+                    <attribute name="statusbar_visible">draft,sent,sale,validated,split,done</attribute>
+                </xpath>
+
+                <!-- Ajouter les informations de découpage -->
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="chantier_id" 
+                           domain="[('client', '=', partner_id)]"
+                           context="{'default_client': partner_id}"
+                           options="{'no_create': True}"/>
+                </xpath>
+
+                <!-- Ajouter statistiques de découpage -->
+                <xpath expr="//field[@name='amount_total']" position="after">
+                    <field name="is_split" invisible="1"/>
+                    <field name="purchase_order_count" invisible="1"/>
+                </xpath>
+
+                <!-- Ajouter onglet pour les bons de commande -->
+                <xpath expr="//page[last()]" position="after">
+                    <page string="Bons de commande" 
+                          name="purchase_orders" 
+                          invisible="purchase_order_count == 0">
+                        
+                        <div class="alert alert-info" role="alert" invisible="purchase_order_count == 0">
+                            <strong>
+                                <i class="fa fa-info-circle"/>
+                                Ce devis a été découpé en <field name="purchase_order_count"/> bon(s) de commande.
+                            </strong>
+                        </div>
+
+                        <field name="purchase_order_lot_ids" readonly="1">
+                            <tree decoration-info="state == 'draft'"
+                                  decoration-warning="state == 'sent'"
+                                  decoration-success="state == 'confirmed'"
+                                  decoration-muted="state == 'cancel'">
+                                <field name="name"/>
+                                <field name="partner_id"/>
+                                <field name="lot_id"/>
+                                <field name="date_planned"/>
+                                <field name="amount_total" widget="monetary"/>
+                                <field name="state" widget="badge"/>
+                                <field name="currency_id" invisible="1"/>
+                            </tree>
+                        </field>
+                    </page>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Extension de la vue liste des devis -->
+        <record id="view_sale_order_tree_construction_split" model="ir.ui.view">
+            <field name="name">sale.order.tree.construction.split</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_quotation_tree"/>
+            <field name="arch" type="xml">
+                
+                <!-- Ajouter colonnes pour le découpage -->
+                <xpath expr="//field[@name='amount_total']" position="after">
+                    <field name="chantier_id" optional="show"/>
+                    <field name="purchase_order_count" string="BDC" optional="show"/>
+                    <field name="is_split" string="Découpé" widget="boolean_toggle" optional="hide"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Smart button pour les bons de commande -->
+        <record id="view_sale_order_form_smart_button" model="ir.ui.view">
+            <field name="name">sale.order.form.smart.button</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_order_form"/>
+            <field name="arch" type="xml">
+                
+                <!-- Ajouter smart button -->
+                <xpath expr="//div[hasclass('oe_button_box')]" position="inside">
+                    <button name="action_view_purchase_orders" 
+                            type="object" 
+                            class="oe_stat_button" 
+                            icon="fa-file-text-o"
+                            invisible="purchase_order_count == 0">
+                        <field name="purchase_order_count" widget="statinfo" string="Bons de commande"/>
+                    </button>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Vue kanban avec indicateur de découpage -->
+        <record id="view_sale_order_kanban_construction_split" model="ir.ui.view">
+            <field name="name">sale.order.kanban.construction.split</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_sale_order_kanban"/>
+            <field name="arch" type="xml">
+                
+                <!-- Ajouter champs nécessaires -->
+                <xpath expr="//field[@name='state']" position="after">
+                    <field name="is_split"/>
+                    <field name="purchase_order_count"/>
+                    <field name="chantier_id"/>
+                </xpath>
+
+                <!-- Ajouter indicateur visuel -->
+                <xpath expr="//div[hasclass('o_kanban_record_bottom')]" position="before">
+                    <div class="o_kanban_tags_section" invisible="not is_split">
+                        <span class="badge badge-warning">
+                            <i class="fa fa-scissors"/>
+                            Découpé en <t t-esc="record.purchase_order_count.value"/> BDC
+                        </span>
+                    </div>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Filtres de recherche étendus -->
+        <record id="view_sale_order_filter_construction_split" model="ir.ui.view">
+            <field name="name">sale.order.search.construction.split</field>
+            <field name="model">sale.order</field>
+            <field name="inherit_id" ref="sale.view_sales_order_filter"/>
+            <field name="arch" type="xml">
+                
+                <!-- Ajouter filtres -->
+                <xpath expr="//filter[@name='my_sale_orders_filter']" position="after">
+                    <separator/>
+                    <filter string="Devis découpés" name="filter_split" 
+                            domain="[('is_split', '=', True)]"/>
+                    <filter string="Non découpés" name="filter_not_split" 
+                            domain="[('is_split', '=', False)]"/>
+                    <filter string="Avec chantier" name="filter_with_chantier" 
+                            domain="[('chantier_id', '!=', False)]"/>
+                </xpath>
+
+                <!-- Ajouter champs de recherche -->
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="chantier_id" string="Chantier"/>
+                </xpath>
+
+                <!-- Ajouter groupement -->
+                <xpath expr="//group[@string='Group By']" position="inside">
+                    <filter string="Chantier" name="group_chantier" 
+                            context="{'group_by': 'chantier_id'}"/>
+                    <filter string="État découpage" name="group_split" 
+                            context="{'group_by': 'is_split'}"/>
+                </xpath>
+
+            </field>
+        </record>
+
+        <!-- Action pour les devis avec découpage -->
+        <record id="action_quotations_with_split" model="ir.actions.act_window">
+            <field name="name">Devis - Gestion découpage</field>
+            <field name="res_model">sale.order</field>
+            <field name="view_mode">kanban,tree,form</field>
+            <field name="domain">[('state', 'in', ['draft', 'sent', 'sale', 'validated', 'split'])]</field>
+            <field name="context">{
+                'search_default_filter_with_chantier': 1,
+                'default_chantier_id': False
+            }</field>
+            <field name="help" type="html">
+                <div class="o_view_nocontent_empty_folder">
+                    <div class="text-center">
+                        <i class="fa fa-scissors fa-3x text-muted mb-3"/>
+                        <h3>Gérer le découpage des devis</h3>
+                        <p class="text-muted">
+                            Les devis associés à des chantiers peuvent être découpés<br/>
+                            en bons de commande par lots et sous-traitants.
+                        </p>
+                    </div>
+                </div>
+            </field>
+        </record>
+
+    </data>
+</odoo> 

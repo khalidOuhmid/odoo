@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Catégorie pour les groupes Construction -->
+        <record id="module_category_construction" model="ir.module.category">
+            <field name="name">Gestion Construction BLG</field>
+            <field name="description">Gestion des chantiers BLG Groupe</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- Groupe Conductrice de Travaux -->
+        <record id="group_conductrice_travaux" model="res.groups">
+            <field name="name">Conductrice de Travaux</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">
+                Accès au module gestion des travaux avec restriction sur la modification 
+                de l'état des chantiers (respect obligatoire de la roadmap)
+            </field>
+        </record>
+
+        <!-- Groupe Directeur Général -->
+        <record id="group_directeur_general" model="res.groups">
+            <field name="name">Directeur Général</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="implied_ids" eval="[(4, ref('group_conductrice_travaux'))]"/>
+            <field name="comment">
+                Accès complet à l'ensemble de l'ERP
+            </field>
+        </record>
+
+        <!-- Groupe Administrateur BLG -->
+        <record id="group_admin_blg" model="res.groups">
+            <field name="name">Administrateur BLG</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="implied_ids" eval="[(4, ref('group_directeur_general'))]"/>
+            <field name="comment">
+                Droits d'administration complets sur Odoo, peut forcer l'état d'un chantier
+            </field>
+        </record>
+
+        <!-- Règles d'enregistrement pour contrôler la modification des stages -->
+        <record id="chantier_stage_rule_conductrice" model="ir.rule">
+            <field name="name">Conductrice travaux - Restriction workflow</field>
+            <field name="model_id" ref="model_construction_chantier"/>
+            <field name="domain_force">[('create_uid', '!=', False)]</field>
+            <field name="groups" eval="[(4, ref('group_conductrice_travaux'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Règle pour permettre au directeur et admin de tout modifier -->
+        <record id="chantier_all_access_rule" model="ir.rule">
+            <field name="name">Directeur/Admin - Accès complet</field>
+            <field name="model_id" ref="model_construction_chantier"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_directeur_general')), (4, ref('group_admin_blg'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+    </data>
+</odoo> 

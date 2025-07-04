@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Templates pour améliorer l'affichage du kanban -->
+        
+        <!-- Template pour les tooltips personnalisés -->
+        <template id="construction_kanban_tooltips" name="Construction Kanban Tooltips">
+            <t t-name="construction_kanban_tooltips">
+                <div class="construction-tooltip">
+                    <div class="tooltip-header">
+                        <strong><t t-esc="record.name"/></strong>
+                    </div>
+                    <div class="tooltip-content">
+                        <div class="tooltip-row">
+                            <span class="label">Client:</span>
+                            <span class="value"><t t-esc="record.client"/></span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="label">Budget:</span>
+                            <span class="value"><t t-esc="record.total_cost"/> €</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="label">Progression:</span>
+                            <span class="value"><t t-esc="record.progress"/>%</span>
+                        </div>
+                        <div class="tooltip-row">
+                            <span class="label">Échéance:</span>
+                            <span class="value">
+                                <t t-if="record.days_remaining &gt; 0">
+                                    <t t-esc="record.days_remaining"/> jours restants
+                                </t>
+                                <t t-else="">
+                                    <span class="text-danger">En retard</span>
+                                </t>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Template pour les actions contextuelles -->
+        <template id="construction_kanban_actions" name="Construction Kanban Actions">
+            <t t-name="construction_kanban_actions">
+                <div class="kanban-actions-panel">
+                    <div class="actions-header">
+                        <h4>Actions rapides</h4>
+                        <small>Chantier: <t t-esc="record.name"/></small>
+                    </div>
+                    
+                    <div class="actions-grid">
+                        <div class="action-card" t-if="record.show_schedule_visit">
+                            <i class="fa fa-calendar-plus-o"/>
+                            <span>Planifier visite</span>
+                            <small>Programmer une visite technique</small>
+                        </div>
+                        
+                        <div class="action-card" t-if="record.show_create_quote">
+                            <i class="fa fa-file-text-o"/>
+                            <span>Créer devis</span>
+                            <small>Générer un nouveau devis</small>
+                        </div>
+                        
+                        <div class="action-card" t-if="record.show_assign_subcontractors">
+                            <i class="fa fa-users"/>
+                            <span>Assigner équipe</span>
+                            <small>Sélectionner sous-traitants</small>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Template pour l'état de progression détaillé -->
+        <template id="construction_progress_details" name="Construction Progress Details">
+            <t t-name="construction_progress_details">
+                <div class="progress-details-panel">
+                    <div class="progress-header">
+                        <h4><t t-esc="record.name"/></h4>
+                        <div class="progress-badge">
+                            <t t-esc="record.progress"/>%
+                        </div>
+                    </div>
+                    
+                    <div class="progress-timeline">
+                        <div class="timeline-item completed">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <strong>Démarrage</strong>
+                                <small><t t-esc="record.date_start_contract"/></small>
+                            </div>
+                        </div>
+                        
+                        <div t-attf-class="timeline-item #{record.progress >= 25 ? 'completed' : 'pending'}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <strong>25% - Premier jalon</strong>
+                                <small>Fondations terminées</small>
+                            </div>
+                        </div>
+                        
+                        <div t-attf-class="timeline-item #{record.progress >= 50 ? 'completed' : 'pending'}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <strong>50% - Mi-parcours</strong>
+                                <small>Structure terminée</small>
+                            </div>
+                        </div>
+                        
+                        <div t-attf-class="timeline-item #{record.progress >= 75 ? 'completed' : 'pending'}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <strong>75% - Finitions</strong>
+                                <small>Second œuvre avancé</small>
+                            </div>
+                        </div>
+                        
+                        <div t-attf-class="timeline-item #{record.progress >= 100 ? 'completed' : 'pending'}">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-content">
+                                <strong>100% - Livraison</strong>
+                                <small><t t-esc="record.date_end_contract"/></small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-metrics">
+                        <div class="metric-item">
+                            <strong>Budget consommé</strong>
+                            <span><t t-esc="(record.total_cost * record.progress / 100)"/> €</span>
+                        </div>
+                        <div class="metric-item">
+                            <strong>Temps écoulé</strong>
+                            <span><t t-esc="record.duration_actual"/> jours</span>
+                        </div>
+                        <div class="metric-item">
+                            <strong>Performance</strong>
+                            <span t-attf-class="performance-indicator #{
+                                record.progress / (100 - record.days_remaining) > 1.2 ? 'ahead' :
+                                record.progress / (100 - record.days_remaining) > 0.8 ? 'on-track' : 'behind'
+                            }">
+                                <t t-if="record.progress / (100 - record.days_remaining) > 1.2">
+                                    En avance
+                                </t>
+                                <t t-elif="record.progress / (100 - record.days_remaining) > 0.8">
+                                    Dans les temps
+                                </t>
+                                <t t-else="">
+                                    En retard
+                                </t>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- CSS pour les templates -->
+        <template id="construction_templates_css" name="Construction Templates CSS">
+            <style>
+                /* Tooltips personnalisés */
+                .construction-tooltip {
+                    background: white;
+                    border-radius: 8px;
+                    padding: 12px;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+                    border: 1px solid #e9ecef;
+                    max-width: 250px;
+                }
+
+                .construction-tooltip .tooltip-header {
+                    border-bottom: 1px solid #e9ecef;
+                    padding-bottom: 8px;
+                    margin-bottom: 8px;
+                    color: #495057;
+                }
+
+                .construction-tooltip .tooltip-row {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 4px;
+                    font-size: 12px;
+                }
+
+                .construction-tooltip .tooltip-row .label {
+                    color: #6c757d;
+                    font-weight: 600;
+                }
+
+                .construction-tooltip .tooltip-row .value {
+                    color: #495057;
+                    font-weight: 500;
+                }
+
+                /* Panel d'actions */
+                .kanban-actions-panel {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 16px;
+                    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+                    min-width: 300px;
+                }
+
+                .kanban-actions-panel .actions-header {
+                    border-bottom: 1px solid #e9ecef;
+                    padding-bottom: 12px;
+                    margin-bottom: 16px;
+                }
+
+                .kanban-actions-panel .actions-header h4 {
+                    margin: 0 0 4px 0;
+                    color: #495057;
+                }
+
+                .kanban-actions-panel .actions-header small {
+                    color: #6c757d;
+                }
+
+                .kanban-actions-panel .actions-grid {
+                    display: grid;
+                    gap: 12px;
+                }
+
+                .kanban-actions-panel .action-card {
+                    display: flex;
+                    align-items: center;
+                    padding: 12px;
+                    border: 1px solid #e9ecef;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                }
+
+                .kanban-actions-panel .action-card:hover {
+                    border-color: #007bff;
+                    background: rgba(0, 123, 255, 0.05);
+                }
+
+                .kanban-actions-panel .action-card i {
+                    font-size: 18px;
+                    color: #007bff;
+                    margin-right: 12px;
+                    width: 24px;
+                }
+
+                .kanban-actions-panel .action-card span {
+                    font-weight: 600;
+                    color: #495057;
+                }
+
+                .kanban-actions-panel .action-card small {
+                    color: #6c757d;
+                    margin-left: auto;
+                    font-size: 11px;
+                }
+
+                /* Timeline de progression */
+                .progress-details-panel {
+                    background: white;
+                    border-radius: 12px;
+                    padding: 20px;
+                    box-shadow: 0 6px 25px rgba(0, 0, 0, 0.15);
+                    min-width: 350px;
+                }
+
+                .progress-details-panel .progress-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 20px;
+                    padding-bottom: 12px;
+                    border-bottom: 1px solid #e9ecef;
+                }
+
+                .progress-details-panel .progress-badge {
+                    background: #007bff;
+                    color: white;
+                    padding: 6px 12px;
+                    border-radius: 20px;
+                    font-weight: 700;
+                }
+
+                .progress-timeline {
+                    position: relative;
+                    padding-left: 20px;
+                }
+
+                .progress-timeline::before {
+                    content: '';
+                    position: absolute;
+                    left: 8px;
+                    top: 8px;
+                    bottom: 8px;
+                    width: 2px;
+                    background: #e9ecef;
+                }
+
+                .timeline-item {
+                    position: relative;
+                    margin-bottom: 16px;
+                    padding-left: 20px;
+                }
+
+                .timeline-item .timeline-dot {
+                    position: absolute;
+                    left: -12px;
+                    top: 4px;
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: #e9ecef;
+                    border: 2px solid white;
+                    box-shadow: 0 0 0 2px #e9ecef;
+                }
+
+                .timeline-item.completed .timeline-dot {
+                    background: #28a745;
+                    box-shadow: 0 0 0 2px #28a745;
+                }
+
+                .timeline-item.completed .timeline-content {
+                    color: #495057;
+                }
+
+                .timeline-item.pending .timeline-content {
+                    color: #6c757d;
+                }
+
+                .timeline-item strong {
+                    display: block;
+                    font-size: 13px;
+                    margin-bottom: 2px;
+                }
+
+                .timeline-item small {
+                    font-size: 11px;
+                    color: #6c757d;
+                }
+
+                .progress-metrics {
+                    margin-top: 20px;
+                    padding-top: 16px;
+                    border-top: 1px solid #e9ecef;
+                    display: grid;
+                    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+                    gap: 12px;
+                }
+
+                .metric-item {
+                    text-align: center;
+                }
+
+                .metric-item strong {
+                    display: block;
+                    font-size: 11px;
+                    color: #6c757d;
+                    margin-bottom: 4px;
+                }
+
+                .metric-item span {
+                    font-size: 13px;
+                    font-weight: 600;
+                    color: #495057;
+                }
+
+                .performance-indicator.ahead {
+                    color: #28a745;
+                }
+
+                .performance-indicator.on-track {
+                    color: #007bff;
+                }
+
+                .performance-indicator.behind {
+                    color: #dc3545;
+                }
+            </style>
+        </template>
+
+    </data>
+</odoo> 

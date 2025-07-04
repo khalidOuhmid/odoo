@@ -1,0 +1,8 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_construction_chantier_user,construction.chantier.user,model_construction_chantier,base.group_user,1,1,1,1
+access_construction_stage_user,construction.stage.user,model_construction_stage,base.group_user,1,1,1,1
+access_construction_chapter_user,construction.chapter.user,model_construction_chapter,base.group_user,1,1,1,1
+access_construction_visit_user,construction.visit.user,model_construction_visit,base.group_user,1,1,1,1
+access_construction_document_user,construction.document.user,model_construction_document,base.group_user,1,1,1,1
+access_lot_user,lot.user,model_lot,base.group_user,1,1,1,1
+

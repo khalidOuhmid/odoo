@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vue formulaire du wizard d'import email -->
+        <record id="view_import_email_wizard_form" model="ir.ui.view">
+            <field name="name">construction.import.email.wizard.form</field>
+            <field name="model">construction.import.email.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Importer un chantier depuis un email">
+                    <sheet>
+                        <group>
+                            <group string="Informations de l'email">
+                                <field name="email_subject" placeholder="Objet de l'email..."/>
+                                <field name="email_body" widget="html" placeholder="Corps de l'email..."/>
+                            </group>
+                            <group string="Informations du chantier">
+                                <field name="client_id" options="{'no_create': False, 'no_open': True}"/>
+                                <field name="phone" placeholder="+33 1 23 45 67 89"/>
+                                <field name="address" placeholder="123 rue Example, 75000 Paris"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="action_create_chantier" 
+                                string="Créer le chantier" 
+                                type="object" 
+                                class="btn-primary"
+                                icon="fa-check"/>
+                        <button string="Annuler" 
+                                class="btn-secondary" 
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action pour ouvrir le wizard -->
+        <record id="action_import_email_wizard" model="ir.actions.act_window">
+            <field name="name">Importer depuis Email</field>
+            <field name="res_model">construction.import.email.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Importez un chantier depuis un email
+                </p>
+                <p>
+                    L'objet de l'email deviendra le nom du chantier et le corps sera importé dans la description.
+                </p>
+            </field>
+        </record>
+
+        <!-- Ajouter le menu dans le menu principal des chantiers -->
+        <menuitem id="menu_import_email"
+                  name="Importer depuis Email"
+                  parent="construction_base.menu_construction_root"
+                  action="action_import_email_wizard"
+                  sequence="50"/>
+    </data>
+</odoo> 

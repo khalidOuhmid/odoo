@@ -1,0 +1,175 @@
+/* Custom styles for Chantier views */
+
+.oe_kanban_global_click {
+    cursor: pointer;
+}
+
+.project-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.project-name {
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0;
+}
+
+.chapter-name {
+    font-size: 0.9em;
+    color: #777;
+    display: flex;
+    align-items: center;
+}
+
+.chapter-name i {
+    margin-right: 4px;
+    font-size: 1.1em;
+}
+
+.status-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-left: 8px;
+}
+
+.card-menu {
+    position: relative;
+}
+
+.card-menu .dropdown-toggle {
+    background: none;
+    border: none;
+    padding: 0;
+    font-size: 1.2em;
+}
+
+.card-menu .dropdown-menu {
+    min-width: 150px;
+    border-radius: 6px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+.card-menu .dropdown-item {
+    padding: 10px 15px;
+    font-size: 0.9em;
+}
+
+.card-menu .dropdown-item:hover {
+    background: #f5f5f5;
+}
+
+.project-address {
+    font-size: 0.9em;
+    color: #555;
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+}
+
+.project-address i {
+    margin-right: 4px;
+    color: #007bff;
+}
+
+.metrics-row {
+    display: flex;
+    justify-content: space-between;
+    margin: 8px 0;
+}
+
+.metric {
+    font-size: 0.9em;
+    display: flex;
+    align-items: center;
+}
+
+.metric i {
+    margin-right: 4px;
+}
+
+.progress-bar-container {
+    background: #f5f5f5;
+    border-radius: 6px;
+    overflow: hidden;
+    margin: 8px 0;
+}
+
+.progress-info {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px;
+    background: #fff;
+    border-bottom: 1px solid #ddd;
+}
+
+.progress-label {
+    font-size: 0.9em;
+    color: #333;
+}
+
+.progress-value {
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.progress-bar {
+    height: 8px;
+    background: #007bff;
+    transition: width 0.4s ease;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-top: 1px solid #ddd;
+    margin-top: 8px;
+}
+
+.team-section {
+    display: flex;
+    align-items: center;
+}
+
+.activity-section {
+    display: flex;
+    align-items: center;
+}
+
+.date-section {
+    font-size: 0.8em;
+    color: #999;
+}
+
+.date-section small {
+    display: block;
+}
+
+.blg_card {
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s ease-in-out;
+}
+
+.blg_card:hover {
+    transform: scale(1.03);
+}
+
+.card-header {
+    background: #f5f5f5;
+    border-radius: 6px 6px 0 0;
+    margin: -16px -16px 16px -16px;
+    padding: 8px;
+}
+
+.card-footer {
+    border-top: 1px solid #ddd;
+    margin-top: 16px;
+    padding-top: 8px;
+}

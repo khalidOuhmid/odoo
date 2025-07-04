@@ -44,7 +44,7 @@ class Stage(models.Model):
     color = fields.Integer(
         'Color Index', default=0, help="Color for kanban styling (0-11)"
     )
-    chantier_ids = fields.One2many('construction.chantier', 'stage', string='Chantiers')
+    chantier_ids = fields.One2many('construction.chantier', 'stage_id', string='Chantiers')
 
     @api.depends('chantier_ids')
     def _compute_chantier_count(self):
@@ -108,7 +108,12 @@ class Stage(models.Model):
             'type': 'ir.actions.act_window',
             'name': f'Projects - {self.full_name}',
             'res_model': 'construction.chantier',
-            'view_mode': 'kanban,tree,form',
+            'view_mode': 'kanban,list,form',
             'domain': [('stage_id', '=', self.id)],
             'context': {'default_stage_id': self.id}
         }
+
+    @api.model
+    def _read_group_stage_ids(self, stages, domain, order):
+        all_stages = self.search([])
+        return all_stages

@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vue principale du wizard -->
+        <record id="view_quote_builder_wizard_form" model="ir.ui.view">
+            <field name="name">construction.quote.builder.wizard.form</field>
+            <field name="model">construction.quote.builder.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Créer un devis">
+                    <sheet>
+                        <group>
+                            <group string="Informations du devis">
+                                <field name="chantier_id" readonly="1"/>
+                                <field name="partner_id" options="{'no_create': True}"/>
+                                <field name="validity_date"/>
+                            </group>
+                        </group>
+                        <separator string="Sélection des lots"/>
+                        <field name="lot_ids" widget="many2many_checkboxes">
+                            <list>
+                                <field name="name"/>
+                                <field name="code"/>
+                            </list>
+                        </field>
+                        <div class="alert alert-info" role="alert">
+                            <i class="fa fa-info-circle"/> Sélectionnez les lots à inclure dans le devis. 
+                            Vous pourrez ajouter des produits pour chaque lot dans le devis natif d'Odoo.
+                        </div>
+                    </sheet>
+                    <footer>
+                        <button name="action_create_quote_native" 
+                                string="Créer le devis" 
+                                type="object" 
+                                class="btn-primary"
+                                icon="fa-file-text-o"/>
+                        <button string="Annuler" 
+                                class="btn-secondary" 
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vue du wizard d'ajout de produits -->
+        <record id="view_quote_product_wizard_form" model="ir.ui.view">
+            <field name="name">construction.quote.product.wizard.form</field>
+            <field name="model">construction.quote.product.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Ajouter un produit">
+                    <sheet>
+                        <group>
+                            <group string="Sélection du produit">
+                                <field name="sale_order_id" invisible="1"/>
+                                <field name="lot_id" readonly="1"/>
+                                <field name="create_product"/>
+                                <field name="product_id" 
+                                       invisible="create_product"
+                                       required="not create_product"
+                                       options="{'no_create': True, 'no_open': True}"/>
+                            </group>
+                            <group string="Nouveau produit" invisible="not create_product">
+                                <field name="product_name" required="create_product"/>
+                                <field name="product_sale_price"/>
+                            </group>
+                        </group>
+                        
+                        <group>
+                            <group string="Détails">
+                                <field name="quantity"/>
+                                <field name="comment"/>
+                            </group>
+                            <group string="Localisation">
+                                <field name="room"/>
+                                <field name="floor"/>
+                                <field name="room_number"/>
+                            </group>
+                        </group>
+                    </sheet>
+                    <footer>
+                        <button name="action_add_product_to_quote" 
+                                string="Ajouter au devis" 
+                                type="object" 
+                                class="btn-primary"
+                                icon="fa-plus"/>
+                        <button string="Annuler" 
+                                class="btn-secondary" 
+                                special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action pour ouvrir le wizard -->
+        <record id="action_quote_builder_wizard" model="ir.actions.act_window">
+            <field name="name">Créer un devis</field>
+            <field name="res_model">construction.quote.builder.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{'default_chantier_id': active_id}</field>
+        </record>
+
+        <!-- Action pour ajouter un produit -->
+        <record id="action_quote_product_wizard" model="ir.actions.act_window">
+            <field name="name">Ajouter un produit</field>
+            <field name="res_model">construction.quote.product.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+    </data>
+</odoo>

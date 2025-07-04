@@ -74,7 +74,7 @@ class Chapter(models.Model):
             'type': 'ir.actions.act_window',
             'name': f'Projects - {self.name}',
             'res_model': 'construction.chantier',
-            'view_mode': 'kanban,tree,form',
+            'view_mode': 'kanban,list,form',
             'domain': [('stage_id.chapter_id', '=', self.id)],
             'context': {'default_chapter_id': self.id}
         }

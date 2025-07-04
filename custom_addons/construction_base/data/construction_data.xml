@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- =============== CHAPTERS =============== -->
+
+        <!-- Chapitre 1: Appel d'offre -->
+        <record id="chapter_appel_offre" model="construction.chapter">
+            <field name="name">Appel d'offre</field>
+            <field name="code">AO</field>
+            <field name="description">Phase initiale de réception et traitement des demandes clients</field>
+            <field name="sequence">10</field>
+            <field name="color">1</field>
+            <field name="is_default">True</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- Chapitre 2: Préparation chantier -->
+        <record id="chapter_preparation" model="construction.chapter">
+            <field name="name">Préparation chantier</field>
+            <field name="code">PREP</field>
+            <field name="description">Préparation administrative et technique du chantier</field>
+            <field name="sequence">20</field>
+            <field name="color">3</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- Chapitre 3: Travaux -->
+        <record id="chapter_travaux" model="construction.chapter">
+            <field name="name">Travaux</field>
+            <field name="code">TRAV</field>
+            <field name="description">Phase d'exécution des travaux de construction</field>
+            <field name="sequence">30</field>
+            <field name="color">6</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- Chapitre 4: Levée de réserves/Attente de paiement -->
+        <record id="chapter_levee_reserves" model="construction.chapter">
+            <field name="name">Levée de réserves/Attente de paiement</field>
+            <field name="code">LEVEE</field>
+            <field name="description">Finalisation des travaux et gestion des paiements</field>
+            <field name="sequence">40</field>
+            <field name="color">9</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- Chapitre 5: Retenue garantie -->
+        <record id="chapter_retenue_garantie" model="construction.chapter">
+            <field name="name">Retenue garantie</field>
+            <field name="code">RET</field>
+            <field name="description">Période de garantie (durée: 1 an)</field>
+            <field name="sequence">50</field>
+            <field name="color">8</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- Chapitre 6: Archive -->
+        <record id="chapter_archive" model="construction.chapter">
+            <field name="name">Archive</field>
+            <field name="code">ARCH</field>
+            <field name="description">Projets terminés ou abandonnés</field>
+            <field name="sequence">60</field>
+            <field name="color">0</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- =============== STAGES =============== -->
+
+        <!-- === Chapitre 1: Appel d'offre === -->
+
+        <record id="stage_reception" model="construction.stage">
+            <field name="name">Réception</field>
+            <field name="code">REC</field>
+            <field name="description">Réception et analyse de la demande client</field>
+            <field name="sequence">10</field>
+            <field name="color">1</field>
+            <field name="chapter_id" ref="chapter_appel_offre"/>
+            <field name="validation_info">✓ Informations client complètes
+✓ Adresse du chantier définie
+✓ Description des travaux fournie</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="stage_visite_technique" model="construction.stage">
+            <field name="name">Visite technique</field>
+            <field name="code">VT</field>
+            <field name="description">Visite technique sur site pour évaluation</field>
+            <field name="sequence">20</field>
+            <field name="color">3</field>
+            <field name="chapter_id" ref="chapter_appel_offre"/>
+            <field name="validation_info">✓ Visite technique planifiée et réalisée
+✓ État des lieux effectué
+✓ Contraintes techniques identifiées</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="stage_devis_envoye" model="construction.stage">
+            <field name="name">Devis envoyé</field>
+            <field name="code">DE</field>
+            <field name="description">Devis établi et envoyé au client</field>
+            <field name="sequence">30</field>
+            <field name="color">5</field>
+            <field name="chapter_id" ref="chapter_appel_offre"/>
+            <field name="validation_info">✓ Devis établi avec prix détaillé
+✓ Lots de travaux définis
+✓ Devis envoyé au client</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- === Chapitre 2: Préparation chantier === -->
+
+        <record id="stage_devis_accepte" model="construction.stage">
+            <field name="name">Devis accepté</field>
+            <field name="code">DA</field>
+            <field name="description">Devis accepté par le client</field>
+            <field name="sequence">10</field>
+            <field name="color">6</field>
+            <field name="chapter_id" ref="chapter_preparation"/>
+            <field name="validation_info">✓ Accord client confirmé
+✓ Contrat signé
+✓ Acompte reçu</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="stage_finalisation_dossier" model="construction.stage">
+            <field name="name">Finalisation dossier</field>
+            <field name="code">FD</field>
+            <field name="description">Finalisation administrative et préparation chantier</field>
+            <field name="sequence">20</field>
+            <field name="color">4</field>
+            <field name="chapter_id" ref="chapter_preparation"/>
+            <field name="validation_info">✓ Permis et autorisations obtenus
+✓ Sous-traitants sélectionnés
+✓ Planning de chantier établi
+✓ Date de début fixée</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- === Chapitre 3: Travaux === -->
+
+        <record id="stage_travaux_0_25" model="construction.stage">
+            <field name="name">Travaux 0-25%</field>
+            <field name="code">T25</field>
+            <field name="description">Début des travaux (0-25%)</field>
+            <field name="sequence">10</field>
+            <field name="color">2</field>
+            <field name="chapter_id" ref="chapter_travaux"/>
+            <field name="validation_info">✓ Chantier démarré
+✓ Installation de chantier
+✓ Travaux de gros œuvre commencés</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="stage_travaux_25_50" model="construction.stage">
+            <field name="name">Travaux 25-50%</field>
+            <field name="code">T50</field>
+            <field name="description">Progression travaux (25-50%)</field>
+            <field name="sequence">20</field>
+            <field name="color">3</field>
+            <field name="chapter_id" ref="chapter_travaux"/>
+            <field name="validation_info">✓ Gros œuvre en cours
+✓ Planning respecté
+✓ Qualité conforme</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="stage_travaux_50_75" model="construction.stage">
+            <field name="name">Travaux 50-75%</field>
+            <field name="code">T75</field>
+            <field name="description">Progression travaux (50-75%)</field>
+            <field name="sequence">30</field>
+            <field name="color">6</field>
+            <field name="chapter_id" ref="chapter_travaux"/>
+            <field name="validation_info">✓ Second œuvre commencé
+✓ Installations techniques
+✓ Contrôles qualité OK</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="stage_travaux_75_100" model="construction.stage">
+            <field name="name">Travaux 75-100%</field>
+            <field name="code">T100</field>
+            <field name="description">Finalisation travaux (75-100%)</field>
+            <field name="sequence">40</field>
+            <field name="color">9</field>
+            <field name="chapter_id" ref="chapter_travaux"/>
+            <field name="validation_info">✓ Finitions en cours
+✓ Nettoyage du chantier
+✓ Préparation réception</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- === Chapitre 4: Levée de réserves === -->
+
+        <record id="stage_levee_reserves" model="construction.stage">
+            <field name="name">Levée de réserves</field>
+            <field name="code">LR</field>
+            <field name="description">Traitement des réserves et finalisation</field>
+            <field name="sequence">10</field>
+            <field name="color">9</field>
+            <field name="chapter_id" ref="chapter_levee_reserves"/>
+            <field name="validation_info">✓ Réception client effectuée
+✓ Réserves identifiées et traitées
+✓ Procès-verbal signé</field>
+            <field name="fold">False</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="stage_attente_paiement" model="construction.stage">
+            <field name="name">Attente de paiement</field>
+            <field name="code">AP</field>
+            <field name="description">En attente du paiement final</field>
+            <field name="sequence">20</field>
+            <field name="color">8</field>
+            <field name="chapter_id" ref="chapter_levee_reserves"/>
+            <field name="validation_info">✓ Facture finale émise
+✓ Réserves levées
+✓ En attente du solde</field>
+            <field name="fold">True</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- === Chapitre 5: Retenue garantie === -->
+
+        <record id="stage_retenue_garantie" model="construction.stage">
+            <field name="name">Retenue garantie</field>
+            <field name="code">RG</field>
+            <field name="description">Période de garantie (1 an)</field>
+            <field name="sequence">10</field>
+            <field name="color">8</field>
+            <field name="chapter_id" ref="chapter_retenue_garantie"/>
+            <field name="validation_info">✓ Paiement complet reçu
+✓ Garantie en cours (1 an)
+✓ Suivi SAV si nécessaire</field>
+            <field name="fold">True</field>
+            <field name="active">True</field>
+        </record>
+
+        <!-- === Chapitre 6: Archive === -->
+
+        <record id="stage_dossier_cloture" model="construction.stage">
+            <field name="name">Dossier clôturé</field>
+            <field name="code">CLOT</field>
+            <field name="description">Projet terminé avec succès</field>
+            <field name="sequence">10</field>
+            <field name="color">10</field>
+            <field name="chapter_id" ref="chapter_archive"/>
+            <field name="validation_info">✓ Projet terminé avec succès
+✓ Client satisfait
+✓ Dossier archivé</field>
+            <field name="fold">True</field>
+            <field name="active">True</field>
+        </record>
+
+        <record id="stage_sans_suite" model="construction.stage">
+            <field name="name">Sans suite</field>
+            <field name="code">SS</field>
+            <field name="description">Projet abandonné</field>
+            <field name="sequence">20</field>
+            <field name="color">0</field>
+            <field name="chapter_id" ref="chapter_archive"/>
+            <field name="validation_info">✓ Projet abandonné
+✓ Raison documentée
+✓ Dossier archivé</field>
+            <field name="fold">True</field>
+            <field name="active">True</field>
+        </record>
+
+    </data>
+</odoo>

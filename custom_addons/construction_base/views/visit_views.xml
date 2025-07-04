@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Visit Form View -->
+    <record id="view_visit_form" model="ir.ui.view">
+        <field name="name">construction.visit.form</field>
+        <field name="model">construction.visit</field>
+        <field name="arch" type="xml">
+            <form string="Visite">
+                <header>
+                    <button name="action_confirm" string="Confirmer" type="object" 
+                            class="oe_highlight" invisible="state not in ['draft', 'planned']"/>
+                    <button name="action_start" string="Démarrer" type="object" 
+                            class="oe_highlight" invisible="state != 'confirmed'"/>
+                    <button name="action_complete" string="Terminer" type="object" 
+                            class="oe_highlight" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="Annuler" type="object" 
+                            invisible="state in ['completed', 'cancelled']"/>
+                    <button name="action_reset_to_planned" string="Remettre en planification" type="object" 
+                            invisible="state not in ['cancelled', 'completed']"/>
+                    <field name="state" widget="statusbar" 
+                           statusbar_visible="draft,planned,confirmed,in_progress,completed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Nom de la visite"/></h1>
+                    </div>
+                    
+                    <group>
+                        <group string="Informations générales">
+                            <field name="chantier_id" required="1"/>
+                            <field name="visit_type" required="1"/>
+                            <field name="date" required="1"/>
+                            <field name="duration"/>
+                        </group>
+                        <group string="Participants">
+                            <field name="user_ids" widget="many2many_tags"/>
+                            <field name="partner_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="Description" name="description">
+                            <field name="description" placeholder="Description de la visite..."/>
+                        </page>
+                        <page string="Notes et observations" name="notes">
+                            <field name="notes" placeholder="Notes prises pendant la visite..."/>
+                        </page>
+                        <page string="Rapport" name="report">
+                            <field name="report" placeholder="Rapport détaillé de la visite..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+               <chatter></chatter>
+            </form>
+        </field>
+    </record>
+
+    <!-- Visit List View -->
+    <record id="view_visit_tree" model="ir.ui.view">
+        <field name="name">construction.visit.list</field>
+        <field name="model">construction.visit</field>
+        <field name="arch" type="xml">
+            <list string="Visites" 
+                  decoration-info="state == 'planned'"
+                  decoration-warning="state == 'confirmed'"
+                  decoration-success="state == 'completed'"
+                  decoration-danger="state == 'cancelled'"
+                  decoration-muted="state == 'draft'">
+                
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="date"/>
+                <field name="visit_type" widget="badge"/>
+                <field name="duration"/>
+                <field name="user_ids" widget="many2many_avatar_user"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Visit Calendar View -->
+    <record id="view_visit_calendar" model="ir.ui.view">
+        <field name="name">construction.visit.calendar</field>
+        <field name="model">construction.visit</field>
+        <field name="arch" type="xml">
+            <calendar string="Planning des Visites"
+                      date_start="date"
+                      mode="week"
+                      color="chantier_id"
+                      event_open_popup="true">
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="visit_type"/>
+                <field name="user_ids"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- Visit Search View -->
+    <record id="view_visit_search" model="ir.ui.view">
+        <field name="name">construction.visit.search</field>
+        <field name="model">construction.visit</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher Visites">
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="user_ids"/>
+                
+                <filter string="Mes visites" name="my_visits" domain="[('user_ids', 'in', uid)]"/>
+                <filter string="À venir" name="upcoming" domain="[('date', '&gt;=', context_today())]"/>
+                <filter string="Passées" name="past" domain="[('date', '&lt;', context_today())]"/>
+                <filter string="Planifiées" name="planned" domain="[('state', '=', 'planned')]"/>
+                <filter string="Confirmées" name="confirmed" domain="[('state', '=', 'confirmed')]"/>
+                <filter string="Terminées" name="completed" domain="[('state', '=', 'completed')]"/>
+                
+                <group expand="0" string="Grouper par">
+                    <filter string="Chantier" name="group_chantier" context="{'group_by': 'chantier_id'}"/>
+                    <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by': 'visit_type'}"/>
+                    <filter string="Date" name="group_date" context="{'group_by': 'date:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Visit Action -->
+    <record id="action_visit" model="ir.actions.act_window">
+        <field name="name">Visites</field>
+        <field name="res_model">construction.visit</field>
+        <field name="view_mode">list,calendar,form</field>
+        <field name="search_view_id" ref="view_visit_search"/>
+        <field name="context">{'search_default_upcoming': 1}</field>
+        <field name="help" type="html">
+            <div class="o_view_nocontent_empty_folder">
+                <div class="text-center">
+                    <i class="fa fa-calendar fa-3x text-muted mb-3"/>
+                    <h3>Aucune visite planifiée</h3>
+                    <p class="text-muted">
+                        Planifiez votre première visite technique
+                    </p>
+                </div>
+            </div>
+        </field>
+    </record>
+</odoo>

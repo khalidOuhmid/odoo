@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_force_stage_wizard_form" model="ir.ui.view">
+        <field name="name">construction.force.stage.wizard.form</field>
+        <field name="model">construction.force.stage.wizard</field>
+        <field name="arch" type="xml">
+            <form string="⚠️ Forcer changement d'étape">
+                <div class="alert alert-warning">
+                    <h4><i class="fa fa-warning"/> ATTENTION - Action d'administrateur</h4>
+                    <p>Cette action va outrepasser le workflow métier normal. 
+                       Utilisez uniquement en cas de nécessité absolue.</p>
+                </div>
+                
+                <group>
+                    <field name="chantier_id" readonly="1"/>
+                    <field name="current_stage_id" readonly="1"/>
+                    <field name="new_stage_id" required="1"/>
+                </group>
+                
+                <group string="Justification obligatoire">
+                    <field name="reason" nolabel="1" required="1"/>
+                </group>
+                
+                <footer>
+                    <button name="action_force_change" type="object" 
+                            string="⚠️ Forcer le changement" class="btn-warning"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo> 
