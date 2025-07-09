@@ -1,7 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
-
 class Document(models.Model):
     _name = 'construction.document'
     _description = 'Construction Document'

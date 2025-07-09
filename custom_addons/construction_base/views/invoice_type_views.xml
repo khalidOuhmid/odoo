@@ -1,0 +1,245 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- =============== VUE CYCLES DE FACTURATION =============== -->
+
+        <!-- Vue formulaire pour cycle de facturation -->
+        <record id="view_construction_invoice_type_form" model="ir.ui.view">
+            <field name="name">construction.invoice_type.form</field>
+            <field name="model">construction.invoice_type</field>
+            <field name="arch" type="xml">
+                <form string="Cycle de facturation">
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name" placeholder="Ex: Cycle Standard BTP"/></h1>
+                        </div>
+                        
+                        <group>
+                            <group string="Informations générales">
+                                <field name="code" placeholder="CODE_UNIQUE"/>
+                                <field name="sequence"/>
+                                <field name="active"/>
+                            </group>
+                            <group string="Validation">
+                                <field name="total_percentage" readonly="1" 
+                                       decoration-success="total_percentage == 100"
+                                       decoration-danger="total_percentage != 100"/>
+                                <field name="line_count" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <field name="description" placeholder="Description du cycle de facturation..."/>
+
+                        <notebook>
+                            <page string="📋 Étapes de facturation" name="lines">
+                                <field name="line_ids">
+                                    <list editable="bottom" decoration-info="is_advance_payment">
+                                        <field name="sequence" widget="handle"/>
+                                        <field name="name" required="1"/>
+                                        <field name="trigger_percentage" 
+                                               decoration-warning="trigger_percentage == 0 and not is_advance_payment"/>
+                                        <field name="percentage" sum="Total %"/>
+                                        <field name="is_advance_payment" widget="boolean_toggle"/>
+                                        <field name="notes"/>
+                                    </list>
+                                </field>
+                                
+                                <div class="alert alert-warning mt-3" invisible="total_percentage == 100">
+                                    <strong>⚠️ Attention :</strong> Le total des pourcentages doit être égal à 100% 
+                                    (actuellement <field name="total_percentage" readonly="1"/>%)
+                                </div>
+                                
+                                <div class="alert alert-success mt-3" invisible="total_percentage != 100">
+                                    <strong>✅ Parfait :</strong> Le cycle de facturation est correctement configuré !
+                                </div>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vue liste pour cycles de facturation -->
+        <record id="view_construction_invoice_type_list" model="ir.ui.view">
+            <field name="name">construction.invoice_type.list</field>
+            <field name="model">construction.invoice_type</field>
+            <field name="arch" type="xml">
+                <list string="Cycles de facturation" sample="1">
+                    <field name="sequence" widget="handle"/>
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="line_count" string="Étapes"/>
+                    <field name="total_percentage" string="Total %" 
+                           decoration-success="total_percentage == 100"
+                           decoration-danger="total_percentage != 100"/>
+                    <field name="active" widget="boolean_toggle"/>
+                    <button name="action_view_lines" string="📋 Voir étapes" type="object" class="btn-secondary"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Action pour cycles de facturation -->
+        <record id="action_construction_invoice_type" model="ir.actions.act_window">
+            <field name="name">💰 Cycles de facturation</field>
+            <field name="res_model">construction.invoice_type</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <div class="o_view_nocontent_empty_folder">
+                    <div class="text-center">
+                        <i class="fa fa-percent fa-3x text-muted mb-3"/>
+                        <h3>Aucun cycle de facturation</h3>
+                        <p class="text-muted">
+                            Créez des patterns de facturation réutilisables pour vos chantiers
+                        </p>
+                        <button class="btn btn-primary">
+                            <i class="fa fa-plus"/> Nouveau Cycle
+                        </button>
+                    </div>
+                </div>
+            </field>
+        </record>
+
+        <!-- Action pour créer un nouveau cycle -->
+        <record id="invoice_type_action_create_new_cycle" model="ir.actions.act_window">
+            <field name="name">Nouveau cycle de facturation</field>
+            <field name="res_model">construction.invoice_type</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{'default_active': True}</field>
+        </record>
+
+        <!-- =============== VUE PLANNING DE FACTURATION =============== -->
+
+        <!-- Vue formulaire pour planning de facturation -->
+        <record id="view_construction_invoice_schedule_form" model="ir.ui.view">
+            <field name="name">construction.invoice.schedule.form</field>
+            <field name="model">construction.invoice.schedule</field>
+            <field name="arch" type="xml">
+                <form string="Étape de facturation">
+                    <header>
+                        <button name="action_mark_ready" string="▶ Marquer prêt" type="object" 
+                                class="oe_highlight" invisible="state != 'planned'"/>
+                        <button name="action_create_invoice" string="📄 Créer facture" type="object" 
+                                class="btn-success" invisible="state != 'ready'"/>
+                        <field name="state" widget="statusbar" 
+                               statusbar_visible="planned,ready,invoiced,paid"/>
+                    </header>
+                    
+                    <sheet>
+                        <div class="oe_title">
+                            <label for="name"/>
+                            <h1><field name="name"/></h1>
+                            <div class="text-muted">
+                                Chantier : <field name="chantier_id" readonly="1"/>
+                            </div>
+                        </div>
+
+                        <group>
+                            <group string="Déclenchement">
+                                <field name="trigger_percentage" readonly="1"/>
+                                <field name="is_advance_payment" widget="boolean_toggle" readonly="1"/>
+                                <field name="is_triggered" widget="boolean_toggle" readonly="1"/>
+                            </group>
+                            <group string="Montants">
+                                <field name="amount_percentage" readonly="1"/>
+                                <field name="amount_fixed" widget="monetary" readonly="1"/>
+                                <field name="currency_id" invisible="1"/>
+                            </group>
+                        </group>
+
+                        <group string="Planning et suivi">
+                            <group string="Dates">
+                                <field name="planned_date"/>
+                                <field name="invoice_date"/>
+                                <field name="payment_date"/>
+                            </group>
+                            <group string="Liens">
+                                <field name="invoice_type_line_id" readonly="1"/>
+                                <field name="invoice_id" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <field name="notes" placeholder="Notes spécifiques à cette étape..."/>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Vue liste pour planning de facturation -->
+        <record id="view_construction_invoice_schedule_list" model="ir.ui.view">
+            <field name="name">construction.invoice.schedule.list</field>
+            <field name="model">construction.invoice.schedule</field>
+            <field name="arch" type="xml">
+                <list string="Planning de facturation" sample="1" 
+                      decoration-success="state == 'paid'" 
+                      decoration-info="state == 'invoiced'"
+                      decoration-warning="state == 'ready'" 
+                      decoration-muted="state == 'cancelled'">
+                    <field name="chantier_id"/>
+                    <field name="name"/>
+                    <field name="trigger_percentage"/>
+                    <field name="amount_percentage"/>
+                    <field name="amount_fixed" widget="monetary" sum="Total"/>
+                    <field name="is_advance_payment" widget="boolean_toggle"/>
+                    <field name="state" widget="badge"/>
+                    <field name="is_triggered" widget="boolean_toggle"/>
+                    <field name="planned_date"/>
+                    <field name="invoice_date"/>
+                    <field name="payment_date"/>
+                    <button name="action_mark_ready" string="✓" type="object" 
+                            class="btn-success" invisible="state != 'planned'" title="Marquer prêt"/>
+                    <button name="action_create_invoice" string="📄" type="object" 
+                            class="btn-primary" invisible="state != 'ready'" title="Créer facture"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Vue recherche pour planning de facturation -->
+        <record id="view_construction_invoice_schedule_search" model="ir.ui.view">
+            <field name="name">construction.invoice.schedule.search</field>
+            <field name="model">construction.invoice.schedule</field>
+            <field name="arch" type="xml">
+                <search string="Rechercher planning de facturation">
+                    <field name="chantier_id"/>
+                    <field name="name"/>
+                    <separator/>
+                    <filter string="🔴 Prêtes à facturer" name="ready" domain="[('state', '=', 'ready')]"/>
+                    <filter string="📄 Facturées" name="invoiced" domain="[('state', '=', 'invoiced')]"/>
+                    <filter string="💰 Payées" name="paid" domain="[('state', '=', 'paid')]"/>
+                    <separator/>
+                    <filter string="📝 Acomptes signature" name="advance_payments" domain="[('is_advance_payment', '=', True)]"/>
+                    <filter string="🔄 Déclenchées" name="triggered" domain="[('is_triggered', '=', True)]"/>
+                    <separator/>
+                    <group expand="0" string="Grouper par">
+                        <filter string="Chantier" name="group_chantier" context="{'group_by': 'chantier_id'}"/>
+                        <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
+                        <filter string="Mois planifié" name="group_planned_month" context="{'group_by': 'planned_date:month'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- Action pour planning de facturation -->
+        <record id="action_construction_invoice_schedule" model="ir.actions.act_window">
+            <field name="name">📋 Planning de facturation</field>
+            <field name="res_model">construction.invoice.schedule</field>
+            <field name="view_mode">list,form</field>
+            <field name="search_view_id" ref="view_construction_invoice_schedule_search"/>
+            <field name="context">{'search_default_ready': 1}</field>
+            <field name="help" type="html">
+                <div class="o_view_nocontent_empty_folder">
+                    <div class="text-center">
+                        <i class="fa fa-calendar-check-o fa-3x text-muted mb-3"/>
+                        <h3>Aucune facturation planifiée</h3>
+                        <p class="text-muted">
+                            Les plannings de facturation sont créés automatiquement depuis les chantiers
+                        </p>
+                    </div>
+                </div>
+            </field>
+        </record>
+
+    </data>
+</odoo> 

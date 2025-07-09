@@ -11,6 +11,8 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
     setup() {
         super.setup();
         this.orm = useService("orm");
+        this.notification = useService("notification");
+        this.actionService = useService("action");
         this.chapterStructure = [];
         this.blgIsLoading = false;
         this.blgIsProcessing = false;
@@ -275,8 +277,16 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
     }
 
     optimizeForManyRecords() {
-        const kanbanEl = this.el?.querySelector('.blg_modern_kanban');
+        let kanbanEl = this.el?.querySelector('.blg_modern_kanban');
+        if (!kanbanEl) {
+            kanbanEl = this.el?.querySelector('.o_construction_kanban');
+        }
         if (!kanbanEl) return;
+
+        // Ajouter la classe CSS moderne si elle n'est pas déjà présente
+        if (!kanbanEl.classList.contains('blg_modern_kanban')) {
+            kanbanEl.classList.add('blg_modern_kanban');
+        }
 
         const cardCount = kanbanEl.querySelectorAll('.blg_card').length;
         const threshold = 20;
@@ -318,13 +328,26 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
     }
 
     _enhanceDragDrop(kanbanEl) {
+        let draggedRecordId = null;
+        let draggedStageId = null;
+
         kanbanEl.querySelectorAll('.blg_card').forEach(card => {
-            card.addEventListener('dragstart', () => {
+            // S'assurer que la carte est draggable
+            card.setAttribute('draggable', 'true');
+
+            card.addEventListener('dragstart', (ev) => {
                 card.classList.add('dragging');
+                draggedRecordId = parseInt(card.dataset.id || card.getAttribute('data-id'));
+                const parentGroup = card.closest('.o_kanban_group');
+                draggedStageId = parentGroup ? parseInt(parentGroup.dataset.id) : null;
+                // Propager l'identifiant dans dataTransfer (facultatif)
+                ev.dataTransfer.setData('text/plain', String(draggedRecordId));
             });
 
             card.addEventListener('dragend', () => {
                 card.classList.remove('dragging');
+                draggedRecordId = null;
+                draggedStageId = null;
             });
         });
 
@@ -339,8 +362,87 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
                 group.classList.remove('drag-over');
             });
 
-            group.addEventListener('drop', () => {
+            group.addEventListener('drop', async () => {
                 group.classList.remove('drag-over');
+
+                // Sécurité basique
+                if (!draggedRecordId || !draggedStageId) {
+                    return;
+                }
+
+                const targetStageId = parseInt(group.dataset.id);
+
+                // Pas de déplacement vers la même étape
+                if (targetStageId === draggedStageId) {
+                    return;
+                }
+
+                try {
+                    // Récupérer l'étape suivante et précédente côté serveur
+                    const nextStageRes = await this.orm.call(
+                        "construction.stage",
+                        "get_next_stage",
+                        [draggedStageId],
+                        {context: this.env.context || {}}
+                    );
+                    const prevStageRes = await this.orm.call(
+                        "construction.stage",
+                        "get_previous_stage",
+                        [draggedStageId],
+                        {context: this.env.context || {}}
+                    );
+
+                    const nextStageId = Array.isArray(nextStageRes) ? nextStageRes[0] : nextStageRes;
+                    const prevStageId = Array.isArray(prevStageRes) ? prevStageRes[0] : prevStageRes;
+
+                    if (!nextStageId && !prevStageId) {
+                        this.notification.add({
+                            title: "Information",
+                            message: "Aucune étape adjacente trouvée.",
+                            type: "info",
+                        });
+                        return;
+                    }
+
+                    if (targetStageId !== nextStageId && targetStageId !== prevStageId) {
+                        this.notification.add({
+                            title: "Déplacement interdit",
+                            message: "Vous ne pouvez déplacer la carte qu'à l'étape précédente ou suivante.",
+                            type: "warning",
+                        });
+                        return;
+                    }
+
+                    // Appeler la méthode serveur correspondante
+                    const method = targetStageId === nextStageId ? "action_move_to_next_stage" : "action_move_to_previous_stage";
+
+                    try {
+                        await this.orm.call(
+                            "construction.chantier",
+                            method,
+                            [[draggedRecordId]],
+                            {context: this.env.context || {}}
+                        );
+
+                        // Recharger l'action courante pour refléter les changements
+                        this.actionService.doAction({type: "ir.actions.client", tag: "reload"});
+                    } catch (err) {
+                        // Erreur côté serveur (ValidationError, etc.)
+                        const message = err?.data?.message || err?.message || "Erreur inconnue";
+                        this.notification.add({
+                            title: "Impossible de changer d'étape",
+                            message,
+                            type: "danger",
+                        });
+                    }
+                } catch (rpcErr) {
+                    console.error("Erreur RPC lors de la validation de déplacement :", rpcErr);
+                    this.notification.add({
+                        title: "Erreur technique",
+                        message: "Impossible de vérifier le déplacement.",
+                        type: "danger",
+                    });
+                }
             });
         });
     }

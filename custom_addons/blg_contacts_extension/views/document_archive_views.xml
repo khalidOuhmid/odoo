@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Search view for document archives -->
+    <record id="view_document_archive_search" model="ir.ui.view">
+        <field name="name">document.archive.search</field>
+        <field name="model">document.archive</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="document_type"/>
+                <field name="create_date"/>
+                <field name="create_uid"/>
+                <filter string="Carte d'identité" name="identity_card" domain="[('document_type', '=', 'identity_card')]"/>
+                <filter string="URSSAF" name="urssaf" domain="[('document_type', '=', 'urssaf')]"/>
+                <filter string="KBIS" name="kbis" domain="[('document_type', '=', 'kbis')]"/>
+                <filter string="Assurance" name="insurance" domain="[('document_type', '=', 'insurance')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Type de document" name="group_by_type" context="{'group_by': 'document_type'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'create_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- List view for document archives -->
+    <record id="view_document_archive_list" model="ir.ui.view">
+        <field name="name">document.archive.list</field>
+        <field name="model">document.archive</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="create_date" string="Date d'archivage"/>
+                <field name="document_type" string="Type"/>
+                <field name="name" string="Nom du fichier"/>
+                <field name="create_uid" string="Archivé par"/>
+                <button name="action_view_document" type="object" string="Voir" class="btn btn-sm btn-outline-primary" icon="fa-eye"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form view for document archives -->
+    <record id="view_document_archive_form" model="ir.ui.view">
+        <field name="name">document.archive.form</field>
+        <field name="model">document.archive</field>
+        <field name="arch" type="xml">
+            <form string="Document Archive">
+                <sheet>
+                    <group>
+                        <field name="partner_id"/>
+                        <field name="document_type"/>
+                        <field name="name"/>
+                        <field name="archive_date"/>
+                        <field name="archive_reason"/>
+                        <field name="original_expiry_date"/>
+                        <field name="original_status"/>
+                    </group>
+                    <group>
+                        <field name="document" filename="name" widget="binary"/>
+                    </group>
+                    <group>
+                        <field name="archived_by" readonly="1"/>
+                        <field name="file_size" readonly="1"/>
+                    </group>
+                    <button name="action_view_document" string="Télécharger" type="object" class="btn-primary"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

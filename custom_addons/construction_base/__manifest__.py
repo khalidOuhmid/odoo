@@ -15,7 +15,9 @@
         'base',
         'contacts',
         'construction_lots',
+        'blg_contacts_extension',
         'sale',
+        'mail',
     ],
     'data': [
         # Security
@@ -25,16 +27,19 @@
         # Data
         'data/sequence_data.xml',
         'data/construction_data.xml',
+        'data/construction_lot_data.xml',
         
         # Views
         'views/main_views.xml',
         'views/menu.xml',
+        'views/invoice_type_views.xml',
         'views/chantier_views.xml',
         'views/visit_views.xml',
         'views/templates.xml',
         
-        # Wizards - temporairement désactivé
-        # 'wizard/force_stage_wizard_view.xml'
+        # Wizards
+        'wizard/force_stage_wizard_view.xml',
+        'wizard/quote_split_wizard_views.xml',
     ],
     'assets': {
         'web.assets_backend': [

@@ -1,0 +1,753 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main upload form with modern, professional design -->
+    <template id="document_upload_form" name="Upload Documents">
+        <t t-call="web.frontend_layout">
+            <!-- Modern font and fallback for icons -->
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&amp;display=swap"/>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+            <t t-set="title">Documents administratifs - BLG Groupe</t>
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <style>
+                body, .o_document_portal {
+                    font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+                    background: linear-gradient(135deg, #f8fafc 0%, #e9f0fa 100%);
+                    min-height: 100vh;
+                    color: #334155;
+                }
+                .o_document_portal .section-title {
+                    font-size: 1.75rem;
+                    font-weight: 700;
+                    color: #1e40af;
+                    margin-bottom: 1.25rem;
+                    letter-spacing: -0.01em;
+                }
+                .o_document_portal .upload-card {
+                    border-radius: 16px;
+                    box-shadow: 0 4px 20px rgba(15,23,42,0.08);
+                    border: 1px solid rgba(226,232,240,0.8);
+                    background: #fff;
+                    transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+                }
+                .o_document_portal .upload-card:hover {
+                    transform: translateY(-3px);
+                    box-shadow: 0 12px 28px rgba(15,23,42,0.12);
+                }
+                .o_document_portal .card-header {
+                    background: rgba(248,250,252,0.7);
+                    border-bottom: 1px solid rgba(226,232,240,0.7);
+                    border-radius: 16px 16px 0 0;
+                    padding: 1rem 1.25rem;
+                }
+                /* Badge styling */
+                .o_document_portal .badge {
+                    padding: 0.35em 0.65em;
+                    font-weight: 500;
+                    font-size: 0.75em;
+                    border-radius: 6px;
+                }
+                .o_document_portal .badge.bg-primary {
+                    background: #1e40af !important;
+                }
+                .o_document_portal .badge.bg-danger {
+                    background: #dc2626 !important;
+                }
+                .o_document_portal .badge.bg-warning {
+                    background: #eab308 !important; 
+                    color: #1e293b !important;
+                }
+                .o_document_portal .badge.bg-success {
+                    background: #16a34a !important;
+                }
+                .o_document_portal .badge.bg-info {
+                    background: #0ea5e9 !important;
+                }
+                /* File upload styling */
+                .o_document_portal .file-upload-wrapper {
+                    position: relative;
+                    border: 2px dashed #cbd5e1;
+                    border-radius: 12px;
+                    padding: 2rem 1.5rem;
+                    text-align: center;
+                    background: #f8fafc;
+                    transition: all 0.2s ease;
+                    cursor: pointer;
+                }
+                .o_document_portal .file-upload-wrapper:hover,
+                .o_document_portal .file-upload-wrapper.dragover {
+                    background: #f1f5f9;
+                    border-color: #94a3b8;
+                }
+                .o_document_portal .file-upload-input {
+                    position: absolute;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    opacity: 0;
+                    cursor: pointer;
+                    z-index: 10;
+                }
+                .o_document_portal .upload-content {
+                    pointer-events: none;
+                }
+                .o_document_portal .upload-content .fa-file-pdf {
+                    color: #1e40af;
+                    font-size: 2.2rem;
+                    margin-bottom: 0.75rem;
+                }
+                .o_document_portal .upload-text {
+                    color: #64748b;
+                    font-weight: 500;
+                    font-size: 0.95rem;
+                    line-height: 1.5;
+                }
+                .o_document_portal .uploaded-file {
+                    display: none;
+                    background: #f0fdf4;
+                    border: 1px solid #dcfce7;
+                    border-radius: 10px;
+                    padding: 0.75rem 1rem;
+                    margin-top: 0.75rem;
+                    font-weight: 500;
+                    color: #166534;
+                    animation: fadeSlideIn 0.3s forwards;
+                    align-items: center;
+                }
+                .o_document_portal .uploaded-file .fa-check-circle {
+                    color: #16a34a;
+                    margin-right: 0.5rem;
+                }
+                .o_document_portal .uploaded-file .filename {
+                    color: #166534;
+                    font-size: 0.9rem;
+                    text-overflow: ellipsis;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    flex: 1;
+                }
+                .o_document_portal .progress {
+                    height: 8px;
+                    border-radius: 4px;
+                    background-color: #e2e8f0;
+                    overflow: hidden;
+                }
+                .o_document_portal .progress-bar {
+                    background-color: #1e40af;
+                    transition: width 0.3s ease;
+                }
+                /* Alert styling */
+                .o_document_portal .alert {
+                    border-radius: 12px;
+                    font-size: 0.975rem;
+                    border: none;
+                    box-shadow: 0 2px 10px rgba(15,23,42,0.08);
+                }
+                .o_document_portal .alert-info {
+                    background-color: #eff6ff;
+                    color: #1e40af;
+                    border-left: 4px solid #3b82f6;
+                }
+                .o_document_portal .alert-success {
+                    background-color: #f0fdf4;
+                    color: #166534;
+                    border-left: 4px solid #22c55e;
+                }
+                /* Button styling */
+                .o_document_portal .btn {
+                    border-radius: 10px;
+                    font-weight: 500;
+                    padding: 0.65rem 1.25rem;
+                    transition: all 0.2s ease;
+                }
+                .o_document_portal .btn-primary {
+                    background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
+                    border: none;
+                    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.25);
+                }
+                .o_document_portal .btn-primary:hover, 
+                .o_document_portal .btn-primary:focus {
+                    background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+                    box-shadow: 0 4px 12px rgba(30, 64, 175, 0.35);
+                    transform: translateY(-1px);
+                }
+                .o_document_portal .btn-outline-secondary {
+                    border: 1.5px solid #1e40af;
+                    color: #1e40af;
+                    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.08);
+                }
+                .o_document_portal .btn-outline-secondary:hover, 
+                .o_document_portal .btn-outline-secondary:focus {
+                    background: #1e40af;
+                    color: #fff;
+                    box-shadow: 0 2px 8px rgba(30, 64, 175, 0.25);
+                }
+                /* Header and footer */
+                .o_document_portal .custom-header {
+                    padding: 1.25rem 0;
+                    background: rgba(255, 255, 255, 0.7);
+                    backdrop-filter: blur(10px);
+                    -webkit-backdrop-filter: blur(10px);
+                    border-bottom: 1px solid rgba(226,232,240,0.8);
+                }
+                .o_document_portal .brand-logo {
+                    height: 42px;
+                }
+                .o_document_portal .brand-text {
+                    font-size: 1.5rem;
+                    font-weight: 700;
+                    color: #1e40af;
+                    margin-left: 0.75rem;
+                    letter-spacing: -0.01em;
+                }
+                /* Status indicators */
+                .status-indicator {
+                    display: inline-flex;
+                    align-items: center;
+                    padding: 0.5rem 0.75rem;
+                    border-radius: 8px;
+                    font-size: 0.85rem;
+                    font-weight: 500;
+                    margin-bottom: 1rem;
+                }
+                .status-indicator i {
+                    margin-right: 0.4rem;
+                }
+                .status-rejected {
+                    background-color: #fee2e2;
+                    color: #b91c1c;
+                }
+                .status-missing {
+                    background-color: #dbeafe;
+                    color: #1e40af;
+                }
+                .status-expired {
+                    background-color: #fee2e2;
+                    color: #b91c1c;
+                }
+                .status-expiring {
+                    background-color: #fef3c7;
+                    color: #92400e;
+                }
+                .status-optional {
+                    background-color: #f1f5f9;
+                    color: #475569;
+                }
+                .uploaded-indicator {
+                    background-color: #dcfce7;
+                    color: #166534;
+                    animation: fadeInScale 0.5s ease-out;
+                }
+                /* Animation keyframes */
+                @keyframes fadeInScale {
+                    0% { transform: scale(0.9); opacity: 0; }
+                    100% { transform: scale(1); opacity: 1; }
+                }
+                @keyframes fadeSlideIn {
+                    0% { opacity: 0; transform: translateY(-8px); }
+                    100% { opacity: 1; transform: translateY(0); }
+                }
+                /* Document uploaded state */
+                .upload-card.document-uploaded {
+                    border-left: 4px solid #16a34a !important;
+                    box-shadow: 0 4px 16px rgba(22, 163, 74, 0.12) !important;
+                }
+                .upload-card.document-uploaded.border-danger,
+                .upload-card.document-uploaded.border-warning {
+                    border: 1px solid rgba(226,232,240,0.8) !important;
+                    border-left: 4px solid #16a34a !important;
+                }
+                /* Animation for status icons */
+                .success-animation i {
+                    font-size: 4rem;
+                    animation: pulseSuccess 1s infinite alternate;
+                }
+                .error-animation i,
+                .info-animation i {
+                    font-size: 4rem;
+                }
+                @keyframes pulseSuccess {
+                    0% { transform: scale(1); }
+                    100% { transform: scale(1.05); }
+                }
+                /* Form field styling */
+                .o_document_portal .form-label {
+                    font-weight: 500;
+                    color: #475569;
+                    margin-bottom: 0.4rem;
+                }
+                .o_document_portal .form-control {
+                    border: 1px solid #cbd5e1;
+                    border-radius: 8px;
+                    padding: 0.6rem 0.75rem;
+                    font-size: 0.95rem;
+                    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+                }
+                .o_document_portal .form-control:focus {
+                    border-color: #3b82f6;
+                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+                }
+                .o_document_portal .input-group-text {
+                    border-radius: 8px 0 0 8px;
+                    background-color: #f1f5f9;
+                    border-color: #cbd5e1;
+                    color: #64748b;
+                }
+                /* Mobile responsiveness */
+                @media (max-width: 991px) {
+                    .o_document_portal .upload-card { min-height: 0; margin-bottom: 1rem; }
+                    .o_document_portal .card-body { padding: 1.1rem; }
+                    .o_document_portal .file-upload-wrapper { padding: 1.5rem 1rem; }
+                    .o_document_portal .section-title { font-size: 1.5rem; }
+                    .o_document_portal .brand-text { font-size: 1.25rem; }
+                }
+                /* Fix for Odoo framework interference */
+                .o_main_navbar, .o_main, .o_web_client {
+                    display: none !important;
+                }
+                .o_frontend_layout_container {
+                    padding: 0 !important;
+                }
+                
+                /* Added JavaScript to enhance the form */
+                /* This will be executed when the document is ready */
+                #documentUploadForm:not(.js-applied) {
+                    opacity: 0;
+                    animation: fadeIn 0.5s forwards;
+                }
+                @keyframes fadeIn {
+                    0% { opacity: 0; }
+                    100% { opacity: 1; }
+                }
+            </style>
+            <div class="o_document_portal d-flex flex-column min-vh-100">
+                <!-- Custom header with improved styling -->
+                <div class="custom-header py-3">
+                    <div class="container d-flex align-items-center">
+                        <img t-att-src="'/blg_contacts_extension/static/src/img/icon.png'" 
+                             alt="Logo" 
+                             class="brand-logo"
+                             onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
+                        <span class="brand-text">BLG Groupe</span>
+                    </div>
+                </div>
+
+                <!-- Main content area with improved spacing and layout -->
+                <div class="container flex-grow-1 py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-10">
+                            <div class="text-center mb-4">
+                                <div class="section-title">Documents administratifs à fournir</div>
+                                <p class="text-muted mb-0">Téléversez vos documents obligatoires ci-dessous</p>
+                            </div>
+                            
+                            <!-- Success message with enhanced design -->
+                            <div t-if="uploaded_docs" class="alert alert-success mb-4">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        <i class="fa fa-check-circle fa-2x"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-1 fw-bold">Documents envoyés avec succès</h5>
+                                        <p class="mb-1">Les documents suivants ont été téléchargés avec succès:</p>
+                                        <ul class="mb-0 ps-3">
+                                            <t t-foreach="uploaded_docs" t-as="doc">
+                                                <li><t t-esc="document_types.get(doc, doc)"/></li>
+                                            </t>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Required Documents Guide with cleaner layout -->
+                            <div class="alert alert-info mb-4">
+                                <div class="d-flex align-items-start">
+                                    <div class="me-3 pt-1">
+                                        <i class="fa fa-info-circle fa-lg"></i>
+                                    </div>
+                                    <div>
+                                        <h5 class="mb-2 fw-bold">Guide des documents</h5>
+                                        <p class="mb-1">Documents <span class="badge bg-primary">Requis</span> : Ces documents doivent être fournis en priorité</p>
+                                        <p class="mb-0">Documents expirés ou rejetés doivent être renouvelés rapidement</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Main form with improved upload UI -->
+                            <form method="post" enctype="multipart/form-data" id="documentUploadForm" autocomplete="off" 
+                                  class="document-upload-form mb-5"
+                                  t-att-data-partner-name="partner.name">
+                                <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                
+                                <!-- Document categories with improved card design -->
+                                <div class="row g-4">
+                                    <t t-foreach="document_types.items()" t-as="doc">
+                                        <div class="col-lg-6">
+                                            <div t-att-class="'card upload-card h-100' + 
+                                                (doc_expired.get(doc[0]) and ' border-danger' or 
+                                                (doc_expiring.get(doc[0]) and ' border-warning' or '')) +
+                                                (uploaded_docs and doc[0] in uploaded_docs and ' document-uploaded' or '')">
+                                                
+                                                <!-- Card header with cleaner badge layout -->
+                                                <div class="card-header">
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <h5 class="mb-0 fw-bold">
+                                                            <t t-esc="doc[1]"/>
+                                                            <t t-if="critical_documents.get(doc[0], False)">
+                                                                <span class="badge bg-primary ms-2">Requis</span>
+                                                            </t>
+                                                        </h5>
+                                                        <div>
+                                                            <t t-if="doc_expired.get(doc[0])">
+                                                                <span class="badge bg-danger"><i class="fa fa-exclamation-triangle me-1"></i>Expiré</span>
+                                                            </t>
+                                                            <t t-elif="doc_expiring.get(doc[0])">
+                                                                <span class="badge bg-warning">
+                                                                    <i class="fa fa-clock me-1"></i>Expire bientôt
+                                                                </span>
+                                                            </t>
+                                                            <t t-if="uploaded_docs and doc[0] in uploaded_docs">
+                                                                <span class="badge bg-success ms-2">
+                                                                    <i class="fa fa-check me-1"></i>Envoyé
+                                                                </span>
+                                                            </t>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Card body with improved upload controls -->
+                                                <div class="card-body p-4">
+                                                    <!-- Enhanced document status indicators -->
+                                                    <div t-if="doc_expired.get(doc[0])" class="status-indicator status-expired">
+                                                        <i class="fa fa-exclamation-triangle"></i>
+                                                        <t t-if="doc_expiry_dates.get(doc[0])">
+                                                            Document expiré le <t t-esc="doc_expiry_dates.get(doc[0])"/>
+                                                        </t>
+                                                        <t t-else="">
+                                                            Document expiré
+                                                        </t>
+                                                    </div>
+                                                    
+                                                    <div t-elif="doc_expiring.get(doc[0])" class="status-indicator status-expiring">
+                                                        <i class="fa fa-clock"></i>
+                                                        <span>Expire dans <t t-esc="doc_days_to_expiry.get(doc[0], 0)"/> jours</span>
+                                                    </div>
+                                                    
+                                                    <div t-if="uploaded_docs and doc[0] in uploaded_docs" class="status-indicator uploaded-indicator">
+                                                        <i class="fa fa-check-circle"></i>
+                                                        <span>Document envoyé avec succès</span>
+                                                    </div>
+
+                                                    <!-- Improved file upload area -->
+                                                    <div class="mb-3">
+                                                        <div class="file-upload-wrapper" t-att-id="'dropzone-%s' % doc[0]" t-att-data-doctype="doc[0]">
+                                                            <input type="file" t-att-name="'document_%s' % doc[0]"
+                                                                   t-att-id="'document_%s' % doc[0]"
+                                                                   class="file-upload-input"
+                                                                   t-att-required="critical_documents.get(doc[0], False)"
+                                                                   accept="application/pdf"/>
+                                                            <div class="upload-content">
+                                                                <i class="fa fa-file-pdf upload-icon"></i>
+                                                                <div class="upload-text">
+                                                                    Glissez votre fichier PDF ici<br/>ou cliquez pour parcourir
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div t-att-id="'uploaded-file-%s' % doc[0]" class="uploaded-file">
+                                                            <i class="fa fa-check-circle"></i>
+                                                            <span class="filename"></span>
+                                                        </div>
+                                                        <div t-if="error.get(doc[0])" class="text-danger mt-2 small">
+                                                            <i class="fa fa-exclamation-triangle me-1"></i>
+                                                            <t t-esc="error.get(doc[0])"/>
+                                                        </div>
+                                                        <div t-att-id="'progress-%s' % doc[0]" class="progress mt-2" style="display: none;">
+                                                            <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <t t-if="doc_has_expiry.get(doc[0], True) and doc[0] not in ['urssaf', 'kbis', 'rib']">
+                                                        <div class="mb-3">
+                                                            <label t-att-for="'expiry_%s' % doc[0]" class="form-label">
+                                                                Date d'expiration
+                                                                <t t-if="doc_expired.get(doc[0])">
+                                                                    <span class="text-danger">*</span>
+                                                                </t>
+                                                            </label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text"><i class="fa fa-calendar"></i></span>
+                                                                <input type="date" t-att-name="'expiry_%s' % doc[0]"
+                                                                    class="form-control"
+                                                                    t-att-id="'expiry_%s' % doc[0]"
+                                                                    t-att-required="doc_expired.get(doc[0], False) or critical_documents.get(doc[0], False) and doc_has_expiry.get(doc[0], True)"
+                                                                    t-att-min="today.strftime('%Y-%m-%d')"/>
+                                                            </div>
+                                                            <input type="hidden" t-att-name="'expiry_%s_required' % doc[0]" t-att-value="doc_expired.get(doc[0], False) or critical_documents.get(doc[0], False) and doc_has_expiry.get(doc[0], True)"/>
+                                                        </div>
+                                                    </t>
+                                                    
+                                                    <!-- Special fields for documents with auto-calculated expiry -->
+                                                    <t t-if="doc[0] in ['urssaf', 'kbis']">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Date d'expiration</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text bg-primary text-white"><i class="fa fa-info-circle"></i></span>
+                                                                <input type="text" class="form-control" disabled="disabled"
+                                                                    value="Automatiquement calculée (3 mois)"/>
+                                                            </div>
+                                                            <div class="form-text mt-1 small">
+                                                                <i class="fa fa-info-circle me-1"></i>
+                                                                Fixée automatiquement par le système
+                                                            </div>
+                                                            <input type="hidden" t-att-name="'expiry_%s' % doc[0]" value=""/>
+                                                        </div>
+                                                    </t>
+                                                    
+                                                    <!-- Fields for documents with no expiry -->
+                                                    <t t-if="doc[0] == 'rib' or (not doc_has_expiry.get(doc[0], True))">
+                                                        <div class="mb-3">
+                                                            <label class="form-label">Date d'expiration</label>
+                                                            <div class="input-group">
+                                                                <span class="input-group-text bg-info text-white"><i class="fa fa-infinity"></i></span>
+                                                                <input type="text" class="form-control" disabled="disabled"
+                                                                    value="Document sans date d'expiration"/>
+                                                            </div>
+                                                        </div>
+                                                    </t>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+                                </div>
+                                
+                                <!-- Submit button with improved styling -->
+                                <div class="text-center mt-5">
+                                    <button type="submit" id="submitBtn" class="btn btn-primary btn-lg px-4 py-2">
+                                        <i class="fa fa-upload me-2"></i>Envoyer les documents
+                                    </button>
+                                    <div class="mt-2 small text-muted">
+                                        <i class="fa fa-shield-alt me-1"></i>
+                                        Transmission sécurisée
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Removing the buggy footer -->
+                <!-- The custom-footer div has been removed -->
+            </div>
+            
+            <!-- JavaScript to enhance the form interaction -->
+            <script type="text/javascript">
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Mark form as having JavaScript applied
+                    const form = document.getElementById('documentUploadForm');
+                    if (form) {
+                        form.classList.add('js-applied');
+                        
+                        // Prevent header issues on form submission
+                        form.addEventListener('submit', function(e) {
+                            // Add loading indication
+                            const submitBtn = document.getElementById('submitBtn');
+                            if (submitBtn) {
+                                submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Traitement en cours...';
+                                submitBtn.disabled = true;
+                            }
+                            
+                            // Fix header by ensuring it stays visible
+                            const header = document.querySelector('.custom-header');
+                            if (header) {
+                                header.style.position = 'sticky';
+                                header.style.top = '0';
+                                header.style.zIndex = '1000';
+                            }
+                            
+                            // Allow form submission to continue
+                            return true;
+                        });
+                        
+                        // Setup file upload interaction
+                        document.querySelectorAll('.file-upload-wrapper').forEach(dropzone => {
+                            const input = dropzone.querySelector('.file-upload-input');
+                            const docType = dropzone.getAttribute('data-doctype');
+                            const uploadedFileEl = document.getElementById('uploaded-file-' + docType);
+                            const filenameEl = uploadedFileEl ? uploadedFileEl.querySelector('.filename') : null;
+                            
+                            // Handle drag &amp; drop events
+                            ['dragover', 'dragenter'].forEach(eventName => {
+                                dropzone.addEventListener(eventName, e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    dropzone.classList.add('dragover');
+                                });
+                            });
+                            
+                            ['dragleave', 'dragend', 'drop'].forEach(eventName => {
+                                dropzone.addEventListener(eventName, e => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    dropzone.classList.remove('dragover');
+                                });
+                            });
+                            
+                            // Handle file selection
+                            input.addEventListener('change', e => {
+                                if (input.files &amp;&amp; input.files[0]) {
+                                    const file = input.files[0];
+                                    if (filenameEl) {
+                                        filenameEl.textContent = file.name;
+                                        uploadedFileEl.style.display = 'flex';
+                                    }
+                                    
+                                    // Animation for the card to indicate successful selection
+                                    const card = dropzone.closest('.upload-card');
+                                    if (card) {
+                                        card.classList.add('document-uploaded');
+                                    }
+                                }
+                            });
+                        });
+                    }
+                });
+            </script>
+        </t>
+    </template>
+    
+    <!-- Success page with animation -->
+    <template id="document_upload_success" name="Upload Success">
+        <t t-call="web.frontend_layout">
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600,700&amp;display=swap"/>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+            <t t-set="title">Documents envoyés - BLG Groupe</t>
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <div class="o_document_portal d-flex flex-column min-vh-100">
+                <!-- Success message -->
+                <div class="container flex-grow-1 py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 col-lg-6 text-center">
+                            <div class="card border-0 shadow p-5 success-card">
+                                <div class="mb-4 success-animation">
+                                    <i class="fa fa-check-circle text-success"></i>
+                                </div>
+                                <h2 class="mb-3">Documents envoyés avec succès</h2>
+                                <p class="text-muted mb-4">
+                                    Vos documents ont bien été reçus et seront vérifiés prochainement par notre équipe administrative.
+                                </p>
+                                <hr class="my-4"/>
+                                <p class="small text-muted mb-4">
+                                    Vous pouvez fermer cette fenêtre en toute sécurité.
+                                </p>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button onclick="window.close();" class="btn btn-outline-secondary px-4">
+                                        <i class="fa fa-times me-2"></i>Fermer
+                                    </button>
+                                    <a href="/" class="btn btn-outline-secondary px-4">
+                                        <i class="fa fa-arrow-left me-2"></i>Retour accueil
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- Error page with animation -->
+    <template id="document_upload_error" name="Upload Error / Expired Link">
+        <t t-call="web.frontend_layout">
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600,700&amp;display=swap"/>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+            <t t-set="title">Erreur - BLG Groupe</t>
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <div class="o_document_portal d-flex flex-column min-vh-100">
+                <!-- Header -->
+                <div class="custom-header">
+                    <div class="container d-flex align-items-center">
+                        <img t-att-src="'/blg_contacts_extension/static/src/img/icon.png'" alt="Logo" 
+                             class="brand-logo"
+                             onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
+                        <span class="brand-text">BLG Groupe</span>
+                    </div>
+                </div>
+                <!-- Error message -->
+                <div class="container flex-grow-1 py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 col-lg-6 text-center">
+                            <div class="card border-0 shadow p-5">
+                                <div class="mb-4 error-animation">
+                                    <i class="fa fa-exclamation-circle text-danger"></i>
+                                </div>
+                                <h2 class="mb-3">Lien expiré ou invalide</h2>
+                                <p class="text-muted mb-4">
+                                    Ce lien n'est plus valide ou a déjà été utilisé.<br/>
+                                    Merci de contacter l'équipe BLG Groupe si vous pensez qu'il s'agit d'une erreur.
+                                </p>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button onclick="window.close();" class="btn btn-outline-secondary px-4">
+                                        <i class="fa fa-times me-2"></i>Fermer
+                                    </button>
+                                    <a href="/" class="btn btn-outline-secondary px-4">
+                                        <i class="fa fa-arrow-left me-2"></i>Retour accueil
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+    
+    <!-- Page shown when no documents are currently needed -->
+    <template id="document_upload_no_documents" name="No Documents Needed">
+        <t t-call="web.frontend_layout">
+            <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,600,700&amp;display=swap"/>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+            <t t-set="title">Dossier à jour - BLG Groupe</t>
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            <div class="o_document_portal d-flex flex-column min-vh-100">
+                <!-- Header -->
+                <div class="custom-header">
+                    <div class="container d-flex align-items-center">
+                        <img t-att-src="'/blg_contacts_extension/static/src/img/icon.png'" alt="Logo" 
+                             class="brand-logo"
+                             onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
+                        <span class="brand-text">BLG Groupe</span>
+                    </div>
+                </div>
+                <!-- Info message -->
+                <div class="container flex-grow-1 py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8 col-lg-6 text-center">
+                            <div class="card border-0 shadow p-5">
+                                <div class="mb-4 info-animation">
+                                    <i class="fa fa-info-circle text-info"></i>
+                                </div>
+                                <h2 class="mb-3">Dossier à jour</h2>
+                                <p class="text-muted mb-4">
+                                    Tous vos documents sont à jour. Vous n'avez actuellement aucune action à effectuer.
+                                </p>
+                                <div class="d-flex justify-content-center gap-2">
+                                    <button onclick="window.close();" class="btn btn-outline-secondary px-4">
+                                        <i class="fa fa-times me-2"></i>Fermer
+                                    </button>
+                                    <a href="/" class="btn btn-outline-secondary px-4">
+                                        <i class="fa fa-arrow-left me-2"></i>Retour accueil
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+</odoo>

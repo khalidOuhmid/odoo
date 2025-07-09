@@ -8,30 +8,29 @@
 
 ## 📋 Vue d'ensemble
 
-Extension intelligente du module `sale` d'Odoo, spécialement conçue pour les entreprises de construction. Cette version **2.0** a été entièrement refactorisée pour offrir une expérience utilisateur moderne et intuitive.
+Le module **Construction Sale Extension** est une extension intelligente pour la création de devis dans le contexte de projets de construction. Il s'intègre parfaitement avec le module `construction_base` pour offrir une expérience utilisateur moderne et efficace.
 
 ## ✨ Fonctionnalités principales
 
-### 🎯 **Devis par lots**
-- **Sélection rapide par lots** : Choisissez les lots depuis le chantier
-- **Organisation automatique** : Sections créées automatiquement par lot
-- **Interface intuitive** : Workflow guidé et épuré
+### 🚀 Assistant intelligent de devis
 
-### 🛠️ **Ajout de produits intelligent**
-- **Wizard moderne** : Interface claire avec onglets recherche/sélection
-- **Recherche avancée** : Filtres par nom, catégorie, prix
-- **Vue Kanban** : Sélection visuelle des produits
-- **Création rapide** : Nouveau produit en quelques clics
+- **Interface moderne** : Wizard intuitif avec design contemporain
+- **Gestion par lots** : Organisation automatique des produits par lots de construction
+- **Recherche avancée** : Filtrage intelligent des produits par catégorie et lots
+- **Intégration native** : Liaison directe avec les chantiers de construction
 
-### 📍 **Localisation précise**
-- **Champs spécialisés BTP** : Pièce, étage, numéro
-- **Notes techniques** : Commentaires pour l'installation
-- **Flexibilité** : Adaptation à tous types de chantiers
+### 📋 Gestion des devis construction
 
-### 🔗 **Compatibilité BLG**
-- **Rétrocompatibilité** : Fonctionne avec les modules BLG existants
-- **Migration transparente** : Aucune perte de données
-- **Coexistence** : Ancien et nouveau système en parallèle
+- **Validation intelligente** : Progression automatique des étapes de chantier
+- **Organisation automatique** : Création de sections par lots
+- **Informations détaillées** : Localisation par pièce, niveau, notes techniques
+- **Statistiques temps réel** : Compteurs de lignes, quantités, montants
+
+### 🎨 Interface utilisateur
+
+- **Design moderne** : Interface responsive avec animations fluides
+- **Feedback visuel** : Notifications et indicateurs de progression
+- **UX optimisée** : Double-clic pour ajouter, glisser-déposer, recherche instantanée
 
 ## 🏗️ Architecture refactorisée
 
@@ -39,21 +38,29 @@ Extension intelligente du module `sale` d'Odoo, spécialement conçue pour les e
 
 ```
 construction_sale/
+├── __manifest__.py                 # Configuration du module
+├── README.md                       # Documentation
 ├── models/
-│   ├── sale_order_extension.py     # 🎯 Extension moderne de sale.order
-│   ├── product_template.py         # 📦 Extension des produits
-│   └── blg_compatibility.py        # 🔗 Compatibilité BLG isolée
+│   ├── __init__.py
+│   ├── sale_order_extension.py     # Extension sale.order (SOLID)
+│   └── product_template.py         # Extension product.template
 ├── wizards/
-│   ├── product_wizard.py           # 🧙 Assistant d'ajout de produits
-│   ├── quick_product_wizard.py     # ⚡ Création rapide de produits
-│   ├── quote_builder_wizard.py     # 📋 Construction de devis
-│   └── import_email_wizard.py      # 📧 Import depuis email
+│   ├── __init__.py
+│   ├── quote_wizard.py             # Wizard principal (clean code)
+│   └── quote_wizard_views.xml      # Vues XML du wizard
 ├── views/
-│   └── modern_wizards.xml          # 🎨 Vues modernes et épurées
-├── data/
-│   └── product_category_data.xml   # 📂 Catégories pré-configurées
-└── security/
-    └── ir.model.access.csv         # 🔐 Droits d'accès
+│   ├── modern_wizards.xml          # Interface moderne principale
+│   └── sale_order_views.xml        # Vues sale.order adaptées
+├── static/src/
+│   ├── scss/
+│   │   └── quote_builder.scss      # Styles modernes
+│   └── js/
+│       └── quote_builder.js        # Interactions JavaScript
+├── security/
+│   └── ir.model.access.csv         # Droits d'accès
+└── data/
+    ├── product_category_data.xml   # Catégories de produits
+    └── product_sequence_data.xml   # Séquences automatiques
 ```
 
 ### **Séparation des responsabilités**
@@ -61,9 +68,7 @@ construction_sale/
 | Module | Responsabilité |
 |--------|---------------|
 | `sale_order_extension.py` | 🎯 **Logique métier moderne** - Actions, calculs, workflow |
-| `blg_compatibility.py` | 🔗 **Compatibilité BLG** - Tous les modèles de compatibilité |
 | `product_wizard.py` | 🧙 **Assistant principal** - Recherche et sélection de produits |
-| `quick_product_wizard.py` | ⚡ **Création rapide** - Nouveau produit simplifié |
 
 ## 🚀 Installation
 

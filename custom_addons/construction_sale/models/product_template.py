@@ -6,10 +6,7 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     lot_ids = fields.Many2many(
-        'lot',
-        'product_lot_rel',
-        'product_id',
-        'lot_id',
+        'construction.lot',
         string='Lots de construction',
         help="Lots de construction où ce produit/service peut être utilisé"
     )
@@ -34,3 +31,28 @@ class ProductProduct(models.Model):
 
     lot_ids = fields.Many2many(related='product_tmpl_id.lot_ids', readonly=False)
     construction_specialty = fields.Selection(related='product_tmpl_id.construction_specialty', readonly=False)
+
+    def action_add_product(self):
+        """Ajouter ce produit au wizard de devis actif"""
+        # Récupérer le wizard depuis le contexte
+        wizard_id = self.env.context.get('wizard_id')
+        active_id = self.env.context.get('active_id')
+        
+        if not wizard_id:
+            # Essayer de récupérer depuis le contexte parent si disponible
+            wizard_id = self.env.context.get('default_wizard_id')
+        
+        if wizard_id:
+            wizard = self.env['construction.quote.wizard'].browse(wizard_id)
+            wizard.with_context(product_id=self.id).action_add_product()
+            
+            # Recharger la vue wizard
+            return {
+                'type': 'ir.actions.act_window',
+                'res_model': 'construction.quote.wizard',
+                'res_id': wizard_id,
+                'view_mode': 'form',
+                'target': 'new',
+            }
+        
+        return {'type': 'ir.actions.do_nothing'}

@@ -1,0 +1,10 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_res_partner_doc_conductrice,access.res.partner.doc.conductrice,base.model_res_partner,blg_contacts_extension.group_conductrice_travaux,1,1,0,0
+access_res_partner_doc_directeur,access.res.partner.doc.directeur,base.model_res_partner,blg_contacts_extension.group_directeur_general,1,1,1,0
+access_document_archive_user,access.document.archive.user,model_document_archive,base.group_user,1,0,0,0
+access_document_archive_conductrice,access.document.archive.conductrice,model_document_archive,blg_contacts_extension.group_conductrice_travaux,1,1,1,0
+access_document_archive_directeur,access.document.archive.directeur,model_document_archive,blg_contacts_extension.group_directeur_general,1,1,1,1
+access_document_archive_admin,access.document.archive.admin,model_document_archive,base.group_system,1,1,1,1
+access_lot_user,lot.user,construction_lots.model_lot,base.group_user,1,0,0,0
+access_lot_contact_conductrice,lot.conductrice,construction_lots.model_lot,blg_contacts_extension.group_conductrice_travaux,1,1,0,0
+access_lot_contact_directeur,lot.directeur,construction_lots.model_lot,blg_contacts_extension.group_directeur_general,1,1,0,0

@@ -1,321 +1,233 @@
 # -*- coding: utf-8 -*-
 """
-Module: Construction Sale Order Extension
-Description: Extension intelligente du modèle sale.order pour la construction avec découpage
-Author: BLG Groupe
+Extension du modèle sale.order pour la gestion de devis construction
+Respecte les standards Odoo 18 et les principes SOLID
 """
 
-from odoo import models, fields, api, _
+from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class SaleOrderConstruction(models.Model):
-    """Extension du modèle sale.order pour la gestion des devis construction"""
+    """Extension du modèle sale.order pour la construction"""
     
     _inherit = 'sale.order'
 
-    # ================== CHAMPS PRINCIPAUX ==================
+    # =================== CHAMPS MÉTIER ===================
     
     chantier_id = fields.Many2one(
         'construction.chantier', 
         string='Chantier',
+        tracking=True,
         help="Projet de construction associé à ce devis"
     )
     
     lot_ids = fields.Many2many(
-        'lot', 
+        'construction.lot',
         string='Lots concernés',
         help="Lots de construction pour ce devis"
     )
 
-    # ================== CHAMPS POUR LE DÉCOUPAGE ==================
+    # =================== COMPATIBILITÉ  ===================
     
-    is_split = fields.Boolean(
-        string='Devis découpé',
-        default=False,
-        help="Indique si ce devis a été découpé en bons de commande"
-    )
-    
-    purchase_order_lot_ids = fields.One2many(
-        'purchase.order.lot',
-        'sale_order_id',
-        string='Bons de commande par lot',
-        help="Bons de commande générés à partir de ce devis"
-    )
-    
-    purchase_order_count = fields.Integer(
-        string='Nombre de bons de commande',
-        compute='_compute_purchase_order_count'
+    # Champ de compatibilité pour éviter les erreurs avec les modules BLG
+    lot_selection_ids = fields.Many2many(
+        'construction.lot',  # Utiliser construction.lot au lieu de lot.category
+        'sale_order_construction_lot_rel',
+        'order_id',
+        'lot_id',
+        string='Sélection de lots (compatibilité)',
+        help="Champ de compatibilité avec les modules BLG existants"
     )
 
-    # ================== CHAMPS CALCULÉS ==================
+    # =================== CHAMPS CALCULÉS ===================
     
     order_line_count = fields.Integer(
         string='Nombre de lignes',
-        compute='_compute_order_stats',
+        compute='_compute_order_statistics',
         store=True,
         help="Nombre de lignes de produits (hors sections/notes)"
     )
     
     total_quantity = fields.Float(
         string='Quantité totale',
-        compute='_compute_order_stats',
+        compute='_compute_order_statistics',
         store=True,
         help="Quantité totale de tous les produits"
     )
 
-    # ================== ÉTATS PERSONNALISÉS ==================
+    # =================== CONTRAINTES ===================
     
-    state = fields.Selection(
-        selection_add=[
-            ('validated', 'Devis validé'),
-            ('split', 'Découpé'),
-            ('no_follow', 'Sans suite'),
-            ('draft',)
-        ],
-        ondelete={'validated': 'cascade', 'split': 'cascade', 'no_follow': 'cascade'}
-    )
+    @api.constrains('chantier_id', 'lot_ids')
+    def _check_lot_coherence(self):
+        """Vérifie que les lots sélectionnés appartiennent au chantier"""
+        for record in self:
+            if record.chantier_id and record.lot_ids:
+                chantier_lots = record.chantier_id.lots_ids
+                invalid_lots = record.lot_ids - chantier_lots
+                if invalid_lots:
+                    raise ValidationError(_(
+                        "Les lots suivants n'appartiennent pas au chantier '%s' : %s"
+                    ) % (record.chantier_id.name, ', '.join(invalid_lots.mapped('name'))))
 
-    # ================== MÉTHODES CALCULÉES ==================
+    # =================== MÉTHODES CALCULÉES ===================
 
     @api.depends('order_line')
-    def _compute_order_stats(self):
-        """Calcule les statistiques des lignes de commande"""
-        for order in self:
-            product_lines = order.order_line.filtered(lambda l: not l.display_type)
-            order.order_line_count = len(product_lines)
-            order.total_quantity = sum(product_lines.mapped('product_uom_qty'))
+    def _compute_order_statistics(self):
+        """Calcule les statistiques du devis"""
+        for record in self:
+            # Filtrer uniquement les lignes de produits (pas les sections/notes)
+            product_lines = record.order_line.filtered(lambda l: not l.display_type)
+            record.order_line_count = len(product_lines)
+            record.total_quantity = sum(product_lines.mapped('product_uom_qty'))
 
-    @api.depends('purchase_order_lot_ids')
-    def _compute_purchase_order_count(self):
-        """Calcule le nombre de bons de commande générés"""
-        for order in self:
-            order.purchase_order_count = len(order.purchase_order_lot_ids)
+    # =================== SYNCHRONISATION  ===================
 
-    # ================== ACTIONS MÉTIER ==================
+    @api.onchange('lot_ids')
+    def _onchange_lot_ids_sync(self):
+        """Synchroniser lot_ids avec lot_selection_ids pour compatibilité"""
+        if self.lot_ids:
+            self.lot_selection_ids = self.lot_ids
 
-    def action_validate_quote(self):
-        """Valide le devis et fait progresser le chantier"""
+    @api.onchange('lot_selection_ids') 
+    def _onchange_lot_selection_ids_sync(self):
+        """Synchroniser lot_selection_ids avec lot_ids pour compatibilité"""
+        if self.lot_selection_ids:
+            self.lot_ids = self.lot_selection_ids
+
+    # =================== ACTIONS PRINCIPALES ===================
+
+    def action_add_product_wizard(self):
+        """Ouvrir l'assistant de sélection de produits"""
         self.ensure_one()
-        self.write({'state': 'validated'})
         
-        if self.chantier_id:
-            self._update_chantier_stage('stage_devis_accepte')
+        if not self.chantier_id:
+            raise ValidationError(_(
+                "Veuillez d'abord sélectionner un chantier pour utiliser l'assistant."
+            ))
         
-        return self._show_success_notification(
-            "Devis validé",
-            f"Le devis {self.name} a été validé avec succès."
-        )
-
-    def action_mark_no_follow(self):
-        """Marque le devis sans suite"""
-        self.ensure_one()
-        self.write({'state': 'no_follow'})
-        
-        if self.chantier_id:
-            self._update_chantier_stage('stage_sans_suite', abandon=True)
-        
-        return self._show_success_notification(
-            "Devis marqué sans suite",
-            f"Le devis {self.name} a été marqué sans suite."
-        )
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Assistant de création de devis'),
+            'res_model': 'construction.quote.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_sale_order_id': self.id,
+                'default_chantier_id': self.chantier_id.id,
+                'default_partner_id': self.partner_id.id,
+            }
+        }
 
     def action_organize_by_lots(self):
         """Organise le devis par sections de lots"""
         self.ensure_one()
         
         if not self.lot_ids:
-            return self._show_warning_notification(
-                "Aucun lot sélectionné",
-                "Veuillez d'abord sélectionner des lots pour ce devis."
-            )
+            raise ValidationError(_(
+                "Veuillez sélectionner des lots pour organiser ce devis."
+            ))
         
         self._create_lot_sections()
         
-        return self._show_success_notification(
-            "Devis organisé",
-            f"{len(self.lot_ids)} section(s) créée(s) pour les lots."
-        )
-
-    def action_add_product_wizard(self):
-        """Ouvre le wizard d'ajout de produit intelligent"""
-        self.ensure_one()
-        
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Ajouter des produits',
-            'res_model': 'construction.product.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_sale_order_id': self.id,
-                'default_lot_ids': [(6, 0, self.lot_ids.ids)],
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Devis organisé'),
+                'message': _('%d section(s) créée(s) pour les lots.') % len(self.lot_ids),
+                'type': 'success'
             }
         }
 
-    # ================== ACTIONS DÉCOUPAGE ==================
-
-    def action_split_quote(self):
-        """Ouvrir l'assistant de découpage du devis"""
+    def action_validate_quote(self):
+        """Valide le devis et met à jour le chantier"""
         self.ensure_one()
         
-        # Vérifications préliminaires
-        if not self.chantier_id:
-            raise ValidationError(
-                "Ce devis doit être associé à un chantier pour pouvoir être découpé."
-            )
-        
+        # Validation métier
         if not self.order_line.filtered(lambda l: not l.display_type):
-            raise ValidationError(
-                "Ce devis ne contient aucune ligne de produit à découper."
-            )
+            raise ValidationError(_(
+                "Impossible de valider un devis sans ligne de produit."
+            ))
         
-        if self.state not in ['draft', 'sent', 'sale', 'validated']:
-            raise ValidationError(
-                "Seuls les devis en brouillon, envoyés, confirmés ou validés peuvent être découpés."
-            )
+        # Confirmation de la commande
+        self.action_confirm()
         
-        # Ouvrir le wizard de découpage
+        # Mise à jour du chantier
+        if self.chantier_id:
+            self._update_chantier_on_validation()
+        
         return {
-            'type': 'ir.actions.act_window',
-            'name': 'Découper le devis',
-            'res_model': 'split.quote.wizard',
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'default_sale_order_id': self.id,
-                'active_id': self.id,
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Devis validé'),
+                'message': _('Le devis %s a été validé avec succès.') % self.name,
+                'type': 'success'
             }
         }
-    
-    def action_view_purchase_orders(self):
-        """Voir les bons de commande générés"""
-        self.ensure_one()
-        
-        if not self.purchase_order_lot_ids:
-            return self._show_warning_notification(
-                "Aucun bon de commande",
-                "Ce devis n'a pas encore été découpé en bons de commande."
-            )
-        
-        return {
-            'type': 'ir.actions.act_window',
-            'name': f'Bons de commande - {self.name}',
-            'res_model': 'purchase.order.lot',
-            'view_mode': 'kanban,tree,form',
-            'domain': [('sale_order_id', '=', self.id)],
-            'context': {
-                'default_sale_order_id': self.id,
-                'create': False,
-            },
-            'target': 'current',
-        }
 
-    def mark_as_split(self):
-        """Marquer le devis comme découpé"""
-        self.ensure_one()
-        self.write({
-            'state': 'split',
-            'is_split': True
-        })
+    # =================== MÉTHODES PRIVÉES ===================
 
-    # ================== MÉTHODES PRIVÉES ==================
-    
     def _create_lot_sections(self):
-        """Créer des sections pour chaque lot dans le devis"""
-        sequence = 10
+        """Crée des sections pour chaque lot dans le devis"""
+        sequence = self._get_next_sequence()
         
         for lot in self.lot_ids:
-            # Vérifier si une section pour ce lot existe déjà
-            existing_section = self.order_line.filtered(
-                lambda l: l.display_type == 'line_section' and lot.name in (l.name or '')
+            self._create_section_for_lot(lot, sequence)
+            sequence += 10
+
+    def _create_section_for_lot(self, lot, sequence):
+        """Crée une section pour un lot donné"""
+        section_vals = {
+            'order_id': self.id,
+            'display_type': 'line_section',
+            'name': _('📋 %s') % lot.name,
+            'sequence': sequence,
+        }
+        
+        self.env['sale.order.line'].create(section_vals)
+
+    def _get_next_sequence(self):
+        """Retourne la prochaine séquence disponible"""
+        if self.order_line:
+            return max(self.order_line.mapped('sequence')) + 10
+        return 10
+
+    def _update_chantier_on_validation(self):
+        """Met à jour le chantier lors de la validation du devis"""
+        try:
+            # Faire progresser le chantier vers l'étape "Devis accepté"
+            if hasattr(self.chantier_id, 'action_move_to_next_stage'):
+                self.chantier_id.action_move_to_next_stage()
+                
+            # Log de la validation
+            self.chantier_id.message_post(
+                body=_("Devis %s validé - Montant: %s") % (
+                    self.name, 
+                    f"{self.amount_total:,.2f} {self.currency_id.symbol}"
+                ),
+                message_type='notification'
             )
-            
-            if not existing_section:
-                # Créer une nouvelle section
-                self.env['sale.order.line'].create({
-                    'order_id': self.id,
-                    'display_type': 'line_section',
-                    'name': f"🏗️ {lot.name}",
-                    'sequence': sequence,
-                })
-                sequence += 10
+        except Exception as e:
+            # Ne pas bloquer la validation si la mise à jour du chantier échoue
+            _logger.warning(f"Erreur lors de la mise à jour du chantier: {e}")
 
-    def _update_chantier_stage(self, stage_code, abandon=False):
-        """Mettre à jour l'étape du chantier"""
-        if not self.chantier_id:
-            return
-        
-        # Rechercher l'étape par son code
-        stage = self.env['stage'].search([('code', '=', stage_code)], limit=1)
-        if stage:
-            values = {'stage_id': stage.id}
-            
-            if abandon:
-                values['state'] = 'abandoned'
-            elif stage_code == 'stage_devis_accepte':
-                values['total_cost'] = self.amount_total
-            
-            self.chantier_id.write(values)
-
-    def _show_success_notification(self, title, message):
-        """Afficher une notification de succès"""
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'type': 'success',
-                'title': title,
-                'message': message,
-                'sticky': False,
-            }
-        }
-
-    def _show_warning_notification(self, title, message):
-        """Afficher une notification d'avertissement"""
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'type': 'warning',
-                'title': title,
-                'message': message,
-                'sticky': True,
-            }
-        }
-
-    # ================== SURCHARGES ODOO ==================
-
-    def action_confirm(self):
-        """Surcharge pour gérer la validation avec lots"""
-        for order in self:
-            if order.lot_ids and not order.order_line.filtered(lambda l: not l.display_type):
-                raise ValidationError(
-                    "Vous avez sélectionné des lots mais aucun produit n'a été ajouté au devis. "
-                    "Veuillez ajouter des produits ou retirer la sélection de lots."
-                )
-        
-        res = super().action_confirm()
-        
-        # Mettre à jour les chantiers liés
-        for order in self:
-            if order.chantier_id:
-                order._update_chantier_stage('stage_devis_accepte')
-        
-        return res
-
-    def action_cancel(self):
-        """Surcharge pour gérer l'annulation"""
-        res = super().action_cancel()
-        
-        # Annuler les bons de commande liés si nécessaire
-        for order in self:
-            if order.purchase_order_lot_ids:
-                draft_pos = order.purchase_order_lot_ids.filtered(lambda po: po.state == 'draft')
-                if draft_pos:
-                    draft_pos.action_cancel()
-        
-        return res
+    @api.onchange('chantier_id')
+    def _onchange_chantier_id(self):
+        """Mise à jour automatique lors du changement de chantier"""
+        if self.chantier_id:
+            # Mettre à jour le partenaire si nécessaire
+            if self.chantier_id.client and not self.partner_id:
+                self.partner_id = self.chantier_id.client
+                
+            # Pré-sélectionner les lots du chantier
+            if self.chantier_id.lots_ids:
+                self.lot_ids = self.chantier_id.lots_ids
+                self.lot_selection_ids = self.chantier_id.lots_ids  # Sync pour compatibilité
 
 
 class SaleOrderLineConstruction(models.Model):
@@ -323,7 +235,7 @@ class SaleOrderLineConstruction(models.Model):
     
     _inherit = 'sale.order.line'
 
-    # ================== CHAMPS SPÉCIALISÉS CONSTRUCTION ==================
+    # =================== CHAMPS CONSTRUCTION ===================
     
     room_location = fields.Char(
         string='Localisation',
@@ -341,5 +253,5 @@ class SaleOrderLineConstruction(models.Model):
     
     construction_notes = fields.Text(
         string='Notes techniques',
-        help="Notes spécifiques pour l'installation/réalisation"
+        help="Commentaires ou spécifications techniques"
     ) 

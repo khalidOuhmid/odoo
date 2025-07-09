@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Extension des lots de base en lots de construction avec informations financières -->
+        
+        <record id="construction_lot_general" model="construction.lot">
+            <field name="name">Général</field>
+            <field name="code">GEN</field>
+            <field name="color">0</field>
+            <field name="price">0.0</field>
+            <field name="description">Lot général pour travaux divers et prestations non spécialisées</field>
+        </record>
+
+        <record id="construction_lot_demolition" model="construction.lot">
+            <field name="name">Démolition</field>
+            <field name="code">DEM</field>
+            <field name="color">1</field>
+            <field name="price">0.0</field>
+            <field name="description">Travaux de démolition et déconstruction</field>
+        </record>
+
+        <record id="construction_lot_maconnerie" model="construction.lot">
+            <field name="name">Maçonnerie</field>
+            <field name="code">MAC</field>
+            <field name="color">2</field>
+            <field name="price">0.0</field>
+            <field name="description">Gros œuvre, maçonnerie, béton et fondations</field>
+        </record>
+
+        <record id="construction_lot_platrerie" model="construction.lot">
+            <field name="name">Plâtrerie</field>
+            <field name="code">PLA</field>
+            <field name="color">3</field>
+            <field name="price">0.0</field>
+            <field name="description">Cloisons, doublages, enduits et plâtrerie</field>
+        </record>
+
+        <record id="construction_lot_plomberie_cvc" model="construction.lot">
+            <field name="name">Plomberie CVC</field>
+            <field name="code">CVC</field>
+            <field name="color">4</field>
+            <field name="price">0.0</field>
+            <field name="description">Plomberie, chauffage, ventilation et climatisation</field>
+        </record>
+
+        <record id="construction_lot_electricite" model="construction.lot">
+            <field name="name">Électricité</field>
+            <field name="code">ELE</field>
+            <field name="color">5</field>
+            <field name="price">0.0</field>
+            <field name="description">Installation électrique, éclairage et domotique</field>
+        </record>
+
+        <record id="construction_lot_menuiserie_ext" model="construction.lot">
+            <field name="name">Menuiserie extérieure</field>
+            <field name="code">MEX</field>
+            <field name="color">6</field>
+            <field name="price">0.0</field>
+            <field name="description">Menuiseries extérieures, fenêtres, portes d'entrée</field>
+        </record>
+
+        <record id="construction_lot_menuiserie_int" model="construction.lot">
+            <field name="name">Menuiserie intérieure</field>
+            <field name="code">MIN</field>
+            <field name="color">7</field>
+            <field name="price">0.0</field>
+            <field name="description">Menuiseries intérieures, portes, placards, escaliers</field>
+        </record>
+
+        <record id="construction_lot_peinture_finition" model="construction.lot">
+            <field name="name">Peinture &amp; finition</field>
+            <field name="code">PEI</field>
+            <field name="color">8</field>
+            <field name="price">0.0</field>
+            <field name="description">Peinture, papier peint, finitions et décoration</field>
+        </record>
+
+        <record id="construction_lot_sol_parquet" model="construction.lot">
+            <field name="name">Sol souple et parquet</field>
+            <field name="code">SOL</field>
+            <field name="color">9</field>
+            <field name="price">0.0</field>
+            <field name="description">Revêtements de sol souples, parquets, moquettes</field>
+        </record>
+
+        <record id="construction_lot_carrelage_faience" model="construction.lot">
+            <field name="name">Carrelage &amp; faïence</field>
+            <field name="code">CAR</field>
+            <field name="color">10</field>
+            <field name="price">0.0</field>
+            <field name="description">Carrelage, faïence, pierre naturelle</field>
+        </record>
+
+    </data>
+</odoo> 
