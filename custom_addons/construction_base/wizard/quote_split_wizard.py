@@ -80,6 +80,33 @@ class QuoteSplitWizard(models.TransientModel):
     result_message = fields.Text(string='Résultat')
     created_subquote_ids = fields.Many2many('sale.order', string='Sous-devis créés')
 
+    # =================== NOUVEAUX CHAMPS ===================
+    
+    suggested_subcontractors = fields.Many2many(
+        'res.partner',
+        'split_wizard_suggested_subcontractors_rel',
+        string='Sous-traitants suggérés',
+        help="Sous-traitants spécialisés disponibles mais non assignés au chantier"
+    )
+    
+    assignment_warnings = fields.Html(
+        string='Avertissements d\'assignation',
+        compute='_compute_assignment_warnings',
+        help="Avertissements sur les assignations automatiques"
+    )
+    
+    show_suggestions = fields.Boolean(
+        string='Afficher les suggestions',
+        default=False,
+        help="Afficher la section des sous-traitants suggérés"
+    )
+    
+    auto_assign_suggested = fields.Boolean(
+        string='Assigner automatiquement les suggérés',
+        default=True,
+        help="Assigner automatiquement les sous-traitants suggérés au chantier"
+    )
+
     # =================== COMPUTED FIELDS ===================
 
     @api.depends('chantier_id')
@@ -135,6 +162,56 @@ class QuoteSplitWizard(models.TransientModel):
             else:
                 wizard.subcontractor_assignments = ""
 
+    @api.depends('chantier_id', 'lot_ids')
+    def _compute_assignment_warnings(self):
+        """Calcule les avertissements d'assignation."""
+        for wizard in self:
+            if not wizard.chantier_id or not wizard.lot_ids:
+                wizard.assignment_warnings = ""
+                continue
+                
+            warnings = []
+            suggestions = []
+            
+            for lot in wizard.lot_ids:
+                # Vérifier si des spécialistes sont assignés au chantier
+                chantier_specialists = wizard.chantier_id.subcontractor_ids.filtered(
+                    lambda s: lot in s.speciality_ids
+                )
+                
+                if not chantier_specialists:
+                    # Chercher des spécialistes disponibles
+                    available_specialists = wizard.env['res.partner'].search([
+                        ('is_subcontractor', '=', True),
+                        ('speciality_ids', 'in', lot.id)
+                    ])
+                    
+                    if available_specialists:
+                        suggestions.extend(available_specialists)
+                        warnings.append(
+                            f"⚠️ <strong>{lot.name}</strong> : Aucun spécialiste assigné au chantier. "
+                            f"{len(available_specialists)} spécialiste(s) disponible(s)."
+                        )
+                    else:
+                        warnings.append(
+                            f"❌ <strong>{lot.name}</strong> : Aucun spécialiste trouvé dans la base."
+                        )
+                else:
+                    warnings.append(
+                        f"✅ <strong>{lot.name}</strong> : "
+                        f"{len(chantier_specialists)} spécialiste(s) assigné(s)."
+                    )
+            
+            # Mettre à jour les suggestions
+            wizard.suggested_subcontractors = [(6, 0, list(set([s.id for s in suggestions])))]
+            wizard.show_suggestions = bool(suggestions)
+            
+            # Générer le HTML d'avertissement
+            if warnings:
+                wizard.assignment_warnings = "<div class='alert alert-info'>" + "<br/>".join(warnings) + "</div>"
+            else:
+                wizard.assignment_warnings = ""
+
     # =================== ACTIONS ===================
 
     def action_preview_split(self):
@@ -154,14 +231,59 @@ class QuoteSplitWizard(models.TransientModel):
         self.state = 'preview'
         return self._reload_wizard()
 
+    def action_assign_suggested_subcontractors(self):
+        """Assigner automatiquement les sous-traitants suggérés au chantier."""
+        self.ensure_one()
+        
+        if not self.suggested_subcontractors:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Information',
+                    'message': 'Aucun sous-traitant suggéré à assigner.',
+                    'type': 'info'
+                }
+            }
+        
+        # Ajouter les sous-traitants suggérés au chantier
+        self.chantier_id.write({
+            'subcontractor_ids': [(4, sub.id) for sub in self.suggested_subcontractors]
+        })
+        
+        # Log de l'action
+        self.chantier_id.message_post(
+            body=f"🔗 {len(self.suggested_subcontractors)} sous-traitant(s) spécialisé(s) "
+                 f"automatiquement assigné(s) au chantier : "
+                 f"{', '.join(self.suggested_subcontractors.mapped('name'))}",
+            message_type='notification'
+        )
+        
+        # Recalculer les avertissements
+        self._compute_assignment_warnings()
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Assignation réussie',
+                'message': f'{len(self.suggested_subcontractors)} sous-traitant(s) assigné(s) au chantier.',
+                'type': 'success'
+            }
+        }
+
     def action_execute_split(self):
-        """Execute the quote splitting."""
+        """Execute the quote splitting with improved logic."""
         self.ensure_one()
         
         if self.state != 'preview':
             raise ValidationError(_("Veuillez d'abord prévisualiser la division."))
         
-        # Execute the split using the service
+        # 1. Auto-assigner les sous-traitants suggérés si demandé
+        if self.auto_assign_suggested and self.suggested_subcontractors:
+            self.action_assign_suggested_subcontractors()
+        
+        # 2. Exécuter la division en utilisant le service amélioré
         result = self.env['quote.split.service'].split_quote_by_lots(
             self.chantier_id.id, 
             self.selected_quote_id.id
@@ -169,8 +291,20 @@ class QuoteSplitWizard(models.TransientModel):
         
         if result['success']:
             self.state = 'done'
-            self.result_message = result['message']
+            
+            # 3. Analyser les résultats d'assignation
+            assignment_summary = self._generate_assignment_summary(result)
+            self.result_message = result['message'] + "\n\n" + assignment_summary
             self.created_subquote_ids = [(6, 0, result['created_subquotes'])]
+            
+            # 4. Log détaillé sur le chantier
+            self.chantier_id.message_post(
+                body=f"📋 Division de devis terminée avec succès :\n"
+                     f"• Devis principal : {self.selected_quote_id.name}\n"
+                     f"• {len(result['created_subquotes'])} sous-devis créés\n"
+                     f"• Assignations automatiques : {assignment_summary}",
+                message_type='comment'
+            )
         else:
             self.state = 'error'
             self.error_message = result['message']
@@ -255,6 +389,33 @@ class QuoteSplitWizard(models.TransientModel):
         
         html.append("</div>")
         return "".join(html)
+
+    def _generate_assignment_summary(self, split_result):
+        """Génère un résumé des assignations."""
+        if 'assignment_results' not in split_result:
+            return "Aucune information d'assignation disponible."
+        
+        assigned_count = 0
+        unassigned_count = 0
+        suggestions_count = 0
+        
+        for assignment in split_result['assignment_results']:
+            if assignment.get('assigned'):
+                assigned_count += 1
+            else:
+                unassigned_count += 1
+                if assignment.get('suggested_subcontractors'):
+                    suggestions_count += len(assignment['suggested_subcontractors'])
+        
+        summary = []
+        if assigned_count > 0:
+            summary.append(f"✅ {assigned_count} assigné(s) automatiquement")
+        if unassigned_count > 0:
+            summary.append(f"⚠️ {unassigned_count} non assigné(s)")
+        if suggestions_count > 0:
+            summary.append(f"💡 {suggestions_count} suggestion(s) disponible(s)")
+        
+        return " • ".join(summary) if summary else "Aucune assignation effectuée"
 
     @api.model
     def default_get(self, fields_list):

@@ -296,14 +296,10 @@ class Chantier(models.Model):
             'target': 'current',
         }
 
-
-
-    @api.depends('lots_ids.subcontractor_ids')
     def _compute_available_subcontractors(self):
+        subcontractors = self.env['res.partner'].search([('is_subcontractor', '=', True)])
         for record in self:
-            # La méthode mapped() est la plus simple et efficace pour collecter
-            # les sous-traitants uniques à partir des lots sélectionnés.
-            record.available_subcontractors = record.lots_ids.mapped('subcontractor_ids')
+            record.available_subcontractors = subcontractors
 
     @api.depends('subcontractor_ids', 'lots_ids', 'quotation_ids')
     def _compute_counts(self):
@@ -1171,7 +1167,7 @@ class Chantier(models.Model):
             'type': 'ir.actions.act_window',
             'name': 'Sélectionner un sous-devis',
             'res_model': 'sale.order',
-            'view_mode': 'tree',
+            'view_mode': 'list',
             'domain': [('id', 'in', subquotes.ids)],
             'context': {
                 'default_chantier_id': self.id,
@@ -1180,3 +1176,5 @@ class Chantier(models.Model):
             },
             'target': 'new',
         }
+
+

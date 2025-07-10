@@ -10,4 +10,6 @@ access_construction_invoice_type_line_user,construction.invoice.type.line.user,m
 access_construction_invoice_schedule_user,construction.invoice.schedule.user,model_construction_invoice_schedule,base.group_user,1,1,1,1
 access_sale_order_user,sale.order.user,sale.model_sale_order,base.group_user,1,0,0,0
 access_quote_split_wizard_user,construction.quote.split.wizard.user,model_construction_quote_split_wizard,base.group_user,1,1,1,1
+access_lot_subquote_wizard_user,lot.subquote.wizard.user,model_lot_subquote_wizard,base.group_user,1,1,1,1
+access_lot_subcontractor_assign_wizard_user,lot.subcontractor.assign.wizard.user,model_lot_subcontractor_assign_wizard,base.group_user,1,1,1,1
 

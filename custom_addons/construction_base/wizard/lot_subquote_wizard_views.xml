@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ================================================================
+             FORMULAIRE WIZARD SIMPLE
+        ===================================================================-->
+        <record id="view_lot_subquote_wizard_form" model="ir.ui.view">
+            <field name="name">lot.subquote.wizard.form</field>
+            <field name="model">lot.subquote.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Créer sous-devis pour lot">
+                    
+                    <sheet>
+                        
+                        <!-- Titre et info du lot -->
+                        <div class="oe_title">
+                            <h1>
+                                <i class="fa fa-cut text-primary"/>
+                                Créer sous-devis
+                            </h1>
+                            <h3>
+                                <field name="lot_id" readonly="1"/>
+                            </h3>
+                            <div class="text-muted">
+                                Chantier : <field name="chantier_id" readonly="1"/>
+                            </div>
+                        </div>
+
+                        <!-- Sélection devis et sous-traitant -->
+                        <group>
+                            <group string="📋 Devis source">
+                                <field name="available_quotes" invisible="1"/>
+                                <field name="selected_quote_id" 
+                                       domain="[('id', 'in', available_quotes)]"
+                                       required="1"
+                                       options="{'no_create': True}"/>
+                                <field name="estimated_amount" readonly="1"/>
+                            </group>
+                            
+                            <group string="👷 Sous-traitant">
+                                <field name="subcontractor_id" required="1"/>
+                                <field name="currency_id" invisible="1"/>
+                            </group>
+                        </group>
+
+                        <!-- Aperçu du contenu -->
+                        <separator string="👁️ Aperçu du contenu"/>
+                        <field name="preview_lines" readonly="1" nolabel="1"/>
+
+                    </sheet>
+
+                    <!-- Boutons d'action -->
+                    <footer>
+                        <button name="action_create_subquote"
+                                string="✅ Créer le sous-devis"
+                                type="object"
+                                class="btn-primary"/>
+                        
+                        <button string="❌ Annuler" 
+                                class="btn-secondary" 
+                                special="cancel"/>
+                    </footer>
+
+                </form>
+            </field>
+        </record>
+
+        <!-- ================================================================
+             ACTION
+        ===================================================================-->
+        
+        <!-- Action pour ouvrir le wizard -->
+        <record id="action_lot_subquote_wizard" model="ir.actions.act_window">
+            <field name="name">Créer sous-devis pour lot</field>
+            <field name="res_model">lot.subquote.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="view_id" ref="view_lot_subquote_wizard_form"/>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo> 

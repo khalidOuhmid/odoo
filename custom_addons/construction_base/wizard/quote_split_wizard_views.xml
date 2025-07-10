@@ -98,19 +98,53 @@
                                 <p>Vérifiez comment le devis sera divisé avant d'exécuter l'opération.</p>
                             </div>
 
+                            <!-- Avertissements d'assignation -->
+                            <field name="assignment_warnings" readonly="1" nolabel="1"/>
+
                             <group>
                                 <group string="Devis sélectionné">
                                     <field name="selected_quote_id" readonly="1"/>
                                     <field name="lot_ids" widget="many2many_tags" readonly="1"/>
                                 </group>
                                 
-                                <group string="Assignations prévues">
-                                    <field name="subcontractor_assignments" readonly="1" nolabel="1"/>
+                                <group string="Options de division">
+                                    <field name="auto_assign_suggested" 
+                                           invisible="not show_suggestions"
+                                           help="Assigner automatiquement les sous-traitants suggérés au chantier avant la division"/>
                                 </group>
                             </group>
 
+                            <!-- Section des sous-traitants suggérés -->
+                            <div invisible="not show_suggestions" class="o_quote_split_suggestions">
+                                <separator string="💡 Sous-traitants spécialisés suggérés"/>
+                                <div class="alert alert-info">
+                                    <p>Des sous-traitants spécialisés ont été trouvés mais ne sont pas encore assignés à ce chantier.</p>
+                                </div>
+                                
+                                <group>
+                                    <field name="suggested_subcontractors" 
+                                           widget="many2many_tags" 
+                                           readonly="1"
+                                           nolabel="1"/>
+                                </group>
+                                
+                                <div class="mt-2">
+                                    <button name="action_assign_suggested_subcontractors"
+                                            string="🔗 Assigner ces sous-traitants au chantier"
+                                            type="object"
+                                            class="btn-warning"
+                                            help="Ajouter automatiquement ces sous-traitants au chantier"/>
+                                </div>
+                            </div>
+
+                            <!-- Assignations prévues -->
+                            <separator string="📋 Assignations prévues"/>
+                            <group>
+                                <field name="subcontractor_assignments" readonly="1" nolabel="1"/>
+                            </group>
+
                             <!-- Aperçu détaillé -->
-                            <separator string="Aperçu détaillé de la division"/>
+                            <separator string="💰 Aperçu financier de la division"/>
                             <field name="preview_text" readonly="1" nolabel="1"/>
 
                         </div>

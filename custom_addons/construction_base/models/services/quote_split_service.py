@@ -333,29 +333,50 @@ class QuoteSplitService(models.AbstractModel):
         return self.env['sale.order.line'].create(vals)
 
     def _assign_subquote_to_subcontractor(self, chantier, subquote, lot):
-        """Assign sub-quote to appropriate subcontractor."""
-        # Find subcontractors specialized in this lot
-        specialized_subcontractors = chantier.subcontractors.filtered(
-            lambda s: lot in s.lot_ids
+        """Assign sub-quote to appropriate subcontractor with improved logic."""
+        
+        # 1. Chercher les sous-traitants spécialisés dans ce lot (via speciality_ids)
+        specialized_subcontractors = chantier.subcontractor_ids.filtered(
+            lambda s: lot in s.speciality_ids or lot in s.lots  # Compatibilité
         )
 
+        # 2. Si aucun spécialiste trouvé dans les sous-traitants du chantier,
+        #    chercher dans tous les sous-traitants disponibles
         if not specialized_subcontractors:
+            all_specialists = self.env['res.partner'].search([
+                ('is_subcontractor', '=', True),
+                ('speciality_ids', 'in', lot.id)
+            ])
+            
+            # Proposer d'ajouter ces spécialistes au chantier
             return {
                 'subquote_id': subquote.id,
                 'lot_name': lot.name,
                 'assigned': False,
-                'reason': 'No specialized subcontractor found',
-                'available_subcontractors': chantier.subcontractors.ids
+                'reason': 'no_specialist_in_chantier',
+                'suggested_subcontractors': all_specialists.ids,
+                'suggestion_message': f"Aucun spécialiste en '{lot.name}' assigné au chantier. "
+                                    f"{len(all_specialists)} spécialiste(s) disponible(s) dans la base."
             }
 
-        # For now, assign to the first specialized subcontractor
-        # In the future, could add logic for workload balancing, preferences, etc.
-        selected_subcontractor = specialized_subcontractors[0]
+        # 3. Logique de sélection intelligente du sous-traitant
+        selected_subcontractor = self._select_best_subcontractor(
+            specialized_subcontractors, lot, chantier
+        )
         
-        # Update the sub-quote with the subcontractor
+        # 4. Assigner le sous-devis
         subquote.write({
             'partner_id': selected_subcontractor.id,
+            'note': f"Sous-devis automatiquement assigné à {selected_subcontractor.name} "
+                   f"(spécialiste en {lot.name})"
         })
+
+        # 5. Log de l'assignation sur le chantier
+        chantier.message_post(
+            body=f"💼 Sous-devis {subquote.name} assigné à {selected_subcontractor.name} "
+                 f"pour le lot '{lot.name}'",
+            message_type='notification'
+        )
 
         return {
             'subquote_id': subquote.id,
@@ -363,7 +384,61 @@ class QuoteSplitService(models.AbstractModel):
             'assigned': True,
             'subcontractor_id': selected_subcontractor.id,
             'subcontractor_name': selected_subcontractor.name,
+            'assignment_reason': self._get_assignment_reason(selected_subcontractor, specialized_subcontractors)
         }
+
+    def _select_best_subcontractor(self, specialized_subcontractors, lot, chantier):
+        """Sélectionne le meilleur sous-traitant selon plusieurs critères."""
+        
+        if len(specialized_subcontractors) == 1:
+            return specialized_subcontractors[0]
+        
+        # Critères de sélection (du plus important au moins important) :
+        
+        # 1. Sous-traitant avec le moins de sous-devis déjà assignés sur ce chantier
+        subcontractor_workload = {}
+        existing_subquotes = self.env['sale.order'].search([
+            ('chantier_id', '=', chantier.id),
+            ('origin', '!=', False),  # Sous-devis uniquement
+            ('partner_id', 'in', specialized_subcontractors.ids)
+        ])
+        
+        for sub in specialized_subcontractors:
+            subcontractor_workload[sub.id] = len(existing_subquotes.filtered(
+                lambda sq: sq.partner_id.id == sub.id
+            ))
+        
+        # 2. Préférer celui avec le moins de charge de travail
+        min_workload = min(subcontractor_workload.values()) if subcontractor_workload else 0
+        best_candidates = specialized_subcontractors.filtered(
+            lambda s: subcontractor_workload.get(s.id, 0) == min_workload
+        )
+        
+        # 3. En cas d'égalité, prendre celui avec le plus de spécialités
+        #    (polyvalence peut être un avantage)
+        if len(best_candidates) > 1:
+            best_candidates = best_candidates.sorted(
+                lambda s: len(s.speciality_ids), reverse=True
+            )
+        
+        # 4. En dernier recours, ordre alphabétique pour la reproductibilité
+        return best_candidates.sorted('name')[0]
+    
+    def _get_assignment_reason(self, selected_subcontractor, all_candidates):
+        """Retourne la raison de l'assignation pour traçabilité."""
+        if len(all_candidates) == 1:
+            return "Seul spécialiste disponible"
+        
+        # Compter les sous-devis existants
+        existing_count = self.env['sale.order'].search_count([
+            ('partner_id', '=', selected_subcontractor.id),
+            ('origin', '!=', False)
+        ])
+        
+        if existing_count == 0:
+            return "Répartition équitable - aucun sous-devis assigné"
+        else:
+            return f"Répartition équitable - {existing_count} sous-devis déjà assignés"
 
     def _update_main_quote_status(self, main_quote, subquotes):
         """Update main quote to link it with sub-quotes."""

@@ -41,12 +41,7 @@
                                 class="btn-success"
                                 modifiers="{'invisible': [('show_create_quote', '=', False)]}"/>
 
-                        <button name="action_split_quote_by_lots"
-                                string="🔀 Diviser devis"
-                                type="object"
-                                class="btn-warning"
-                                modifiers="{'invisible': [('show_split_quote', '=', False)]}"
-                                help="Diviser le devis principal en sous-devis par lot"/>
+
 
                         <!-- Statut -->
                         <field name="state"
@@ -207,7 +202,8 @@
                                     <group string="👥 Équipe &amp; Responsabilités">
                                         <field name="user_ids" widget="many2many_tags"/>
                                         <field name="available_subcontractors" invisible="1"/>
-                                        <field name="subcontractor_ids" widget="many2many_tags" placeholder="Ajouter des sous-traitants..."
+                                        <field name="subcontractor_ids" widget="many2many_tags"
+                                               placeholder="Ajouter des sous-traitants..."
                                                domain="[('id', 'in', available_subcontractors)]"/>
                                         <field name="tag_ids"
                                                widget="many2many_tags"
@@ -262,20 +258,29 @@
                                 <field name="lots_ids">
                                     <list editable="bottom"
                                           decoration-success="is_finished"
-                                          decoration-muted="not is_finished">
+                                          decoration-muted="not is_finished"
+                                          decoration-warning="not subcontractor_ids">
                                         <field name="name"/>
                                         <field name="code"/>
                                         <field name="price" widget="monetary" sum="Total"/>
                                         <field name="is_finished" widget="boolean_toggle"/>
-                                        <field name="subcontractor_ids"/>
+                                        <field name="subcontractor_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                                        <button name="action_assign_subcontractor"
+                                                type="object"
+                                                string="👷 Assigner"
+                                                class="btn btn-sm btn-warning"
+                                                icon="fa-user-plus"
+                                                help="Assigner un sous-traitant spécialisé"
+                                                invisible="subcontractor_ids"/>
+                                        <button name="action_create_subquote_for_lot"
+                                                type="object"
+                                                string="📋 Créer sous-devis"
+                                                class="btn btn-sm btn-primary"
+                                                icon="fa-plus"
+                                                help="Créer un sous-devis pour ce lot"
+                                                invisible="not subcontractor_ids"/>
                                     </list>
                                 </field>
-                                <div class="mt-3">
-                                    <button name="action_view_budget"
-                                            type="object"
-                                            string="💰 Voir budget détaillé"
-                                            class="btn btn-info"/>
-                                </div>
                             </page>
 
                             <!-- Onglet : Devis & commandes -->
@@ -297,31 +302,6 @@
                                             type="object"
                                             string="➕ Créer nouveau devis"
                                             class="btn btn-success"/>
-
-                                    <button name="action_split_quote_by_lots"
-                                            type="object"
-                                            string="🔀 Diviser devis"
-                                            class="btn btn-warning"
-                                            modifiers="{'invisible': [('show_split_quote', '=', False)]}"
-                                            help="Diviser le devis principal en sous-devis par lot"/>
-
-                                    <button name="action_split_quote_wizard"
-                                            type="object"
-                                            string="🧙 Assistant division"
-                                            class="btn btn-info"
-                                            modifiers="{'invisible': [('show_split_quote', '=', False)]}"
-                                            help="Assistant guidé pour diviser le devis"/>
-
-                                    <button name="action_view_subquotes"
-                                            type="object"
-                                            string="📋 Voir sous-devis"
-                                            class="btn btn-info"/>
-
-                                    <button name="action_quick_edit_subquote"
-                                            type="object"
-                                            string="⚡ Édition rapide"
-                                            class="btn btn-secondary"
-                                            help="Accès rapide pour ajuster un sous-devis"/>
                                 </div>
                             </page>
 
@@ -339,34 +319,26 @@
 
                             <!-- Onglet : Sous-traitants -->
                             <page string="👷 Sous-traitants" name="subcontractors">
-                                <field name="subcontractor_ids">
-                                    <kanban>
-                                        <field name="id"/>
-                                        <field name="name"/>
-                                        <field name="email"/>
-                                        <field name="phone"/>
-                                        <templates>
-                                            <t t-name="kanban-box">
-                                                <div class="oe_kanban_global_click">
-                                                    <div class="o_kanban_image">
-                                                        <img t-att-src="kanban_image('res.partner', 'image_128', record.id.raw_value)"
-                                                             alt="Partner"/>
-                                                    </div>
-                                                    <div class="oe_kanban_details">
-                                                        <strong class="o_kanban_record_title"><field name="name"/></strong>
-                                                        <ul>
-                                                            <li t-if="record.email.raw_value"><i class="fa fa-envelope"/> <field
-                                                                    name="email"/></li>
-                                                            <li t-if="record.phone.raw_value"><i class="fa fa-phone"/> <field
-                                                                    name="phone"/></li>
-                                                        </ul>
-                                                    </div>
-                                                </div>
-                                            </t>
-                                        </templates>
-                                    </kanban>
-                                </field>
+                                <group>
+                                    <field name="subcontractor_ids" nolabel="1">
+                                        <list editable="bottom">
+                                            <field name="name" string="Nom"/>
+                                            <field name="lot_ids" widget="many2many_tags" string="Spécialités"/>
+                                            <field name="phone" string="Téléphone" optional="show"/>
+                                            <field name="email" string="Email" optional="show"/>
+                                            <field name="has_expired_documents" string="Docs OK" widget="boolean_toggle" optional="show"/>
+                                        </list>
+                                    </field>
+                                </group>
+                                
+                                <!-- Résumé de couverture des lots -->
+                                <separator string="📊 Couverture des lots par spécialité"/>
+                                <div class="alert alert-info">
+                                    <p>Pour assigner automatiquement un sous-traitant à un lot, utilisez le bouton 
+                                    <strong>"👷 Assigner"</strong> dans l'onglet "Lots de travaux".</p>
+                                </div>
                             </page>
+
 
                         </notebook>
 

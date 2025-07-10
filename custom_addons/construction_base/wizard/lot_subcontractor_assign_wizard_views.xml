@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ================================================================
+             FORMULAIRE WIZARD ASSIGNATION SOUS-TRAITANT
+        ===================================================================-->
+        <record id="view_lot_subcontractor_assign_wizard_form" model="ir.ui.view">
+            <field name="name">lot.subcontractor.assign.wizard.form</field>
+            <field name="model">lot.subcontractor.assign.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Assigner un sous-traitant">
+                    
+                    <sheet>
+                        
+                        <!-- Titre et info du lot -->
+                        <div class="oe_title">
+                            <h1>
+                                <i class="fa fa-user-plus text-warning"/>
+                                Assigner un sous-traitant
+                            </h1>
+                            <h3>
+                                Lot : <field name="lot_id" readonly="1" class="oe_inline"/>
+                            </h3>
+                            <div class="text-muted">
+                                Chantier : <field name="chantier_id" readonly="1" class="oe_inline"/>
+                            </div>
+                        </div>
+
+                        <!-- Sélection du sous-traitant -->
+                        <group>
+                            <field name="available_subcontractor_ids" invisible="1"/>
+                            <field name="selected_subcontractor_id" 
+                                   widget="selection"
+                                   required="1"
+                                   options="{'no_create': True}"/>
+                            <field name="add_to_chantier" 
+                                   invisible="not add_to_chantier"
+                                   help="Ce sous-traitant sera également ajouté à la liste des sous-traitants du chantier"/>
+                        </group>
+
+                        <!-- Informations sur le sous-traitant -->
+                        <separator string="📋 Informations du sous-traitant"/>
+                        <field name="subcontractor_info" readonly="1" nolabel="1"/>
+
+                        <!-- Message d'aide -->
+                        <div class="alert alert-info" invisible="add_to_chantier">
+                            <p>
+                                <i class="fa fa-info-circle"/> 
+                                Les sous-traitants affichés sont ceux déjà assignés au chantier 
+                                et spécialisés dans ce lot.
+                            </p>
+                        </div>
+                        
+                        <div class="alert alert-warning" invisible="not add_to_chantier">
+                            <p>
+                                <i class="fa fa-exclamation-triangle"/> 
+                                Les sous-traitants affichés ne sont pas encore assignés au chantier. 
+                                Ils seront automatiquement ajoutés lors de l'assignation.
+                            </p>
+                        </div>
+
+                    </sheet>
+
+                    <!-- Boutons d'action -->
+                    <footer>
+                        <button name="action_assign_subcontractor"
+                                string="✅ Assigner"
+                                type="object"
+                                class="btn-primary"/>
+                        
+                        <button string="❌ Annuler" 
+                                class="btn-secondary" 
+                                special="cancel"/>
+                    </footer>
+
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo> 
