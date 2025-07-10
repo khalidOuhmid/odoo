@@ -28,6 +28,8 @@
         'data/sequence_data.xml',
         'data/construction_data.xml',
         'data/construction_lot_data.xml',
+        'data/invoice_type_cycles.xml',
+        'data/email_templates.xml',
         
         # Views
         'views/main_views.xml',

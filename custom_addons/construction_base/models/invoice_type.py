@@ -289,6 +289,61 @@ class InvoiceSchedule(models.Model):
                     message_type='notification'
                 )
 
+                # Création automatique de la facture et envoi d'email
+                record._auto_create_and_send_invoice()
+
+    # ------------------------------------------------------------------
+    #  NOUVEAU : génération de facture + email automatique
+    # ------------------------------------------------------------------
+
+    def _auto_create_and_send_invoice(self):
+        """Créer la facture et envoyer l'email automatiquement."""
+        for rec in self:
+            if rec.state != 'ready' or rec.invoice_id:
+                continue
+
+            chantier = rec.chantier_id
+
+            # Déterminer le partenaire (client) depuis le chantier
+            partner = chantier.client
+
+            # Compter sur la configuration comptable par défaut
+            invoice_vals = {
+                'move_type': 'out_invoice',
+                'partner_id': partner.id,
+                'invoice_origin': chantier.name,
+                'invoice_date': fields.Date.today(),
+                'invoice_line_ids': [(0, 0, {
+                    'name': rec.name,
+                    'quantity': 1,
+                    'price_unit': rec.amount_fixed,
+                    'account_id': partner.property_account_receivable_id.id,
+                })],
+            }
+
+            invoice = rec.env['account.move'].create(invoice_vals)
+
+            # Marquer la planification
+            rec.write({
+                'invoice_id': invoice.id,
+                'state': 'invoiced',
+                'invoice_date': fields.Date.today()
+            })
+
+            chantier.message_post(
+                body=f"🧾 Facture générée et envoyée : {invoice.name} ({rec.amount_fixed:,.2f} €)",
+                message_type='notification'
+            )
+
+            # Envoyer l'email si le template existe
+            try:
+                template = rec.env.ref('construction_base.email_template_invoice_ready')
+                if template:
+                    template.send_mail(invoice.id, force_send=True)
+            except ValueError:
+                # Template absent – on ignore
+                pass
+
     def action_create_invoice(self):
         """Créer la facture pour cette étape"""
         self.ensure_one()

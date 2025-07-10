@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="email_template_invoice_ready" model="mail.template">
+            <field name="name">Facture chantier prête</field>
+            <field name="model_id" ref="construction_base.model_construction_invoice_schedule"/>
+            <field name="subject">Votre facture pour le chantier {{ object.chantier_id.name }} est prête</field>
+            <field name="email_from">{{ user.email_formatted }}</field>
+            <field name="email_to">{{ object.chantier_id.client.email }}</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html"><![CDATA[
+<div style="font-family: 'Lucica Grande', 'Lucida Sans Unicode', Arial, sans-serif; font-size: 12px; color: rgb(34, 34, 34); background-color: rgb(255, 255, 255);">
+    <p>Bonjour <t t-out="object.chantier_id.client.name or ''"/>,</p>
+    <p>
+        Suite à l'avancement du chantier <strong><t t-esc="object.chantier_id.name"/></strong>, une nouvelle facture a été générée.
+    </p>
+    <p>
+        <strong>Détails de la facture :</strong>
+        <ul>
+            <li><strong>Numéro :</strong> <t t-esc="object.invoice_id.name"/></li>
+            <li><strong>Montant :</strong> <t t-esc="format_amount(object.invoice_id.amount_total, object.invoice_id.currency_id)"/></li>
+            <li><strong>Étape :</strong> <t t-esc="object.name"/></li>
+        </ul>
+    </p>
+    <p>
+        La facture est jointe à cet e-mail. Vous pouvez également la consulter et la régler depuis votre espace client.
+    </p>
+    <p>Cordialement,<br/>L'équipe BLG Groupe</p>
+</div>
+            ]]></field>
+            <field name="report_template" ref="account.account_invoices"/>
+            <field name="report_name">Facture_{{ (object.invoice_id.name or '').replace('/', '_') }}</field>
+        </record>
+    </data>
+</odoo> 

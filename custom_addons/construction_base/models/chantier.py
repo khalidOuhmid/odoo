@@ -126,6 +126,12 @@ class Chantier(models.Model):
         string='Cycle de facturation',
         help="Pattern de facturation à appliquer pour ce chantier"
     )
+    # Nouveau : devis principal sur lequel baser la facturation
+    main_quote_id = fields.Many2one(
+        'sale.order',
+        string='Devis principal',
+        help="Devis client principal servant de référence pour la facturation"
+    )
     invoice_schedule_ids = fields.One2many(
         'construction.invoice.schedule',
         'chantier_id',
@@ -542,6 +548,9 @@ class Chantier(models.Model):
         # 4️⃣ Autres vérifications globales
         if not self.invoice_type_id:
             return False, "Cycle de facturation non sélectionné"
+
+        if not self.main_quote_id:
+            return False, "Devis principal non sélectionné"
 
         if not self.date_start_contract or not self.date_end_contract:
             return False, "Planning de chantier incomplet"

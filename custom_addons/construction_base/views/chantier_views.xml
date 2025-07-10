@@ -802,10 +802,5 @@
             <field name="context">{'search_default_active_projects': 1}</field>
         </record>
 
-        <!-- Inclure les vues du wizard -->
-        <data noupdate="0">
-            <!-- Import des vues du wizard -->
-        </data>
-
     </data>
 </odoo>
