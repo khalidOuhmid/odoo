@@ -16,12 +16,12 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
         this.chapterStructure = [];
         this.blgIsLoading = false;
         this.blgIsProcessing = false;
-        
+
         onMounted(() => {
             this.loadChapterStructure();
             this.optimizeForManyRecords();
         });
-        
+
         onPatched(() => {
             if (!this.blgIsProcessing && this.chapterStructure.length > 0) {
                 this.reorganizeKanbanByChapters();
@@ -31,14 +31,14 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
 
     async loadChapterStructure() {
         if (this.blgIsLoading) return;
-        
+
         this.blgIsLoading = true;
         this.blgIsProcessing = true;
-        
+
         try {
             const structure = await this.orm.call(
-                "construction.chantier", 
-                "get_chapter_stage_structure", 
+                "construction.chantier",
+                "get_chapter_stage_structure",
                 []
             );
             this.chapterStructure = structure || [];
@@ -56,7 +56,7 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
 
     reorganizeKanbanByChapters() {
         if (this.blgIsProcessing) return;
-        
+
         const container = this.el?.querySelector('.o_kanban_renderer');
         if (!container) return;
 
@@ -86,7 +86,7 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
     createChapterContainer() {
         const chapterContainer = document.createElement('div');
         chapterContainer.className = 'blg-chapter-kanban-container';
-        
+
         this.chapterStructure.forEach(chapter => {
             const chapterSection = this.createChapterSection(chapter);
             chapterContainer.appendChild(chapterSection);
@@ -114,78 +114,78 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
     createChapterHeader(chapter) {
         const header = document.createElement('div');
         header.className = 'chapter-header';
-        
+
         const headerContent = document.createElement('div');
         headerContent.className = 'chapter-header-content';
-        
+
         const titleSection = document.createElement('div');
         titleSection.className = 'chapter-title-section';
-        
+
         const icon = document.createElement('i');
         icon.className = this.getChapterIcon(chapter.code);
-        
+
         const title = document.createElement('h3');
         title.className = 'chapter-title';
         title.textContent = chapter.name || 'Unknown Chapter';
-        
+
         const badge = document.createElement('span');
         badge.className = 'chapter-badge';
         const totalCount = chapter.total_count || 0;
         badge.textContent = `${totalCount} projet${totalCount !== 1 ? 's' : ''}`;
-        
+
         titleSection.appendChild(icon);
         titleSection.appendChild(title);
         titleSection.appendChild(badge);
-        
+
         const progressBar = this.createChapterProgressBar(chapter);
-        
+
         headerContent.appendChild(titleSection);
         headerContent.appendChild(progressBar);
         header.appendChild(headerContent);
-        
+
         return header;
     }
 
     createChapterProgressBar(chapter) {
         const progressContainer = document.createElement('div');
         progressContainer.className = 'chapter-progress-container';
-        
+
         const progressBar = document.createElement('div');
         progressBar.className = 'chapter-progress-bar';
-        
+
         let totalProjects = 0;
         let completedStages = 0;
-        
+
         if (chapter.stages && Array.isArray(chapter.stages)) {
             chapter.stages.forEach((stage, index) => {
                 totalProjects += stage.count || 0;
                 if (index > 0) completedStages += stage.count || 0;
             });
         }
-        
+
         const progressPercentage = totalProjects > 0 ? (completedStages / totalProjects) * 100 : 0;
-        
+
         const progressFill = document.createElement('div');
         progressFill.className = 'chapter-progress-fill';
         progressFill.style.width = `${progressPercentage}%`;
-        
+
         progressBar.appendChild(progressFill);
         progressContainer.appendChild(progressBar);
-        
+
         return progressContainer;
     }
 
     createStagesContainer(chapter) {
         const container = document.createElement('div');
         container.className = 'stages-container';
-        
+
         if (chapter.stages && Array.isArray(chapter.stages)) {
             chapter.stages.forEach(stage => {
                 const stageColumn = this.createStageColumn(stage);
                 container.appendChild(stageColumn);
             });
         }
-        
+
         return container;
     }
 
@@ -193,7 +193,7 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
         const column = document.createElement('div');
         column.className = 'stage-column';
         column.dataset.stageId = stage.id;
-        
+
         // Find original kanban group and clone its content
         const originalGroup = this.el?.querySelector(`[data-id="${stage.id}"]`);
         if (originalGroup) {
@@ -201,17 +201,16 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
             const clonedGroup = originalGroup.cloneNode(true);
             clonedGroup.style.display = 'block';
             clonedGroup.classList.add('enhanced-stage-group');
-            
+
             // Enhance the stage header
             this.enhanceStageHeader(clonedGroup, stage);
-            
+
             column.appendChild(clonedGroup);
         } else {
-            // Create empty stage column
             const emptyStage = this.createEmptyStageColumn(stage);
             column.appendChild(emptyStage);
         }
-        
+
         return column;
     }
 
@@ -225,7 +224,7 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
                 const icon = document.createElement('i');
                 icon.className = 'fa fa-circle';
                 indicator.appendChild(icon);
-                
+
                 title.insertBefore(indicator, title.firstChild);
             }
         }
@@ -234,34 +233,34 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
     createEmptyStageColumn(stage) {
         const emptyStage = document.createElement('div');
         emptyStage.className = 'enhanced-stage-group empty-stage';
-        
+
         const header = document.createElement('div');
         header.className = 'enhanced-stage-header';
-        
+
         const title = document.createElement('h4');
         title.textContent = stage.name || 'Unknown Stage';
-        
+
         const indicator = document.createElement('span');
         indicator.className = 'stage-indicator';
         const icon = document.createElement('i');
         icon.className = 'fa fa-circle';
         indicator.appendChild(icon);
-        
+
         header.appendChild(indicator);
         header.appendChild(title);
-        
+
         const body = document.createElement('div');
         body.className = 'empty-stage-body';
-        
+
         const message = document.createElement('p');
         message.className = 'empty-stage-message';
         message.textContent = 'Aucun projet dans cette étape';
-        
+
         body.appendChild(message);
-        
+
         emptyStage.appendChild(header);
         emptyStage.appendChild(body);
-        
+
         return emptyStage;
     }
 
@@ -272,7 +271,7 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
             'FINI': 'fa fa-check-circle',
             'default': 'fa fa-book'
         };
-        
+
         return iconMap[chapterCode] || iconMap.default;
     }
 
@@ -299,10 +298,10 @@ export class BlgChapterKanbanRenderer extends KanbanRenderer {
 
         // Add tooltips
         this._addTooltips(kanbanEl);
-        
+
         // Enhance drag & drop
         this._enhanceDragDrop(kanbanEl);
-        
+
         // Initialize basic animations
         this._initBasicAnimations(kanbanEl);
     }
@@ -557,4 +556,4 @@ constructionStyles.textContent = `
 if (!document.getElementById('construction-kanban-styles')) {
     constructionStyles.id = 'construction-kanban-styles';
     document.head.appendChild(constructionStyles);
-} 
+}

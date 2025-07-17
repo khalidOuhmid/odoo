@@ -1,6 +1,7 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
+
 class InvoiceType(models.Model):
     _name = "construction.invoice_type"
     _description = "Cycle de facturation pour les chantiers"
@@ -11,18 +12,18 @@ class InvoiceType(models.Model):
     description = fields.Text(string="Description")
     sequence = fields.Integer(string="Séquence", default=10)
     active = fields.Boolean(string="Actif", default=True)
-    
+
     # Lignes de facturation
     line_ids = fields.One2many(
-        'construction.invoice_type.line', 
-        'invoice_type_id', 
+        'construction.invoice_type.line',
+        'invoice_type_id',
         string="Étapes de facturation",
         copy=True
     )
-    
+
     # Champs calculés
     total_percentage = fields.Float(
-        string="Total %", 
+        string="Total %",
         compute='_compute_total_percentage',
         store=True,
         help="Somme des pourcentages (doit être 100%)"
@@ -31,7 +32,7 @@ class InvoiceType(models.Model):
         string="Nombre d'étapes",
         compute='_compute_line_count'
     )
-    
+
     # Contraintes
     _sql_constraints = [
         ('unique_code', 'UNIQUE(code)', 'Le code du cycle de facturation doit être unique.'),
@@ -103,42 +104,42 @@ class InvoiceTypeLine(models.Model):
     _order = "invoice_type_id, sequence, trigger_percentage"
 
     invoice_type_id = fields.Many2one(
-        'construction.invoice_type', 
+        'construction.invoice_type',
         string="Cycle de facturation",
         required=True,
         ondelete='cascade'
     )
-    
+
     name = fields.Char(string="Description", required=True)
     sequence = fields.Integer(string="Séquence", default=10)
-    
+
     # Déclenchement
     trigger_percentage = fields.Float(
         string="Déclenchement (%)",
         required=True,
         help="Pourcentage d'avancement du chantier qui déclenche cette facture"
     )
-    
+
     # Montant à facturer
     percentage = fields.Float(
         string="Montant (%)",
         required=True,
         help="Pourcentage du montant total à facturer à cette étape"
     )
-    
+
     # Options
     is_advance_payment = fields.Boolean(
         string="Acompte signature",
         help="Cette facture est émise à la signature (avant démarrage travaux)"
     )
-    
+
     notes = fields.Text(string="Notes")
-    
+
     # Contraintes
     _sql_constraints = [
-        ('positive_trigger', 'CHECK(trigger_percentage >= 0 AND trigger_percentage <= 100)', 
+        ('positive_trigger', 'CHECK(trigger_percentage >= 0 AND trigger_percentage <= 100)',
          'Le pourcentage de déclenchement doit être entre 0 et 100%.'),
-        ('positive_amount', 'CHECK(percentage >= 0 AND percentage <= 100)', 
+        ('positive_amount', 'CHECK(percentage >= 0 AND percentage <= 100)',
          'Le pourcentage à facturer doit être entre 0 et 100%.'),
     ]
 
@@ -173,16 +174,16 @@ class InvoiceSchedule(models.Model):
         required=True,
         ondelete='cascade'
     )
-    
+
     invoice_type_line_id = fields.Many2one(
         'construction.invoice_type.line',
         string="Ligne de cycle",
         help="Ligne du cycle de facturation qui a généré cette planification"
     )
-    
+
     name = fields.Char(string="Description", required=True)
     sequence = fields.Integer(string="Séquence", default=10)
-    
+
     # Déclenchement et montant
     trigger_percentage = fields.Float(
         string="Déclenchement (%)",
@@ -200,12 +201,12 @@ class InvoiceSchedule(models.Model):
         store=True,
         currency_field='currency_id'
     )
-    
+
     # Dates et suivi
     planned_date = fields.Date(string="Date prévue")
     invoice_date = fields.Date(string="Date de facture")
     payment_date = fields.Date(string="Date de paiement")
-    
+
     # État
     state = fields.Selection([
         ('draft', 'Brouillon'),
@@ -215,7 +216,7 @@ class InvoiceSchedule(models.Model):
         ('paid', 'Payé'),
         ('cancelled', 'Annulé')
     ], string="État", default='draft')
-    
+
     # Options
     is_advance_payment = fields.Boolean(
         string="Acompte signature",
@@ -225,19 +226,19 @@ class InvoiceSchedule(models.Model):
         string="Déclenchée",
         help="Le seuil d'avancement a été atteint"
     )
-    
+
     # Liens
     invoice_id = fields.Many2one(
         'account.move',
         string="Facture",
         readonly=True
     )
-    
+
     currency_id = fields.Many2one(
         related='chantier_id.currency_id',
         store=True
     )
-    
+
     notes = fields.Text(string="Notes")
 
     @api.depends('chantier_id.total_cost', 'amount_percentage')
@@ -266,22 +267,22 @@ class InvoiceSchedule(models.Model):
         """Vérifier si cette étape doit être déclenchée selon l'avancement"""
         for record in self:
             current_progress = record.chantier_id.progress
-            
+
             # Les acomptes de signature ne se déclenchent pas automatiquement par l'avancement
             # Ils doivent être déclenchés manuellement
             if record.is_advance_payment:
                 continue
-            
+
             # Déclencher si le seuil d'avancement est atteint
             should_trigger = current_progress >= record.trigger_percentage
-            
+
             # Marquer comme déclenchée si pas encore fait et conditions remplies
             if should_trigger and record.state == 'planned' and not record.is_triggered:
                 record.write({
                     'state': 'ready',
                     'is_triggered': True
                 })
-                
+
                 # Notifier sur le chantier
                 record.chantier_id.message_post(
                     body=f"📊 Facturation automatique déclenchée : {record.name} "
@@ -349,14 +350,14 @@ class InvoiceSchedule(models.Model):
         self.ensure_one()
         if self.state != 'ready':
             raise ValidationError("Cette étape n'est pas prête à être facturée.")
-        
+
         # Ici on pourrait créer la vraie facture
         # Pour l'instant, on simule
         self.write({
             'state': 'invoiced',
             'invoice_date': fields.Date.today()
         })
-        
+
         self.chantier_id.message_post(
             body=f"Facture créée : {self.name} - {self.amount_fixed:,.2f} € ({self.amount_percentage}%)",
             message_type='notification'

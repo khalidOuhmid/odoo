@@ -1,35 +1,84 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
-        <record id="email_template_invoice_ready" model="mail.template">
-            <field name="name">Facture chantier prête</field>
-            <field name="model_id" ref="construction_base.model_construction_invoice_schedule"/>
-            <field name="subject">Votre facture pour le chantier {{ object.chantier_id.name }} est prête</field>
-            <field name="email_from">{{ user.email_formatted }}</field>
-            <field name="email_to">{{ object.chantier_id.client.email }}</field>
-            <field name="auto_delete" eval="True"/>
-            <field name="body_html" type="html"><![CDATA[
-<div style="font-family: 'Lucica Grande', 'Lucida Sans Unicode', Arial, sans-serif; font-size: 12px; color: rgb(34, 34, 34); background-color: rgb(255, 255, 255);">
-    <p>Bonjour <t t-out="object.chantier_id.client.name or ''"/>,</p>
-    <p>
-        Suite à l'avancement du chantier <strong><t t-esc="object.chantier_id.name"/></strong>, une nouvelle facture a été générée.
-    </p>
-    <p>
-        <strong>Détails de la facture :</strong>
-        <ul>
-            <li><strong>Numéro :</strong> <t t-esc="object.invoice_id.name"/></li>
-            <li><strong>Montant :</strong> <t t-esc="format_amount(object.invoice_id.amount_total, object.invoice_id.currency_id)"/></li>
-            <li><strong>Étape :</strong> <t t-esc="object.name"/></li>
-        </ul>
-    </p>
-    <p>
-        La facture est jointe à cet e-mail. Vous pouvez également la consulter et la régler depuis votre espace client.
-    </p>
-    <p>Cordialement,<br/>L'équipe BLG Groupe</p>
-</div>
-            ]]></field>
-            <field name="report_template" ref="account.account_invoices"/>
-            <field name="report_name">Facture_{{ (object.invoice_id.name or '').replace('/', '_') }}</field>
-        </record>
-    </data>
-</odoo> 
+    <record id="email_template_document_expiry" model="mail.template">
+        <field name="name">Facture chantier prête</field>
+        <field name="model_id" ref="construction_base.model_construction_invoice_schedule"/>
+        <field name="subject">Votre facture pour le chantier ${object.chantier_id.name} est prête</field>
+        <field name="email_from">${user.email}</field>
+        <field name="email_to">${object.chantier_id.client.email}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="lang">${object.chantier_id.client.lang}</field>
+        <field name="body_html" type="html">
+            <![CDATA[
+            <div style="font-family: Arial, sans-serif; font-size: 12px; color: #222222; background-color: #ffffff;">
+                <p>Bonjour ${object.chantier_id.client.name},</p>
+                <p>
+                    Suite à l'avancement du chantier <strong>${object.chantier_id.name}</strong>, une nouvelle facture a été générée.
+                </p>
+                <p>
+                    <strong>Détails de la facture :</strong>
+                    <ul>
+                        <li><strong>Numéro :</strong> ${object.invoice_id.name}</li>
+                        <li><strong>Montant :</strong> ${object.invoice_id.amount_total} ${object.invoice_id.currency_id.symbol}</li>
+                        <li><strong>Étape :</strong> ${object.name}</li>
+                    </ul>
+                </p>
+                <p>
+                    La facture est jointe à cet e-mail. Vous pouvez également la consulter et la régler depuis votre espace client.
+                </p>
+                <p>Cordialement,<br/>L'équipe BLG Groupe</p>
+            </div>
+            ]]>
+        </field>
+        <field name="report_template_ids" eval="[(6, 0, [ref('account.report_invoice_with_payments')])]"/>
+    </record>
+
+    <record id="email_template_planning" model="mail.template">
+        <field name="name">Notification de Planning Chantier</field>
+        <field name="model_id" ref="construction_base.model_construction_planning_task"/>
+        <field name="subject">Planning Mis à Jour pour le Chantier ${object.chantier_id.name}</field>
+        <field name="email_from">${user.email}</field>
+        <field name="email_to">${object.subcontractor_id.email}</field>
+        <field name="lang">${object.subcontractor_id.lang}</field>
+        <field name="body_html">
+            <![CDATA[
+            <p>Bonjour ${object.subcontractor_id.name},</p>
+            <p>Voici le planning mis à jour pour le chantier <strong>${object.chantier_id.name}</strong>.</p>
+            <ul>
+                <li>Tâche : ${object.name}</li>
+                <li>Lot : ${object.lot_id.name}</li>
+                <li>Dates : Du ${object.start_date.strftime('%d/%m/%Y')} au ${object.end_date.strftime('%d/%m/%Y')}</li>
+                <li>Statut : ${object.status}</li>
+            </ul>
+            <p>Le planning global est joint en PDF.</p>
+            <p>Cordialement,<br/>${user.name}</p>
+            ]]>
+        </field>
+        <field name="attachment_ids" eval="[(0, 0, {'name': 'Planning.pdf', 'res_model': 'construction.chantier', 'res_id': object.chantier_id.id})]"/>
+    </record>
+
+    <record id="email_template_subcontractor_contract_upload" model="mail.template">
+        <field name="name">Demande de dépôt du contrat de sous-traitance</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">Merci de déposer votre contrat de sous-traitance signé pour le chantier ${object.chantier_ids and object.chantier_ids[0].name or ''}</field>
+        <field name="email_from">${user.email}</field>
+        <field name="email_to">${object.email}</field>
+        <field name="lang">${object.lang}</field>
+        <field name="body_html" type="html">
+            <![CDATA[
+            <div style="font-family: Arial, sans-serif; font-size: 14px; color: #222;">
+                <p>Bonjour ${object.name},</p>
+                <p>
+                    Merci de déposer votre <strong>contrat de sous-traitance signé</strong> pour le chantier <strong>${object.chantier_ids and object.chantier_ids[0].name or ''}</strong>.<br/>
+                    Pour cela, veuillez utiliser le lien sécurisé ci-dessous :
+                </p>
+                <p style="margin: 20px 0;">
+                    <a href="${object.subcontractor_contract_upload_url}" style="background: #1e40af; color: #fff; padding: 10px 18px; border-radius: 6px; text-decoration: none; font-weight: bold;">Déposer mon contrat signé</a>
+                </p>
+                <p>Ce lien est personnel et valable pour une durée limitée.</p>
+                <p>Merci de votre collaboration.<br/>L'équipe BLG Groupe</p>
+            </div>
+            ]]>
+        </field>
+    </record>
+</odoo>

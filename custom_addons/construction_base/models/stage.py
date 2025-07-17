@@ -50,6 +50,7 @@ class Stage(models.Model):
     def _compute_chantier_count(self):
         for record in self:
             record.chantier_count = len(record.chantier_ids)
+
     # ============= Relations ============= #
     chapter_id = fields.Many2one('construction.chapter', 'Chapter', required=True, ondelete='cascade')
 
@@ -59,8 +60,9 @@ class Stage(models.Model):
 
     # ============= Workflow Properties ============= #
     fold = fields.Boolean('Fold in Kanban', default=False, help="Fold this stage in kanban view")
-    validation_info = fields.Text('Information de validation ', help="Informations sur les conditions pour passer à l'étape suivante"
-    )
+    validation_info = fields.Text('Information de validation ',
+                                  help="Informations sur les conditions pour passer à l'étape suivante"
+                                  )
     # ============= Status ============= #
     active = fields.Boolean('Active', default=True)
 

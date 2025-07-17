@@ -270,6 +270,8 @@ class ResPartner(models.Model):
         help="Expiration date/time for upload token"
     )
 
+
+
     # =================== COMPUTED METHODS ===================
 
     @api.depends('contact_type')

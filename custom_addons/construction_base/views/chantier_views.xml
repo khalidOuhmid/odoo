@@ -14,13 +14,6 @@
                     <!--HEADER-->
                     <header>
                         <!-- Workflow -->
-                        <button name="action_move_to_next_stage"
-                                string="▶ Étape suivante"
-                                type="object"
-                                class="oe_highlight"
-                                icon="fa-arrow-right"
-                                modifiers="{'invisible': [('state', 'in', ['abandoned', 'completed'])]}"/>
-
                         <button name="action_move_to_previous_stage"
                                 string="◀ Étape précédente"
                                 type="object"
@@ -28,19 +21,27 @@
                                 icon="fa-arrow-left"
                                 modifiers="{'invisible': [('state', 'in', ['abandoned', 'completed'])]}"/>
 
+                        <button name="action_move_to_next_stage"
+                                string="▶ Étape suivante"
+                                type="object"
+                                class="oe_highlight"
+                                icon="fa-arrow-right"
+                                modifiers="{'invisible': [('state', 'in', ['abandoned', 'completed'])]}"/>
+
                         <!-- Actions rapides -->
                         <button name="action_schedule_visit"
                                 string="📅 Planifier visite"
                                 type="object"
                                 class="btn-info"
-                                modifiers="{'invisible': [('show_schedule_visit', '=', False)]}"/>
+                                modifiers="{'invisible': [('show_schedule_visit', '=', False)]}"
+                                invisible="stage_id &lt;= 2"/>
 
                         <button name="action_create_intelligent_quote"
                                 string="💰 Créer devis"
                                 type="object"
                                 class="btn-success"
-                                modifiers="{'invisible': [('show_create_quote', '=', False)]}"/>
-
+                                modifiers="{'invisible': [('show_create_quote', '=', False)]}"
+                                invisible="stage_id &lt;= 3"/>
 
 
                         <!-- Statut -->
@@ -104,22 +105,6 @@
                             </button>
                         </div>
 
-                        <!-- Rubans -->
-                        <widget name="web_ribbon"
-                                title="Terminé"
-                                bg_color="bg-success"
-                                modifiers="{'invisible': [('state', '!=', 'completed')]}"/>
-
-                        <widget name="web_ribbon"
-                                title="Suspendu"
-                                bg_color="bg-warning"
-                                modifiers="{'invisible': [('state', '!=', 'suspended')]}"/>
-
-                        <widget name="web_ribbon"
-                                title="Abandonné"
-                                bg_color="bg-danger"
-                                modifiers="{'invisible': [('state', '!=', 'abandoned')]}"/>
-
                         <!-- Titre -->
                         <div class="oe_title">
                             <label for="name" class="oe_edit_only"/>
@@ -170,6 +155,31 @@
                                    widget="text"
                                    class="workflow-info-text"/>
                         </group>
+                        <group string="💳 Cycle de facturation" class="payement-section" invisible="stage_id &lt;= 5">
+                            <field name="invoice_type_id" domain="[('active', '=', True)]"
+                                   readonly="invoice_schedule_ids" options="{'no_create': True, 'no_open': True}"
+                                   placeholder="Sélectionnez un cycle..."/>
+
+                            <button name="action_setup_invoice_schedule" type="object" string="Configurer le planning"
+                                    class="btn-primary" invisible="invoice_type_id == False"
+                                    confirm="Confirmez-vous la configuration du planning ? Cela supprimera tout planning existant."/>
+                        </group>
+
+                        <notebook>
+                            <page string="Planning de Facturation" invisible="stage_id &lt;= 5">
+                                <field name="invoice_schedule_ids" mode="list,form">
+                                    <list editable="bottom">
+                                        <field name="name"/>
+                                        <field name="trigger_percentage"/>
+                                        <field name="amount_percentage"/>
+                                        <field name="amount_fixed" widget="monetary"/>
+                                        <field name="state" widget="badge" decoration-info="state == 'planned'"
+                                               decoration-success="state == 'paid'"/>
+                                        <field name="is_advance_payment"/>
+                                    </list>
+                                </field>
+                            </page>
+                        </notebook>
 
                         <!-- Planning -->
                         <group string="📅 Planning du projet">
@@ -192,10 +202,8 @@
                             </group>
 
                         </group>
-
                         <!-- Notebook -->
                         <notebook>
-
                             <!-- Onglet : Détails du projet-->
                             <page string="📋 Détails du projet" name="project_details">
                                 <group>
@@ -208,7 +216,7 @@
                                         <field name="tag_ids"
                                                widget="many2many_tags"
                                                options="{'color_field': 'color',
-                                                         'no_create_edit_menu': True}"/>
+                                 'no_create_edit_menu': True}"/>
                                     </group>
 
                                     <group string="📏 Caractéristiques techniques">
@@ -254,7 +262,7 @@
                             </page>
 
                             <!-- Onglet : Lots de travaux -->
-                            <page string="🏗️ Lots de travaux" name="lots">
+                            <page string="🏗️ Lots de travaux" name="lots" invisible="stage_id &lt;= 2">
                                 <field name="lots_ids">
                                     <list editable="bottom"
                                           decoration-success="is_finished"
@@ -264,7 +272,8 @@
                                         <field name="code"/>
                                         <field name="price" widget="monetary" sum="Total"/>
                                         <field name="is_finished" widget="boolean_toggle"/>
-                                        <field name="subcontractor_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                                        <field name="subcontractor_ids" widget="many2many_tags"
+                                               options="{'no_create': True}"/>
                                         <button name="action_assign_subcontractor"
                                                 type="object"
                                                 string="👷 Assigner"
@@ -279,12 +288,26 @@
                                                 icon="fa-plus"
                                                 help="Créer un sous-devis pour ce lot"
                                                 invisible="not subcontractor_ids"/>
+                                        <button name="action_display_subquotation"
+                                                type="object"
+                                                string="👁️ Voir le sous-devis"
+                                                class="btn btn-sm btn-primary"
+                                                icon="fa-eye"
+                                                help="Afficher le ou les sous-devis associés à ce lot et à ses sous-traitants"
+                                                invisible="not subcontractor_ids"/>
+                                        <button name="action_open_lot_document_wizard"
+                                                type="object"
+                                                string="📁 Gérer documents"
+                                                class="btn btn-sm btn-info"
+                                                icon="fa-folder-open"
+                                                help="Gérer les documents du lot et envoyer l'email au sous-traitant"
+                                                attrs="{'invisible': [('subcontractor_ids','=',False)]}"/>
                                     </list>
                                 </field>
                             </page>
 
                             <!-- Onglet : Devis & commandes -->
-                            <page string="💰 Devis &amp; Commandes" name="quotations">
+                            <page string="💰 Devis &amp; Commandes" name="quotations" invisible="stage_id &lt;= 3">
                                 <field name="quotation_ids">
                                     <list decoration-success="state == 'sale'"
                                           decoration-info="state == 'sent'"
@@ -317,6 +340,9 @@
                                 </field>
                             </page>
 
+
+
+
                             <!-- Onglet : Sous-traitants -->
                             <page string="👷 Sous-traitants" name="subcontractors">
                                 <group>
@@ -326,21 +352,21 @@
                                             <field name="lot_ids" widget="many2many_tags" string="Spécialités"/>
                                             <field name="phone" string="Téléphone" optional="show"/>
                                             <field name="email" string="Email" optional="show"/>
-                                            <field name="has_expired_documents" string="Docs OK" widget="boolean_toggle" optional="show"/>
+                                            <field name="has_expired_documents" string="Docs OK" widget="boolean"
+                                                   optional="show"/>
                                         </list>
                                     </field>
                                 </group>
-                                
+
                                 <!-- Résumé de couverture des lots -->
                                 <separator string="📊 Couverture des lots par spécialité"/>
                                 <div class="alert alert-info">
-                                    <p>Pour assigner automatiquement un sous-traitant à un lot, utilisez le bouton 
-                                    <strong>"👷 Assigner"</strong> dans l'onglet "Lots de travaux".</p>
+                                    <p>Pour assigner automatiquement un sous-traitant à un lot, utilisez le bouton
+                                        <strong>"👷 Assigner"</strong> dans l'onglet "Lots de travaux".</p>
                                 </div>
                             </page>
-
-
                         </notebook>
+
 
                     </sheet>
 

@@ -1,4 +1,5 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_construction_force_stage_wizard_admin,access.construction.force.stage.wizard.admin,model_construction_force_stage_wizard,base.group_system,1,1,1,1
 access_construction_chantier_user,construction.chantier.user,model_construction_chantier,base.group_user,1,1,1,1
 access_construction_stage_user,construction.stage.user,model_construction_stage,base.group_user,1,1,1,1
 access_construction_chapter_user,construction.chapter.user,model_construction_chapter,base.group_user,1,1,1,1
@@ -9,7 +10,8 @@ access_construction_invoice_type_user,construction.invoice.type.user,model_const
 access_construction_invoice_type_line_user,construction.invoice.type.line.user,model_construction_invoice_type_line,base.group_user,1,1,1,1
 access_construction_invoice_schedule_user,construction.invoice.schedule.user,model_construction_invoice_schedule,base.group_user,1,1,1,1
 access_sale_order_user,sale.order.user,sale.model_sale_order,base.group_user,1,0,0,0
-access_quote_split_wizard_user,construction.quote.split.wizard.user,model_construction_quote_split_wizard,base.group_user,1,1,1,1
+access_lot_document_wizard_user,lot.document.wizard.user,model_lot_document_wizard,base.group_user,1,1,1,1
+access_lot_document_wizard_manager,lot.document.wizard.manager,model_lot_document_wizard,base.group_system,1,1,1,1
 access_lot_subquote_wizard_user,lot.subquote.wizard.user,model_lot_subquote_wizard,base.group_user,1,1,1,1
 access_lot_subcontractor_assign_wizard_user,lot.subcontractor.assign.wizard.user,model_lot_subcontractor_assign_wizard,base.group_user,1,1,1,1
-
+access_construction_planning_task_user,construction.planning.task.user,model_construction_planning_task,base.group_user,1,1,1,1

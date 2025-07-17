@@ -2,17 +2,13 @@
 <odoo>
     <data>
 
-        <!-- ================================================================
-             FORMULAIRE WIZARD SIMPLE
-        ===================================================================-->
+        <!-- Formulaire Wizard -->
         <record id="view_lot_subquote_wizard_form" model="ir.ui.view">
             <field name="name">lot.subquote.wizard.form</field>
             <field name="model">lot.subquote.wizard</field>
             <field name="arch" type="xml">
                 <form string="Créer sous-devis pour lot">
-                    
                     <sheet>
-                        
                         <!-- Titre et info du lot -->
                         <div class="oe_title">
                             <h1>
@@ -31,13 +27,13 @@
                         <group>
                             <group string="📋 Devis source">
                                 <field name="available_quotes" invisible="1"/>
-                                <field name="selected_quote_id" 
+                                <field name="selected_quote_id"
                                        domain="[('id', 'in', available_quotes)]"
                                        required="1"
                                        options="{'no_create': True}"/>
                                 <field name="estimated_amount" readonly="1"/>
                             </group>
-                            
+
                             <group string="👷 Sous-traitant">
                                 <field name="subcontractor_id" required="1"/>
                                 <field name="currency_id" invisible="1"/>
@@ -47,29 +43,24 @@
                         <!-- Aperçu du contenu -->
                         <separator string="👁️ Aperçu du contenu"/>
                         <field name="preview_lines" readonly="1" nolabel="1"/>
-
                     </sheet>
 
-                    <!-- Boutons d'action -->
+                    <!-- Footer avec boutons -->
                     <footer>
                         <button name="action_create_subquote"
-                                string="✅ Créer le sous-devis"
+                                string="✅ CONFIRMER et créer le sous-devis"
                                 type="object"
-                                class="btn-primary"/>
-                        
-                        <button string="❌ Annuler" 
-                                class="btn-secondary" 
+                                class="btn-primary"
+                                confirm="Êtes-vous sûr de vouloir créer ce sous-devis ?"/>
+
+                        <button string="❌ Annuler"
+                                class="btn-secondary"
                                 special="cancel"/>
                     </footer>
-
                 </form>
             </field>
         </record>
 
-        <!-- ================================================================
-             ACTION
-        ===================================================================-->
-        
         <!-- Action pour ouvrir le wizard -->
         <record id="action_lot_subquote_wizard" model="ir.actions.act_window">
             <field name="name">Créer sous-devis pour lot</field>
@@ -80,4 +71,4 @@
         </record>
 
     </data>
-</odoo> 
+</odoo>

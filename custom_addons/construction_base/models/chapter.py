@@ -57,8 +57,6 @@ class Chapter(models.Model):
             # Accès aux chantiers via les stages - pas de redondance
             record.chantier_count = len(record.stage_ids.chantier_ids)
 
-
-
     def get_chantiers(self):
         """
         Get all projects in this chapter through stages.

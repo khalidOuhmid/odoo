@@ -22,16 +22,18 @@ STAGE_VALIDATORS = {
     ("AO", "DE"): "check_quotation_sent_stage",
     ("PREP", "DA"): "check_quotation_accepted_stage",
     ("PREP", "FD"): "check_dossier_finalization_stage",
+    ("TRAV", "T25"): "check_construction_25_percentage_stage",
+    ("TRAV", "T50"): "check_construction_50_percentage_stage",
+    ("TRAV", "T75"): "check_construction_75_percentage_stage",
     ("LEVEE", "LR"): "check_warranty_stage",
     ("RET", "RET"): "check_warranty_retention_stage",
 }
+
 
 class Chantier(models.Model):
     _name = 'construction.chantier'
     _description = 'Construction Project'
     _inherit = ['mail.thread', 'mail.activity.mixin']
-
-
 
     # ===========Attributes==========#
     name = fields.Char('Project Name', required=True)
@@ -44,6 +46,9 @@ class Chantier(models.Model):
     tag_ids = fields.Many2many('construction.tag', string='Tags')
     description = fields.Text('Description')
     notes = fields.Text('Notes')
+
+    class ConstructionChantier(models.Model):
+        _name = 'construction.chantier'
 
     subcontractor_ids = fields.Many2many(
         'res.partner',
@@ -138,7 +143,6 @@ class Chantier(models.Model):
         string='Planning de facturation',
         help="Planning détaillé des factures pour ce chantier"
     )
-
     available_subcontractors = fields.Many2many(
         'res.partner',
         string='Sous-traitants disponibles',
@@ -164,6 +168,8 @@ class Chantier(models.Model):
     show_mark_not_pursued = fields.Boolean('Afficher marquer sans suite', compute='_compute_action_visibility',
                                            default=False)
     show_split_quote = fields.Boolean('Afficher diviser devis', compute='_compute_action_visibility', default=False)
+
+    planning_task_ids = fields.One2many('construction.planning.task', 'chantier_id', string='Tâches de planning')
 
     _sql_constraints = [
         ('positive_cost', 'CHECK(total_cost >= 0)', 'Le coût total doit être positif'),
@@ -389,7 +395,6 @@ class Chantier(models.Model):
                 filter(None, (header, details, "", footer))
             )
 
-
     def _can_move_to_next_stage(self):
         """Ré-utilise exactement le même mapping que ci-dessus."""
         if not (self.stage_id and self.stage_id.chapter_id):
@@ -472,7 +477,6 @@ class Chantier(models.Model):
         else:
             return True, "OK"
 
-
     def check_quotation_sent_stage(self):
         if not self.lots_ids:
             return False, "Lots de travaux non définis"
@@ -485,7 +489,6 @@ class Chantier(models.Model):
             return False, "Aucun devis accepté par le client"
         else:
             return True, "OK"
-
 
     def check_quotation_accepted_stage(self):
         if not self.subcontractor_count == self.lots_count:
@@ -558,7 +561,25 @@ class Chantier(models.Model):
         # 5️⃣ Tout est conforme
         return True, ""
 
+    def check_construction_25_percentage_stage(self):
+        if not self.progress >= 25:
+            return False, "Progression insuffisante"
+        return True, ""
 
+    def check_construction_50_percentage_stage(self):
+        if not self.progress >= 50:
+            return False, "Progression insuffisante"
+        return True, ""
+
+    def check_construction_75_percentage_stage(self):
+        if not self.progress >= 75:
+            return False, "Progression insuffisante"
+        return True, ""
+
+    def check_construction_100_percentage_stage(self):
+        if not self.progress >= 100:
+            return False, "Progression insuffisante"
+        return True, ""
 
     def _can_move_to_previous_stage(self):
         """Vérifie si le chantier peut revenir à l'étape précédente"""
@@ -590,37 +611,59 @@ class Chantier(models.Model):
 
         # Vérifier les conditions avec la logique centralisée
         can_proceed, message = self._can_move_to_next_stage()
-        if not can_proceed:
-            raise ValidationError(f"Impossible de passer à l'étape suivante :\n{message}")
 
-        # Trouver l'étape suivante
-        next_stage = self._get_next_stage()
+        if can_proceed:
+            # Trouver l'étape suivante
+            next_stage = self._get_next_stage()
 
-        if not next_stage:
-            raise ValidationError("Aucune étape suivante trouvée")
+            if not next_stage:
+                raise ValidationError("Aucune étape suivante trouvée")
 
-        # Effectuer la transition avec bypass de validation
-        old_stage = self.stage_id.name
-        self.with_context(bypass_stage_validation=True).write({'stage_id': next_stage.id})
+            # Effectuer la transition avec bypass de validation
+            old_stage = self.stage_id.name
+            self.with_context(bypass_stage_validation=True).write({'stage_id': next_stage.id})
 
-        # Log de la transition
-        self.message_post(
-            body=f"Chantier passé de '{old_stage}' à '{next_stage.name}'",
-            message_type='notification'
-        )
+            # Log de la transition
+            self.message_post(
+                body=f"Chantier passé de '{old_stage}' à '{next_stage.name}'",
+                message_type='notification'
+            )
 
-        # Actions automatiques selon l'étape
-        self._trigger_stage_actions()
+            # Actions automatiques selon l'étape
+            self._trigger_stage_actions()
 
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Étape mise à jour',
-                'message': f'Chantier passé à : {next_stage.name}',
-                'type': 'success'
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Étape mise à jour',
+                    'message': f'Chantier passé à : {next_stage.name}',
+                    'type': 'success'
+                }
             }
-        }
+        else:
+            # Validation échouée : vérifier si admin pour proposer le forçage
+            if self.env.user.has_group('base.group_system'):
+                # Trouver l'étape suivante pour pré-remplir le wizard
+                next_stage = self._get_next_stage()
+                default_new_stage_id = next_stage.id if next_stage else False
+
+                # Retourner l'action pour ouvrir le wizard
+                return {
+                    'name': 'Forcer le Changement d\'Étape',
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'construction.force.stage.wizard',
+                    'view_mode': 'form',
+                    'target': 'new',
+                    'context': {
+                        'default_chantier_id': self.id,
+                        'default_current_stage_id': self.stage_id.id,
+                        'default_new_stage_id': default_new_stage_id,
+                    }
+                }
+            else:
+                # Non admin : lever l'erreur standard
+                raise ValidationError(f"Impossible de passer à l'étape suivante :\n{message}")
 
     def _get_next_stage(self):
         """Détermine l'étape suivante selon la logique métier"""
@@ -716,7 +759,6 @@ class Chantier(models.Model):
             }
         }
 
-
     def _generate_invoice_at_threshold(self, threshold):
         """Génère automatiquement une facture au seuil donné"""
         # Logique de génération de facture selon le cahier des charges
@@ -742,7 +784,6 @@ class Chantier(models.Model):
                     rec.stage_id.code in ['DE', 'DA', 'Devis']
             )
         show_create_quote = fields.Boolean(compute='_compute_show_create_quote')
-
 
     def _trigger_stage_actions(self):
         """Déclenche les actions automatiques selon l'étape atteinte"""
@@ -783,7 +824,6 @@ class Chantier(models.Model):
                 message_type='comment'
             )
 
-
     def action_force_stage_change(self):
         """Action pour forcer un changement d'étape (administrateurs uniquement)"""
         if not self.env.user.has_group('base.group_system'):
@@ -800,7 +840,6 @@ class Chantier(models.Model):
             }
         }
 
-
     def action_schedule_visit(self):
         """Ouvrir le formulaire de création de visite"""
         self.ensure_one()
@@ -816,7 +855,6 @@ class Chantier(models.Model):
                 'default_name': f'Visite - {self.name}',
             }
         }
-
 
     def action_view_subcontractors(self):
         """Action pour voir les sous-traitants du chantier"""
@@ -835,7 +873,6 @@ class Chantier(models.Model):
             'target': 'current',
         }
 
-
     def action_view_budget(self):
         """Action pour voir le détail du budget/lots"""
         self.ensure_one()
@@ -853,12 +890,10 @@ class Chantier(models.Model):
             'target': 'current',
         }
 
-
     @api.depends('quotation_ids')
     def _compute_quotation_count(self):
         for record in self:
             record.quotation_count = len(record.quotation_ids)
-
 
     def action_create_intelligent_quote(self):
         """Créer un nouveau devis lié au chantier"""
@@ -894,7 +929,6 @@ class Chantier(models.Model):
             }
         }
 
-
     def action_view_quotations(self):
         """Voir tous les devis du chantier"""
         self.ensure_one()
@@ -913,7 +947,6 @@ class Chantier(models.Model):
             'target': 'current',
         }
 
-
     def action_view_invoice_schedule(self):
         """Voir le planning de facturation du chantier"""
         self.ensure_one()
@@ -928,7 +961,6 @@ class Chantier(models.Model):
             },
             'target': 'current',
         }
-
 
     def action_setup_invoice_schedule(self):
         """Configurer le planning de facturation basé sur le cycle choisi"""
@@ -969,7 +1001,6 @@ class Chantier(models.Model):
 
         return self.action_view_invoice_schedule()
 
-
     def action_create_new_invoice_cycle(self):
         """Ouvrir le formulaire de création de nouveau cycle de facturation"""
         return {
@@ -980,7 +1011,6 @@ class Chantier(models.Model):
             'target': 'new',
             'context': {'default_active': True}
         }
-
 
     def action_trigger_advance_payment(self):
         """Déclencher manuellement l'acompte de signature"""
@@ -1008,7 +1038,6 @@ class Chantier(models.Model):
 
         return self.action_view_invoice_schedule()
 
-
     def action_check_invoice_triggers(self):
         """Vérifier manuellement tous les seuils de facturation"""
         self.ensure_one()
@@ -1034,7 +1063,6 @@ class Chantier(models.Model):
             }
         }
 
-
     @api.onchange('invoice_type_id')
     def _onchange_invoice_type_id(self):
         """Proposer de reconfigurer le planning quand le cycle change"""
@@ -1047,7 +1075,6 @@ class Chantier(models.Model):
                                'pour mettre à jour le planning selon le nouveau cycle.'
                 }
             }
-
 
     def _check_invoice_triggers(self):
         """Vérifier automatiquement les seuils de facturation selon l'avancement"""
@@ -1070,7 +1097,6 @@ class Chantier(models.Model):
                 message_type='comment'
             )
 
-
     @api.model
     def _read_group_stage_id(self, stages, domain, order=None):
         """Retourne tous les stages pour le group_expand dans la vue kanban"""
@@ -1089,14 +1115,14 @@ class Chantier(models.Model):
     def action_split_quote_by_lots(self):
         """Split the main quote into sub-quotes by lots and assign to subcontractors."""
         self.ensure_one()
-        
+
         # Utiliser le service de division
         result = self.env['quote.split.service'].split_quote_by_lots(self.id)
-        
+
         if result['success']:
             # Rafraîchir la vue pour montrer les nouveaux sous-devis
             self._compute_quotation_count()
-            
+
             # Ouvrir une vue avec les sous-devis créés
             return self.action_view_subquotes(result['created_subquotes'])
         else:
@@ -1115,7 +1141,7 @@ class Chantier(models.Model):
     def action_split_quote_wizard(self):
         """Open the quote splitting wizard for guided splitting."""
         self.ensure_one()
-        
+
         return {
             'type': 'ir.actions.act_window',
             'name': _('Division de devis par lots'),
@@ -1130,13 +1156,13 @@ class Chantier(models.Model):
     def action_view_subquotes(self, subquote_ids=None):
         """View sub-quotes for this chantier."""
         self.ensure_one()
-        
+
         if subquote_ids:
             domain = [('id', 'in', subquote_ids)]
         else:
             subquotes = self.env['quote.split.service'].get_subquotes_for_chantier(self.id)
             domain = [('id', 'in', subquotes.ids)]
-        
+
         return {
             'type': 'ir.actions.act_window',
             'name': f'Sous-devis - {self.name}',
@@ -1153,9 +1179,9 @@ class Chantier(models.Model):
     def action_quick_edit_subquote(self):
         """Quick access to edit sub-quotes via popup."""
         self.ensure_one()
-        
+
         subquotes = self.env['quote.split.service'].get_subquotes_for_chantier(self.id)
-        
+
         if not subquotes:
             return {
                 'type': 'ir.actions.client',
@@ -1166,11 +1192,11 @@ class Chantier(models.Model):
                     'sticky': False,
                 }
             }
-        
+
         # Si un seul sous-devis, l'ouvrir directement
         if len(subquotes) == 1:
             return self.env['quote.split.service'].quick_access_subquote(subquotes[0].id)
-        
+
         # Sinon, afficher une liste pour sélection
         return {
             'type': 'ir.actions.act_window',
@@ -1186,4 +1212,65 @@ class Chantier(models.Model):
             'target': 'new',
         }
 
+    def action_send_contract_to_subcontractor(self):
+        """Envoie un email à chaque sous-traitant avec le lien de dépôt du contrat de sous-traitance."""
+        self.ensure_one()
 
+        try:
+            template = self.env.ref('construction_base.email_template_subcontractor_contract_upload')
+        except ValueError:
+            raise ValidationError("Le template d'email est introuvable.")
+
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        if not base_url:
+            raise ValidationError("L'URL de base du système n'est pas configurée.")
+
+        sent_count = 0
+        errors = []
+
+        for partner in self.subcontractor_ids:
+            try:
+                # Générer le token (cela invalidera automatiquement le cache du champ compute)
+                token = partner._generate_upload_token()
+                if not token:
+                    errors.append(f"Impossible de générer un token pour {partner.name}.")
+                    continue
+
+                # Envoyer l'email (le champ compute sera automatiquement recalculé)
+                template.with_context(lang=partner.lang or 'fr_FR').send_mail(
+                    partner.id,
+                    force_send=True,
+                    raise_exception=True
+                )
+                sent_count += 1
+
+            except Exception as e:
+                errors.append(f"Erreur pour {partner.name}: {str(e)}")
+
+        # Messages de notification (reste identique)
+        if errors:
+            error_message = "\n".join(errors)
+            self.message_post(
+                body=f"Lien de dépôt envoyé à {sent_count} sous-traitant(s).\nErreurs:\n{error_message}",
+                message_type='notification'
+            )
+        else:
+            self.message_post(
+                body=f"Lien de dépôt envoyé à {sent_count} sous-traitant(s).",
+                message_type='notification'
+            )
+
+        notification_type = 'success' if sent_count > 0 else 'warning'
+        message = f'{sent_count} email(s) envoyé(s) aux sous-traitants.'
+        if errors:
+            message += f' {len(errors)} erreur(s) détectée(s).'
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': 'Envoi des liens',
+                'message': message,
+                'type': notification_type,
+            }
+        }

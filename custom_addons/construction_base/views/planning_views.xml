@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_planning_task_gantt" model="ir.ui.view">
+        <field name="name">construction.planning.task.gantt</field>
+        <field name="model">construction.planning.task</field>
+        <field name="arch" type="xml">
+            <gantt string="Planning Chantier" date_start="date_start" date_stop="date_stop" color="color" progress="state" default_group_by="chantier_id">
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="lot_id"/>
+                <field name="subcontractor_id"/>
+                <field name="state"/>
+            </gantt>
+        </field>
+    </record>
+
+    <record id="action_construction_planning_task_gantt" model="ir.actions.act_window">
+        <field name="name">Planning Global des Chantiers</field>
+        <field name="res_model">construction.planning.task</field>
+        <field name="view_mode">gantt,list,form</field>
+        <field name="view_id" ref="view_construction_planning_task_gantt"/>
+        <field name="context">{}</field>
+    </record>
+
+    <menuitem id="menu_construction_planning_root" name="Planning" parent="construction_base.menu_construction_root" sequence="50"/>
+    <menuitem id="menu_construction_planning_task_gantt" name="Planning Global" parent="menu_construction_planning_root" action="action_construction_planning_task_gantt" sequence="10"/>
+</odoo>

@@ -67,7 +67,8 @@
                         <button name="action_assign_subcontractor"
                                 string="✅ Assigner"
                                 type="object"
-                                class="btn-primary"/>
+                                class="btn-primary"
+                                confirm="Êtes-vous sûr de vouloir assigner ce sous-traitant ?"/>
                         
                         <button string="❌ Annuler" 
                                 class="btn-secondary" 
@@ -79,4 +80,4 @@
         </record>
 
     </data>
-</odoo> 
+</odoo>

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 from . import chantier
+from . import planning
+
 from . import chapter
 from . import stage
 from . import tag

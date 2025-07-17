@@ -1,0 +1,26 @@
+<odoo>
+    <record id="view_lot_document_wizard_form" model="ir.ui.view">
+        <field name="name">lot.document.wizard.form</field>
+        <field name="model">lot.document.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Gérer les documents du lot">
+                <sheet>
+                    <group>
+                        <field name="lot_id" readonly="1"/>
+                        <field name="chantier_id" readonly="1"/>
+                        <field name="subcontractor_id" readonly="1"/>
+                    </group>
+                    <group string="Documents du lot">
+                        <field name="document_cctp" filename="CCTP.pdf"/>
+                        <field name="document_subcontractor_contract" filename="Contrat_de_sous_traitance.pdf"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_save_documents" string="💾 Enregistrer" type="object" class="btn-primary"/>
+                    <button name="action_send_contract_email" string="✉️ Envoyer email au sous-traitant" type="object" class="btn-info"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo> 

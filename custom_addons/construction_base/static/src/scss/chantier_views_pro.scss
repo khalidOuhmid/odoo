@@ -10,58 +10,58 @@
     --btp-danger: #e74c3c;        /* Rouge alerte */
     --btp-light: #ecf0f1;         /* Gris très clair */
     --btp-dark: #2c3e50;          /* Bleu très foncé */
-    
+
     /* En-tête du formulaire */
     header {
         background: linear-gradient(135deg, var(--btp-light) 0%, #ffffff 100%);
         border-bottom: 2px solid var(--btp-primary);
         padding: 1rem 0;
-        
+
         .oe_highlight {
             background: linear-gradient(135deg, var(--btp-primary) 0%, var(--btp-secondary) 100%);
             border: none;
             color: white;
             font-weight: 600;
             transition: all 0.3s ease;
-            
+
             &:hover {
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
             }
         }
-        
+
         .btn-secondary {
             background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
             border: none;
             color: white;
-            
+
             &:hover {
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
             }
         }
-        
+
         .btn-info {
             background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
             border: none;
-            
+
             &:hover {
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(23, 162, 184, 0.3);
             }
         }
-        
+
         .btn-success {
             background: linear-gradient(135deg, var(--btp-success) 0%, #1e7e34 100%);
             border: none;
-            
+
             &:hover {
                 transform: translateY(-1px);
                 box-shadow: 0 4px 12px rgba(39, 174, 96, 0.3);
             }
         }
     }
-    
+
     /* Titre du formulaire */
     .oe_title {
         background: linear-gradient(135deg, #ffffff 0%, var(--btp-light) 100%);
@@ -69,20 +69,20 @@
         border-radius: 8px;
         margin-bottom: 1.5rem;
         border-left: 4px solid var(--btp-primary);
-        
+
         h1 {
             color: var(--btp-dark);
             font-weight: 700;
             margin-bottom: 0.5rem;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
         }
-        
+
         h3 {
             color: var(--btp-secondary);
             font-weight: 500;
             margin-bottom: 0.5rem;
         }
-        
+
         .text-muted {
             font-size: 0.9em;
             font-family: monospace;
@@ -92,7 +92,7 @@
             display: inline-block;
         }
     }
-    
+
     /* Groupes de champs */
     .o_group {
         background: #ffffff;
@@ -100,7 +100,7 @@
         border-radius: 8px;
         margin-bottom: 1.5rem;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        
+
         &[string] > .o_group_header {
             background: linear-gradient(135deg, var(--btp-primary) 0%, var(--btp-secondary) 100%);
             color: white;
@@ -111,21 +111,21 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        
+
         .o_form_label {
             font-weight: 600;
             color: var(--btp-dark);
             font-size: 0.9em;
         }
     }
-    
+
     /* Section workflow spéciale */
     .workflow-section {
         background: linear-gradient(135deg, rgba(44, 62, 80, 0.05) 0%, rgba(236, 240, 241, 0.3) 100%);
         border: 2px solid var(--btp-primary);
         border-radius: 12px;
         padding: 1rem;
-        
+
         .workflow-info-text {
             background: #ffffff;
             padding: 1rem;
@@ -139,14 +139,14 @@
             box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
         }
     }
-    
+
     /* Onglets modernisés */
     .nav-tabs {
         border-bottom: 3px solid var(--btp-primary);
         background: var(--btp-light);
         border-radius: 8px 8px 0 0;
         padding: 0.5rem 1rem 0 1rem;
-        
+
         .nav-link {
             color: var(--btp-secondary);
             font-weight: 600;
@@ -157,14 +157,14 @@
             margin-right: 0.5rem;
             border-radius: 8px 8px 0 0;
             transition: all 0.3s ease;
-            
+
             &:hover {
                 background: rgba(255, 255, 255, 0.7);
                 border-bottom-color: var(--btp-accent);
                 color: var(--btp-accent);
                 transform: translateY(-2px);
             }
-            
+
             &.active {
                 background: white;
                 border-bottom-color: var(--btp-primary);
@@ -174,7 +174,7 @@
             }
         }
     }
-    
+
     .tab-content {
         background: white;
         border-radius: 0 0 8px 8px;
@@ -191,7 +191,7 @@
     transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
-    
+
     &::before {
         content: '';
         position: absolute;
@@ -202,22 +202,22 @@
         background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
         transition: left 0.5s ease;
     }
-    
+
     &:hover {
         border-color: var(--btp-primary) !important;
         box-shadow: 0 4px 12px rgba(44, 62, 80, 0.2);
         transform: translateY(-2px) scale(1.02);
-        
+
         &::before {
             left: 100%;
         }
-        
+
         .o_stat_value {
             color: var(--btp-accent);
             transform: scale(1.1);
         }
     }
-    
+
     .o_stat_value {
         color: var(--btp-primary);
         font-weight: 800;
@@ -225,7 +225,7 @@
         transition: all 0.3s ease;
         text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
     }
-    
+
     .o_stat_text {
         color: var(--btp-secondary);
         font-weight: 600;
@@ -240,7 +240,7 @@
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     padding: 1rem;
     min-height: 100vh;
-    
+
     /* En-têtes de groupes modernisés */
     .o_kanban_group_header {
         background: linear-gradient(135deg, var(--btp-primary) 0%, var(--btp-secondary) 100%);
@@ -249,7 +249,7 @@
         padding: 1rem;
         border: none;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        
+
         .o_column_title {
             color: white;
             font-size: 1.1em;
@@ -258,7 +258,7 @@
             letter-spacing: 0.5px;
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
         }
-        
+
         .o_kanban_counter {
             background: rgba(255, 255, 255, 0.9) !important;
             color: var(--btp-primary) !important;
@@ -268,7 +268,7 @@
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
     }
-    
+
     /* Cartes professionnelles */
     .o_construction_card {
         background: white;
@@ -279,7 +279,7 @@
         position: relative;
         overflow: hidden;
         border: 1px solid #e9ecef;
-        
+
         &::before {
             content: '';
             position: absolute;
@@ -289,78 +289,78 @@
             height: 100%;
             transition: all 0.3s ease;
         }
-        
+
         &:hover {
             transform: translateY(-4px) scale(1.02);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-            
+
             &::before {
                 width: 6px;
             }
         }
-        
+
         /* États avec couleurs BTP */
         &.critical {
             border-left: 4px solid var(--btp-danger);
-            
+
             &::before {
                 background: linear-gradient(180deg, var(--btp-danger) 0%, #c82333 100%);
             }
-            
+
             .status-dot {
                 background: radial-gradient(circle, var(--btp-danger) 0%, #c82333 100%);
                 box-shadow: 0 0 10px rgba(231, 76, 60, 0.5);
                 animation: pulse-critical 2s infinite;
             }
         }
-        
+
         &.late {
             border-left: 4px solid #fd7e14;
-            
+
             &::before {
                 background: linear-gradient(180deg, #fd7e14 0%, #e55a00 100%);
             }
-            
+
             .status-dot {
                 background: radial-gradient(circle, #fd7e14 0%, #e55a00 100%);
                 box-shadow: 0 0 10px rgba(253, 126, 20, 0.5);
             }
         }
-        
+
         &.warning {
             border-left: 4px solid var(--btp-warning);
-            
+
             &::before {
                 background: linear-gradient(180deg, var(--btp-warning) 0%, #e0a800 100%);
             }
-            
+
             .status-dot {
                 background: radial-gradient(circle, var(--btp-warning) 0%, #e0a800 100%);
                 box-shadow: 0 0 10px rgba(243, 156, 18, 0.4);
             }
         }
-        
+
         &.on_time {
             border-left: 4px solid var(--btp-success);
-            
+
             &::before {
                 background: linear-gradient(180deg, var(--btp-success) 0%, #1e7e34 100%);
             }
-            
+
             .status-dot {
                 background: radial-gradient(circle, var(--btp-success) 0%, #1e7e34 100%);
                 box-shadow: 0 0 10px rgba(39, 174, 96, 0.4);
             }
         }
     }
-    
+
     /* En-tête de carte */
     .card-header {
         padding: 1rem;
         background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
         border-bottom: 1px solid rgba(0, 0, 0, 0.1);
         border-radius: 12px 12px 0 0;
-        
+
         .project-name {
             font-size: 1em;
             font-weight: 700;
@@ -368,18 +368,18 @@
             margin-bottom: 0.5rem;
             line-height: 1.3;
         }
-        
+
         .client-name {
             font-size: 0.85em;
             color: var(--btp-secondary);
             margin-bottom: 0.5rem;
-            
+
             i {
                 color: var(--btp-success);
                 margin-right: 0.5rem;
             }
         }
-        
+
         .chapter-name {
             font-size: 0.75em;
             color: var(--btp-primary);
@@ -389,13 +389,13 @@
             border-radius: 6px;
             display: inline-flex;
             align-items: center;
-            
+
             i {
                 margin-right: 0.25rem;
                 font-size: 0.8em;
             }
         }
-        
+
         .status-dot {
             width: 12px;
             height: 12px;
@@ -405,12 +405,12 @@
             top: 1rem;
             right: 3rem;
         }
-        
+
         .card-menu {
             position: absolute;
             top: 1rem;
             right: 1rem;
-            
+
             .dropdown-toggle {
                 background: rgba(108, 117, 125, 0.1);
                 border: none;
@@ -418,7 +418,7 @@
                 padding: 0.5rem;
                 color: var(--btp-secondary);
                 transition: all 0.2s ease;
-                
+
                 &:hover {
                     background: rgba(44, 62, 80, 0.1);
                     color: var(--btp-primary);
@@ -427,11 +427,11 @@
             }
         }
     }
-    
+
     /* Corps de carte */
     .card-body {
         padding: 1rem;
-        
+
         .project-address {
             font-size: 0.8em;
             color: var(--btp-secondary);
@@ -441,17 +441,17 @@
             margin-bottom: 0.75rem;
             display: flex;
             align-items: center;
-            
+
             i {
                 color: var(--btp-accent);
                 margin-right: 0.5rem;
                 width: 14px;
             }
         }
-        
+
         .project-tags {
             margin-bottom: 0.75rem;
-            
+
             .badge {
                 font-size: 0.7em;
                 padding: 0.25rem 0.5rem;
@@ -459,12 +459,12 @@
                 border-radius: 12px;
             }
         }
-        
+
         .metrics-row {
             display: flex;
             gap: 0.75rem;
             margin-bottom: 1rem;
-            
+
             .metric {
                 flex: 1;
                 display: flex;
@@ -475,7 +475,7 @@
                 background: rgba(248, 249, 250, 0.8);
                 border-radius: 6px;
                 border: 1px solid rgba(0, 0, 0, 0.05);
-                
+
                 i {
                     margin-right: 0.5rem;
                     width: 14px;
@@ -483,16 +483,16 @@
                 }
             }
         }
-        
+
         .progress-section {
             margin-bottom: 1rem;
-            
+
             .progress-info {
                 display: flex;
                 justify-content: space-between;
                 align-items: center;
                 margin-bottom: 0.5rem;
-                
+
                 .progress-label {
                     font-size: 0.75em;
                     color: var(--btp-secondary);
@@ -500,7 +500,7 @@
                     text-transform: uppercase;
                     letter-spacing: 0.5px;
                 }
-                
+
                 .progress-value {
                     font-size: 0.85em;
                     font-weight: 700;
@@ -510,19 +510,19 @@
                     border-radius: 6px;
                 }
             }
-            
+
             .progress {
                 height: 8px;
                 border-radius: 4px;
                 background: rgba(233, 236, 239, 0.8);
                 overflow: hidden;
                 box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
-                
+
                 .progress-bar {
                     border-radius: 4px;
                     transition: all 0.5s ease;
                     position: relative;
-                    
+
                     &::after {
                         content: '';
                         position: absolute;
@@ -536,31 +536,31 @@
                 }
             }
         }
-        
+
         .indicators {
             display: flex;
             justify-content: space-around;
-            
+
             .indicator {
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 font-size: 0.75em;
                 color: var(--btp-secondary);
-                
+
                 i {
                     font-size: 1.2em;
                     margin-bottom: 0.25rem;
                     color: var(--btp-primary);
                 }
-                
+
                 span {
                     font-weight: 600;
                 }
             }
         }
     }
-    
+
     /* Pied de carte */
     .card-footer {
         padding: 0.75rem 1rem;
@@ -570,20 +570,20 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
-        
+
         .team-section,
         .activity-section,
         .date-section {
             flex: 1;
         }
-        
+
         .activity-section {
             text-align: center;
         }
-        
+
         .date-section {
             text-align: right;
-            
+
             small {
                 font-size: 0.7em;
                 color: var(--btp-secondary);
@@ -599,37 +599,37 @@
 .o_list_view {
     .o_data_row {
         transition: all 0.2s ease;
-        
+
         &:hover {
             background: linear-gradient(90deg, rgba(44, 62, 80, 0.02) 0%, rgba(236, 240, 241, 0.5) 100%);
         }
-        
+
         &.decoration-danger {
             background: linear-gradient(90deg, rgba(231, 76, 60, 0.1) 0%, rgba(231, 76, 60, 0.05) 100%);
             border-left: 4px solid var(--btp-danger);
         }
-        
+
         &.decoration-warning {
             background: linear-gradient(90deg, rgba(243, 156, 18, 0.1) 0%, rgba(243, 156, 18, 0.05) 100%);
             border-left: 4px solid var(--btp-warning);
         }
-        
+
         &.decoration-success {
             background: linear-gradient(90deg, rgba(39, 174, 96, 0.1) 0%, rgba(39, 174, 96, 0.05) 100%);
             border-left: 4px solid var(--btp-success);
         }
-        
+
         &.decoration-muted {
             opacity: 0.7;
             background: rgba(149, 165, 166, 0.05);
         }
-        
+
         &.decoration-info {
             background: linear-gradient(90deg, rgba(23, 162, 184, 0.1) 0%, rgba(23, 162, 184, 0.05) 100%);
             border-left: 4px solid #17a2b8;
         }
     }
-    
+
     th {
         background: linear-gradient(135deg, var(--btp-light) 0%, #ffffff 100%);
         color: var(--btp-dark);
@@ -646,18 +646,18 @@
     font-weight: 600;
     padding: 0.35rem 0.65rem;
     border-radius: 6px;
-    
-    &.text-bg-success { 
-        background: linear-gradient(135deg, var(--btp-success) 0%, #1e7e34 100%) !important; 
+
+    &.text-bg-success {
+        background: linear-gradient(135deg, var(--btp-success) 0%, #1e7e34 100%) !important;
     }
-    &.text-bg-warning { 
-        background: linear-gradient(135deg, var(--btp-warning) 0%, #e0a800 100%) !important; 
+    &.text-bg-warning {
+        background: linear-gradient(135deg, var(--btp-warning) 0%, #e0a800 100%) !important;
     }
-    &.text-bg-danger { 
-        background: linear-gradient(135deg, var(--btp-danger) 0%, #c82333 100%) !important; 
+    &.text-bg-danger {
+        background: linear-gradient(135deg, var(--btp-danger) 0%, #c82333 100%) !important;
     }
-    &.text-bg-primary { 
-        background: linear-gradient(135deg, var(--btp-primary) 0%, var(--btp-secondary) 100%) !important; 
+    &.text-bg-primary {
+        background: linear-gradient(135deg, var(--btp-primary) 0%, var(--btp-secondary) 100%) !important;
     }
 }
 
@@ -689,25 +689,25 @@
     background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     border-radius: 12px;
     margin: 2rem;
-    
+
     i {
         color: var(--btp-primary);
         opacity: 0.7;
         text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         animation: float 3s ease-in-out infinite;
     }
-    
+
     h3 {
         color: var(--btp-dark);
         font-weight: 700;
         margin-bottom: 1rem;
     }
-    
+
     p {
         color: var(--btp-secondary);
         margin-bottom: 2rem;
     }
-    
+
     .btn {
         background: linear-gradient(135deg, var(--btp-primary) 0%, var(--btp-secondary) 100%);
         border: none;
@@ -717,7 +717,7 @@
         color: white;
         box-shadow: 0 4px 12px rgba(44, 62, 80, 0.3);
         transition: all 0.3s ease;
-        
+
         &:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 16px rgba(44, 62, 80, 0.4);
@@ -739,25 +739,25 @@
     .o_chantier_form {
         .oe_button_box {
             flex-direction: column;
-            
+
             .oe_stat_button {
                 width: 100%;
                 margin-bottom: 0.5rem;
             }
         }
-        
+
         .nav-tabs .nav-link {
             font-size: 0.8em;
             padding: 0.5rem 0.75rem;
         }
     }
-    
+
     .o_construction_kanban {
         padding: 0.5rem;
-        
+
         .o_construction_card {
             margin: 0.5rem 0;
-            
+
             .card-header,
             .card-body,
             .card-footer {
@@ -780,4 +780,4 @@ button,
 .o_field_widget,
 .badge {
     transition: all 0.2s ease;
-} 
+}
