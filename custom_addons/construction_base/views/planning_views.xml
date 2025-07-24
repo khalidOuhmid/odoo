@@ -1,27 +1,298 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+
+
+    <!-- Define the root menu if not already defined elsewhere -->
+    <menuitem id="menu_construction_root" name="Construction" sequence="10"/>
+
+
+    <!-- Action from chantier to create planning task -->
+    <record id="action_create_planning_task_from_chantier" model="ir.actions.act_window">
+        <field name="name">Créer une tâche de planning</field>
+        <field name="res_model">construction.planning.task.create</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{}</field>
+        <field name="binding_model_id" ref="model_construction_planning_task"/>
+    </record>
+
+
     <record id="view_construction_planning_task_gantt" model="ir.ui.view">
         <field name="name">construction.planning.task.gantt</field>
         <field name="model">construction.planning.task</field>
         <field name="arch" type="xml">
-            <gantt string="Planning Chantier" date_start="date_start" date_stop="date_stop" color="color" progress="state" default_group_by="chantier_id">
+            <gantt string="Planning Chantier"
+                   date_start="date_start"
+                   date_stop="date_stop"
+                   color="color"
+                   progress="state"
+                   default_group_by="lot_id"
+                   create="1"
+                   cell_create="1"
+                   plan="0"
+                   consolidation="1"
+                   consolidation_max="100"
+                   consolidation_exclude="state=='cancelled'"
+                   decoration-danger="is_out_of_bounds">
+                <field name="name"/>
+                <field name="chantier_id" decoration-bf="1"/>
+                <field name="lot_id"/>
+                <field name="subcontractor_id"/>
+                <field name="state"/>
+                <field name="is_out_of_bounds" column_invisible="1"/>
+                <field name="chantier_date_start" column_invisible="1"/>
+                <field name="chantier_date_end" column_invisible="1"/>
+
+
+
+                <!-- Add tooltips for better user experience -->
+                <templates>
+                    <div t-name="gantt-popover">
+                        <t t-if="record">
+                            <div t-if="record.name"><strong>Tâche:</strong> <t t-esc="record.name"/></div>
+                            <div t-if="record.chantier_id and record.chantier_id[1]"><strong>Chantier:</strong> <t t-esc="record.chantier_id[1]"/></div>
+                            <div t-if="record.lot_id and record.lot_id[1]"><strong>Lot:</strong> <t t-esc="record.lot_id[1]"/></div>
+                            <div t-if="record.subcontractor_id and record.subcontractor_id[1]"><strong>Sous-traitant:</strong> <t t-esc="record.subcontractor_id[1]"/></div>
+                            <div t-if="record.date_start"><strong>Début:</strong> <t t-esc="format_datetime(record.date_start)"/></div>
+                            <div t-if="record.date_stop"><strong>Fin:</strong> <t t-esc="format_datetime(record.date_stop)"/></div>
+                            <div t-if="record.state"><strong>Statut:</strong> <t t-esc="record.state"/></div>
+                            <div t-if="record.is_out_of_bounds" class="text-danger"><strong>⚠️ Attention:</strong> Cette tâche est en dehors des dates du chantier</div>
+                            <div t-if="record.chantier_date_start"><strong>Début chantier:</strong> <t t-esc="format_date(record.chantier_date_start)"/></div>
+                            <div t-if="record.chantier_date_end"><strong>Fin chantier:</strong> <t t-esc="format_date(record.chantier_date_end)"/></div>
+                            <!-- Afficher la date et l'heure au survol -->
+                            <div class="text-muted mt-2" t-if="context and context.date">
+                                <small>Position du curseur: <t t-esc="format_datetime(context.date)"/></small>
+                            </div>
+                        </t>
+                        <t t-else="">
+                            <div class="text-muted">Aucune information disponible</div>
+                            <!-- Afficher la date et l'heure au survol même sans enregistrement -->
+                            <div class="text-muted mt-2" t-if="context and context.date">
+                                <small>Position du curseur: <t t-esc="format_datetime(context.date)"/></small>
+                            </div>
+                        </t>
+                    </div>
+                </templates>
+            </gantt>
+        </field>
+    </record>
+
+
+    <record id="view_construction_planning_task_form" model="ir.ui.view">
+        <field name="name">construction.planning.task.form</field>
+        <field name="model">construction.planning.task</field>
+        <field name="arch" type="xml">
+            <form string="Tâche de planning">
+                <header>
+                    <field name="state" widget="statusbar" options="{'clickable': '1'}" statusbar_visible="draft,planned,in_progress,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Nom de la tâche"/>
+                        </h1>
+                    </div>
+                    <div class="alert alert-danger" role="alert" invisible="not is_out_of_bounds">
+                        <strong>⚠️ Attention:</strong> Cette tâche est en dehors des dates du chantier.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="chantier_id"/>
+                            <field name="lot_id"/>
+                            <field name="subcontractor_id"/>
+                            <field name="is_out_of_bounds" optional="hide"/>
+                        </group>
+                        <group>
+                            <field name="date_start"/>
+                            <field name="date_stop"/>
+                            <field name="color" widget="color_picker"/>
+                        </group>
+                    </group>
+                    <group string="Dates du chantier (limites)">
+                        <field name="chantier_date_start" readonly="1"/>
+                        <field name="chantier_date_end" readonly="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Description">
+                            <field name="description" placeholder="Description détaillée de la tâche..."/>
+                        </page>
+                        <page string="Notes internes">
+                            <field name="notes" placeholder="Notes internes..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+
+            </form>
+        </field>
+    </record>
+
+
+    <record id="view_construction_planning_task_search" model="ir.ui.view">
+        <field name="name">construction.planning.task.search</field>
+        <field name="model">construction.planning.task</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher des tâches">
                 <field name="name"/>
                 <field name="chantier_id"/>
                 <field name="lot_id"/>
                 <field name="subcontractor_id"/>
                 <field name="state"/>
-            </gantt>
+                <filter string="Brouillon" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Planifiée" name="planned" domain="[('state', '=', 'planned')]"/>
+                <filter string="En cours" name="in_progress" domain="[('state', '=', 'in_progress')]"/>
+                <filter string="Terminée" name="done" domain="[('state', '=', 'done')]"/>
+                <filter string="Annulée" name="cancelled" domain="[('state', '=', 'cancelled')]"/>
+                <separator/>
+                <filter string="Hors limites du chantier" name="out_of_bounds" domain="[('is_out_of_bounds', '=', True)]"/>
+                <group expand="0" string="Regrouper par">
+                    <filter string="Chantier" name="group_by_chantier" context="{'group_by': 'chantier_id'}"/>
+                    <filter string="Lot" name="group_by_lot" context="{'group_by': 'lot_id'}"/>
+                    <filter string="Sous-traitant" name="group_by_subcontractor" context="{'group_by': 'subcontractor_id'}"/>
+                    <filter string="Statut" name="group_by_state" context="{'group_by': 'state'}"/>
+                </group>
+            </search>
         </field>
     </record>
+
+
+    <record id="view_construction_planning_task_tree" model="ir.ui.view">
+        <field name="name">construction.planning.task.tree</field>
+        <field name="model">construction.planning.task</field>
+        <field name="arch" type="xml">
+            <list string="Tâches de planning"
+                  decoration-info="state == 'draft'"
+                  decoration-success="state == 'done'"
+                  decoration-warning="state == 'in_progress'"
+                  decoration-danger="is_out_of_bounds">
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="lot_id"/>
+                <field name="subcontractor_id"/>
+                <field name="date_start"/>
+                <field name="date_stop"/>
+                <field name="state"/>
+                <field name="is_out_of_bounds" column_invisible="1"/>
+                <field name="chantier_date_start" column_invisible="1"/>
+                <field name="chantier_date_end" column_invisible="1"/>
+                <field name="chantier_id" column_invisible="1"/>
+                <button name="%(action_create_planning_task_from_chantier)d"
+                        string="Créer tâche"
+                        type="action"
+                        icon="fa-plus"
+                        context="{'default_chantier_id': chantier_id}"
+                        column_invisible="not chantier_id"/>
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Calendar View for Planning Tasks -->
+    <record id="view_construction_planning_task_calendar" model="ir.ui.view">
+        <field name="name">construction.planning.task.calendar</field>
+        <field name="model">construction.planning.task</field>
+        <field name="arch" type="xml">
+            <calendar string="Calendrier des tâches"
+                      date_start="date_start"
+                      date_stop="date_stop"
+                      color="color"
+                      mode="month"
+                      quick_create="0"
+                      event_open_popup="1"
+                      form_view_id="view_construction_planning_task_form">
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="lot_id"/>
+                <field name="subcontractor_id"/>
+                <field name="state"/>
+            </calendar>
+        </field>
+    </record>
+
+
+    <!-- Calendar View for Chantiers (Construction Sites) -->
+    <record id="view_construction_chantier_calendar" model="ir.ui.view">
+        <field name="name">construction.chantier.calendar</field>
+        <field name="model">construction.chantier</field>
+        <field name="arch" type="xml">
+            <calendar string="Calendrier des Chantiers"
+                      date_start="date_start_contract"
+                      date_stop="date_end_contract"
+                      color="deadline_color"
+                      mode="month"
+                      quick_create="0"
+                      event_open_popup="1">
+                <field name="name"/>
+                <field name="client"/>
+                <field name="state"/>
+                <field name="progress"/>
+            </calendar>
+        </field>
+    </record>
+
 
     <record id="action_construction_planning_task_gantt" model="ir.actions.act_window">
         <field name="name">Planning Global des Chantiers</field>
         <field name="res_model">construction.planning.task</field>
-        <field name="view_mode">gantt,list,form</field>
-        <field name="view_id" ref="view_construction_planning_task_gantt"/>
+        <field name="view_mode">gantt,list,calendar,form</field>
+        <field name="context">{'group_by': ['chantier_id', 'lot_id'], 'search_default_group_by_chantier': 1}</field>
+        <field name="binding_model_id" ref="model_construction_planning_task"/>
+        <field name="binding_view_types">gantt,list,calendar</field>
+    </record>
+
+
+    <!-- Action for Advanced Task Creation -->
+    <record id="action_create_advanced_planning_task_button" model="ir.actions.act_window">
+        <field name="name">Créer tâche avancée</field>
+        <field name="res_model">construction.planning.task.create</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
         <field name="context">{}</field>
     </record>
 
-    <menuitem id="menu_construction_planning_root" name="Planning" parent="construction_base.menu_construction_root" sequence="50"/>
-    <menuitem id="menu_construction_planning_task_gantt" name="Planning Global" parent="menu_construction_planning_root" action="action_construction_planning_task_gantt" sequence="10"/>
+
+    <!-- Action for Task Calendar View -->
+    <record id="action_construction_planning_task_calendar" model="ir.actions.act_window">
+        <field name="name">Calendrier des Tâches</field>
+        <field name="res_model">construction.planning.task</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="view_id" ref="view_construction_planning_task_calendar"/>
+        <field name="context">{'search_default_group_by_chantier': 1}</field>
+    </record>
+
+
+    <!-- Action for Chantier Calendar View -->
+    <record id="action_construction_chantier_calendar" model="ir.actions.act_window">
+        <field name="name">Calendrier des Chantiers</field>
+        <field name="res_model">construction.chantier</field>
+        <field name="view_mode">calendar,list,form</field>
+        <field name="view_id" ref="view_construction_chantier_calendar"/>
+        <field name="context">{}</field>
+    </record>
+
+
+    <!-- Action to initialize all chantier tasks -->
+    <record id="action_init_all_chantier_tasks" model="ir.actions.server">
+        <field name="name">Initialiser les tâches pour tous les chantiers</field>
+        <field name="model_id" ref="model_construction_planning_task"/>
+        <field name="binding_model_id" ref="model_construction_planning_task"/>
+        <field name="state">code</field>
+        <field name="code">
+action = model.init_all_chantier_tasks()
+action = {
+'type': 'ir.actions.act_window',
+'name': 'Planning Global des Chantiers',
+'res_model': 'construction.planning.task',
+'view_mode': 'gantt,list,calendar,form',
+'view_id': False,
+'context': {'group_by': ['chantier_id', 'lot_id'], 'search_default_group_by_chantier': 1},
+}
+        </field>
+    </record>
+
+
+    <menuitem id="menu_construction_planning_root" name="Planning" parent="menu_construction_root" sequence="50"/>
+    <menuitem id="menu_construction_planning_task_gantt" name="Planning Global" parent="menu_construction_planning_root" action="action_init_all_chantier_tasks" sequence="10"/>
+    <menuitem id="menu_construction_planning_task_calendar" name="Vue Calendrier Tâches" parent="menu_construction_planning_root" action="action_construction_planning_task_calendar" sequence="20"/>
+    <menuitem id="menu_construction_chantier_calendar" name="Vue Calendrier Chantiers" parent="menu_construction_planning_root" action="action_construction_chantier_calendar" sequence="15"/>
+    <menuitem id="menu_create_advanced_planning_task" name="Créer tâche avancée" parent="menu_construction_planning_root" action="action_create_advanced_planning_task_button" sequence="30"/>
 </odoo>

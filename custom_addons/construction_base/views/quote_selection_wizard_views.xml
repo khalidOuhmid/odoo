@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Formulaire du wizard de sélection de devis -->
+        <record id="view_construction_quote_selection_wizard_form" model="ir.ui.view">
+            <field name="name">construction.quote.selection.wizard.form</field>
+            <field name="model">construction.quote.selection.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Sélectionner le devis principal">
+                    <group>
+                        <field name="chantier_id" readonly="1"/>
+                        <field name="quote_ids" invisible="1"/>
+                    </group>
+                    
+                    <separator string="📋 Devis disponibles"/>
+                    <group>
+                        <field name="selected_quote_id" widget="selection" 
+                               options="{'no_create': True, 'no_open': True}"
+                               required="1"/>
+                    </group>
+                    
+                    <div class="oe_chatter">
+                        <p class="alert alert-info">
+                            <strong>ℹ️ Information :</strong><br/>
+                            Le devis sélectionné servira de référence pour calculer automatiquement 
+                            le prix de chaque lot en fonction des lignes de produits associées.<br/>
+                            <br/>
+                            💡 <strong>Conseil :</strong> Choisissez le devis le plus complet et à jour.
+                        </p>
+                    </div>
+                    
+                    <footer>
+                        <button name="action_validate_selection" type="object" 
+                                string="✅ Valider la sélection" class="btn-primary"/>
+                        <button string="Annuler" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

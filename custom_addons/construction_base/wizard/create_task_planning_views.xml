@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Form View for Task Planning Wizard -->
+    <record id="view_construction_planning_task_create_form" model="ir.ui.view">
+        <field name="name">construction.planning.task.create.form</field>
+        <field name="model">construction.planning.task.create</field>
+        <field name="arch" type="xml">
+            <form string="Créer une tâche de planning">
+                <sheet>
+                    <div class="alert alert-danger" role="alert" invisible="not is_out_of_bounds">
+                        <strong>⚠️ Attention:</strong> Cette tâche est en dehors des dates du chantier.
+                    </div>
+                    <group>
+                        <group>
+                            <field name="chantier_id" invisible="context.get('hide_chantier', False)"/>
+                            <field name="name" placeholder="Nom de la tâche"/>
+                            <field name="lot_id"/>
+                            <field name="is_out_of_bounds" invisible="1"/>
+                            <field name="available_lot_ids" invisible="1"/>
+                            <field name="available_subcontractor_ids" invisible="1"/>
+                        </group>
+                        <group>
+                            <label for="date_start" string="Période"/>
+                            <div class="o_row">
+                                <field name="date_start" widget="datetime"/>
+                                <span>à</span>
+                                <field name="date_stop" widget="datetime"/>
+                            </div>
+                            <field name="duration" readonly="1"/>
+                            <field name="selected_subcontractor_id" options="{'no_create': True, 'no_open': True}"/>
+                        </group>
+                    </group>
+                    <group string="Dates du chantier (limites)">
+                        <field name="chantier_date_start" readonly="1"/>
+                        <field name="chantier_date_end" readonly="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_create_task" string="Créer" type="object" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open the wizard -->
+    <record id="action_construction_planning_task_create" model="ir.actions.act_window">
+        <field name="name">Créer une tâche de planning</field>
+        <field name="res_model">construction.planning.task.create</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="model_construction_chantier"/>
+        <field name="binding_view_types">form</field>
+    </record>
+</odoo>

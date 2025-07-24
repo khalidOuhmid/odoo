@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Fournisseurs courants pour le BTP -->
+        
+        <record id="supplier_rexel" model="res.partner">
+            <field name="name">REXEL</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Fournisseur matériel électrique</field>
+        </record>
+
+        <record id="supplier_leroy_merlin" model="res.partner">
+            <field name="name">LEROY MERLIN</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Bricolage et construction</field>
+        </record>
+
+        <record id="supplier_castorama" model="res.partner">
+            <field name="name">CASTORAMA</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Bricolage et aménagement</field>
+        </record>
+
+        <record id="supplier_point_p" model="res.partner">
+            <field name="name">POINT P</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Matériaux de construction</field>
+        </record>
+
+        <record id="supplier_cedeo" model="res.partner">
+            <field name="name">CEDEO</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Sanitaire, chauffage, plomberie</field>
+        </record>
+
+        <record id="supplier_gedimat" model="res.partner">
+            <field name="name">GEDIMAT</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Matériaux de construction</field>
+        </record>
+
+        <record id="supplier_weldom" model="res.partner">
+            <field name="name">WELDOM</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Bricolage et jardinage</field>
+        </record>
+
+        <record id="supplier_brico_depot" model="res.partner">
+            <field name="name">BRICO DEPOT</field>
+            <field name="is_company">True</field>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Matériaux de construction et bricolage</field>
+        </record>
+
+    </data>
+</odoo>

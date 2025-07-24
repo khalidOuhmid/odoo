@@ -65,7 +65,7 @@ class ConstructionQuoteWizard(models.TransientModel):
     
     default_margin_percent = fields.Float(
         string='Marge par défaut (%)',
-        default=20.0,
+        default=50.0,
         help="Marge commerciale par défaut à appliquer aux nouveaux produits"
     )
 
@@ -332,26 +332,36 @@ class ConstructionQuoteWizard(models.TransientModel):
         self._add_products_by_lots()
 
     def _add_products_by_lots(self):
-        """Ajouter les produits organisés par sections de lots"""
-        sequence = self._get_next_sequence()
+        """Ajouter les produits organisés par sections de lots sans dupliquer les sections existantes"""
+        order = self.sale_order_id
+        SaleOrderLine = self.env['sale.order.line']
         
-        # Obtenir tous les lots qui ont des produits assignés
         lots_with_products = self.selected_line_ids.mapped('lot_id')
-        
-        # Organiser par lot dans l'ordre des lots sélectionnés
         for lot in self.lot_ids:
             if lot in lots_with_products:
                 lot_lines = self.selected_line_ids.filtered(lambda l: l.lot_id == lot)
-                
-                # Créer une section pour le lot
-                self._create_lot_section(lot, sequence)
-                sequence += 10
-                
+                # Chercher la section existante pour ce lot
+                section_line = order.order_line.filtered(lambda l: l.display_type == 'line_section' and l.name.strip() == f"📋 {lot.name}")
+                if section_line:
+                    section = section_line[0]
+                    # Trouver la séquence max des lignes de ce lot après la section
+                    section_seq = section.sequence
+                    # On place les produits juste après la dernière ligne du lot (ou la section si aucune)
+                    # On récupère toutes les lignes (produits) de ce lot après la section
+                    lot_product_lines = order.order_line.filtered(lambda l: l.lot_id == lot and not l.display_type and l.sequence > section_seq)
+                    if lot_product_lines:
+                        next_seq = max(lot_product_lines.mapped('sequence')) + 10
+                    else:
+                        next_seq = section_seq + 10
+                else:
+                    # Créer la section si elle n'existe pas
+                    section = self._create_lot_section(lot, self._get_next_sequence())
+                    next_seq = section.sequence + 10 if hasattr(section, 'sequence') else self._get_next_sequence() + 10
                 # Ajouter les produits de ce lot triés par nom
                 sorted_lines = sorted(lot_lines, key=lambda l: l.product_id.name or '')
                 for line in sorted_lines:
-                    self._create_order_line(line, sequence)
-                    sequence += 10
+                    self._create_order_line(line, next_seq)
+                    next_seq += 10
 
     def _add_products_simple(self):
         """Ajouter les produits sans organisation par lots"""
@@ -362,8 +372,8 @@ class ConstructionQuoteWizard(models.TransientModel):
             sequence += 10
 
     def _create_lot_section(self, lot, sequence):
-        """Crée une section pour un lot"""
-        self.env['sale.order.line'].create({
+        """Crée une section pour un lot et retourne la ligne créée"""
+        return self.env['sale.order.line'].create({
             'order_id': self.sale_order_id.id,
             'display_type': 'line_section',
             'name': f"📋 {lot.name}",
@@ -422,6 +432,16 @@ class ConstructionQuoteWizard(models.TransientModel):
         last_line = self.sale_order_id.order_line.sorted('sequence', reverse=True)
         return (last_line[0].sequence + 10) if last_line else 10
 
+    def unlink(self):
+        """Suppression sécurisée du wizard avec nettoyage des enregistrements liés"""
+        # Supprimer toutes les lignes liées avant de supprimer le wizard
+        for wizard in self:
+            if wizard.selected_line_ids:
+                wizard.selected_line_ids.unlink()
+        
+        # Supprimer le wizard lui-même
+        return super().unlink()
+
     def _reload_wizard(self):
         """Recharge le wizard"""
         return {
@@ -443,7 +463,8 @@ class ProductAddDialog(models.TransientModel):
     
     quote_wizard_id = fields.Many2one(
         'construction.quote.wizard',
-        required=True
+        required=True,
+        ondelete='cascade'
     )
     
     product_id = fields.Many2one(
@@ -720,7 +741,8 @@ class ProductCreator(models.TransientModel):
     
     quote_wizard_id = fields.Many2one(
         'construction.quote.wizard',
-        required=True
+        required=True,
+        ondelete='cascade'
     )
     
     name = fields.Char(

@@ -43,13 +43,14 @@ class Visit(models.Model):
             else:
                 visite.display_name = visite.name or 'Nouvelle visite'
 
-    @api.model
-    def create(self, vals):
-        if not vals.get('name'):
-            chantier = self.env['construction.chantier'].browse(vals.get('chantier_id'))
-            sequence = self.search_count([('chantier_id', '=', vals.get('chantier_id'))]) + 1
-            vals['name'] = f"Visite {sequence} - {chantier.name}"
-        return super().create(vals)
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('name'):
+                chantier = self.env['construction.chantier'].browse(vals.get('chantier_id'))
+                sequence = self.search_count([('chantier_id', '=', vals.get('chantier_id'))]) + 1
+                vals['name'] = f"Visite {sequence} - {chantier.name}"
+        return super().create(vals_list)
 
     # State transition methods
     def action_confirm(self):
@@ -59,6 +60,8 @@ class Visit(models.Model):
                 raise ValidationError(_("Seules les visites en brouillon ou planifiées peuvent être confirmées."))
             visite.state = 'confirmed'
             visite.message_post(body=_("Visite confirmée"))
+
+
 
     def action_start(self):
         """Démarrer la visite"""
@@ -89,3 +92,15 @@ class Visit(models.Model):
         for visite in self:
             visite.state = 'planned'
             visite.message_post(body=_("Visite remise en planification"))
+
+    def action_view_calendar(self):
+        return {
+            'name': 'Planning des Visites',
+            'type': 'ir.actions.act_window',
+            'res_model': 'construction.visit',
+            'view_mode': 'calendar',
+            'view_id': self.env.ref('construction_base.view_visit_calendar').id,
+            'target': 'current',
+            'domain': [('id', '=', self.id)],
+            'context': {'search_default_id': self.id}
+        }

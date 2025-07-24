@@ -1,4 +1,5 @@
 from odoo import models, fields, api, _
+from datetime import timedelta
 
 class ConstructionLot(models.Model):
     """Extension du modèle lot pour la construction avec fonctionnalités avancées"""
@@ -7,13 +8,24 @@ class ConstructionLot(models.Model):
     _inherit = ['lot', 'mail.thread', 'mail.activity.mixin']
     _description = 'Lot de construction'
 
+    # =================== RELATION AVEC CHANTIER ===================
+    
+    chantier_id = fields.Many2one(
+        'construction.chantier',
+        string='Chantier',
+        required=True,
+        ondelete='cascade',
+        help="Chantier auquel appartient ce lot"
+    )
+
     # =================== CHAMPS FINANCIERS ===================
 
     currency_id = fields.Many2one(
         'res.currency',
         string='Devise',
-        default=lambda self: self.env.company.currency_id,
-        required=True
+        related='chantier_id.currency_id',
+        store=True,
+        help="Devise du chantier"
     )
 
     price = fields.Monetary(
@@ -22,6 +34,14 @@ class ConstructionLot(models.Model):
         default=0.0,
         tracking=True,
         help="Prix estimé ou contractuel du lot"
+    )
+    
+    price_from_quote = fields.Monetary(
+        string='Prix depuis devis',
+        currency_field='currency_id',
+        compute='_compute_price_from_quote',
+        store=True,
+        help="Prix calculé depuis le devis principal du chantier"
     )
 
     # =================== RELATIONS ===================
@@ -60,17 +80,131 @@ class ConstructionLot(models.Model):
         string='Notes',
         help="Notes internes sur le lot"
     )
+    
+    # =================== CHAMPS DOCUMENTS ===================
+    
+    document_cctp = fields.Binary(
+        string="CCTP",
+        attachment=True,
+        help="Cahier des Clauses Techniques Particulières"
+    )
+    
+    document_subcontractor_contract = fields.Binary(
+        string="Contrat de sous-traitance",
+        attachment=True,
+        help="Contrat de sous-traitance pour ce lot"
+    )
+    
     planning_task_ids = fields.One2many('construction.planning.task', 'lot_id', string='Tâches de planning')
+
+    # =================== CHAMPS CALCULÉS ===================
+
+    lot_date_start = fields.Datetime(
+        string='Date de début du lot',
+        compute='_compute_lot_dates',
+        store=True,
+        help="Date de début du lot calculée à partir de la tâche la plus proche"
+    )
+
+    lot_date_end = fields.Datetime(
+        string='Date de fin du lot',
+        compute='_compute_lot_dates',
+        store=True,
+        help="Date de fin du lot calculée à partir de la tâche la plus lointaine"
+    )
+
+    @api.depends('planning_task_ids.date_start', 'planning_task_ids.date_stop')
+    def _compute_lot_dates(self):
+        """Calcule les dates de début et de fin du lot à partir des tâches associées."""
+        for lot in self:
+            tasks = lot.planning_task_ids.filtered(lambda t: t.date_start and t.date_stop)
+            if tasks:
+                # Trouver la date de début la plus proche (minimum)
+                lot.lot_date_start = min(tasks.mapped('date_start'))
+                # Trouver la date de fin la plus lointaine (maximum)
+                lot.lot_date_end = max(tasks.mapped('date_stop'))
+            else:
+                # Si pas de tâches, utiliser les dates du chantier si disponible
+                if lot.chantier_id and lot.chantier_id.date_start_contract:
+                    lot.lot_date_start = fields.Datetime.to_datetime(lot.chantier_id.date_start_contract)
+                    if lot.chantier_id.date_end_contract:
+                        lot.lot_date_end = fields.Datetime.to_datetime(lot.chantier_id.date_end_contract)
+                    else:
+                        lot.lot_date_end = lot.lot_date_start + timedelta(days=30)
+                else:
+                    lot.lot_date_start = False
+                    lot.lot_date_end = False
+
+    @api.depends('chantier_id.main_quote_id.order_line', 'order_line_ids.price_subtotal')
+    def _compute_price_from_quote(self):
+        """Calcule le prix du lot à partir du devis principal du chantier"""
+        for lot in self:
+            lot.price_from_quote = 0.0
+            
+            if lot.order_line_ids:
+                # Utiliser les lignes directement associées au lot
+                lot.price_from_quote = sum(lot.order_line_ids.mapped('price_subtotal'))
+            elif lot.chantier_id and lot.chantier_id.main_quote_id:
+                # Fallback : chercher par nom si pas encore associé
+                main_quote = lot.chantier_id.main_quote_id
+                
+                # Rechercher les lignes du devis qui correspondent à ce lot
+                lot_lines = main_quote.order_line.filtered(
+                    lambda line: (
+                        lot.name.lower() in line.name.lower() or 
+                        lot.code.lower() in line.name.lower() or
+                        (line.product_id and lot.name.lower() in line.product_id.name.lower()) or
+                        (line.product_id and lot.code.lower() in line.product_id.name.lower())
+                    ) and not line.display_type
+                )
+                
+                if lot_lines:
+                    lot.price_from_quote = sum(lot_lines.mapped('price_subtotal'))
+
+    # =================== RELATIONS POUR COMMANDES ===================
+    
+    order_line_ids = fields.One2many(
+        'sale.order.line',
+        'lot_id',
+        string='Articles à commander',
+        help="Articles du devis principal associés à ce lot"
+    )
+    
+    # =================== CHAMPS CALCULÉS POUR COMMANDES ===================
+    
+    order_line_count = fields.Integer(
+        string='Nombre d\'articles',
+        compute='_compute_order_stats',
+        help="Nombre total d'articles dans ce lot"
+    )
+    
+    ordered_lines_count = fields.Integer(
+        string='Articles commandés',
+        compute='_compute_order_stats',
+        help="Nombre d'articles avec une date de commande"
+    )
+    
+    tracking_lines_count = fields.Integer(
+        string='Articles avec tracking',
+        compute='_compute_order_stats',
+        help="Nombre d'articles avec un lien de tracking"
+    )
+    
+    @api.depends('order_line_ids', 'order_line_ids.order_date', 'order_line_ids.tracking_link')
+    def _compute_order_stats(self):
+        """Calcule les statistiques de commande pour ce lot"""
+        for lot in self:
+            lines = lot.order_line_ids
+            lot.order_line_count = len(lines)
+            lot.ordered_lines_count = len(lines.filtered('order_date'))
+            lot.tracking_lines_count = len(lines.filtered('tracking_link'))
 
     # =================== MÉTHODES UTILITAIRES ===================
 
     def get_chantier(self):
-        """Récupère le chantier associé à ce lot via la relation inverse"""
+        """Récupère le chantier associé à ce lot via la relation directe"""
         self.ensure_one()
-        chantier = self.env['construction.chantier'].search([
-            ('lots_ids', 'in', self.id)
-        ], limit=1)
-        return chantier
+        return self.chantier_id
 
     # =================== CONTRAINTES ===================
 
@@ -84,7 +218,7 @@ class ConstructionLot(models.Model):
         """Assigner automatiquement un sous-traitant spécialisé à ce lot."""
         self.ensure_one()
 
-        # Récupérer le chantier depuis le contexte ou via la relation inverse
+        # Récupérer le chantier depuis le contexte ou via la relation directe
         chantier = None
         if 'active_model' in self.env.context and self.env.context['active_model'] == 'construction.chantier':
             chantier_id = self.env.context.get('active_id')
@@ -92,8 +226,8 @@ class ConstructionLot(models.Model):
                 chantier = self.env['construction.chantier'].browse(chantier_id)
 
         if not chantier:
-            # Chercher le chantier qui contient ce lot
-            chantier = self.get_chantier()
+            # Utiliser la relation directe
+            chantier = self.chantier_id
 
         if not chantier:
             return {
@@ -245,14 +379,13 @@ class ConstructionLot(models.Model):
         if not self.subcontractor_ids:
             return False
 
-        chantier = self.get_chantier()
-        if not chantier:
+        if not self.chantier_id:
             return False
 
         subquote_count = self.env['sale.order'].search_count([
             ('lot_ids', 'in', self.id),  # Lié à ce lot
             ('partner_id', 'in', self.subcontractor_ids.ids),  # Sous-traitants du lot
-            ('chantier_id', '=', chantier.id),  # Chantier spécifique
+            ('chantier_id', '=', self.chantier_id.id),  # Chantier spécifique
             ('state', 'in', ['draft', 'sent', 'sale'])  # États pertinents (ajustable)
         ])
 
@@ -347,10 +480,7 @@ class ConstructionLot(models.Model):
 
     def action_open_lot_document_wizard(self):
         self.ensure_one()
-        
-        # Récupérer le chantier via la relation inverse
-        chantier = self.get_chantier()
-        
+
         return {
             'type': 'ir.actions.act_window',
             'name': 'Gérer les documents du lot',
@@ -359,9 +489,8 @@ class ConstructionLot(models.Model):
             'target': 'new',
             'context': {
                 'default_lot_id': self.id,
-                'default_chantier_id': chantier.id if chantier else False,
+                'default_chantier_id': self.chantier_id.id if self.chantier_id else False,
                 'default_subcontractor_id': self.subcontractor_ids and self.subcontractor_ids[0].id or False,
                 'active_id': self.id,
             },
         }
-

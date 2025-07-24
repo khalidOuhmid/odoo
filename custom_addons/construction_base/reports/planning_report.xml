@@ -35,11 +35,79 @@
         </t>
     </template>
 
-    <!-- Action du Report avec l'ID correct -->
+    <!-- Template QWeb pour le Report PDF des tâches de planning -->
+    <template id="report_planning_tasks_template">
+        <t t-call="web.html_container">
+            <t t-call="web.external_layout">
+                <div class="page">
+                    <h2><t t-esc="data.get('title', 'Planning des Tâches')"/></h2>
+                    <p>Date d'export : <t t-esc="data.get('date_generation', datetime.now()).strftime('%d/%m/%Y %H:%M')"/></p>
+
+                    <table class="table table-bordered table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tâche</th>
+                                <th>Chantier</th>
+                                <th>Lot</th>
+                                <th>Sous-Traitant</th>
+                                <th>Début</th>
+                                <th>Fin</th>
+                                <th>Statut</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <t t-foreach="docs" t-as="task">
+                                <tr t-att-class="'table-danger' if task.is_out_of_bounds else ''">
+                                    <td><span t-field="task.name"/></td>
+                                    <td><span t-field="task.chantier_id.name"/></td>
+                                    <td><span t-field="task.lot_id.name"/></td>
+                                    <td><span t-field="task.subcontractor_id.name"/></td>
+                                    <td><span t-field="task.date_start" t-options='{"format": "dd/MM/yyyy HH:mm"}'/></td>
+                                    <td><span t-field="task.date_stop" t-options='{"format": "dd/MM/yyyy HH:mm"}'/></td>
+                                    <td>
+                                        <span t-if="task.state == 'draft'" class="badge badge-info">Brouillon</span>
+                                        <span t-elif="task.state == 'planned'" class="badge badge-primary">Planifiée</span>
+                                        <span t-elif="task.state == 'in_progress'" class="badge badge-warning">En cours</span>
+                                        <span t-elif="task.state == 'done'" class="badge badge-success">Terminée</span>
+                                        <span t-elif="task.state == 'cancelled'" class="badge badge-danger">Annulée</span>
+                                    </td>
+                                </tr>
+                            </t>
+                        </tbody>
+                    </table>
+
+                    <div class="mt-4">
+                        <p><strong>Légende :</strong></p>
+                        <ul class="list-unstyled">
+                            <li><span class="badge badge-info">Brouillon</span> - Tâche en cours de définition</li>
+                            <li><span class="badge badge-primary">Planifiée</span> - Tâche planifiée</li>
+                            <li><span class="badge badge-warning">En cours</span> - Tâche en cours d'exécution</li>
+                            <li><span class="badge badge-success">Terminée</span> - Tâche terminée</li>
+                            <li><span class="badge badge-danger">Annulée</span> - Tâche annulée</li>
+                            <li><span class="text-danger">Ligne rouge</span> - Tâche en dehors des dates du chantier</li>
+                        </ul>
+                    </div>
+                </div>
+            </t>
+        </t>
+    </template>
+
+    <!-- Action du Report pour le chantier -->
     <record id="report_planning_gantt" model="ir.actions.report">
         <field name="name">Exporter Planning Gantt PDF</field>
         <field name="model">construction.chantier</field>
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">construction_base.report_planning_gantt_template</field>
+    </record>
+
+    <!-- Action du Report pour les tâches de planning -->
+    <record id="action_report_planning" model="ir.actions.report">
+        <field name="name">Planning des Tâches</field>
+        <field name="model">construction.planning.task</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_base.report_planning_tasks_template</field>
+        <field name="binding_model_id" ref="model_construction_planning_task"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Planning des Tâches - %s' % (datetime.now().strftime('%d/%m/%Y'))</field>
     </record>
 </odoo>

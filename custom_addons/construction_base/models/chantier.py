@@ -1,6 +1,9 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from datetime import datetime, timedelta
+import logging
+
+_logger = logging.getLogger(__name__)
 
 # -------------------------------------------------
 #  CONSTANTES / RÈGLES MÉTIER
@@ -40,15 +43,14 @@ class Chantier(models.Model):
     reference = fields.Char('Reference', copy=False, readonly=True, default='/')
     stage_id = fields.Many2one('construction.stage', 'Stage', group_expand='_read_group_stage_id', readonly=True)
     client = fields.Many2one('res.partner', 'Client', required=True)
-    lots_ids = fields.Many2many('construction.lot')
+    lots_ids = fields.One2many('construction.lot', 'chantier_id', string='Lots du chantier')
     chapter_name = fields.Char('Chapter Name', compute='_compute_chapter_name', store=True)
     user_ids = fields.Many2many('res.users', string='Project Users')
-    tag_ids = fields.Many2many('construction.tag', string='Tags')
     description = fields.Text('Description')
     notes = fields.Text('Notes')
-
-    class ConstructionChantier(models.Model):
-        _name = 'construction.chantier'
+    
+    # Indicateur technique pour déclencher la vérification des factures hors du contexte de calcul
+    need_invoice_check = fields.Boolean('Vérification facturation nécessaire', default=False, copy=False)
 
     subcontractor_ids = fields.Many2many(
         'res.partner',
@@ -64,10 +66,8 @@ class Chantier(models.Model):
     date_end_contract = fields.Date('Date de fin contractuelle', tracking=True)
     date_start_actual = fields.Date('Date de début réelle', tracking=True)
     date_end_actual = fields.Date('Date de fin réelle', tracking=True)
-    date_start_internal = fields.Date('Date de début interne', tracking=True)
-    date_end_internal = fields.Date('Date de fin interne', tracking=True)
-    client_approval_date = fields.Date('Date d\'approbation client', tracking=True,
-                                       help="Date à laquelle le client a accepté le devis")
+    date_start_estimated = fields.Date('Date de début estimée', tracking=True)
+    date_end_estimated = fields.Date('Date de fin estimée ', tracking=True)
 
     progress = fields.Float('Progression (%)', compute='_compute_construction_progression', store=True, default=0.0)
     days_remaining = fields.Integer(
@@ -112,6 +112,32 @@ class Chantier(models.Model):
     quotation_ids = fields.One2many('sale.order', 'chantier_id', string='Devis')
     quotation_count = fields.Integer('Nombre de devis', compute='_compute_quotation_count')
 
+    # Relations avec la facturation
+    invoice_schedule_ids = fields.One2many(
+        'construction.invoice.schedule', 
+        'chantier_id', 
+        string='Planning de facturation'
+    )
+    
+    # Champs calculés pour la facturation
+    invoice_schedule_planned_count = fields.Integer(
+        'Planifications prévues',
+        compute='_compute_invoice_schedule_stats'
+    )
+    invoice_schedule_ready_count = fields.Integer(
+        'Planifications prêtes',
+        compute='_compute_invoice_schedule_stats'
+    )
+    invoice_schedule_invoiced_count = fields.Integer(
+        'Planifications facturées',
+        compute='_compute_invoice_schedule_stats'
+    )
+    invoice_schedule_total_amount = fields.Monetary(
+        'Montant total planifié',
+        compute='_compute_invoice_schedule_stats',
+        currency_field='currency_id'
+    )
+
     total_cost = fields.Monetary('Coût total', compute='_compute_total_cost', store=True)
     address = fields.Text('Adresse du chantier')
     city = fields.Char('Ville')
@@ -151,9 +177,37 @@ class Chantier(models.Model):
 
     visit_ids = fields.One2many('construction.visit', 'chantier_id', string='Visites techniques')
     document_ids = fields.One2many('construction.document', 'chantier_id', string='Documents')
+    document_count_by_type = fields.Text('Statistiques documents', compute='_compute_document_count_by_type')
     sale_order_count = fields.Integer('Nombre de devis/commandes', compute='_compute_counts', store=True)
     subcontractor_count = fields.Integer('Nombre de sous-traitants', compute='_compute_counts', store=True)
     lots_count = fields.Integer('Nombre de lots', compute='_compute_counts', store=True)
+    
+    # =================== CHAMPS CALCULÉS POUR COMMANDES ===================
+    
+    total_order_lines = fields.Integer(
+        string='Total articles',
+        compute='_compute_order_stats',
+        help="Nombre total d'articles dans tous les lots"
+    )
+    
+    total_ordered_lines = fields.Integer(
+        string='Total commandés',
+        compute='_compute_order_stats',
+        help="Nombre total d'articles commandés"
+    )
+    
+    total_tracking_lines = fields.Integer(
+        string='Total avec tracking',
+        compute='_compute_order_stats',
+        help="Nombre total d'articles avec tracking"
+    )
+    
+    order_progress = fields.Float(
+        string='Progression commandes',
+        compute='_compute_order_stats',
+        help="Pourcentage d'articles commandés"
+    )
+    
     stage_validation_info = fields.Text(
         'Info de validation',
         compute='_compute_stage_validation_info',
@@ -178,20 +232,27 @@ class Chantier(models.Model):
          'La progression doit être entre 0 et 100%'),
     ]
 
-    @api.model
-    def create(self, vals):
+    @api.model_create_multi
+    def create(self, vals_list):
         """Créer le chantier avec génération automatique de référence et stage initial"""
-        # Génération automatique de référence
-        if not vals.get('reference') or vals.get('reference') == '/':
-            vals['reference'] = self.env['ir.sequence'].next_by_code('construction.chantier') or '/'
+        for vals in vals_list:
+            # Génération automatique de référence
+            if not vals.get('reference') or vals.get('reference') == '/':
+                vals['reference'] = self.env['ir.sequence'].next_by_code('construction.chantier') or '/'
 
-        # Assigner automatiquement le stage de départ
-        if not vals.get('stage_id'):
-            # Utiliser l'external_id défini dans construction_data.xml
-            default_stage = self.env.ref('construction_base.stage_reception')
-            vals['stage_id'] = default_stage.id
+            # Assigner automatiquement le stage de départ
+            if not vals.get('stage_id'):
+                # Utiliser l'external_id défini dans construction_data.xml
+                default_stage = self.env.ref('construction_base.stage_reception')
+                vals['stage_id'] = default_stage.id
 
-        return super().create(vals)
+        chantiers = super().create(vals_list)
+        
+        # Créer les lots par défaut pour chaque nouveau chantier
+        for chantier in chantiers:
+            chantier._create_default_lots()
+            
+        return chantiers
 
     def write(self, vals):
         """Empêcher la modification directe du stage_id sauf par workflow ou admin"""
@@ -205,7 +266,26 @@ class Chantier(models.Model):
                     "Seuls les administrateurs peuvent forcer un changement d'étape."
                 )
 
-        return super().write(vals)
+        result = super().write(vals)
+        
+        # Vérifier si certains records ont besoin d'une vérification de facturation
+        # et si nous ne sommes pas déjà en train de vérifier les factures
+        records_to_check = self.filtered('need_invoice_check')
+        if records_to_check and not self.env.context.get('checking_invoices'):
+            for record in records_to_check:
+                if record.invoice_schedule_ids:
+                    # Désactiver l'indicateur technique avant de lancer la vérification
+                    record.with_context(checking_invoices=True).write({'need_invoice_check': False})
+                    try:
+                        # Appeler la méthode avec un contexte spécial pour éviter les problèmes
+                        record.with_context(checking_invoices=True)._check_invoice_triggers()
+                    except Exception as e:
+                        # Log l'erreur mais ne pas bloquer le processus
+                        _logger.error(f"Erreur lors de la vérification des factures: {e}")
+                    
+        return result
+
+
 
     @api.constrains('date_start_contract', 'date_end_contract')
     def _check_contract_dates(self):
@@ -257,9 +337,10 @@ class Chantier(models.Model):
             else:
                 record.progress = 0.0
 
-            # Déclencher la vérification des seuils de facturation si la progression a changé
+            # Marquer que les seuils de facturation doivent être vérifiés, mais ne pas le faire pendant le compute
             if old_progress != record.progress and record.invoice_schedule_ids:
-                record._check_invoice_triggers()
+                # On active l'indicateur technique qui sera traité lors du write
+                record.need_invoice_check = True
 
     @api.depends('date_end_contract')
     def _compute_days_remaining(self):
@@ -334,6 +415,42 @@ class Chantier(models.Model):
                     ('client_order_ref', 'ilike', record.name)
                 ])
                 record.sale_order_count = len(sale_orders)
+
+    @api.depends('lots_ids.order_line_ids', 'lots_ids.order_line_ids.order_date', 'lots_ids.order_line_ids.tracking_link')
+    def _compute_order_stats(self):
+        """Calcule les statistiques globales de commande pour le chantier"""
+        for record in self:
+            all_lines = record.lots_ids.mapped('order_line_ids')
+            
+            record.total_order_lines = len(all_lines)
+            record.total_ordered_lines = len(all_lines.filtered('order_date'))
+            record.total_tracking_lines = len(all_lines.filtered('tracking_link'))
+            
+            # Calcul du pourcentage de progression
+            if record.total_order_lines > 0:
+                record.order_progress = (record.total_ordered_lines * 100.0) / record.total_order_lines
+            else:
+                record.order_progress = 0.0
+
+    @api.depends('document_ids.document_type')
+    def _compute_document_count_by_type(self):
+        """Calcule les statistiques de documents par type"""
+        for record in self:
+            if not record.document_ids:
+                record.document_count_by_type = "Aucun document"
+            else:
+                # Grouper par type
+                types_count = {}
+                for doc in record.document_ids:
+                    doc_type = dict(doc._fields['document_type'].selection).get(doc.document_type, doc.document_type)
+                    types_count[doc_type] = types_count.get(doc_type, 0) + 1
+                
+                # Formatter le résultat
+                result_lines = []
+                for doc_type, count in types_count.items():
+                    result_lines.append(f"• {doc_type}: {count}")
+                
+                record.document_count_by_type = "\n".join(result_lines)
 
     def _get_next_progress_threshold(self, current_progress):
         """Retourne le prochain seuil de progression pour le chapitre Travaux"""
@@ -895,6 +1012,15 @@ class Chantier(models.Model):
         for record in self:
             record.quotation_count = len(record.quotation_ids)
 
+    @api.depends('invoice_schedule_ids.state', 'invoice_schedule_ids.amount_fixed')
+    def _compute_invoice_schedule_stats(self):
+        for record in self:
+            schedules = record.invoice_schedule_ids
+            record.invoice_schedule_planned_count = len(schedules.filtered(lambda s: s.state == 'planned'))
+            record.invoice_schedule_ready_count = len(schedules.filtered(lambda s: s.state == 'ready'))
+            record.invoice_schedule_invoiced_count = len(schedules.filtered(lambda s: s.state == 'invoiced'))
+            record.invoice_schedule_total_amount = sum(schedules.mapped('amount_fixed'))
+
     def action_create_intelligent_quote(self):
         """Créer un nouveau devis lié au chantier"""
         self.ensure_one()
@@ -947,6 +1073,161 @@ class Chantier(models.Model):
             'target': 'current',
         }
 
+    def _create_default_lots(self):
+        """Crée les lots par défaut pour un nouveau chantier basés sur les templates"""
+        self.ensure_one()
+        
+        # Récupérer tous les templates de lots actifs
+        lot_templates = self.env['construction.lot.template'].search([
+            ('active', '=', True)
+        ], order='name')
+        
+        if not lot_templates:
+            _logger.warning("Aucun template de lot trouvé. Création d'un lot par défaut.")
+            # Créer un lot par défaut si aucun template n'existe
+            self.env['construction.lot'].create({
+                'name': 'Général',
+                'code': 'GEN',
+                'color': 0,
+                'chantier_id': self.id,
+                'price': 0.0,
+                'is_finished': False,
+                'quote_state': 'draft',
+                'description': 'Lot général créé automatiquement',
+            })
+            return
+        
+        # Créer un lot spécifique à ce chantier pour chaque template
+        for template in lot_templates:
+            template.create_lot_for_chantier(self.id)
+
+    def action_select_main_quote(self):
+        """Action pour sélectionner le devis principal du chantier"""
+        self.ensure_one()
+        
+        # Vérifier qu'on est au bon stage (stage 3 ou après)
+        if not self.stage_id or self.stage_id.sequence < 3:
+            raise ValidationError(_(
+                "La sélection du devis principal n'est possible qu'à partir de l'étape 3 (Devis)."
+            ))
+        
+        # Récupérer tous les devis du chantier
+        quotes = self.env['sale.order'].search([
+            ('chantier_id', '=', self.id),
+            ('state', 'in', ['draft', 'sent', 'sale'])
+        ])
+        
+        if not quotes:
+            raise ValidationError(_(
+                "Aucun devis trouvé pour ce chantier. Veuillez d'abord créer un devis."
+            ))
+        
+        # Si un seul devis, le sélectionner automatiquement
+        if len(quotes) == 1:
+            self.main_quote_id = quotes[0]
+            self._update_lots_prices_from_quote()
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Devis principal sélectionné'),
+                    'message': _('Le devis %s a été défini comme devis principal.') % quotes[0].name,
+                    'type': 'success'
+                }
+            }
+        
+        # Sinon, ouvrir un wizard de sélection
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Sélectionner le devis principal'),
+            'res_model': 'construction.quote.selection.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.id,
+                'default_quote_ids': [(6, 0, quotes.ids)],
+            }
+        }
+
+    def _update_lots_prices_from_quote(self):
+        """Met à jour les prix des lots depuis le devis principal et associe les lignes"""
+        self.ensure_one()
+        
+        if not self.main_quote_id:
+            return
+        
+        # D'abord, désassocier toutes les lignes existantes
+        self.main_quote_id.order_line.write({'lot_id': False})
+        
+        # Associer les lignes aux lots en fonction du nom du produit/ligne
+        for lot in self.lots_ids:
+            # Rechercher les lignes qui correspondent à ce lot
+            matching_lines = self.main_quote_id.order_line.filtered(
+                lambda line: (
+                    lot.name.lower() in line.name.lower() or 
+                    lot.code.lower() in line.name.lower() or
+                    (line.product_id and lot.name.lower() in line.product_id.name.lower()) or
+                    (line.product_id and lot.code.lower() in line.product_id.name.lower())
+                ) and not line.display_type
+            )
+            
+            # Associer ces lignes au lot
+            matching_lines.write({'lot_id': lot.id})
+            
+            # Forcer le recalcul du champ computed price_from_quote
+            lot._compute_price_from_quote()
+            # Mettre à jour le prix estimé avec le prix calculé si pas encore défini
+            if lot.price == 0.0 and lot.price_from_quote > 0.0:
+                lot.price = lot.price_from_quote
+        
+        # Associer les lignes non assignées au lot "Général" s'il existe
+        unassigned_lines = self.main_quote_id.order_line.filtered(
+            lambda line: not line.lot_id and not line.display_type
+        )
+        if unassigned_lines:
+            general_lot = self.lots_ids.filtered(lambda l: l.code == 'GEN')
+            if general_lot:
+                unassigned_lines.write({'lot_id': general_lot[0].id})
+
+    def get_quote_lines_by_lot(self):
+        """Récupère les lignes du devis principal groupées par lot"""
+        self.ensure_one()
+        
+        if not self.main_quote_id:
+            return {}
+            
+        result = {}
+        
+        # Récupérer toutes les lignes du devis principal
+        quote_lines = self.main_quote_id.order_line
+        
+        # Grouper par lot
+        for lot in self.lots_ids:
+            # Récupérer les lignes correspondant à ce lot
+            lot_lines = quote_lines.filtered(lambda line: lot.name.lower() in line.name.lower() or 
+                                           lot.code.lower() in line.name.lower())
+            
+            if lot_lines:
+                result[lot] = lot_lines
+        
+        # Ajouter les lignes non associées à un lot spécifique
+        unassigned_lines = quote_lines
+        for lot, lines in result.items():
+            unassigned_lines -= lines
+            
+        if unassigned_lines:
+            # Créer un "lot" virtuel pour les articles non assignés
+            general_lot = self.lots_ids.filtered(lambda l: l.code == 'GEN')
+            if general_lot:
+                if general_lot[0] in result:
+                    result[general_lot[0]] |= unassigned_lines
+                else:
+                    result[general_lot[0]] = unassigned_lines
+            else:
+                result['Non assigné'] = unassigned_lines
+                
+        return result
+
     def action_view_invoice_schedule(self):
         """Voir le planning de facturation du chantier"""
         self.ensure_one()
@@ -962,15 +1243,47 @@ class Chantier(models.Model):
             'target': 'current',
         }
 
+    def _compute_lot_price_from_main_quote(self, lot):
+        """
+        Calcule le prix du lot à partir du devis principal (main_quote_id).
+        Le prix du lot = somme des sous-totaux des lignes de produits associées à la section du lot.
+        La correspondance se fait par le nom du lot et de la section (ligne display_type='line_section').
+        """
+        self.ensure_one()
+        quote = self.main_quote_id
+        if not quote:
+            return 0.0
+        order_lines = quote.order_line.sorted('sequence')
+        lot_section_name = f"📋 {lot.name}"  # Nom de la section générée par _create_section_for_lot
+        in_section = False
+        total = 0.0
+        for line in order_lines:
+            if line.display_type == 'line_section':
+                in_section = (line.name.strip() == lot_section_name.strip())
+                continue
+            if in_section and not line.display_type:
+                total += line.price_subtotal
+            elif in_section and line.display_type == 'line_section':
+                break  # Nouvelle section, on arrête
+        return total
+
     def action_setup_invoice_schedule(self):
-        """Configurer le planning de facturation basé sur le cycle choisi"""
+        """Configurer le planning de facturation basé sur le cycle choisi et MAJ prix des lots depuis le devis principal."""
         self.ensure_one()
 
         if not self.invoice_type_id:
             raise ValidationError("Vous devez d'abord sélectionner un cycle de facturation.")
 
+        if not self.main_quote_id:
+            raise ValidationError("Vous devez sélectionner un devis principal servant de référence pour la facturation.")
+
         if not self.total_cost:
             raise ValidationError("Le coût total du chantier doit être défini pour configurer la facturation.")
+
+        # --- NOUVEAU : Mettre à jour le prix des lots à partir du devis principal ---
+        for lot in self.lots_ids:
+            lot_price = self._compute_lot_price_from_main_quote(lot)
+            lot.price = lot_price
 
         # Supprimer le planning existant si il y en a un
         self.invoice_schedule_ids.unlink()
@@ -1066,15 +1379,26 @@ class Chantier(models.Model):
     @api.onchange('invoice_type_id')
     def _onchange_invoice_type_id(self):
         """Proposer de reconfigurer le planning quand le cycle change"""
-        if self.invoice_type_id and self.invoice_schedule_ids:
-            return {
-                'warning': {
-                    'title': 'Cycle de facturation modifié',
-                    'message': 'Un planning de facturation existe déjà. '
-                               'Vous devez utiliser le bouton "Configurer facturation" '
-                               'pour mettre à jour le planning selon le nouveau cycle.'
+        if self.invoice_type_id:
+            # Avertissement si un planning existe déjà
+            if self.invoice_schedule_ids:
+                return {
+                    'warning': {
+                        'title': 'Cycle de facturation modifié',
+                        'message': 'Un planning de facturation existe déjà. '
+                                  'Vous devez utiliser le bouton "Configurer facturation" '
+                                  'pour mettre à jour le planning selon le nouveau cycle.'
+                    }
                 }
-            }
+            # Rappel de sélectionner le devis principal si non défini
+            elif not self.main_quote_id:
+                return {
+                    'warning': {
+                        'title': 'Devis principal manquant',
+                        'message': 'Veuillez sélectionner un devis principal dans la section '
+                                  '"Cycle de facturation" pour pouvoir configurer le planning.'
+                    }
+                }
 
     def _check_invoice_triggers(self):
         """Vérifier automatiquement les seuils de facturation selon l'avancement"""
@@ -1084,7 +1408,10 @@ class Chantier(models.Model):
 
         # Vérifier tous les seuils de facturation
         for schedule_line in self.invoice_schedule_ids:
-            schedule_line.check_progress_trigger()
+            try:
+                schedule_line.check_progress_trigger()
+            except Exception as e:
+                _logger.error(f"Erreur lors de la vérification de {schedule_line.name}: {e}")
 
         # Compter les nouvelles factures prêtes
         ready_invoices = self.invoice_schedule_ids.filtered(
@@ -1092,7 +1419,8 @@ class Chantier(models.Model):
         )
 
         if ready_invoices:
-            self.message_post(
+            # Utiliser self.sudo() pour éviter les problèmes de permissions lors de l'appel depuis un compute
+            self.sudo().message_post(
                 body=f"💰 {len(ready_invoices)} facture(s) prête(s) à émettre suite à l'avancement du chantier",
                 message_type='comment'
             )
@@ -1167,7 +1495,7 @@ class Chantier(models.Model):
             'type': 'ir.actions.act_window',
             'name': f'Sous-devis - {self.name}',
             'res_model': 'sale.order',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': domain,
             'context': {
                 'default_chantier_id': self.id,
@@ -1237,7 +1565,10 @@ class Chantier(models.Model):
                     continue
 
                 # Envoyer l'email (le champ compute sera automatiquement recalculé)
-                template.with_context(lang=partner.lang or 'fr_FR').send_mail(
+                template.with_context(
+                    lang=partner.lang or 'fr_FR',
+                    chantier_name=self.name
+                ).send_mail(
                     partner.id,
                     force_send=True,
                     raise_exception=True
@@ -1273,4 +1604,96 @@ class Chantier(models.Model):
                 'message': message,
                 'type': notification_type,
             }
+        }
+
+    def action_view_planning(self):
+        """Affiche le planning du chantier avec tous les lots initialisés."""
+        self.ensure_one()
+
+        # Vérifier si des tâches existent déjà pour ce chantier
+        existing_tasks = self.env['construction.planning.task'].search([
+            ('chantier_id', '=', self.id)
+        ])
+
+        # Si aucune tâche n'existe, initialiser une tâche vide pour chaque lot
+        if not existing_tasks and self.lots_ids:
+            for lot in self.lots_ids:
+                # Vérifier si une tâche existe déjà pour ce lot
+                lot_task = self.env['construction.planning.task'].search([
+                    ('chantier_id', '=', self.id),
+                    ('lot_id', '=', lot.id)
+                ], limit=1)
+
+                if not lot_task:
+                    # Créer une tâche vide pour ce lot
+                    self.env['construction.planning.task'].create({
+                        'name': f'Tâche {lot.name}',
+                        'chantier_id': self.id,
+                        'lot_id': lot.id,
+                        'date_start': self.date_start_contract or fields.Datetime.now(),
+                        'date_stop': self.date_end_contract or fields.Datetime.now() + timedelta(days=30),
+                        'state': 'draft'
+                    })
+
+        # Préparer les dates pour limiter l'affichage du Gantt
+        initial_date = self.date_start_contract or fields.Date.today()
+        final_date = self.date_end_contract or fields.Date.today() + timedelta(days=90)
+
+        # Convertir en datetime pour le format attendu par la vue Gantt
+        initial_datetime = fields.Datetime.to_datetime(initial_date)
+        final_datetime = fields.Datetime.to_datetime(final_date) + timedelta(days=1) - timedelta(seconds=1)  # Fin de journée
+
+        # Ouvrir la vue Gantt avec les tâches du chantier
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Planning - {self.name}',
+            'res_model': 'construction.planning.task',
+            'view_mode': 'gantt,list,form',
+            'domain': [('chantier_id', '=', self.id)],
+            'context': {
+                'default_chantier_id': self.id,
+                'group_by': ['lot_id'],
+                'search_default_group_by_lot': 1,
+                'lots_ids': self.lots_ids.ids,
+                'initial_date': fields.Datetime.to_string(initial_datetime),
+                'final_date': fields.Datetime.to_string(final_datetime),
+                'view_id': False
+            }
+        }
+
+    def action_create_planning_task(self):
+        """Ouvre le wizard de création de tâche de planning."""
+        self.ensure_one()
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Créer une tâche de planning',
+            'res_model': 'construction.planning.task.create',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.id,
+                'available_lot_ids': self.lots_ids.ids
+            }
+        }
+
+    def action_manage_order_lines(self):
+        """Action pour gérer les commandes des articles du devis principal"""
+        self.ensure_one()
+        
+        if not self.main_quote_id:
+            raise ValidationError("Aucun devis principal sélectionné.")
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f'Gestion des commandes - {self.name}',
+            'res_model': 'sale.order.line',
+            'view_mode': 'list,form',
+            'domain': [('order_id', '=', self.main_quote_id.id)],
+            'context': {
+                'default_order_id': self.main_quote_id.id,
+                'tree_view_ref': 'construction_base.view_sale_order_line_orders_tree',
+                'search_default_group_by_lot': 1,
+            },
+            'target': 'current',
         }

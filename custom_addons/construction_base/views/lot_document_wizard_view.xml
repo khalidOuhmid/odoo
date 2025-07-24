@@ -16,6 +16,8 @@
                     </group>
                 </sheet>
                 <footer>
+                    <button name="action_generate_contract" string="📋 Générer contrat de sous-traitance" type="object" class="btn-success"/>
+                    <button name="action_preview_contract" string="👁️ Prévisualiser contrat" type="object" class="btn-secondary"/>
                     <button name="action_save_documents" string="💾 Enregistrer" type="object" class="btn-primary"/>
                     <button name="action_send_contract_email" string="✉️ Envoyer email au sous-traitant" type="object" class="btn-info"/>
                     <button string="Annuler" class="btn-secondary" special="cancel"/>

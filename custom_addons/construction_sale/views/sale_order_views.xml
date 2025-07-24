@@ -16,8 +16,10 @@
                 
                 <!-- Ajout des champs construction dans l'en-tête -->
                 <xpath expr="//field[@name='partner_id']" position="after">
+                    <!-- Toujours charger chantier_id mais le rendre invisible si vide -->
+                    <field name="chantier_id" invisible="1"/>
                     <field name="chantier_id" 
-                           invisible="not chantier_id and not context.get('default_chantier_id')"
+                           invisible="not chantier_id and not context.get('default_chantier_id', False)"
                            options="{'no_create': True, 'no_edit': True}"/>
                     <field name="lot_ids" widget="many2many_tags" 
                            invisible="not lot_ids and not chantier_id"
@@ -31,11 +33,7 @@
                             type="object" 
                             class="btn-primary"
                             invisible="state not in ['draft', 'sent'] or not chantier_id"/>
-                    <button name="action_organize_by_lots" 
-                            string="📋 Organiser par lots" 
-                            type="object" 
-                            class="btn-secondary"
-                            invisible="state not in ['draft', 'sent'] or not lot_ids"/>
+
                 </xpath>
                 
                 <!-- Bouton de validation spécialisé -->

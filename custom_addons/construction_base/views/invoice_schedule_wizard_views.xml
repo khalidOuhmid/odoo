@@ -1,0 +1,136 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Vue formulaire du wizard -->
+    <record id="view_invoice_schedule_wizard_form" model="ir.ui.view">
+        <field name="name">construction.invoice.schedule.wizard.form</field>
+        <field name="model">construction.invoice.schedule.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Créer un planning de facturation">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="chantier_id" readonly="1"/>
+                        </h1>
+                        <h3>Configuration du planning de facturation</h3>
+                    </div>
+                    
+                    <group>
+                        <group string="Cycle et Devis">
+                            <field name="invoice_type_id" 
+                                   placeholder="Sélectionnez un cycle de facturation..."
+                                   options="{'no_create': True}"/>
+                            <field name="quote_id" 
+                                   placeholder="Sélectionnez un devis accepté..."
+                                   options="{'no_create': True}"/>
+                            <field name="quote_total" widget="monetary"/>
+                        </group>
+                        
+                        <group string="Paramètres">
+                            <field name="margin_percentage" widget="percentage"/>
+                            <field name="estimated_total" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <!-- Aperçu du cycle -->
+                    <field name="cycle_summary" readonly="1" 
+                           invisible="not invoice_type_id"/>
+                    
+                    <group string="Lots concernés">
+                        <div class="row">
+                            <div class="col-12">
+                                <field name="all_lots" widget="boolean_toggle"/>
+                                <field name="available_lot_ids" invisible="1"/>
+                            </div>
+                        </div>
+                        <field name="lot_ids" 
+                               widget="many2many_tags" 
+                               options="{'color_field': 'color', 'no_create': True}"
+                               invisible="all_lots"/>
+                    </group>
+                    
+                </sheet>
+                
+                <footer>
+                    <button name="action_preview_schedule" 
+                            type="object" 
+                            string="Prévisualiser" 
+                            class="btn-secondary"
+                            invisible="not invoice_type_id or not quote_id"/>
+                    <button name="action_create_schedule" 
+                            type="object" 
+                            string="Créer le planning" 
+                            class="btn-primary"
+                            invisible="not invoice_type_id or not quote_id"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Vue prévisualisation (avec le HTML) -->
+    <record id="view_invoice_schedule_wizard_preview" model="ir.ui.view">
+        <field name="name">construction.invoice.schedule.wizard.preview</field>
+        <field name="model">construction.invoice.schedule.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Prévisualisation du planning">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Prévisualisation du planning de facturation</h1>
+                    </div>
+                    
+                    <!-- Ici on affichera le HTML de prévisualisation -->
+                    <div class="mt-3">
+                        <div class="alert alert-info">
+                            <h4><i class="fa fa-info-circle"></i> Résumé</h4>
+                            <p><strong>Chantier:</strong> <field name="chantier_id" readonly="1"/></p>
+                            <p><strong>Cycle:</strong> <field name="invoice_type_id" readonly="1"/></p>
+                            <p><strong>Devis:</strong> <field name="quote_id" readonly="1"/></p>
+                            <p><strong>Montant total:</strong> <field name="estimated_total" widget="monetary" readonly="1"/></p>
+                            <p><strong>Lots:</strong> <field name="lot_ids" widget="many2many_tags" readonly="1"/></p>
+                        </div>
+                        
+                        <!-- Tableau de prévisualisation -->
+                        <div class="alert alert-success">
+                            <h5>Étapes de facturation</h5>
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Étape</th>
+                                        <th>Déclenchement</th>
+                                        <th>% Facturation</th>
+                                        <th class="text-end">Montant estimé</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Les lignes seront générées dynamiquement -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </sheet>
+                
+                <footer>
+                    <button name="action_create_schedule" 
+                            type="object" 
+                            string="Confirmer et créer" 
+                            class="btn-primary"/>
+                    <button string="Retour" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Action pour ouvrir le wizard -->
+    <record id="action_invoice_schedule_wizard" model="ir.actions.act_window">
+        <field name="name">Créer un planning de facturation</field>
+        <field name="res_model">construction.invoice.schedule.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{
+            'default_chantier_id': active_id,
+        }</field>
+    </record>
+    
+</odoo>

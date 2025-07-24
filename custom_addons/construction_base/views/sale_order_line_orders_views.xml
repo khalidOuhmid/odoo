@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Vue spécifique pour les lignes de commande dans l'onglet commandes -->
+        <record id="view_sale_order_line_orders_tree" model="ir.ui.view">
+            <field name="name">sale.order.line.orders.tree</field>
+            <field name="model">sale.order.line</field>
+            <field name="arch" type="xml">
+                <list editable="bottom" string="Articles à commander">
+                    <field name="product_id" readonly="1"/>
+                    <field name="name" readonly="1"/>
+                    <field name="product_uom_qty" readonly="1"/>
+                    <field name="product_uom" readonly="1"/>
+                    <field name="price_unit" readonly="1" widget="monetary"/>
+                    <field name="price_subtotal" readonly="1" widget="monetary" sum="Total"/>
+                    <field name="lot_id" 
+                           placeholder="Associer à un lot..."
+                           options="{'no_create': True}"/>
+                    
+                    <!-- Champs de gestion des commandes -->
+                    <field name="supplier_id" 
+                           placeholder="Sélectionner fournisseur..."
+                           options="{'no_create': True}"/>
+                    <field name="order_date"/>
+                    <field name="tracking_link" 
+                           placeholder="https://..."
+                           widget="url"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Vue formulaire pour les lignes de commande -->
+        <record id="view_sale_order_line_orders_form" model="ir.ui.view">
+            <field name="name">sale.order.line.orders.form</field>
+            <field name="model">sale.order.line</field>
+            <field name="arch" type="xml">
+                <form string="Article à commander">
+                    <sheet>
+                        <group>
+                            <group string="Article">
+                                <field name="product_id" readonly="1"/>
+                                <field name="name" readonly="1"/>
+                                <field name="product_uom_qty" readonly="1"/>
+                                <field name="product_uom" readonly="1"/>
+                                <field name="price_unit" readonly="1" widget="monetary"/>
+                                <field name="price_subtotal" readonly="1" widget="monetary"/>
+                            </group>
+                            
+                            <group string="Commande">
+                                <field name="lot_id" 
+                                       placeholder="Associer à un lot..."
+                                       options="{'no_create': True}"/>
+                                <field name="supplier_id" 
+                                       placeholder="Sélectionner fournisseur..."
+                                       options="{'no_create': True}"/>
+                                <field name="order_date"/>
+                                <field name="tracking_link" 
+                                       placeholder="https://..."
+                                       widget="url"/>
+                            </group>
+                        </group>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+    </data>
+</odoo>

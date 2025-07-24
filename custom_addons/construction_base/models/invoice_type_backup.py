@@ -76,7 +76,7 @@ class InvoiceType(models.Model):
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Étapes de facturation - {}'.format(self.name),
+            'name': f'Étapes de facturation - {self.name}',
             'res_model': 'construction.invoice_type.line',
             'view_mode': 'list,form',
             'domain': [('invoice_type_id', '=', self.id)],
@@ -441,11 +441,9 @@ class InvoiceSchedule(models.Model):
                 try:
                     # Utiliser une référence directe au chantier pour éviter les problèmes de contexte
                     chantier = self.env['construction.chantier'].browse(record.chantier_id.id)
-                    body_msg = "📊 Facturation automatique déclenchée : {} (Avancement: {}% ≥ {}%)".format(
-                        record.name, current_progress, record.trigger_percentage
-                    )
                     chantier.sudo().message_post(
-                        body=body_msg,
+                        body=f"📊 Facturation automatique déclenchée : {record.name} "
+                             f"(Avancement: {current_progress}% ≥ {record.trigger_percentage}%)",
                         message_type='notification'
                     )
                 except Exception:
@@ -615,11 +613,8 @@ class InvoiceSchedule(models.Model):
             'invoice_date': fields.Date.today()
         })
 
-        body_msg = "Facture créée : {} - {:,.2f} € ({}%)".format(
-            self.name, self.amount_fixed, self.amount_percentage
-        )
         self.chantier_id.message_post(
-            body=body_msg,
+            body=f"Facture créée : {self.name} - {self.amount_fixed:,.2f} € ({self.amount_percentage}%)",
             message_type='notification'
         )
 

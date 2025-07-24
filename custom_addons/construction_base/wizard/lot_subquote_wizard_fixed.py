@@ -222,11 +222,14 @@ class LotSubquoteWizard(models.TransientModel):
 
         # Log sur le chantier
         self.chantier_id.message_post(
-            body=f"📋 Sous-devis créé pour le lot '{self.lot_id.name}' :\n"
-                 f"• Sous-devis : {subquote.name}\n"
-                 f"• Sous-traitant : {self.subcontractor_id.name}\n"
-                 f"• Montant : {subquote.amount_total:,.2f} {subquote.currency_id.symbol}\n"
-                 f"• Basé sur : {self.selected_quote_id.name}",
+            body="📋 Sous-devis créé pour le lot '{}' :\n• Sous-devis : {}\n• Sous-traitant : {}\n• Montant : {:,.2f} {}\n• Basé sur : {}".format(
+                self.lot_id.name,
+                subquote.name,
+                self.subcontractor_id.name,
+                subquote.amount_total,
+                subquote.currency_id.symbol,
+                self.selected_quote_id.name
+            ),
             message_type='comment'
         )
 
@@ -236,12 +239,12 @@ class LotSubquoteWizard(models.TransientModel):
             'tag': 'display_notification',
             'params': {
                 'title': _('Succès'),
-                'message': _(f"Le sous-devis pour le lot '{self.lot_id.name}' a été créé avec succès."),
+                'message': _("Le sous-devis pour le lot '{}' a été créé avec succès.".format(self.lot_id.name)),
                 'type': 'success',
                 'sticky': False,
                 'next': {
                     'type': 'ir.actions.act_window',
-                    'name': f'Sous-devis - {self.lot_id.name}',
+                    'name': 'Sous-devis - {}'.format(self.lot_id.name),
                     'res_model': 'sale.order',
                     'res_id': subquote.id,
                     'view_mode': 'form',
@@ -264,7 +267,7 @@ class LotSubquoteWizard(models.TransientModel):
             'pricelist_id': self.selected_quote_id.pricelist_id.id,
             'company_id': self.selected_quote_id.company_id.id,
             'currency_id': self.selected_quote_id.currency_id.id,
-            'note': f"Sous-devis généré automatiquement pour le lot : {self.lot_id.name}",
+            'note': "Sous-devis généré automatiquement pour le lot : {}".format(self.lot_id.name),
         }
 
         # Créer le sous-devis
@@ -316,8 +319,8 @@ class LotSubquoteWizard(models.TransientModel):
 
         # Récupérer les valeurs du contexte
         for field in ['lot_id', 'chantier_id', 'subcontractor_id']:
-            context_key = f'default_{field}'
+            context_key = 'default_{}'.format(field)
             if context_key in self.env.context:
                 defaults[field] = self.env.context[context_key]
 
-        return defaults 
+        return defaults

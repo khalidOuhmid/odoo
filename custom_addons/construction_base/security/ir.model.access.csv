@@ -6,6 +6,7 @@ access_construction_chapter_user,construction.chapter.user,model_construction_ch
 access_construction_visit_user,construction.visit.user,model_construction_visit,base.group_user,1,1,1,1
 access_construction_document_user,construction.document.user,model_construction_document,base.group_user,1,1,1,1
 access_construction_lot_user,construction.lot.user,model_construction_lot,base.group_user,1,1,1,1
+access_construction_lot_template_user,construction.lot.template.user,model_construction_lot_template,base.group_user,1,1,1,1
 access_construction_invoice_type_user,construction.invoice.type.user,model_construction_invoice_type,base.group_user,1,1,1,1
 access_construction_invoice_type_line_user,construction.invoice.type.line.user,model_construction_invoice_type_line,base.group_user,1,1,1,1
 access_construction_invoice_schedule_user,construction.invoice.schedule.user,model_construction_invoice_schedule,base.group_user,1,1,1,1
@@ -15,3 +16,6 @@ access_lot_document_wizard_manager,lot.document.wizard.manager,model_lot_documen
 access_lot_subquote_wizard_user,lot.subquote.wizard.user,model_lot_subquote_wizard,base.group_user,1,1,1,1
 access_lot_subcontractor_assign_wizard_user,lot.subcontractor.assign.wizard.user,model_lot_subcontractor_assign_wizard,base.group_user,1,1,1,1
 access_construction_planning_task_user,construction.planning.task.user,model_construction_planning_task,base.group_user,1,1,1,1
+access_construction_planning_task_create_user,access.construction.planning.task.create.user,model_construction_planning_task_create,base.group_user,1,0,1,0
+access_construction_invoice_schedule_wizard_user,construction.invoice.schedule.wizard.user,model_construction_invoice_schedule_wizard,base.group_user,1,1,1,1
+access_construction_document_upload_wizard_user,construction.document.upload.wizard.user,model_construction_document_upload_wizard,base.group_user,1,1,1,1

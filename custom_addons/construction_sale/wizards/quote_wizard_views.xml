@@ -1,25 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    
+
     <!-- ========== WIZARD PRINCIPAL DE CRÉATION DE DEVIS ========== -->
-    
+
     <record id="construction_quote_wizard_form" model="ir.ui.view">
         <field name="name">construction.quote.wizard.form</field>
         <field name="model">construction.quote.wizard</field>
         <field name="arch" type="xml">
             <form string="Assistant de création de devis">
                 <header>
-                    <button name="action_confirm_selection" string="✅ Finaliser le devis" 
-                            type="object" class="btn-primary" 
-                            invisible="not selected_line_ids"/>
-                    <button name="action_view_selection" string="🛒 Voir ma sélection" 
-                            type="object" class="btn-secondary" 
-                            invisible="not selected_line_ids"/>
-                    <button name="action_clear_selection" string="🗑️ Vider la sélection" 
-                            type="object" class="btn-link" 
-                            invisible="not selected_line_ids"/>
+
                 </header>
-                
+                <footer>
+                    <button name="action_confirm_selection" string="✅ Finaliser le devis"
+                            type="object" class="btn-primary"/>
+                    <button name="action_view_selection" string="🛒 Voir ma sélection"
+                            type="object" class="btn-secondary"/>
+                    <button name="action_clear_selection" string="🗑️ Vider la sélection"
+                            type="object" class="btn-link"/>
+                </footer>
                 <sheet>
                     <div class="oe_title">
                         <h1>Assistant de création de devis</h1>
@@ -30,31 +29,39 @@
                             Devis : <field name="sale_order_id" readonly="1" nolabel="1"/>
                         </h3>
                     </div>
-                    
+                                     <div class="alert alert-info" role="alert">
+                        <strong><i class="fa fa-info-circle"/> Mode d'emploi :</strong><br/>
+                        1️⃣ <strong>Sélectionnez d'abord les lots</strong> à traiter dans votre devis<br/>
+                        2️⃣ Cliquez sur <strong>"+"</strong> à côté d'un produit pour l'ajouter<br/>
+                        3️⃣ <strong>Assignez chaque produit à UN lot spécifique</strong><br/>
+                        4️⃣ Utilisez <strong>"🆕 Nouveau produit"</strong> pour créer un produit personnalisé<br/>
+                        5️⃣ <strong>"✅ Finaliser"</strong> pour organiser le devis par sections de lots
+                    </div>
+
                     <!-- Informations cachées -->
                     <group invisible="1">
                         <field name="available_product_ids"/>
                         <field name="currency_id"/>
                         <field name="available_lot_ids"/>
                     </group>
-                    
+
                     <group>
                         <group name="selection" string="⚡ Sélection des lots (obligatoire)">
-                            <field name="lot_ids" widget="many2many_tags" 
+                            <field name="lot_ids" widget="many2many_tags"
                                    placeholder="⚠️ Sélectionnez les lots à traiter..."
-                                   help="Chaque produit sera assigné à UN de ces lots" 
+                                   help="Chaque produit sera assigné à UN de ces lots"
                                    required="1"/>
-                            <field name="default_margin_percent" 
+                            <field name="default_margin_percent"
                                    help="Marge par défaut appliquée aux nouveaux produits"/>
                         </group>
-                        
+
                         <group name="statistics" string="Résumé">
                             <field name="line_count" readonly="1"/>
                             <field name="total_quantity" readonly="1"/>
                             <field name="total_amount" readonly="1" widget="monetary"/>
                         </group>
                     </group>
-                    
+
                     <!-- Section de recherche de produits -->
                     <group>
                         <group name="search_filters" string="Filtres de recherche">
@@ -63,47 +70,50 @@
                             <field name="show_lot_products_only"/>
                         </group>
                     </group>
-                    
+
                     <separator string="Catalogue des produits"/>
-                    
-                    <div class="alert alert-info" role="alert">
-                        <strong><i class="fa fa-info-circle"/> Mode d'emploi :</strong><br/>
-                        1️⃣ <strong>Sélectionnez d'abord les lots</strong> à traiter dans votre devis<br/>
-                        2️⃣ Cliquez sur <strong>"+"</strong> à côté d'un produit pour l'ajouter<br/>
-                        3️⃣ <strong>Assignez chaque produit à UN lot spécifique</strong><br/>
-                        4️⃣ Utilisez <strong>"🆕 Nouveau produit"</strong> pour créer un produit personnalisé<br/>
-                        5️⃣ <strong>"✅ Finaliser"</strong> pour organiser le devis par sections de lots
-                    </div>
-                    
                     <field name="available_product_ids" nolabel="1" widget="many2many">
-                        <list string="Produits disponibles" create="false" edit="false" delete="false" 
+                        <list string="Produits disponibles" create="false" edit="false" delete="false"
                               decoration-info="1">
                             <field name="display_name"/>
                             <field name="default_code"/>
                             <field name="categ_id"/>
                             <field name="list_price" widget="monetary"/>
-                            <button name="%(construction_sale.action_add_product_from_catalog)d" 
-                                    type="action" icon="fa-plus" 
+                            <button name="%(construction_sale.action_add_product_from_catalog)d"
+                                    type="action" icon="fa-plus"
                                     title="Ajouter ce produit"
                                     context="{'default_product_id': id, 'default_quote_wizard_id': parent.id}"/>
                         </list>
                     </field>
-                    
+                     <separator string="Ma sélection"/>
+                    <field name="selected_line_ids" nolabel="1">
+                        <list string="Ma sélection" create="false" edit="false" delete="true">
+                            <field name="product_id"/>
+                            <field name="product_code"/>
+                            <field name="lot_id"/>
+                            <field name="price_unit" widget="monetary"/>
+                            <field name="margin_percent"/>
+                            <field name="quantity"/>
+                            <field name="subtotal"/>
+                            <field name="room_location"/>
+                            <field name="room_number"/>
+                        </list>
+                    </field>
                     <div class="text-center mt16">
-                        <button name="action_create_quick_product" string="🆕 Nouveau produit personnalisé" 
+                        <button name="action_create_quick_product" string="🆕 Nouveau produit personnalisé"
                                 type="object" class="btn-secondary"
                                 title="Créer un produit complètement nouveau"/>
-                        <button name="action_refresh_products" string="🔄 Actualiser" 
-                                type="object" class="btn-link" 
+                        <button name="action_refresh_products" string="🔄 Actualiser"
+                                type="object" class="btn-link"
                                 title="Actualiser la liste des produits"/>
                     </div>
-                    
+
                     <!-- Résumé de la sélection actuelle -->
                     <div class="alert alert-success mt16" invisible="not selected_line_ids">
                         <div class="row">
                             <div class="col-md-8">
                                 <strong><i class="fa fa-check-circle"/> Produits sélectionnés :</strong>
-                                <field name="line_count" readonly="1"/> ligne(s) | 
+                                <field name="line_count" readonly="1"/> ligne(s) |
                                 <field name="total_quantity" readonly="1"/> unité(s)
                             </div>
                             <div class="col-md-4 text-end">
@@ -112,12 +122,14 @@
                         </div>
                     </div>
                 </sheet>
+
             </form>
+
         </field>
     </record>
-    
+
     <!-- ========== ACTION DU WIZARD ========== -->
-    
+
     <record id="action_construction_quote_wizard" model="ir.actions.act_window">
         <field name="name">Assistant de création de devis</field>
         <field name="res_model">construction.quote.wizard</field>
@@ -125,9 +137,9 @@
         <field name="target">new</field>
         <field name="view_id" ref="construction_quote_wizard_form"/>
     </record>
-    
+
     <!-- ========== ACTION POUR LANCER LE WIZARD DEPUIS UN CHANTIER ========== -->
-    
+
     <record id="action_launch_quote_wizard" model="ir.actions.act_window">
         <field name="name">Créer un devis intelligent</field>
         <field name="res_model">construction.quote.wizard</field>
@@ -139,9 +151,9 @@
             'default_lot_ids': [(6, 0, active_record.lots_ids.ids if active_record else [])],
         }</field>
     </record>
-    
+
     <!-- ========== VUE LISTE DES LIGNES SÉLECTIONNÉES ========== -->
-    
+
     <record id="construction_quote_line_tree" model="ir.ui.view">
         <field name="name">construction.quote.line.tree</field>
         <field name="model">construction.quote.line</field>
