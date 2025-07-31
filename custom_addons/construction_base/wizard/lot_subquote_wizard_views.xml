@@ -7,13 +7,13 @@
             <field name="name">lot.subquote.wizard.form</field>
             <field name="model">lot.subquote.wizard</field>
             <field name="arch" type="xml">
-                <form string="Créer sous-devis pour lot">
+                <form string="Créer bon de commande pour lot">
                     <sheet>
                         <!-- Titre et info du lot -->
                         <div class="oe_title">
                             <h1>
-                                <i class="fa fa-cut text-primary"/>
-                                Créer sous-devis
+                                <i class="fa fa-shopping-cart text-primary"/>
+                                Créer bon de commande
                             </h1>
                             <h3>
                                 <field name="lot_id" readonly="1"/>
@@ -28,13 +28,12 @@
                             <group string="📋 Devis source">
                                 <field name="available_quotes" invisible="1"/>
                                 <field name="selected_quote_id"
-                                       domain="[('id', 'in', available_quotes)]"
                                        required="1"
                                        options="{'no_create': True}"/>
                                 <field name="estimated_amount" readonly="1"/>
                             </group>
 
-                            <group string="👷 Sous-traitant">
+                            <group string="🏗️ Sous-traitant">
                                 <field name="subcontractor_id" required="1"/>
                                 <field name="currency_id" invisible="1"/>
                             </group>
@@ -47,11 +46,11 @@
 
                     <!-- Footer avec boutons -->
                     <footer>
-                        <button name="action_create_subquote"
-                                string="✅ CONFIRMER et créer le sous-devis"
+                        <button name="action_create_purchase_order"
+                                string="✅ CONFIRMER et créer le bon de commande"
                                 type="object"
                                 class="btn-primary"
-                                confirm="Êtes-vous sûr de vouloir créer ce sous-devis ?"/>
+                                confirm="Êtes-vous sûr de vouloir créer ce bon de commande ?"/>
 
                         <button string="❌ Annuler"
                                 class="btn-secondary"
@@ -63,7 +62,7 @@
 
         <!-- Action pour ouvrir le wizard -->
         <record id="action_lot_subquote_wizard" model="ir.actions.act_window">
-            <field name="name">Créer sous-devis pour lot</field>
+            <field name="name">Créer bon de commande pour lot</field>
             <field name="res_model">lot.subquote.wizard</field>
             <field name="view_mode">form</field>
             <field name="view_id" ref="view_lot_subquote_wizard_form"/>

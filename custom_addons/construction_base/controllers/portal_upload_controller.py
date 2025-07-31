@@ -92,3 +92,70 @@ class PortalSubcontractorContractUpload(http.Controller):
         except Exception as e:
             _logger.error(f"Erreur de validation du token: {e}")
             return None
+
+    @http.route('/construction/preview-contract', type='http', auth='user', website=True)
+    def preview_contract(self, **kwargs):
+        """Affiche la preview HTML du contrat de sous-traitance"""
+        try:
+            # Récupérer le contenu HTML depuis les paramètres
+            html_content = kwargs.get('content', '')
+            if html_content:
+                # Décoder le contenu base64
+                html_decoded = base64.b64decode(html_content).decode('utf-8')
+                
+                # Retourner le HTML avec les styles CSS appropriés
+                return f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Aperçu du contrat de sous-traitance</title>
+                    <meta charset="utf-8">
+                    <style>
+                        body {{ font-family: Arial, sans-serif; margin: 20px; }}
+                        .header {{ text-align: center; margin-bottom: 30px; }}
+                        .table {{ width: 100%; border-collapse: collapse; margin: 10px 0; }}
+                        .table th, .table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+                        .table th {{ background-color: #f2f2f2; }}
+                        h1, h2, h3 {{ color: #333; }}
+                        .page-break {{ page-break-before: always; }}
+                        @media print {{
+                            .no-print {{ display: none; }}
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="no-print" style="margin-bottom: 20px;">
+                        <button onclick="window.print()">Imprimer</button>
+                        <button onclick="window.close()">Fermer</button>
+                    </div>
+                    {html_decoded}
+                </body>
+                </html>
+                """
+            else:
+                return "<p>Erreur: Aucun contenu à afficher</p>"
+        except Exception as e:
+            _logger.error(f"Erreur affichage preview contrat: {e}")
+            return f"<p>Erreur lors de l'affichage: {str(e)}</p>"
+
+    @http.route('/web/binary/download_contract_preview', type='http', auth='user')
+    def download_contract_preview(self, **kwargs):
+        """Télécharge la preview HTML du contrat"""
+        try:
+            wizard_id = kwargs.get('wizard_id')
+            if wizard_id:
+                wizard = request.env['lot.document.wizard'].browse(int(wizard_id))
+                html_content = wizard._get_contract_html()
+                
+                return request.make_response(
+                    html_content,
+                    headers=[
+                        ('Content-Type', 'text/html'),
+                        ('Content-Disposition', 'attachment; filename="preview_contract.html"')
+                    ]
+                )
+            else:
+                return "<p>Erreur: ID du wizard manquant</p>"
+        except Exception as e:
+            _logger.error(f"Erreur téléchargement preview: {e}")
+            return f"<p>Erreur lors du téléchargement: {str(e)}</p>"

@@ -62,3 +62,18 @@ class DocumentUploadWizard(models.TransientModel):
             'type': 'ir.actions.act_window_close',
             'infos': _('Document "%s" ajouté avec succès.') % self.name,
         }
+
+    def action_generate_subcontractor_contracts(self):
+        """Lance le wizard de génération de contrats de sous-traitance."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Générer contrats de sous-traitance',
+            'res_model': 'construction.contract.preview.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.chantier_id.id,
+                'default_subcontractor_id': self.chantier_id.subcontractor_ids[0].id if self.chantier_id.subcontractor_ids else False,
+                'default_lot_ids': [(6, 0, self.chantier_id.lots_ids.ids)]
+            }
+        }

@@ -62,6 +62,11 @@ class BlgChantier(models.Model):
             else:
                 record.days_remaining = 0
 
+    def get_lots_with_sent_quotes(self):
+        """Retourne les lots avec des devis envoyés."""
+        self.ensure_one()
+        return self.lot_ids.filtered(lambda l: l.quote_state == 'sent')
+
     @api.model
     def create(self, vals):
         """Set default stage"""

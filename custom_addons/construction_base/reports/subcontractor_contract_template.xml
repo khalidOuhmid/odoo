@@ -1,186 +1,284 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <template id="subcontractor_contract_template">
+        <!-- Template pour le contrat de sous-traitance complet -->
+        <template id="contrat_sous_traitance_template" name="Contrat de sous-traitance">
             <t t-call="web.html_container">
-                <t t-foreach="docs" t-as="doc">
+                <t t-foreach="docs" t-as="o">
+                    <!-- Layout personnalisé avec header et footer -->
+                    <div style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; margin: 0; padding: 0;">
+                        
+                        <!-- Header personnalisé -->
+                        <div style="text-align: center; padding: 20px 40px; border-bottom: 2px solid #20B2AA; background-color: #f8f9fa;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                <div style="width: 30%; text-align: left;">
+                                    <img src="/construction_base/static/src/img/blg_logo.png" style="max-height: 60px; max-width: 200px;" alt="Logo BLG GROUPE"/>
+                                </div>
+                                <div style="width: 40%; text-align: center;">
+                                    <h1 style="color: #20B2AA; font-size: 28px; font-weight: bold; margin: 0;">Contrat de sous-traitance</h1>
+                                    <p style="color: #666; font-size: 14px; margin: 5px 0;">BLG GROUPE</p>
+                                </div>
+                                <div style="width: 30%; text-align: right;">
+                                    <p style="color: #666; font-size: 12px; margin: 0;">Date: <t t-esc="current_date" /></p>
+                                </div>
+                            </div>
+                        </div>
 
-                <style>
-                    body,div { font-family: 'Arial',sans-serif; font-size: 11.3pt; }
-                    .contract-header { text-align: center; font-size:24px; font-weight: bold; margin-bottom: 35px; margin-top: 20px;}
-                    .logo-wrap { display:flex; justify-content:space-between; align-items: center;}
-                    .logo { width:65px;}
-                    .main-table { width:100%; border-spacing:0; margin-bottom:35px;}
-                    .main-table td, .main-table th { padding: 7px 12px; vertical-align: top;}
-                    .main-table th { color: #5bc0be; font-weight: bold; font-size: 13pt; background: #f5f5f5;}
-                    .main-table td { border-bottom: 1px solid #e0e0e0;}
-                    .value-title { font-weight:bold; color:#5bc0be;}
-                    .value-bold { font-weight:bold; }
-                    .highlight { color:#e91e63; font-weight:bold; }
-                    .section-title { margin-top:22px; margin-bottom: 7px; font-size:15px; font-weight:bold; color: #5bc0be;}
-                    .content-section { margin-bottom:13px; margin-top:2px; line-height:1.5;}
-                    .content-section ul { margin-bottom: 10px; }
-                    .payment-table { width: 85%; margin:auto; border-collapse: collapse; margin-top:12px; }
-                    .payment-table th, .payment-table td { border:1px solid #b0b0b0; padding:7px 8px; text-align:center;}
-                    .payment-table th { background-color:#f5f5f5; color: #5bc0be;}
-                    .signature-row { width:100%; display:flex; justify-content:space-between; align-items:end; margin-top: 50px;}
-                    .signature-col { width:32%; text-align:center; font-size: 11.5pt;}
-                    hr { border: none; border-top:1.5px solid #b0b0b0; margin: 15px 0;}
-                </style>
+                        <!-- Contenu principal -->
+                        <div class="page" style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; margin: 0 40px; padding: 20px; min-height: 800px;">
+                            
+                            <!-- Désignation des parties contractantes -->
+                            <h3 style="color: #20B2AA; border-bottom: 2px solid #20B2AA; padding-bottom: 8px; margin-top: 30px; font-size: 18px; font-weight: bold;">Désignation des parties contractantes</h3>
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="background-color: #f0f8ff;">
+                                        <th style="border: 2px solid #20B2AA; padding: 12px; text-align: left; color: #20B2AA; font-weight: bold;">Contractant général</th>
+                                        <th style="border: 2px solid #20B2AA; padding: 12px; text-align: left; color: #20B2AA; font-weight: bold;">L'entreprise</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="border: 2px solid #ddd; padding: 12px; vertical-align: top;">
+                                            <strong style="color: #20B2AA;">Contractant général :</strong> <t t-esc="company_name or 'Non défini'" /><br/>
+                                            <strong style="color: #20B2AA;">Adresse :</strong> <t t-esc="company_street or 'Non définie'" />, <t t-esc="company_city or 'Non définie'" /> <t t-esc="company_zip or ''" /><br/>
+                                            <strong style="color: #20B2AA;">SIREN :</strong> 919 180 810 00021 (joindre justificatif &lt; 3 mois)
+                                        </td>
+                                        <td style="border: 2px solid #ddd; padding: 12px; vertical-align: top;">
+                                            <strong style="color: #20B2AA;">L'entreprise :</strong> <t t-esc="subcontractor_name or 'Non défini'" /><br/>
+                                            <strong style="color: #20B2AA;">SIREN :</strong> <t t-esc="subcontractor_vat or 'Non défini'" /><br/>
+                                            <strong style="color: #20B2AA;">Montant Chantier :</strong> <t t-esc="'{:,.0f}'.format(total_amount or 0)" /> €
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
 
-                <!-- HEADER -->
-                <div class="logo-wrap">
-                    <img t-att-src="'/your_module/static/img/logo-blg.png'" alt="Logo" class="logo"/>
-                    <div class="contract-header">Contrat de sous-traitance</div>
-                    <img t-att-src="'/your_module/static/img/logo-blg.png'" alt="Logo" class="logo"/>
-                </div>
+                            <!-- Désignation des prestations -->
+                            <h3 style="color: #20B2AA; border-bottom: 2px solid #20B2AA; padding-bottom: 8px; margin-top: 30px; font-size: 18px; font-weight: bold;">1. Désignation des prestations</h3>
+                            <div style="margin-bottom: 25px; background-color: #f9f9f9; padding: 15px; border-left: 4px solid #20B2AA;">
+                                <p style="margin: 8px 0;"><strong style="color: #20B2AA;">OPERATION :</strong> <t t-esc="chantier_name or 'Non défini'"/></p>
+                                <p style="margin: 8px 0;"><strong style="color: #20B2AA;">MAITRE D'OEUVRE :</strong> <t t-esc="company_name or 'Non défini'"/></p>
+                                <p style="margin: 8px 0;"><strong style="color: #20B2AA;">NATURE DES TRAVAUX :</strong> <t t-esc="chantier_description or 'Non définie'"/></p>
+                                <p style="margin: 8px 0;"><strong style="color: #20B2AA;">LIEU D'EXECUTION :</strong> <t t-esc="chantier_address or 'Non définie'"/></p>
+                                <p style="margin: 8px 0;"><strong style="color: #20B2AA;">NATURE DES PRESTATIONS, OBJET DE LA PRESENTE :</strong> <t t-esc="specialty_description or 'Non définie'"/></p>
+                            </div>
 
-                <!-- TABLE Parties contractantes -->
-                <table class="main-table">
-                    <tr>
-                        <th>Contractant général</th>
-                        <th>L'entreprise</th>
-                    </tr>
-                    <tr>
-                        <td>
-                            <span class="value-bold">B.L.G GROUPE</span><br/>
-                            44 rue commanderie des templiers<br/>
-                            33440 Ambarès
-                        </td>
-                        <td>
-                            <span class="highlight" t-field="doc.subcontractor_id.name"/>
-                            <br/><span t-field="doc.subcontractor_id.street"/>,
-                            <span t-field="doc.subcontractor_id.zip"/> <span t-field="doc.subcontractor_id.city"/>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <span class="value-title">Références à rappeler impérativement</span><br/>
-                            Chantier : <span t-field="doc.chantier_id.name"/>
-                        </td>
-                        <td>
-                            Immatriculation / justificatif &lt; 3 mois:<br />
-                            <t t-if="doc.subcontractor_id.vat">TVA: <span t-field="doc.subcontractor_id.vat"/></t>
-                            <t t-if="not doc.subcontractor_id.vat">Identifiant: <span t-field="doc.subcontractor_id.ref"/></t>
-                            <br />
-                            Registre du commerce: <span class="highlight">443 342 - Travaux de peinture et vitrerie</span>
-                        </td>
-                    </tr>
-                </table>
+                            <!-- Prix -->
+                            <h3 style="color: #20B2AA; border-bottom: 2px solid #20B2AA; padding-bottom: 8px; margin-top: 30px; font-size: 18px; font-weight: bold;">2. Prix</h3>
+                            <div style="text-align: center; background-color: #f0f8ff; padding: 20px; margin: 20px 0; border: 2px solid #20B2AA;">
+                                <h4 style="color: #20B2AA; font-size: 24px; font-weight: bold; margin: 0;"><t t-esc="'{:,.0f}'.format(total_amount or 0)" /> €</h4>
+                            </div>
+                            <p>Montant des bons de commande <t t-esc="po_references or 'Non définis'" />.</p>
+                            <p>Le prix est ferme et non révisable. "AUTOLIQUIDATION, article 242 nonies A de l'annexe II au code général des impôts."</p>
+                            <p>Ce prix comprend l'ensemble des coûts, frais et débours nécessaires à la bonne exécution du Contrat.</p>
+                            <p>Le prix constitue l'intégralité de la rémunération due par BLG GROUPE à l'Entreprise, laquelle ne saurait prétendre à aucun supplément de prix en raison de prestations qui, bien que non expressément énumérées, entrent dans le cadre de ses obligations contractuelles.</p>
+                            <p>De même, l'Entreprise ne pourra se prévaloir en aucun cas d'erreurs d'appréciation ou de difficultés d'exécution pour obtenir une augmentation du prix du contrat. A ce titre, l'Entreprise entend renoncer par anticipation au bénéfice des dispositions de l'article 1195 du Code Civil.</p>
 
-                <!-- Section 1 : Désignation des prestations -->
-                <div class="section-title">1 - Désignation des prestations</div>
-                <div class="content-section">
-                    <span class="value-title">OPÉRATION :</span> <span t-field="doc.lot_id.name"/><br/>
-                    <span class="value-title">MAITRE D'ŒUVRE :</span> B.L.G GROUPE<br/>
-                    <span class="value-title">NATURE DES TRAVAUX :</span> <span t-field="doc.lot_id.description"/><br/>
-                    <span class="value-title">LIEU D'EXÉCUTION :</span> <span t-field="doc.chantier_id.address"/><br/>
-                    <span class="value-title">OBJET DE LA PRÉSENTE :</span> Travaux de <span class="highlight">Peinture</span>
-                </div>
+                            <!-- Échéancier de paiement -->
+                            <h3 style="color: #20B2AA; border-bottom: 2px solid #20B2AA; padding-bottom: 8px; margin-top: 30px; font-size: 18px; font-weight: bold;">3. Échéancier de paiement</h3>
+                            <p>Le prix est payable selon l'échéancier suivant :</p>
+                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+                                <thead>
+                                    <tr style="background-color: #f0f8ff;">
+                                        <th style="border: 2px solid #20B2AA; padding: 12px; text-align: left; color: #20B2AA; font-weight: bold;">Avancement réel chantier</th>
+                                        <th style="border: 2px solid #20B2AA; padding: 12px; text-align: left; color: #20B2AA; font-weight: bold;">Facturation</th>
+                                        <th style="border: 2px solid #20B2AA; padding: 12px; text-align: left; color: #20B2AA; font-weight: bold;">Montant en € HT = TTC</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="echeancier_ids" t-as="ligne">
+                                        <tr>
+                                            <td style="border: 2px solid #ddd; padding: 12px;"><t t-esc="ligne.avancement or 'Non défini'"/></td>
+                                            <td style="border: 2px solid #ddd; padding: 12px;"><t t-esc="ligne.facturation or 'Non défini'"/></td>
+                                            <td style="border: 2px solid #ddd; padding: 12px;"><t t-esc="'{:,.0f}'.format(ligne.montant or 0)"/> €</td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <p>La gestion financière est assurée depuis un compte tiers sécurisé. La signature du PV de réception par le MAITRE D'OUVRAGE, <u>qui atteste que les travaux ont été réalisés conformément au cahier des charges</u>, permet la libération des fonds vers notre partenaire travaux (le sous-traitant) à maximum J+30 après réception des travaux.</p>
+                            <p>En complément des modalités de règlement du sous-traitant (voir § ci-avant), cet article vaut garantie de paiement du sous-traitant accepté par le MAITRE D'OUVRAGE par sa signature du Contrat de sous-traitance.</p>
 
-                <!-- Section 2 : Prix -->
-                <div class="section-title">2 - Prix</div>
-                <div class="content-section">
-                    <div>
-                        <span class="highlight" t-field="doc.lot_id.price"/> €<br/><br/>
-                        Le prix est ferme et non révisable. « AUTOLIQUIDATION, article 242 nonies A de l'annexe II au code général des impôts ».<br/>
-                        Ce prix comprend l’ensemble des coûts, frais et débours de l’Entreprise nécessaires à la bonne exécution du Contrat. Aucun supplément ne pourra être demandé.<br/>
-                        L’Entreprise renonce expressément à l’application au bénéfice des dispositions de l’article 1195 du Code Civil.
+                            <!-- Délais -->
+                            <h3 style="color: #20B2AA; border-bottom: 2px solid #20B2AA; padding-bottom: 8px; margin-top: 30px; font-size: 18px; font-weight: bold;">4. Délais</h3>
+                            <p>Suivant planning prévisionnel en annexe, tout planning remis par <t t-esc="company_name or 'BLG GROUPE'" /> en cours d'exécution aura valeur contractuelle.</p>
+
+                            <!-- Documents contractuels et annexes -->
+                            <h3 style="color: #20B2AA; border-bottom: 2px solid #20B2AA; padding-bottom: 8px; margin-top: 30px; font-size: 18px; font-weight: bold;">5. Documents contractuels et annexes</h3>
+                            <p>La présente commande et le cas échéant ses annexes, à savoir, par ordre de préséance :</p>
+                            <ul style="margin: 15px 0; padding-left: 25px;">
+                                <li style="margin: 8px 0;">Les documents graphiques : plans d'exécution du projet.</li>
+                                <li style="margin: 8px 0;">La notice technique : dossier d'exécution et planning du projet.</li>
+                                <li style="margin: 8px 0;">Le bon de commande (Les quantités et prestations y figurant sont estimatives et ne sauraient être exploitées pour remettre en cause de quelque manière que ce soit le caractère forfaitaire du marché. Elle n'est pas contractuelle mais sert de base pour fixer les prix de travaux modificatifs et dresser les situations de travaux et décomptes)</li>
+                                <li style="margin: 8px 0;">Les « conditions générales de commande » jointes</li>
+                            </ul>
+
+                            <!-- Documents à transmettre -->
+                            <h3 style="color: #20B2AA; border-bottom: 2px solid #20B2AA; padding-bottom: 8px; margin-top: 30px; font-size: 18px; font-weight: bold;">6. Documents à transmettre à <t t-esc="company_name or 'BLG GROUPE'" /></h3>
+                            <p>Le prestataire remet, à la signature de la présente commande et tous les 6 mois :</p>
+                            <ul style="margin: 15px 0; padding-left: 25px;">
+                                <li style="margin: 8px 0;">Un extrait K bis</li>
+                                <li style="margin: 8px 0;">Une Attestation de fourniture des déclarations sociales et de paiement des cotisations de sécurité sociales émanant de l'organisme de protection sociale chargé du recouvrement portant le nombre de salariés déclarés datant de moins de 3 mois.</li>
+                                <li style="margin: 8px 0;">La liste nominative de ses salariés étrangers soumis à autorisation de travail auxquels il fera appel pour l'exécution de cette commande accompagnée de l'attestation conforme au décret 2007-801 du 11/05/2007.</li>
+                                <li style="margin: 8px 0;">Une attestation (datant de moins de trois mois) d'assurance responsabilité civile professionnelle et décennale à l'égard de tous tiers, y compris l'entreprise, valable tant pendant la durée des prestations qu'après leur achèvement</li>
+                            </ul>
+
+                            <!-- Validité -->
+                            <h3 style="color: #20B2AA; border-bottom: 2px solid #20B2AA; padding-bottom: 8px; margin-top: 30px; font-size: 18px; font-weight: bold;">7. Validité</h3>
+                            <p>Cette commande est nulle si elle n'est pas retournée acceptée, accompagnée des documents demandés dans les 5 jours à compter de sa réception par le prestataire, à moins que ce dernier n'ait commencé à exécuter les prestations objet de la présente, auquel cas ce commencement d'exécution vaut acceptation sans réserve par le prestataire de la présente commande.</p>
+                            <p>Fait à Bordeaux, le <t t-esc="current_date" /></p>
+
+                            <!-- Signatures -->
+                            <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+                                <div style="text-align: center; width: 45%;">
+                                    <div style="height: 100px; border-bottom: 2px solid #20B2AA; display: flex; align-items: center; justify-content: center;">
+                                        <img src="/construction_base/static/src/img/blg_signature.png" style="max-height: 80px; max-width: 150px;" alt="Signature BLG GROUPE"/>
+                                    </div>
+                                    <p style="color: #666;">(Signature et cachet)</p>
+                                    <p style="color: #20B2AA; font-weight: bold;">Contractant général</p>
+                                </div>
+                                <div style="text-align: center; width: 45%;">
+                                    <div style="height: 100px; border-bottom: 2px solid #20B2AA;"></div>
+                                    <p style="color: #666;">(Signature et cachet)</p>
+                                    <p style="color: #20B2AA; font-weight: bold;">L'entreprise</p>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Footer personnalisé -->
+                        <div style="position: fixed; bottom: 0; left: 0; right: 0; background-color: #f8f9fa; border-top: 2px solid #20B2AA; padding: 15px 40px; font-size: 11px; color: #666;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="text-align: left;">
+                                    <p style="margin: 0; font-weight: bold; color: #20B2AA;">BLG GROUPE</p>
+                                    <p style="margin: 2px 0;">44 RUE COMMANDERIE DES TEMPLIERS</p>
+                                    <p style="margin: 2px 0;">33440 AMBARES-ET-LAGRAVE</p>
+                                    <p style="margin: 2px 0;">Siret : 919 180 810 00021</p>
+                                </div>
+                                <div style="text-align: center;">
+                                    <p style="margin: 0; color: #20B2AA; font-weight: bold;">Contrat de sous-traitance</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="margin: 0;">Page <span class="page"></span> / <span class="topage"></span></p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Saut de page -->
+                        <div style="page-break-before: always;"></div>
+
+                        <!-- Page 2 - CONDITIONS GÉNÉRALES -->
+                        <div style="font-family: Arial, sans-serif; font-size: 12px; line-height: 1.4; margin: 0 40px; padding: 20px; min-height: 800px;">
+                            
+                            <!-- Header pour la page 2 -->
+                            <div style="text-align: center; margin-bottom: 30px; border-bottom: 2px solid #20B2AA; padding-bottom: 15px;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                                    <div style="width: 30%; text-align: left;">
+                                        <img src="/construction_base/static/src/img/blg_logo.png" style="max-height: 60px; max-width: 200px;" alt="Logo BLG GROUPE"/>
+                                    </div>
+                                    <div style="width: 40%; text-align: center;">
+                                        <h1 style="color: #20B2AA; font-size: 28px; font-weight: bold; margin: 0;">Conditions générales</h1>
+                                        <p style="color: #666; font-size: 14px; margin: 5px 0;">BLG GROUPE</p>
+                                    </div>
+                                    <div style="width: 30%; text-align: right;">
+                                        <p style="color: #666; font-size: 12px; margin: 0;">Date: <t t-esc="current_date" /></p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- CONDITIONS GÉNÉRALES -->
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Conditions d'achat</h1>
+                            <p>Toutes les conditions générales de vente du prestataire figurant sur ses lettres, avis de réception, devis, factures, bordereaux, ... ne peuvent être admises sans le consentement écrit de l'entreprise. Toute modification éventuelle de la présente commande n'est opposable au contractant général que si elle fait l'objet d'un accord écrit de celui-ci. Toute cession ou sous-traitance de la présente commande est inopposable au contractant général sauf accord écrit préalable de celui-ci. Dans tous les cas l'entreprise restera seule responsable envers le contractant général.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Réglementation du travail - Hygiène et sécurité</h1>
+                            <p>L'entreprise fait son affaire personnelle, sans recours contre le contractant général, de toutes les obligations auxquelles sont tenues les entreprises en matière de protection de la santé, de sécurité et d'environnement. Elle est seule responsable de la sécurité, de quelque façon que ce soit, de tout intervenant sur le chantier.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Matériel et outillage</h1>
+                            <p>Le matériel et l'outillage nécessaires à l'exécution des prestations confiées à l'entreprise sont à la charge de cette dernière. La maintenance durant toute la durée de l'utilisation ainsi que la garde, le contrôle et la surveillance sont à la charge de l'entreprise.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Obligations diverses de l'entreprise</h1>
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">- Étendue du contrat</h3>
+                            <p>L'entreprise reconnaît avoir préalablement pris connaissance des documents et mené les investigations nécessaires pour accomplir sa mission. Dans le cadre de son forfait, elle mettra en œuvre tous les moyens nécessaires (matériels, personnels, ...) à cet effet. L'entreprise déclare être parfaitement informée des obligations du marché principal tant en ce qui concerne ses propres travaux que ceux des autres entreprises et connaître parfaitement l'étendue et la nature de ses obligations. Elle exécute tous les travaux relevant de sa spécialité, même si ceux-ci ont été omis ou insuffisamment décrits dans les documents contractuels. Elle exécute le contrat avec le soin et la compétence d'un professionnel qualité et expérimenté. Elle s'acquitte de ses obligations de manière et dans des délais, tels que le contractant général ne puisse être en défaut au regard de l'une quelconque de ses obligations résultant du marché principal. Elle est tenue d'une obligation de résultat et d'une obligation de conseils et d'information envers le contractant général. A ce titre, elle doit notamment communiquer toutes observations sur tous les documents qui sont portés à sa connaissance et tous éléments susceptibles d'avoir une incidence sur la bonne exécution du contrat.</p>
+                            <p>L'entreprise s'engage à remettre au contractant général dès sa demande tous documents qui lui sont nécessaires. Elle s'engage à respecter les contraintes de travail imposées par le contractant. Elle s'engage à respecter en toutes circonstances les règles de l'art et les normes applicables. Elle s'interdit de remettre des prix, de faire des observations et d'exécuter tout ordre émanant d'autres intervenants que le contractant général. Toute prestation supplémentaire demandée par l'entreprise fera l'objet d'une commande séparée.</p>
+
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Qualification de l'entreprise</h3>
+                            <p>L'entreprise déclare avoir les qualifications, compétences et moyens nécessaires pour exécuter la commande. Elle fournit, si la demande lui est faite par le contractant général, tous certificats ou attestations en justifiant et notamment tous certificats susceptibles d'être requis dans le cadre du marché principal.</p>
+
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Groupement d'entreprises</h3>
+                            <p>Dans l'hypothèse où l'exécution de la commande est confiée à un groupement d'entreprises, chaque membre du groupement est responsable solidairement de la bonne exécution de la commande, quels que soient les travaux qui lui sont confiés. Les entreprises groupées désignent un mandataire commun signataire du marché ayant tous pouvoirs pour les représenter et prendre en leur nom tous les engagements nécessaires. Le groupement d'entreprises et possible et sera obligatoirement établi avant la signature du marché sinon il deviendra caduc. Il est interdit de sous-traiter les travaux au-delà du 1er rang. Dans le cas de la sous-traitance du 1er degré, l'entreprise fournira obligatoirement toutes les pièces administratives, une copie du marché correspondant et la caution de paiement du sous-traitant.</p>
+
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Suivi de chantier</h3>
+                            <p>Les entreprises désignées pour la réalisation des travaux s'interdisent toutes relations directes avec le maître de l'ouvrage. Les éventuels problèmes de définition de prestations et financiers doivent être impérativement exposés au contractant général afin que celui-ci puisse les prendre en compte dans le déroulement du chantier. D'autre part le maître de l'ouvrage s'engage à informer le contractant général de toutes les modifications éventuelles est interdit toute relation directe avec les entreprises titulaire des lots. L'entreprise s'engage à assister à toutes les réunions de coordination et aux rendez-vous de chantier auxquels le contractant général et/ou le client l'aura(ont) invité. La ponctualité de l'entreprise à ces réunions ou rendez-vous est exigée. Le contractant général rédige un compte-rendu des réunions de coordination. Une copie de ces comptes rendus est adressée à l'entreprise ou lui est remise au plus tard lors de la réunion suivante. A défaut de contestation motivée, formulée par écrit au plus tard lors de la réunion suivant la remise du compte-rendu, les dispositions consignées dans ce compte-rendu sont réputées acceptées par l'entreprise. L'absence au rendez-vous de coordination sans avoir prévenu 48 heures à l'avance fera l'objet d'une pénalité de 76.00 € H.T. systématiquement.</p>
+                            <p>Jusqu'à la réception, l'entreprise doit la protection et la surveillance de tous ses ouvrages, de tous ses approvisionnements et de son matériel, qu'ils soient en œuvre, stockés en magasin ou sur le chantier. L'entreprise ne peut en aucun cas prétendre à un remboursement notamment au titre du compte prorata en cas de détérioration, pertes, vols, etc.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Délais et pénalités de retard</h1>
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Retenues sur situations mensuelles et/ou décompte définitif</h3>
+                            <p>Les prestations doivent être exécutées dans les conditions de délai indiquées dans la Commande. Le respect des délais prévus au planning contractuel constitue une obligation essentielle de l'entreprise qui s'engage à respecter tant les dates de démarrage et de terminaison que les délais intermédiaires correspondant aux différents ouvrages ou tâches composant ses travaux. Les périodes de congés ne sont pas une cause de suspension de délai. L'entreprise doit maintenir pendant ces périodes le personnel pour assurer le déroulement des travaux conformément au planning contractuel en vigueur. Le délai d'exécution prend en compte toutes les sujétions y compris les intempéries. En cas d'inobservation de ces délais y compris dans le cadre des périodes de levées de réserves et de GPA, l'entreprise supportera de plein droit des pénalités de retard fixés, sauf dispositions contraires dans la Commande, à 200 euros HT par jour calendaire de retard, qui seront retenues de plein droit sur les paiements. L'application de ces pénalités ne fera pas obstacle à la mise à sa charge du préjudice réel subi de son fait par le contractant général. De plus, le contractant général pourra se prévaloir du retard constaté pour résilier la présente commande, dans les conditions de l'article 8 ci-dessous.</p>
+
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Pénalités diverses</h3>
+                            <h4 style="color: #20B2AA; margin-top: 15px; font-size: 16px; font-weight: bold;">Pénalités de retard</h4>
+                            <p>Suivant article 5.1</p>
+                            <h4 style="color: #20B2AA; margin-top: 15px; font-size: 16px; font-weight: bold;">Pénalités sur infractions aux prescriptions de chantier :</h4>
+                            <p>Dans le cas où les prescriptions ci-dessous ne seraient pas observées, il sera fait application de pénalités indépendantes de celles visées aux articles 5.1 et avec lesquelles elles se cumulent. Ces pénalités interviendront de plein droit, sur la simple constatation par BLG GROUPE des infractions, et après notification écrite d'avoir à exécuter la prescription au plus tard le lendemain.</p>
+                            <p>Elles seront déduites des situations mensuelles et/ou du décompte descriptif</p>
+                            <ul style="margin: 15px 0; padding-left: 25px;">
+                                <li style="margin: 8px 0;">Retard dans la remise ou la diffusion de documents nécessaires à l'exécution des travaux (plans d'exécution, notes de calculs, notes techniques, études de détail, plans de synthèse, certificats, procès-verbaux, photographies d'avancement, etc.) : 150.00 € HT /jour</li>
+                                <li style="margin: 8px 0;">Non-respect des prescriptions relatives à la sécurité, à l'hygiène, à la signalisation du chantier : 80.00 € HT / jour</li>
+                                <li style="margin: 8px 0;">Retard dans la production de justificatifs et/ou prévisions de prix pour ouvrages non prévus : 150.00 € HT / jour</li>
+                                <li style="margin: 8px 0;">Retard dans la présentation sur le chantier des prototypes, d'éléments de construction, d'échantillons : 50.00 € HT / jour</li>
+                                <li style="margin: 8px 0;">Retard dans le nettoyage du chantier : 80.00 € HT / jour</li>
+                            </ul>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Modalités de règlement</h1>
+                            <p><strong style="color: #20B2AA;">6.1. Modalités de paiement du bon de commande initial</strong></p>
+                            <p>Le règlement sera effectué par virement bancaire suivant l'échéancier de paiement sous réserve de l'adéquation de celui-ci avec l'avancement réel du chantier.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Garanties, responsabilités et assurances</h1>
+                            <p>L'entreprise fait son affaire de toute réclamation concernant l'utilisation de brevets ou de licences, de sorte que le contractant général ne puisse être recherchée, ni les prestations arrêtées ou interrompues. Sauf accord écrit préalable du contractant général, elle s'interdit d'utiliser ou de communiquer à des tiers toute étude ou document qu'il aurait établi ou dont il aurait eu connaissance pour exécuter sa prestation. D'une façon générale, l'entreprise garantit le contractant général contre tout recours de tiers consécutif à un préjudice provoqué par la réalisation de ses prestations. Elle s'oblige à souscrire une police d'assurance couvrant le risque de responsabilité civile professionnelle et décennale à l'égard de tout tiers, y compris l'entreprise, avec une garantie suffisante pour la nature et l'importance du risque correspondant aux prestations qui lui sont confiées.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Résiliation</h1>
+                            <p>La présente commande peut être résiliée au bénéfice du contractant général, après mise en demeure restée infructueuse pendant 8 jours pour inexécution par l'entreprise d'une de ses obligations contractuelles et ce, sans préjudice des dommages-intérêts. Dans tous les cas de résiliation, le contractant général notifiera à l'entreprise défaillante, par lettre recommandée avec accusé de réception, la date à partir de laquelle il effectuera en présence d'un mandataire de l'entreprise, un relevé de l'état d'avancement de la prestation. En l'absence d'un mandataire de l'entreprise, le relevé qui sera effectué par le contractant général sera réputé contradictoire et opposable à l'entreprise. Le contractant général aura la faculté de désigner une nouvelle entreprise pour poursuivre les prestations interrompues. Dans tous les cas, les charges supplémentaires résultant de l'intervention de l'entrepreneur nouvellement désigné ainsi que les frais de gestion et de pilotage liés à cette substitution seront à la charge de l'entreprise défaillante et ce, qu'il s'agisse du prix ou des délais, cette dernière précision étant donnée à titre indicatif et non limitatif.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Règlement des litiges</h1>
+                            <p>Tout différend, quelles qu'en soient la nature et la date de survenance, relatif à l'interprétation, l'exécution ou la résiliation de la présente commande, et qui n'aurait pu trouver de solution amiable, sera soumis à l'appréciation des tribunaux de Paris. En cas de litige, la loi applicable sera la loi française. Cependant, la présente clause attributive de juridiction demeurera sans effet en cas d'appel en garantie formé par le contractant général à l'encontre de l'entreprise à la suite d'une procédure judiciaire principale.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Réception</h1>
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Préparation à la réception</h3>
+                            <p>L'exécution des travaux doit aboutir à la livraison au Maître d'Ouvrage au jour de la réception, d'un ouvrage achevé dans les conditions de qualité prévues par les DTU ou les règles de l'art. Le contractant général peut procéder, avant la réception, à des visites détaillées et à l'établissement de listes de travaux à reprendre. Le contractant général établit également la liste des documents que l'entreprise devra lui remettre avant la réception.</p>
+
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Réception</h3>
+                            <p>Conformément aux dispositions de l'article 1792.6 du Code Civil, la réception est l'acte par lequel le Maître d'Ouvrage déclare accepter l'ouvrage avec ou sans réserve. Cette réception, qui est unique, ne libère pas l'entreprise de ses obligations contractuelles. Il sera ainsi procédé sur convocation du contractant général à une visite de réception avec l'entreprise. Celle-ci entrainera l'établissement de liste de travaux à reprendre. Ces malfaçons, omissions et autres imperfections constatées seront précisées au travers d'un procès-verbal qui devra être signé et tamponné.</p>
+
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Réserves de réception et prise de possession</h3>
+                            <p>Les réserves mentionnées par le Maître d'Ouvrage au procès-verbal de réception ou par les occupants lors de la prise de possession sont transmises à l'entreprise et lui sont opposables. La transmission de ces listes de réserves de réception et / ou prise de possession n'a pas pour effet d'annuler les demandes de travaux à reprendre adressées à l'entreprise en application de l'article 10.1. Les éventuelles réserves ou observations formulées par le contrôleur technique ou par une autorité administrative compétente sont également opposables à l'entreprise.</p>
+
+                            <h3 style="color: #20B2AA; margin-top: 20px; font-size: 18px; font-weight: bold;">Levées des réserves</h3>
+                            <p>L'entreprise effectue elle-même les travaux nécessaires à la levée des réserves dans un délai de 15 jours maximum à compter de la réception. A la fin de cette période, il sera programmé à l'initiative du contractant général une visite sur les lieux des ouvrages afin d'en constater la levée des réserves émises lors de la réception et de sa période de préparation. Cette visite de levée des réserves constatant l'achèvement des travaux sera précisée au travers d'un procès-verbal remis à l'entreprise. Les conditions pour le non-respect de cette clause sont décrites au chapitre 5.</p>
+
+                            <h1 style="color: #20B2AA; margin-top: 30px; font-size: 24px; font-weight: bold; text-align: center;">Relations entre parties</h1>
+                            <p>Préalablement à la production de ce bon de commande, le MAITRE D'OUVRAGE, que vous avez rencontré lors d'une réunion, a signé le contrat de construction le liant à BLG GROUPE et a, de fait, agréé votre entreprise comme sous-traitant.</p>
+
+                        </div>
+
+                        <!-- Footer personnalisé pour la page 2 -->
+                        <div style="position: fixed; bottom: 0; left: 0; right: 0; background-color: #f8f9fa; border-top: 2px solid #20B2AA; padding: 15px 40px; font-size: 11px; color: #666;">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="text-align: left;">
+                                    <p style="margin: 0; font-weight: bold; color: #20B2AA;">BLG GROUPE</p>
+                                    <p style="margin: 2px 0;">44 RUE COMMANDERIE DES TEMPLIERS</p>
+                                    <p style="margin: 2px 0;">33440 AMBARES-ET-LAGRAVE</p>
+                                    <p style="margin: 2px 0;">Siret : 919 180 810 00021</p>
+                                </div>
+                                <div style="text-align: center;">
+                                    <p style="margin: 0; color: #20B2AA; font-weight: bold;">Conditions générales</p>
+                                </div>
+                                <div style="text-align: right;">
+                                    <p style="margin: 0;">Page <span class="page"></span> / <span class="topage"></span></p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
-                </div>
-                <hr/>
-
-                <!-- Section 3 : Échéancier de paiement -->
-                <div class="section-title">3 - Échéancier de paiement</div>
-                <div class="content-section">
-                    Le prix est payable selon l’échéancier suivant :
-                    <table class="payment-table">
-                        <thead>
-                            <tr>
-                                <th>Avancement chantier</th>
-                                <th>Facturation</th>
-                                <th>Montant (€) HT + TTC</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>30%</td><td>30%</td>
-                                <td class="highlight"><t t-esc="'%.0f' % (doc.lot_id.price * 0.3)"/></td>
-                            </tr>
-                            <tr>
-                                <td>70%</td><td>100%</td>
-                                <td class="highlight"><t t-esc="'%.0f' % (doc.lot_id.price * 0.7)"/></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                    <div style="margin-top:6px;font-size:10pt;">
-                      La gestion financière est assurée en compte tiers séquestré. Le PV de réception signé déclenche la libération des fonds (max 30 jours après réception des justificatifs signés).
-                    </div>
-                </div>
-
-                <hr style="page-break-after: always;"/>
-
-                <!-- Section 4 : Délais -->
-                <div class="section-title">4 - Délais</div>
-                <div class="content-section">Suivant planning prévisionnel en annexe, tout planning remis par BLG GROUPE en cours d’exécution du marché aura valeur contractuelle.</div>
-
-                <!-- Section 5 : Documents contractuels et annexes -->
-                <div class="section-title">5 - Documents contractuels et annexes</div>
-                <div class="content-section">
-                    <ul>
-                        <li>La présente commande et le cas échéant ses annexes : plans d’exécution, notice descriptive, etc.</li>
-                        <li>Les « conditions générales de commande jointes »</li>
-                    </ul>
-                </div>
-
-                <!-- Section 6 : Documents à transmettre -->
-                <div class="section-title">6 - Documents à transmettre à BLG GROUPE</div>
-                <div class="content-section">
-                    Le prestataire remet à la signature et tous les 6 mois :
-                    <ul>
-                        <li>Extrait Kbis actualisé</li>
-                        <li>Attestations sociales &amp; d'assurances (valide sur toute la durée du chantier)</li>
-                        <li>Attestations de mise à jour et conformité réglementaire</li>
-                    </ul>
-                </div>
-
-                <!-- Section 7 : Validité -->
-                <div class="section-title">7 - Validité</div>
-                <div class="content-section">
-                    Cette commande est nulle si non retournée acceptée, accompagnée des documents demandés sous 5 jours.
-                    Tout commencement d’exécution vaut acceptation sans réserve.
-                </div>
-
-                <!-- Signatures -->
-                <div style="margin-top:40px; text-align: center;">
-                    <div>Fait à Bordeaux, le <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/></div>
-                </div>
-                <div class="signature-row">
-                    <div class="signature-col">
-                        L'entreprise<br/>Pour BLG GROUPE<br/><br/><br/>
-                        <div style="border-top:1px solid #000; margin-top:30px; font-size:10pt;">(signature et cachet)</div>
-                    </div>
-                    <div class="signature-col">
-                        En 2 exemplaires originaux
-                    </div>
-                    <div class="signature-col">
-                        Le prestataire<br/><br/><br/>
-                        <div style="border-top:1px solid #000; margin-top:30px; font-size:10pt;">(signature et cachet)</div>
-                    </div>
-                </div>
-
                 </t>
             </t>
         </template>
-
-        <!-- Report Action -->
-        <record id="action_subcontractor_contract_report" model="ir.actions.report">
-            <field name="name">Contrat de sous-traitance</field>
-            <field name="model">lot.document.wizard</field>
-            <field name="report_type">qweb-pdf</field>
-            <field name="report_name">construction_base.subcontractor_contract_template</field>
-            <field name="report_file">construction_base.subcontractor_contract_template</field>
-            <field name="print_report_name">'Contrat_sous_traitance_%s' % (object.lot_id.name or 'N_A').replace('/', '_')</field>
-        </record>
     </data>
 </odoo>

@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Extension des paramètres de configuration -->
+        <record id="view_construction_config_settings" model="ir.ui.view">
+            <field name="name">res.config.settings.form.construction</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//form" position="inside">
+
+                    <!-- Section Sous-traitants -->
+                    <div class="app_settings_block" data-string="Sous-traitants" string="Sous-traitants" data-key="construction_contact_extension">
+                        <h2>Gestion des Sous-traitants</h2>
+
+                        <!-- Configuration générale -->
+                        <div class="row mt16 o_settings_container">
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                    <!-- Note: Champ à créer dans le modèle res.config.settings -->
+                                    <!-- <field name="module_construction_contact_extension"/> -->
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <span class="o_form_label">Module Construction Contact Extension</span>
+                                    <div class="text-muted">
+                                        Active la gestion avancée des sous-traitants et de leurs documents
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuration des documents -->
+                        <h3>Documents Administratifs</h3>
+                        <div class="row mt16 o_settings_container">
+
+                            <!-- Validation automatique -->
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                    <!-- <field name="enable_auto_document_validation"/> -->
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <span class="o_form_label">Validation Automatique</span>
+                                    <div class="text-muted">
+                                        Active la validation automatique des documents selon des règles prédéfinies
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Archivage automatique -->
+                            <div class="col-12 col-lg-6 o_setting_box">
+                                <div class="o_setting_left_pane">
+                                    <!-- <field name="enable_auto_archiving"/> -->
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <span class="o_form_label">Archivage Automatique</span>
+                                    <div class="text-muted">
+                                        Archive automatiquement les documents expirés après X jours
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Note: Configuration temporairement simplifiée -->
+                        <div class="alert alert-info">
+                            <strong>Note :</strong> La configuration complète sera disponible après l'installation du module.
+                        </div>
+                    </div>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</odoo>

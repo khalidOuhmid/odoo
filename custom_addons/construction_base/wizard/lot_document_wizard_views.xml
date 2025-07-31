@@ -1,0 +1,159 @@
+<odoo>
+    <!-- Vue principale du wizard -->
+    <record id="view_lot_document_wizard_form" model="ir.ui.view">
+        <field name="name">lot.document.wizard.form</field>
+        <field name="model">lot.document.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Gérer les documents du lot">
+                <header>
+                    <button name="action_preview_contract" 
+                            string="👁️ Prévisualiser contrat" 
+                            type="object" 
+                            class="btn-info"
+                            icon="fa-eye"/>
+                    <button name="action_show_preview_popup" 
+                            string="👁️ Aperçu rapide" 
+                            type="object" 
+                            class="btn-warning"
+                            icon="fa-eye"
+                            invisible="show_preview"/>
+                    <button name="action_generate_contract" 
+                            string="📋 Générer contrat final" 
+                            type="object" 
+                            class="btn-success"
+                            icon="fa-file-text-o"
+                            invisible="not preview_contract_pdf"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1>📁 Gestion des documents du lot</h1>
+                        <p class="text-muted">Gérez les documents à envoyer au sous-traitant pour signature sur le portail</p>
+                    </div>
+
+                    <group>
+                        <group string="📋 Informations générales">
+                            <field name="lot_id" readonly="1"/>
+                            <field name="chantier_id" readonly="1"/>
+                            <field name="subcontractor_id" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="📄 Contrat de sous-traitance" name="contract">
+                            <group>
+                                <field name="document_subcontractor_contract" 
+                                       filename="Contrat_de_sous_traitance.pdf"
+                                       help="Contrat de sous-traitance à envoyer au sous-traitant"/>
+                            </group>
+                            
+                            <!-- Section Preview -->
+                            <div class="alert alert-info" invisible="not preview_contract_pdf">
+                                <h4><i class="fa fa-eye"/> Aperçu généré</h4>
+                                <p>Un aperçu du contrat a été généré. Vous pouvez le télécharger pour vérifier le contenu avant de créer le contrat final.</p>
+                            </div>
+                            
+                            <group string="👁️ Aperçu du contrat" invisible="not preview_contract_pdf">
+                                <field name="preview_contract_pdf" widget="binary" filename="preview_filename"/>
+                                <field name="preview_filename" invisible="1"/>
+                            </group>
+                        </page>
+
+                        <page string="📋 CCTP" name="cctp">
+                            <group>
+                                <field name="document_cctp" 
+                                       filename="CCTP.pdf"
+                                       help="Cahier des Clauses Techniques Particulières"/>
+                            </group>
+                        </page>
+
+                        <page string="📅 Planning général" name="general_planning">
+                            <group>
+                                <field name="document_general_planning" 
+                                       filename="Planning_general.pdf"
+                                       help="Planning général du chantier"/>
+                            </group>
+                        </page>
+
+                        <page string="👷 Planning sous-traitant" name="subcontractor_planning">
+                            <group>
+                                <field name="document_subcontractor_planning" 
+                                       filename="Planning_sous_traitant.pdf"
+                                       help="Planning spécifique au sous-traitant"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                
+                <footer>
+                    <button name="action_save_documents" 
+                            string="💾 Enregistrer" 
+                            type="object" 
+                            class="btn-primary"/>
+                    <button name="action_send_contract_email" 
+                            string="✉️ Envoyer email au sous-traitant" 
+                            type="object" 
+                            class="btn-info"
+                            invisible="not document_subcontractor_contract"/>
+                    <button string="Annuler" 
+                            class="btn-secondary" 
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Vue spéciale pour la preview HTML -->
+    <record id="view_lot_document_wizard_preview" model="ir.ui.view">
+        <field name="name">lot.document.wizard.preview</field>
+        <field name="model">lot.document.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Aperçu du contrat de sous-traitance" create="false" edit="false">
+                <header>
+                    <button name="action_generate_contract" 
+                            string="📋 Générer contrat final" 
+                            type="object" 
+                            class="btn-success"
+                            icon="fa-file-text-o"/>
+                    <button string="Fermer" 
+                            class="btn-secondary" 
+                            special="cancel"/>
+                </header>
+                
+                <sheet>
+                    <div class="oe_title">
+                        <h1>👁️ Aperçu du contrat de sous-traitance</h1>
+                        <p class="text-muted">Vérifiez le contenu du contrat avant de le générer</p>
+                    </div>
+
+                    <group>
+                        <group string="📋 Informations générales">
+                            <field name="lot_id" readonly="1"/>
+                            <field name="chantier_id" readonly="1"/>
+                            <field name="subcontractor_id" readonly="1"/>
+                            <field name="specialty_description" readonly="1"/>
+                        </group>
+                    </group>
+
+                    <!-- Aperçu HTML -->
+                    <div class="alert alert-info">
+                        <h4><i class="fa fa-eye"/> Aperçu du contrat</h4>
+                        <p>Voici l'aperçu du contrat de sous-traitance. Vérifiez le contenu avant de générer le PDF final.</p>
+                    </div>
+                    
+                    <field name="preview_html" widget="html" readonly="1"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action pour la preview -->
+    <record id="action_lot_document_wizard_preview" model="ir.actions.act_window">
+        <field name="name">Aperçu du contrat de sous-traitance</field>
+        <field name="res_model">lot.document.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_lot_document_wizard_preview"/>
+        <field name="target">new</field>
+        <field name="context">{'show_preview': True}</field>
+    </record>
+</odoo> 

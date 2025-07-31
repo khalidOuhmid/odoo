@@ -1,82 +1,48 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data>
-        <record id="email_template_document_expiry" model="mail.template">
-        <field name="name">Facture chantier prête</field>
-        <field name="model_id" ref="construction_base.model_construction_invoice_schedule"/>
-        <field name="subject">Votre facture pour le chantier {{ object.chantier_id.name }} est prête</field>
-        <field name="email_from">{{ (user.email_formatted or user.company_id.email_formatted) }}</field>
-        <field name="email_to">{{ object.chantier_id.client.email }}</field>
-        <field name="auto_delete" eval="True"/>
-        <field name="lang">{{ object.chantier_id.client.lang }}</field>
-        <field name="body_html" type="html"><![CDATA[
-<div style="font-family: Arial, sans-serif; font-size: 12px; color: #222222; background-color: #ffffff;">
-    <p>Bonjour <t t-out="object.chantier_id.client.name or ''"></t>,</p>
-    <p>
-        Suite à l'avancement du chantier <strong><t t-out="object.chantier_id.name or ''"></t></strong>, une nouvelle facture a été générée.
-    </p>
-    <p>
-        <strong>Détails de la facture :</strong>
-        <ul>
-            <li><strong>Numéro :</strong> <t t-out="object.invoice_id.name or ''"></t></li>
-            <li><strong>Montant :</strong> <t t-out="object.invoice_id.amount_total or ''"></t> <t t-out="object.invoice_id.currency_id.symbol or ''"></t></li>
-            <li><strong>Étape :</strong> <t t-out="object.name or ''"></t></li>
-        </ul>
-    </p>
-    <p>
-        La facture est jointe à cet e-mail. Vous pouvez également la consulter et la régler depuis votre espace client.
-    </p>
-    <p>Cordialement,<br/>L'équipe BLG Groupe</p>
-</div>
-        ]]></field>
-        <field name="report_template_ids" eval="[(6, 0, [ref('account.report_invoice_with_payments')])]"/>
-    </record>
+    <data noupdate="1">
 
-    <record id="email_template_planning" model="mail.template">
-        <field name="name">Notification de Planning Chantier</field>
-        <field name="model_id" ref="construction_base.model_construction_planning_task"/>
-        <field name="subject">Planning Mis à Jour pour le Chantier {{ object.chantier_id.name }}</field>
-        <field name="email_from">{{ (user.email_formatted or user.company_id.email_formatted) }}</field>
-        <field name="email_to">{{ object.subcontractor_id.email }}</field>
-        <field name="lang">{{ object.subcontractor_id.lang }}</field>
-        <field name="body_html" type="html"><![CDATA[
-<div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
-    <p>Bonjour <t t-out="object.subcontractor_id.name or ''"></t>,</p>
-    <p>Voici le planning mis à jour pour le chantier <strong><t t-out="object.chantier_id.name or ''"></t></strong>.</p>
-    <ul>
-        <li>Tâche : <t t-out="object.name or ''"></t></li>
-        <li>Lot : <t t-out="object.lot_id.name or ''"></t></li>
-        <li>Dates : Du <t t-out="object.start_date.strftime('%d/%m/%Y') if object.start_date else ''"></t> au <t t-out="object.end_date.strftime('%d/%m/%Y') if object.end_date else ''"></t></li>
-        <li>Statut : <t t-out="object.status or ''"></t></li>
-    </ul>
-    <p>Le planning global est joint en PDF.</p>
-    <p>Cordialement,<br/><t t-out="user.name or ''"></t></p>
-</div>
-        ]]></field>
-        <field name="attachment_ids" eval="[(0, 0, {'name': 'Planning.pdf', 'res_model': 'construction.chantier', 'res_id': object.chantier_id.id})]"/>
-    </record>
+        <!-- Template email pour contrats de sous-traitance -->
+        <record id="email_template_subcontractor_contract" model="mail.template">
+            <field name="name">Contrat de sous-traitance</field>
+            <field name="model_id" ref="model_construction_subcontractor_contract"/>
+            <field name="subject">Contrat de sous-traitance - {{ object.chantier_id.name }}</field>
+            <field name="email_from">{{ user.email_formatted }}</field>
+            <field name="email_to">{{ object.subcontractor_id.email }}</field>
+            <field name="partner_to">{{ object.subcontractor_id.id }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Bonjour {{ object.subcontractor_id.name }},</p>
+                    
+                    <p>Veuillez trouver ci-joint votre contrat de sous-traitance pour le chantier <strong>{{ object.chantier_id.name }}</strong>.</p>
+                    
+                    <div style="margin: 20px 0px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #007bff;">
+                        <h3 style="margin-top: 0px;">📋 Détails du contrat</h3>
+                        <ul>
+                            <li><strong>Numéro :</strong> {{ object.contract_number }}</li>
+                            <li><strong>Chantier :</strong> {{ object.chantier_id.name }}</li>
+                            <li><strong>Adresse :</strong> {{ object.chantier_id.address }}</li>
+                            <li><strong>Montant :</strong> {{ object.total_amount }} {{ object.currency_id.symbol }}</li>
+                            <li><strong>Date de début :</strong> {{ object.start_date }}</li>
+                        </ul>
+                    </div>
+                    
+                    <p>Vous pouvez également consulter et signer le contrat en ligne :</p>
+                    <p style="text-align: center; margin: 20px 0px;">
+                        <a href="{{ object.portal_url }}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;">
+                            🌐 Accéder au portail
+                        </a>
+                    </p>
+                    
+                    <p>Pour toute question concernant ce contrat, n'hésitez pas à nous contacter.</p>
+                    
+                    <p>Cordialement,<br/>
+                    {{ user.company_id.name }}</p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+            <field name="attachment_ids" eval="[(6, 0, [])]"/>
+        </record>
 
-    <record id="email_template_subcontractor_contract_upload" model="mail.template">
-        <field name="name">Notification de Téléversement Sous-traitant</field>
-        <field name="model_id" ref="construction_base.model_construction_subcontractor"/>
-        <field name="subject">Nouveau Document Téléversé - {{ object.name }}</field>
-        <field name="email_from">{{ (user.email_formatted or user.company_id.email_formatted) }}</field>
-        <field name="email_to">{{ object.email }}</field>
-        <field name="lang">{{ object.lang }}</field>
-        <field name="body_html" type="html"><![CDATA[
-<div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
-    <p>Bonjour <t t-out="object.name or ''"></t>,</p>
-    <p>Un nouveau document a été téléversé pour votre chantier.</p>
-    <p>Détails :</p>
-    <ul>
-        <li>Nom du fichier : <t t-out="object.document_name or ''"></t></li>
-        <li>Date : <t t-out="object.upload_date.strftime('%d/%m/%Y %H:%M') if object.upload_date else ''"></t></li>
-        <li>Utilisateur : <t t-out="user.name or ''"></t></li>
-    </ul>
-    <p>Vous pouvez accéder à ce document via votre portail.</p>
-    <p>Cordialement,<br/><t t-out="user.name or ''"></t></p>
-</div>
-        ]]></field>
-    </record>
     </data>
 </odoo>

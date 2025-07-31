@@ -1,0 +1,341 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Template pour les styles CSS des documents -->
+    <template id="document_card_styles">
+        <style>
+            .o_document_card {
+                transition: box-shadow 0.22s cubic-bezier(.4,0,.2,1), transform 0.13s;
+                border-radius: 14px;
+                overflow: hidden;
+                box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+                border: none;
+                background: #fff;
+            }
+            .o_document_card:hover {
+                transform: translateY(-2px) scale(1.01);
+                box-shadow: 0 8px 32px rgba(0,0,0,0.13);
+            }
+            .o_document_card .card-header {
+                font-size: 1.13rem;
+                font-weight: 700;
+                background: linear-gradient(90deg, #f8fafc 0%, #e3f0ff 100%);
+                border-bottom: none;
+                border-radius: 14px 14px 0 0;
+                padding: 1.1rem 1.7rem;
+                letter-spacing: 0.01em;
+            }
+            .o_document_card .card-title {
+                font-size: 1.08em;
+                letter-spacing: 0.01em;
+            }
+            .o_document_card .card-body {
+                padding: 1.5rem 1.5rem 1.2rem 1.5rem;
+                background: #f9fbfd;
+            }
+            .o_document_dashboard {
+                background: #f8fafc;
+                border-radius: 12px;
+                padding: 1.2rem 1.5rem 1rem 1.5rem;
+                margin-bottom: 2rem;
+                box-shadow: 0 2px 8px #007bff11;
+            }
+        </style>
+    </template>
+
+    <!-- Vue pour ajouter les champs de sous-traitant -->
+    <record id="view_partner_form_subcontractor_fields" model="ir.ui.view">
+        <field name="name">res.partner.form.subcontractor.fields</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <field name="function" position="after">
+                <field name="is_subcontractor" widget="boolean_toggle"/>
+                <field name="speciality_ids" widget="many2many_tags"
+                       options="{'no_create': False}"
+                       invisible="not is_subcontractor"
+                       required="is_subcontractor"/>
+
+                <!-- Champs de compatibilité (invisibles) -->
+            </field>
+        </field>
+    </record>
+
+    <!-- Vue pour l'onglet Documents modernisé -->
+    <record id="view_partner_form_documents_tab_modern" model="ir.ui.view">
+        <field name="name">res.partner.form.documents.tab.modern</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//sheet/notebook" position="inside">
+                <page string="Documents" invisible="not is_subcontractor">
+
+                    <field name="document_health_score" invisible="1"/>
+                    <field name="document_completion_rate" invisible="1"/>
+                    <field name="documents_complete_modern" invisible="1"/>
+                    <field name="has_expired_documents" invisible="1"/>
+                    <field name="has_expiring_documents" invisible="1"/>
+                    <field name="next_document_expiry" invisible="1"/>
+                    <field name="upload_token" invisible="1"/>
+                    <field name="token_expiration" invisible="1"/>
+
+                    <!-- Dashboard avec indicateurs modernes -->
+                    <div class="o_document_dashboard mb-4">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 class="mb-1">
+                                        <field name="document_completion_rate" widget="progressbar" readonly="1"/>
+                                    </h4>
+                                    <small class="text-muted">Complétude</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 class="mb-1">
+                                        <field name="document_health_score" widget="progressbar" readonly="1"/>
+                                    </h4>
+                                    <small class="text-muted">Score Santé</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 class="mb-1">
+                                        <field name="reliability_score" widget="progressbar" readonly="1"/>
+                                    </h4>
+                                    <small class="text-muted">Fiabilité</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h4 class="mb-1 text-primary">
+                                        <field name="active_projects_count" readonly="1"/>
+                                    </h4>
+                                    <small class="text-muted">Projets Actifs</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Actions rapides -->
+                        <div class="mt-3 d-flex gap-2">
+                            <button name="action_send_document_request"
+                                    type="object"
+                                    string="📧 Envoyer Rappel"
+                                    class="btn btn-primary btn-sm"
+                                    groups="base.group_system,construction_contact_extension.group_subcontractor_manager"/>
+
+                            <button name="action_generate_portal_link"
+                                    type="object"
+                                    string="🔗 Générer Lien Portal"
+                                    class="btn btn-secondary btn-sm"
+                                    groups="base.group_system,construction_contact_extension.group_subcontractor_manager"/>
+
+                            <button name="action_check_all_documents"
+                                    type="object"
+                                    string="🔍 Vérifier Documents"
+                                    class="btn btn-info btn-sm"
+                                    groups="base.group_system,construction_contact_extension.group_document_validator"/>
+
+                            <button name="action_view_document_statistics"
+                                    type="object"
+                                    string="📊 Statistiques"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    groups="base.group_system,construction_contact_extension.group_subcontractor_manager"/>
+                        </div>
+
+                        <!-- Notifications -->
+                        <div class="mt-3">
+                            <div class="form-check">
+                                <field name="disable_notifications" widget="boolean_toggle"/>
+                                <span class="ms-2">Désactiver les notifications automatiques</span>
+                            </div>
+                            <field name="notification_preferences" class="mt-2"/>
+                        </div>
+                    </div>
+
+                    <!-- Alertes -->
+                    <div class="alert alert-danger d-flex align-items-center mb-3"
+                         invisible="not has_expired_documents">
+                        <i class="fa fa-exclamation-triangle fa-2x me-3"/>
+                        <div>
+                            <h5 class="alert-heading mb-1">Documents expirés</h5>
+                            <p class="mb-0">Ce sous-traitant a des documents expirés qui nécessitent un renouvellement immédiat.</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-warning d-flex align-items-center mb-3"
+                         invisible="not has_expiring_documents">
+                        <i class="fa fa-clock fa-2x me-3"/>
+                        <div>
+                            <h5 class="alert-heading mb-1">Documents expirant bientôt</h5>
+                            <p class="mb-0">
+                                Certains documents expirent bientôt.
+                                <span invisible="not next_document_expiry">
+                                    Prochaine expiration : <field name="next_document_expiry" readonly="1"/>
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <!-- Liste des documents modernes -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="mb-0">Documents</h5>
+                            <button name="action_add_mandatory_documents"
+                                    type="object"
+                                    string="➕ Ajouter Documents Obligatoires"
+                                    class="btn btn-outline-primary btn-sm"
+                                    groups="base.group_system,construction_contact_extension.group_subcontractor_manager"/>
+                        </div>
+
+                        <field name="document_ids" nolabel="1"
+                               context="{'default_partner_id': id}">
+                            <list editable="bottom" create="true" delete="true">
+                                <field name="document_type_id" required="1"/>
+                                <field name="state" widget="badge"
+                                       decoration-success="state == 'valid'"
+                                       decoration-warning="state == 'expiring'"
+                                       decoration-danger="state in ['expired', 'rejected']"
+                                       decoration-info="state == 'to_check'"
+                                       decoration-muted="state == 'missing'"/>
+                                <field name="filename" readonly="1"/>
+                                <field name="upload_date" readonly="1"/>
+                                <field name="expiry_date"/>
+                                <field name="days_until_expiry" readonly="1"
+                                       decoration-danger="days_until_expiry &lt; 0"
+                                       decoration-warning="days_until_expiry &lt;= 30 and days_until_expiry &gt;= 0"/>
+                                <field name="validated_by" readonly="1"/>
+                                <field name="file_size_human" readonly="1"/>
+
+                                <!-- Actions sur les documents -->
+                                <button name="action_validate" type="object"
+                                        string="Valider"
+                                        class="btn btn-sm btn-success"
+                                        icon="fa-check"
+                                        invisible="state != 'to_check'"
+                                        groups="base.group_system,construction_contact_extension.group_document_validator"/>
+
+                                <button name="action_reject" type="object"
+                                        string="Rejeter"
+                                        class="btn btn-sm btn-danger"
+                                        icon="fa-times"
+                                        invisible="state not in ['to_check', 'valid']"
+                                        groups="base.group_system,construction_contact_extension.group_document_validator"/>
+
+                                <button name="action_download" type="object"
+                                        string="Télécharger"
+                                        class="btn btn-sm btn-outline-primary"
+                                        icon="fa-download"
+                                        invisible="not file_content"/>
+
+                                <button name="action_view_archives" type="object"
+                                        string="Historique"
+                                        class="btn btn-sm btn-outline-secondary"
+                                        icon="fa-history"/>
+                            </list>
+                        </field>
+                    </div>
+
+                    <!-- Champs de compatibilité (invisibles mais conservés) -->
+                    <group invisible="1" string="Compatibilité (Legacy)">
+                        <field name="document_identity_card_status" readonly="1"/>
+                        <field name="document_URSSAF_status" readonly="1"/>
+                        <field name="document_KBIS_status" readonly="1"/>
+                        <field name="document_insurance_status" readonly="1"/>
+                        <field name="document_RIB_status" readonly="1"/>
+                    </group>
+
+
+
+                    <!-- Archives -->
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Archives</h5>
+                            <button name="action_view_document_archives"
+                                    type="object"
+                                    string="Voir Toutes les Archives"
+                                    class="btn btn-outline-secondary btn-sm"
+                                    groups="base.group_system,construction_contact_extension.group_subcontractor_manager"/>
+                        </div>
+
+                        <field name="document_archive_ids" nolabel="1" readonly="1">
+                            <list create="false" delete="false" limit="5">
+                                <field name="document_type_id"/>
+                                <field name="archive_reason" widget="badge"/>
+                                <field name="archived_date"/>
+                                <field name="days_since_archived"/>
+                                <field name="can_be_restored" widget="boolean"/>
+
+                                <button name="action_restore" type="object"
+                                        string="Restaurer"
+                                        class="btn btn-sm btn-outline-success"
+                                        icon="fa-undo"
+                                        invisible="not can_be_restored"
+                                        groups="base.group_system"/>
+                            </list>
+                        </field>
+                    </div>
+
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue liste des sous-traitants -->
+    <record id="view_partner_subcontractor_list" model="ir.ui.view">
+        <field name="name">res.partner.subcontractor.list</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Sous-traitants">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="speciality_ids" widget="many2many_tags"/>
+                <field name="document_completion_rate" widget="progressbar"/>
+                <field name="document_health_score" widget="progressbar"
+                       decoration-success="document_health_score >= 80"
+                       decoration-warning="document_health_score >= 50 and document_health_score &lt; 80"
+                       decoration-danger="document_health_score &lt; 50"/>
+                <field name="reliability_score" widget="progressbar"/>
+                <field name="has_expired_documents" widget="boolean"
+                       decoration-danger="has_expired_documents"/>
+                <field name="has_expiring_documents" widget="boolean"
+                       decoration-warning="has_expiring_documents"/>
+                <field name="active_projects_count"/>
+                <field name="last_activity_date"/>
+
+                <!-- Actions rapides -->
+                <button name="action_send_document_request" type="object"
+                        string="Envoyer Rappel"
+                        class="btn btn-sm btn-primary"
+                        icon="fa-paper-plane"
+                        groups="construction_contact_extension.group_subcontractor_manager"/>
+
+                <button name="action_generate_portal_link" type="object"
+                        string="Lien Portal"
+                        class="btn btn-sm btn-secondary"
+                        icon="fa-link"
+                        groups="construction_contact_extension.group_subcontractor_manager"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action pour les sous-traitants -->
+    <record id="action_partner_subcontractor" model="ir.actions.act_window">
+        <field name="name">Sous-traitants</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_partner_subcontractor_list"/>
+        <field name="domain">[('is_subcontractor', '=', True)]</field>
+        <field name="context">{'default_is_subcontractor': True, 'search_default_is_subcontractor': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créer votre premier sous-traitant
+            </p>
+            <p>
+                Ajoutez des sous-traitants et gérez leurs documents administratifs.
+            </p>
+        </field>
+    </record>
+
+</odoo>

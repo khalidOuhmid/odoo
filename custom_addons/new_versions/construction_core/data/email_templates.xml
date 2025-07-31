@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Template pour documents manquants -->
+    <record id="email_template_missing_documents" model="mail.template">
+        <field name="name">Documents manquants - Sous-traitant</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">{{ company_name }} - Documents manquants</field>
+        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html" type="html">
+            <div style="margin: 0px; padding: 0px;">
+                <p>Bonjour {{ object.name }},</p>
+
+                <p>Dans le cadre de notre collaboration, nous avons besoin des documents suivants :</p>
+
+                <ul>
+                    {% for doc in ctx.get('missing_documents', []) %}
+                    <li><strong>{{ doc }}</strong></li>
+                    {% endfor %}
+                </ul>
+
+                <p>Merci de nous transmettre ces documents dans les meilleurs délais pour pouvoir poursuivre notre collaboration.</p>
+
+                <p>Vous pouvez nous les envoyer par email ou via notre portail partenaire.</p>
+
+                <br/>
+                <p>Cordialement,<br/>
+                L'équipe {{ company_name }}</p>
+
+                <hr style="width: 100%; height: 1px; background-color: #ddd; border: none; margin: 20px 0;"/>
+                <p style="font-size: 12px; color: #888;">
+                    Ce message a été envoyé automatiquement par notre système de gestion.
+                </p>
+            </div>
+        </field>
+    </record>
+
+    <!-- Template pour documents expirants -->
+    <record id="email_template_document_expiry" model="mail.template">
+        <field name="name">Documents expirant bientôt</field>
+        <field name="model_id" ref="base.model_res_partner"/>
+        <field name="subject">{{ company_name }} - Documents expirant bientôt</field>
+        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_to">{{ object.email }}</field>
+        <field name="body_html" type="html">
+            <div style="margin: 0px; padding: 0px;">
+                <p>Bonjour {{ object.name }},</p>
+
+                <p>Nous vous informons que certains de vos documents vont expirer prochainement :</p>
+
+                <ul>
+                    {% for doc_type, days in ctx.get('expiring_documents', {}).items() %}
+                    <li><strong>{{ doc_type }}</strong> - Expire dans {{ days }} jour(s)</li>
+                    {% endfor %}
+                </ul>
+
+                <p>Merci de renouveler ces documents et de nous transmettre les nouvelles versions.</p>
+
+                <br/>
+                <p>Cordialement,<br/>
+                L'équipe {{ company_name }}</p>
+            </div>
+        </field>
+    </record>
+
+</odoo>

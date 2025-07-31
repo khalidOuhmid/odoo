@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
     <data>
-        <template id="assets_backend" name="construction_planning assets" inherit_id="web.assets_backend">
-            <xpath expr="." position="inside">
-                <script type="text/javascript" src="/construction_base/static/src/js/gantt/gantt_renderer.js"></script>
-            </xpath>
+        <!-- Template pour les assets du backend -->
+        <template id="construction_base_assets_backend" name="Construction Base Assets Backend">
+            <!-- CSS/SCSS Files -->
+            <link rel="stylesheet" type="text/scss" href="/construction_base/static/src/scss/kanban_clean.scss"/>
+            <link rel="stylesheet" type="text/scss" href="/construction_base/static/src/scss/chantier_views.scss"/>
+            
+            <!-- JavaScript Files -->
+            <script type="text/javascript" src="/construction_base/static/src/js/construction_kanban.js"/>
+            <script type="text/javascript" src="/construction_base/static/src/js/planning_gantt.js"/>
         </template>
     </data>
 </odoo>

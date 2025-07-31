@@ -36,6 +36,12 @@
                                 string="Ajouter le document" 
                                 type="object" 
                                 class="btn-primary"/>
+                        <button name="action_generate_subcontractor_contracts"
+                                string="📄 Générer contrats"
+                                type="object"
+                                class="btn-success"
+                                icon="fa-file-text-o"
+                                help="Générer les contrats de sous-traitance pour ce chantier"/>
                         <button string="Annuler" 
                                 class="btn-secondary" 
                                 special="cancel"/>

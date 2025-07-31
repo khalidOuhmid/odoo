@@ -11,6 +11,7 @@ class lot(models.Model):
         default=0,
         help="Color index for tag styling (0-11)"
     )
-    _sql_constraints = [
-        ('code_unique', 'unique(code)', 'Le code doit être unique'),
-    ]
+    # Contrainte d'unicité supprimée pour permettre les codes uniques par chantier
+    # _sql_constraints = [
+    #     ('code_unique', 'unique(code)', 'Le code doit être unique'),
+    # ]

@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Wizard simple pour créer un sous-devis à partir d'un lot spécifique.
+Wizard simple pour créer un bon de commande d'achat à partir d'un lot spécifique.
 Ce wizard permet de sélectionner un devis principal et de créer automatiquement
-un sous-devis pour le lot sélectionné.
+un bon de commande pour le lot sélectionné et le sous-traitant.
 """
 
 from odoo import api, fields, models, _
@@ -13,10 +13,10 @@ _logger = logging.getLogger(__name__)
 
 
 class LotSubquoteWizard(models.TransientModel):
-    """Wizard simple pour créer un sous-devis à partir d'un lot."""
+    """Wizard simple pour créer un bon de commande d'achat à partir d'un lot."""
 
     _name = 'lot.subquote.wizard'
-    _description = 'Création de sous-devis par lot'
+    _description = 'Création de bon de commande par lot'
 
     # =================== CHAMPS PRINCIPAUX ===================
 
@@ -25,7 +25,7 @@ class LotSubquoteWizard(models.TransientModel):
         string='Lot',
         required=True,
         readonly=True,
-        help="Lot pour lequel créer le sous-devis"
+        help="Lot pour lequel créer le bon de commande"
     )
 
     chantier_id = fields.Many2one(
@@ -40,8 +40,8 @@ class LotSubquoteWizard(models.TransientModel):
         'res.partner',
         string='Sous-traitant',
         required=True,
-        domain="[('is_subcontractor', '=', True)]",
-        help="Sous-traitant qui recevra le sous-devis"
+        domain="[('is_subcontractor', '=', True), ('supplier_rank', '>', 0)]",
+        help="Sous-traitant qui recevra le bon de commande"
     )
 
     available_quotes = fields.Many2many(
@@ -55,6 +55,7 @@ class LotSubquoteWizard(models.TransientModel):
         'sale.order',
         string='Devis source',
         required=True,
+        domain="[('chantier_id', '=', chantier_id), ('state', 'in', ['draft', 'sent', 'sale'])]",
         help="Devis principal dont extraire les éléments pour ce lot"
     )
 
@@ -70,7 +71,7 @@ class LotSubquoteWizard(models.TransientModel):
         string='Montant estimé',
         compute='_compute_preview',
         currency_field='currency_id',
-        help="Montant estimé du sous-devis"
+        help="Montant estimé du bon de commande"
     )
 
     currency_id = fields.Many2one(
@@ -87,8 +88,7 @@ class LotSubquoteWizard(models.TransientModel):
             if wizard.chantier_id:
                 quotes = self.env['sale.order'].search([
                     ('chantier_id', '=', wizard.chantier_id.id),
-                    ('state', 'in', ['sale', 'sent']),
-                    ('lot_ids', 'in', wizard.lot_id.id)  # Le devis doit contenir ce lot
+                    ('state', 'in', ['draft', 'sent', 'sale'])
                 ])
                 wizard.available_quotes = quotes
             else:
@@ -96,7 +96,7 @@ class LotSubquoteWizard(models.TransientModel):
 
     @api.depends('selected_quote_id', 'lot_id')
     def _compute_preview(self):
-        """Calculer l'aperçu du contenu du sous-devis."""
+        """Calculer l'aperçu du contenu du bon de commande."""
         for wizard in self:
             if wizard.selected_quote_id and wizard.lot_id:
                 lines_info = wizard._analyze_quote_for_lot()
@@ -170,8 +170,8 @@ class LotSubquoteWizard(models.TransientModel):
         if not lines_info['lines']:
             return "<div class='alert alert-warning'>Aucune ligne trouvée pour ce lot dans le devis sélectionné.</div>"
 
-        html = ["<div class='lot_subquote_preview'>"]
-        html.append("<h5>📋 Contenu détecté pour le lot '{}' :</h5>".format(self.lot_id.name))
+        html = ["<div class='lot_purchase_preview'>"]
+        html.append("<h5>🛒 Contenu détecté pour le lot '{}' :</h5>".format(self.lot_id.name))
         html.append("<table class='table table-sm'>")
         html.append("<thead><tr><th>Type</th><th>Description</th><th>Qté</th><th>Montant</th></tr></thead>")
         html.append("<tbody>")
@@ -199,8 +199,8 @@ class LotSubquoteWizard(models.TransientModel):
 
     # =================== ACTIONS ===================
 
-    def action_create_subquote(self):
-        """Créer le sous-devis pour le lot."""
+    def action_create_purchase_order(self):
+        """Créer le bon de commande pour le lot."""
         self.ensure_one()
 
         if not self.selected_quote_id:
@@ -214,75 +214,75 @@ class LotSubquoteWizard(models.TransientModel):
                 "Aucun contenu trouvé pour le lot '%s' dans le devis sélectionné."
             ) % self.lot_id.name)
 
-        # Créer le sous-devis
-        subquote = self._create_subquote(lines_info)
+        # Créer le bon de commande
+        purchase_order = self._create_purchase_order(lines_info)
 
-        # S'assurer que le sous-devis est bien créé et enregistré dans la base de données
+        # S'assurer que le bon de commande est bien créé et enregistré dans la base de données
         self.env.cr.commit()
 
         # Log sur le chantier
         self.chantier_id.message_post(
-            body=f"📋 Sous-devis créé pour le lot '{self.lot_id.name}' :\n"
-                 f"• Sous-devis : {subquote.name}\n"
+            body=f"🛒 Bon de commande créé pour le lot '{self.lot_id.name}' :\n"
+                 f"• BC : {purchase_order.name}\n"
                  f"• Sous-traitant : {self.subcontractor_id.name}\n"
-                 f"• Montant : {subquote.amount_total:,.2f} {subquote.currency_id.symbol}\n"
+                 f"• Montant : {purchase_order.amount_total:,.2f} {purchase_order.currency_id.symbol}\n"
                  f"• Basé sur : {self.selected_quote_id.name}",
             message_type='comment'
         )
 
-        # Afficher une notification de succès et ouvrir le sous-devis créé
+        # Afficher une notification de succès et ouvrir le bon de commande créé
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
                 'title': _('Succès'),
-                'message': _(f"Le sous-devis pour le lot '{self.lot_id.name}' a été créé avec succès."),
+                'message': _(f"Le bon de commande pour le lot '{self.lot_id.name}' a été créé avec succès."),
                 'type': 'success',
                 'sticky': False,
                 'next': {
                     'type': 'ir.actions.act_window',
-                    'name': f'Sous-devis - {self.lot_id.name}',
-                    'res_model': 'sale.order',
-                    'res_id': subquote.id,
+                    'name': f'Bon de commande - {self.lot_id.name}',
+                    'res_model': 'purchase.order',
+                    'res_id': purchase_order.id,
                     'view_mode': 'form',
                     'target': 'current',
                 }
             }
         }
 
-    def _create_subquote(self, lines_info):
-        """Créer le sous-devis avec les lignes extraites."""
-        # Valeurs du sous-devis
-        subquote_vals = {
+    def _create_purchase_order(self, lines_info):
+        """Créer le bon de commande avec les lignes extraites."""
+        # Valeurs du bon de commande
+        purchase_vals = {
             'partner_id': self.subcontractor_id.id,
             'chantier_id': self.chantier_id.id,
             'lot_ids': [(6, 0, [self.lot_id.id])],
             'origin': self.selected_quote_id.name,
             'state': 'draft',
-            'validity_date': self.selected_quote_id.validity_date,
-            'payment_term_id': self.selected_quote_id.payment_term_id.id,
-            'pricelist_id': self.selected_quote_id.pricelist_id.id,
+            'date_order': fields.Datetime.now(),
             'company_id': self.selected_quote_id.company_id.id,
             'currency_id': self.selected_quote_id.currency_id.id,
-            'note': f"Sous-devis généré automatiquement pour le lot : {self.lot_id.name}",
+            'notes': f"Bon de commande généré automatiquement pour le lot : {self.lot_id.name}",
         }
 
-        # Créer le sous-devis
-        subquote = self.env['sale.order'].create(subquote_vals)
+        # Créer le bon de commande
+        purchase_order = self.env['purchase.order'].create(purchase_vals)
 
         # Ajouter les lignes
         sequence = 10
         for line in lines_info['lines']:
-            line_vals = self._prepare_subquote_line(line, subquote, sequence)
-            self.env['sale.order.line'].create(line_vals)
-            sequence += 10
+            # Ne créer que les lignes de produit (pas les sections)
+            if not line.display_type and line.product_id:
+                line_vals = self._prepare_purchase_line(line, purchase_order, sequence)
+                self.env['purchase.order.line'].create(line_vals)
+                sequence += 10
 
-        return subquote
+        return purchase_order
 
-    def _prepare_subquote_line(self, original_line, subquote, sequence):
-        """Préparer les valeurs d'une ligne de sous-devis."""
+    def _prepare_purchase_line(self, original_line, purchase_order, sequence):
+        """Préparer les valeurs d'une ligne de bon de commande."""
         vals = {
-            'order_id': subquote.id,
+            'order_id': purchase_order.id,
             'sequence': sequence,
             'display_type': original_line.display_type,
             'name': original_line.name,
@@ -292,11 +292,11 @@ class LotSubquoteWizard(models.TransientModel):
             # Ligne de produit
             vals.update({
                 'product_id': original_line.product_id.id,
-                'product_uom_qty': original_line.product_uom_qty,
+                'product_qty': original_line.product_uom_qty or 1.0,  # Valeur par défaut si None
                 'product_uom': original_line.product_uom.id,
-                'price_unit': original_line.price_unit,
-                'discount': original_line.discount,
-                'tax_id': [(6, 0, original_line.tax_id.ids)],
+                'price_unit': original_line.price_unit or 0.0,
+                'taxes_id': [(6, 0, original_line.tax_id.ids)],
+                # Note: discount n'existe pas dans purchase.order.line
             })
 
             # Copier les champs construction spécifiques si ils existent
@@ -320,4 +320,4 @@ class LotSubquoteWizard(models.TransientModel):
             if context_key in self.env.context:
                 defaults[field] = self.env.context[context_key]
 
-        return defaults 
+        return defaults

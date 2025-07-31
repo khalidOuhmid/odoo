@@ -58,6 +58,13 @@
                                 class="btn-info"
                                 invisible="stage_id &lt;= 3"/>
 
+                        <button name="action_generate_subcontractor_contracts"
+                                string="📄 Générer contrats"
+                                type="object"
+                                class="btn-success"
+                                invisible="stage_id &lt;= 2"
+                                help="Générer les contrats de sous-traitance pour ce chantier"/>
+
 
                         <!-- Statut -->
                         <field name="state"
@@ -343,12 +350,12 @@
                                                 icon="fa-plus"
                                                 help="Créer un sous-devis pour ce lot"
                                                 invisible="not subcontractor_ids"/>
-                                        <button name="action_display_subquotation"
+                                        <button name="action_view_purchase_order"
                                                 type="object"
-                                                string="👁️ Voir le sous-devis"
+                                                string="🛒 Voir bon d'achat"
                                                 class="btn btn-sm btn-primary"
-                                                icon="fa-eye"
-                                                help="Afficher le ou les sous-devis associés à ce lot et à ses sous-traitants"
+                                                icon="fa-shopping-cart"
+                                                help="Afficher le bon de commande associé à ce lot et à ses sous-traitants"
                                                 invisible="not subcontractor_ids"/>
                                         <button name="action_open_lot_document_wizard"
                                                 type="object"
@@ -898,7 +905,7 @@
                                                 </a>
 
                                                 <a t-if="record.show_split_quote.raw_value"
-                                                   name="action_split_quote_by_lots"
+                                                   name="action_split_quote_to_purchase_orders"
                                                    type="object"
                                                    class="dropdown-item">
                                                     <i class="fa fa-code-fork"/> Diviser devis

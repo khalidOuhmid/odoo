@@ -6,6 +6,15 @@
         <field name="model">construction.lot</field>
         <field name="arch" type="xml">
             <form string="Lot de construction">
+                <header>
+                    <button name="action_open_lot_document_wizard"
+                            string="📁 Gérer documents"
+                            type="object"
+                            class="btn-info"
+                            icon="fa-folder-open"
+                            help="Gérer les documents du lot et envoyer l'email au sous-traitant"/>
+                </header>
+                
                 <sheet>
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
@@ -57,8 +66,28 @@
                         </page>
                         <page string="Documents" name="documents">
                             <group>
-                                <field name="document_cctp" filename="cctp.pdf"/>
-                                <field name="document_subcontractor_contract" filename="contrat.pdf"/>
+                                <group string="📄 Contrat de sous-traitance">
+                                    <field name="document_subcontractor_contract" 
+                                           filename="contrat_sous_traitance.pdf"
+                                           help="Contrat de sous-traitance pour ce lot"/>
+                                </group>
+                                <group string="📋 CCTP">
+                                    <field name="document_cctp" 
+                                           filename="cctp.pdf"
+                                           help="Cahier des Clauses Techniques Particulières"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="📅 Planning général">
+                                    <field name="document_general_planning" 
+                                           filename="planning_general.pdf"
+                                           help="Planning général du chantier"/>
+                                </group>
+                                <group string="👷 Planning sous-traitant">
+                                    <field name="document_subcontractor_planning" 
+                                           filename="planning_sous_traitant.pdf"
+                                           help="Planning spécifique au sous-traitant"/>
+                                </group>
                             </group>
                         </page>
                         <page string="Notes" name="notes">

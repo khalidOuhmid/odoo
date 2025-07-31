@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from datetime import timedelta
+from odoo.exceptions import ValidationError
 
 class ConstructionLot(models.Model):
     """Extension du modèle lot pour la construction avec fonctionnalités avancées"""
@@ -93,6 +94,18 @@ class ConstructionLot(models.Model):
         string="Contrat de sous-traitance",
         attachment=True,
         help="Contrat de sous-traitance pour ce lot"
+    )
+    
+    document_general_planning = fields.Binary(
+        string="Planning général",
+        attachment=True,
+        help="Planning général du chantier"
+    )
+    
+    document_subcontractor_planning = fields.Binary(
+        string="Planning du sous-traitant",
+        attachment=True,
+        help="Planning spécifique au sous-traitant"
     )
     
     planning_task_ids = fields.One2many('construction.planning.task', 'lot_id', string='Tâches de planning')
@@ -493,4 +506,22 @@ class ConstructionLot(models.Model):
                 'default_subcontractor_id': self.subcontractor_ids and self.subcontractor_ids[0].id or False,
                 'active_id': self.id,
             },
+        }
+
+    def action_view_purchase_order(self):
+        """Ouvre la fiche du bon de commande associé à ce lot et à ce chantier."""
+        self.ensure_one()
+        purchase_order = self.env['purchase.order'].search([
+            ('chantier_id', '=', self.chantier_id.id),
+            ('lot_ids', 'in', self.id)
+        ], limit=1)
+        if not purchase_order:
+            raise ValidationError("Aucun bon d'achat trouvé pour ce lot.")
+        return {
+            'type': 'ir.actions.act_window',
+            'name': f"Bon d'achat - {self.name}",
+            'res_model': 'purchase.order',
+            'res_id': purchase_order.id,
+            'view_mode': 'form',
+            'target': 'current',
         }

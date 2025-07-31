@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Séquence pour les documents partenaires -->
+        <record id="sequence_partner_document" model="ir.sequence">
+            <field name="name">Documents Partenaires</field>
+            <field name="code">partner.document</field>
+            <field name="prefix">DOC-</field>
+            <field name="suffix"></field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Séquence pour les archives de documents -->
+        <record id="sequence_document_archive" model="ir.sequence">
+            <field name="name">Archives Documents</field>
+            <field name="code">document.archive</field>
+            <field name="prefix">ARC-</field>
+            <field name="suffix"></field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+
+
+        <!-- Séquence pour les tokens d'upload -->
+        <record id="sequence_upload_token" model="ir.sequence">
+            <field name="name">Tokens Upload</field>
+            <field name="code">upload.token</field>
+            <field name="prefix">TOK-</field>
+            <field name="suffix">-%(year)s</field>
+            <field name="padding">8</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Séquence pour les rapports de validation -->
+        <record id="sequence_validation_report" model="ir.sequence">
+            <field name="name">Rapports Validation</field>
+            <field name="code">validation.report</field>
+            <field name="prefix">VAL-</field>
+            <field name="suffix">-%(month)s%(year)s</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Séquence pour les opérations en lot -->
+        <record id="sequence_bulk_operation" model="ir.sequence">
+            <field name="name">Opérations en Lot</field>
+            <field name="code">bulk.operation</field>
+            <field name="prefix">BULK-</field>
+            <field name="suffix">-%(y)s%(month)s</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Séquence pour les liens portail -->
+        <record id="sequence_portal_link" model="ir.sequence">
+            <field name="name">Liens Portail</field>
+            <field name="code">portal.link</field>
+            <field name="prefix">PL-</field>
+            <field name="suffix"></field>
+            <field name="padding">6</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Séquence pour les notifications -->
+        <record id="sequence_notification" model="ir.sequence">
+            <field name="name">Notifications</field>
+            <field name="code">partner.notification</field>
+            <field name="prefix">NOT-</field>
+            <field name="suffix">-%(day)s%(month)s%(y)s</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Séquence pour les audits -->
+        <record id="sequence_document_audit" model="ir.sequence">
+            <field name="name">Audits Documents</field>
+            <field name="code">document.audit</field>
+            <field name="prefix">AUD-</field>
+            <field name="suffix">-%(year)s</field>
+            <field name="padding">5</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Séquence pour les exports -->
+        <record id="sequence_document_export" model="ir.sequence">
+            <field name="name">Exports Documents</field>
+            <field name="code">document.export</field>
+            <field name="prefix">EXP-</field>
+            <field name="suffix">-%(month)s%(year)s</field>
+            <field name="padding">4</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="active">True</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

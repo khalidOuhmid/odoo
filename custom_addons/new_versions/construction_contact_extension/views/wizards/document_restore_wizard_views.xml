@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Vue formulaire pour la restauration de document -->
+        <record id="document_restore_wizard_form_view" model="ir.ui.view">
+            <field name="name">document.restore.wizard.form</field>
+            <field name="model">document.restore.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Restaurer un Document Archivé">
+                    <header>
+                        <button name="action_restore_document" string="Restaurer le Document"
+                                type="object" class="btn-primary oe_highlight"
+                                invisible="not can_restore"
+                                data-confirm="Êtes-vous sûr de vouloir restaurer ce document ?"/>
+                        <button name="action_preview_restored_document" string="Prévisualiser"
+                                type="object" class="btn-secondary"/>
+                        <button name="action_view_existing_document" string="Voir Document Actuel"
+                                type="object" class="btn-link"
+                                invisible="not has_existing_document"/>
+                        <button name="action_cancel_restore" string="Annuler"
+                                type="object" class="btn-link"/>
+                    </header>
+
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                Restauration de Document
+                            </h1>
+                            <h2>
+                                <field name="archive_id" readonly="1"/>
+                            </h2>
+                        </div>
+
+                        <!-- Informations de l'archive -->
+                        <group>
+                            <group string="Archive à Restaurer">
+                                <field name="partner_id" readonly="1"/>
+                                <field name="document_type_id" readonly="1"/>
+                                <field name="original_filename" readonly="1"/>
+                                <field name="archive_reason" readonly="1"/>
+                                <field name="archived_date" readonly="1"/>
+                                <field name="days_since_archived" readonly="1"/>
+                                <field name="file_size_human" readonly="1"/>
+                            </group>
+
+                            <group string="État Actuel">
+                                <field name="has_existing_document" readonly="1"/>
+                                <field name="existing_document_id" readonly="1"
+                                       invisible="not has_existing_document"/>
+                                <field name="can_restore" readonly="1"
+                                       decoration-success="can_restore == True"
+                                       decoration-danger="can_restore == False"/>
+                            </group>
+                        </group>
+
+                        <!-- Options de restauration -->
+                        <group string="Options de Restauration">
+                            <field name="restore_mode" widget="radio"/>
+                        </group>
+
+                        <group>
+                            <group string="Nom de Fichier">
+                                <field name="update_filename"/>
+                                <field name="new_filename"
+                                       required="update_filename"
+                                       readonly="not update_filename"/>
+                            </group>
+
+                            <group string="Date d'Expiration">
+                                <field name="original_expiry_date" readonly="1"/>
+                                <field name="update_expiry_date"/>
+                                <field name="new_expiry_date"
+                                       required="update_expiry_date"
+                                       readonly="not update_expiry_date"/>
+                            </group>
+                        </group>
+
+                        <!-- Avertissements -->
+                        <div class="alert alert-warning" invisible="restore_warnings == 'Aucun avertissement'">
+                            <field name="restore_warnings" nolabel="1" widget="html"/>
+                        </div>
+
+                        <!-- Erreur si restauration impossible -->
+                        <div class="alert alert-danger" invisible="can_restore">
+                            <strong>❌ Restauration Impossible</strong>
+                            <p>Ce document ne peut pas être restauré pour les raisons listées ci-dessus.</p>
+                        </div>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action pour la restauration -->
+        <record id="document_restore_wizard_action" model="ir.actions.act_window">
+            <field name="name">Restaurer Document</field>
+            <field name="res_model">document.restore.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

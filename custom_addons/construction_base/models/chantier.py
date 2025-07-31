@@ -16,7 +16,7 @@ ACTION_RULES = {
                                               and rec.stage_id.chapter_id.name in {"Exécution", "Réalisation",
                                                                                    "Travaux"},
     "show_mark_not_pursued": lambda rec: rec.state in {"active", "abandoned"},
-    "show_split_quote": lambda rec: rec.can_split_quote() if hasattr(rec, 'can_split_quote') else False,
+    "show_split_quote": lambda rec: rec.can_split_quote_to_purchase() if hasattr(rec, 'can_split_quote_to_purchase') else False,
 }
 
 STAGE_VALIDATORS = {
@@ -224,6 +224,7 @@ class Chantier(models.Model):
     show_split_quote = fields.Boolean('Afficher diviser devis', compute='_compute_action_visibility', default=False)
 
     planning_task_ids = fields.One2many('construction.planning.task', 'chantier_id', string='Tâches de planning')
+    purchase_order_ids = fields.One2many('purchase.order', 'chantier_id', string="Bons de commande")
 
     _sql_constraints = [
         ('positive_cost', 'CHECK(total_cost >= 0)', 'Le coût total doit être positif'),
@@ -1433,26 +1434,26 @@ class Chantier(models.Model):
         return self.env['construction.stage'].search([], order=order)
 
     # ================================================================
-    #                   QUOTE SPLITTING FUNCTIONALITY
+    #                   PURCHASE ORDER SPLITTING FUNCTIONALITY
     # ================================================================
 
-    def can_split_quote(self):
-        """Check if quote splitting is available for this chantier."""
-        return self.env['quote.split.service'].can_split_quote(self.id)
+    def can_split_quote_to_purchase(self):
+        """Check if quote splitting to purchase orders is available for this chantier."""
+        return self.env['purchase.split.service'].can_split_quote_to_purchase(self.id)
 
-    def action_split_quote_by_lots(self):
-        """Split the main quote into sub-quotes by lots and assign to subcontractors."""
+    def action_split_quote_to_purchase_orders(self):
+        """Split the main quote into purchase orders by lots and assign to subcontractors."""
         self.ensure_one()
 
-        # Utiliser le service de division
-        result = self.env['quote.split.service'].split_quote_by_lots(self.id)
+        # Utiliser le service de division pour créer des bons de commande
+        result = self.env['purchase.split.service'].split_quote_to_purchase_by_lots(self.id)
 
         if result['success']:
-            # Rafraîchir la vue pour montrer les nouveaux sous-devis
-            self._compute_quotation_count()
+            # Rafraîchir la vue pour montrer les nouveaux bons de commande
+            self._compute_purchase_order_count()
 
-            # Ouvrir une vue avec les sous-devis créés
-            return self.action_view_subquotes(result['created_subquotes'])
+            # Ouvrir une vue avec les bons de commande créés
+            return self.action_view_purchase_orders(result['created_purchase_orders'])
         else:
             # Afficher l'erreur
             return {
@@ -1466,14 +1467,14 @@ class Chantier(models.Model):
                 }
             }
 
-    def action_split_quote_wizard(self):
-        """Open the quote splitting wizard for guided splitting."""
+    def action_split_quote_to_purchase_wizard(self):
+        """Open the quote to purchase order splitting wizard for guided splitting."""
         self.ensure_one()
 
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Division de devis par lots'),
-            'res_model': 'construction.quote.split.wizard',
+            'name': _('Division de devis en bons de commande par lots'),
+            'res_model': 'construction.purchase.split.wizard',
             'view_mode': 'form',
             'target': 'new',
             'context': {
@@ -1481,20 +1482,20 @@ class Chantier(models.Model):
             }
         }
 
-    def action_view_subquotes(self, subquote_ids=None):
-        """View sub-quotes for this chantier."""
+    def action_view_purchase_orders(self, purchase_order_ids=None):
+        """View purchase orders created from this chantier's quote."""
         self.ensure_one()
 
-        if subquote_ids:
-            domain = [('id', 'in', subquote_ids)]
+        if purchase_order_ids:
+            domain = [('id', 'in', purchase_order_ids)]
         else:
-            subquotes = self.env['quote.split.service'].get_subquotes_for_chantier(self.id)
-            domain = [('id', 'in', subquotes.ids)]
+            purchase_orders = self.env['purchase.split.service'].get_purchase_orders_for_chantier(self.id)
+            domain = [('id', 'in', purchase_orders.ids)]
 
         return {
             'type': 'ir.actions.act_window',
-            'name': f'Sous-devis - {self.name}',
-            'res_model': 'sale.order',
+            'name': f'Bons de commande - {self.name}',
+            'res_model': 'purchase.order',
             'view_mode': 'list,form',
             'domain': domain,
             'context': {
@@ -1504,34 +1505,34 @@ class Chantier(models.Model):
             'target': 'current',
         }
 
-    def action_quick_edit_subquote(self):
-        """Quick access to edit sub-quotes via popup."""
+    def action_quick_edit_purchase_order(self):
+        """Quick access to edit purchase orders via popup."""
         self.ensure_one()
 
-        subquotes = self.env['quote.split.service'].get_subquotes_for_chantier(self.id)
+        purchase_orders = self.env['purchase.split.service'].get_purchase_orders_for_chantier(self.id)
 
-        if not subquotes:
+        if not purchase_orders:
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'type': 'warning',
-                    'message': 'Aucun sous-devis trouvé. Divisez d\'abord le devis principal.',
+                    'message': 'Aucun bon de commande trouvé. Divisez d\'abord le devis principal en bons de commande.',
                     'sticky': False,
                 }
             }
 
-        # Si un seul sous-devis, l'ouvrir directement
-        if len(subquotes) == 1:
-            return self.env['quote.split.service'].quick_access_subquote(subquotes[0].id)
+        # Si un seul bon de commande, l'ouvrir directement
+        if len(purchase_orders) == 1:
+            return self.env['purchase.split.service'].quick_access_purchase_order(purchase_orders[0].id)
 
         # Sinon, afficher une liste pour sélection
         return {
             'type': 'ir.actions.act_window',
-            'name': 'Sélectionner un sous-devis',
-            'res_model': 'sale.order',
+            'name': 'Sélectionner un bon de commande',
+            'res_model': 'purchase.order',
             'view_mode': 'list',
-            'domain': [('id', 'in', subquotes.ids)],
+            'domain': [('id', 'in', purchase_orders.ids)],
             'context': {
                 'default_chantier_id': self.id,
                 'create': False,
@@ -1539,6 +1540,19 @@ class Chantier(models.Model):
             },
             'target': 'new',
         }
+
+    def get_main_quotation(self):
+        """Get the main sale quotation for this chantier."""
+        self.ensure_one()
+        # Garder la logique du devis principal en sale.order
+        main_quote = self.sale_order_ids.filtered(lambda so: so.is_main_quote and so.state in ['draft', 'sent'])
+        return main_quote[0] if main_quote else False
+
+    def _compute_purchase_order_count(self):
+        """Compute the number of purchase orders created from this chantier's quote."""
+        for record in self:
+            purchase_orders = self.env['purchase.split.service'].get_purchase_orders_for_chantier(record.id)
+            record.purchase_order_count = len(purchase_orders)
 
     def action_send_contract_to_subcontractor(self):
         """Envoie un email à chaque sous-traitant avec le lien de dépôt du contrat de sous-traitance."""
@@ -1696,4 +1710,19 @@ class Chantier(models.Model):
                 'search_default_group_by_lot': 1,
             },
             'target': 'current',
+        }
+
+    def action_generate_subcontractor_contracts(self):
+        """Lance le wizard de génération de contrats de sous-traitance."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Générer contrats de sous-traitance',
+            'res_model': 'construction.contract.generation.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.id,
+                'default_subcontractor_id': self.subcontractor_ids[0].id if self.subcontractor_ids else False,
+                'default_lot_ids': [(6, 0, self.lots_ids.ids)]
+            }
         }

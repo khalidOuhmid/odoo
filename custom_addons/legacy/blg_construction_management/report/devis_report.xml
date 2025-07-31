@@ -43,7 +43,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr t-foreach="doc.blg_chantier_id.lot_ids.filtered(lambda l: l.quote_state == 'sent')" t-as="lot">
+                            <tr t-foreach="doc.blg_chantier_id.get_lots_with_sent_quotes()" t-as="lot">
                                 <td><span t-field="lot.lot_type_id.name"/></td>
                                 <td><span t-field="lot.subcontractor_id.name"/></td>
                                 <td><span t-field="lot.notes"/></td>

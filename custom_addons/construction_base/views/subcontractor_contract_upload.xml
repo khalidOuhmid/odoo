@@ -269,7 +269,7 @@
                                             <div class="mb-3">
                                                 <div class="file-upload-wrapper" id="dropzone-contract">
                                                     <input type="file" name="contract_file" id="contract_file"
-                                                           class="file-upload-input" required accept="application/pdf"/>
+                                                           class="file-upload-input" required="1" accept="application/pdf"/>
                                                     <div class="upload-content">
                                                         <i class="fa fa-file-pdf upload-icon"></i>
                                                         <div class="upload-text">

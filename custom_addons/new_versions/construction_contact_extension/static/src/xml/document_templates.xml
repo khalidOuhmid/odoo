@@ -1,0 +1,572 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <!-- Template principal pour l'upload de documents -->
+    <t t-name="construction_contact_extension.DocumentUploadTemplate">
+        <div class="document-upload-container">
+            <div class="upload-zone" t-att-class="dragOverClass + ' ' + uploadingClass">
+                <input type="file" t-att-accept="state.allowedTypes.join(',')" style="display: none;" />
+
+                <div class="upload-content" t-if="!state.isUploading">
+                    <div class="upload-icon">
+                        <i class="fa fa-cloud-upload" aria-hidden="true"></i>
+                    </div>
+                    <div class="upload-text">
+                        <strong>Glissez votre fichier ici</strong><br/>
+                        <span>ou cliquez pour sélectionner</span><br/>
+                        <small>
+                            Formats acceptés : <t t-esc="state.allowedTypes.join(', ')"/><br/>
+                            Taille maximum : <t t-esc="Math.round(state.maxFileSize / 1024 / 1024)"/>MB
+                        </small>
+                    </div>
+                </div>
+
+                <div class="upload-content" t-if="state.isUploading">
+                    <div class="loading-spinner"></div>
+                    <div class="upload-text">
+                        <strong>Téléversement en cours...</strong><br/>
+                        <small>Veuillez patienter</small>
+                    </div>
+                    <div class="progress-modern">
+                        <div class="progress-bar-modern" t-att-style="'width: ' + state.uploadProgress + '%'"></div>
+                    </div>
+                    <div class="upload-progress-text">
+                        <t t-esc="state.uploadProgress"/>%
+                    </div>
+                </div>
+            </div>
+
+            <!-- Fichiers sélectionnés -->
+            <div class="selected-files" t-if="hasFiles">
+                <h6><i class="fa fa-files-o"></i> Fichiers sélectionnés</h6>
+                <div t-foreach="state.selectedFiles" t-as="file" t-key="file_index" class="file-item">
+                    <div class="file-info">
+                        <div class="file-icon">
+                            <i class="fa fa-file-o" t-if="!file.type.includes('image')"></i>
+                            <i class="fa fa-image" t-if="file.type.includes('image')"></i>
+                        </div>
+                        <div class="file-details">
+                            <div class="file-name" t-esc="file.name"></div>
+                            <div class="file-size" t-esc="_formatFileSize(file.size)"></div>
+                        </div>
+                        <div class="file-actions">
+                            <button class="btn btn-sm btn-outline-secondary"
+                                    t-on-click="() => this._previewFile(file)"
+                                    title="Aperçu">
+                                <i class="fa fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger"
+                                    t-on-click="() => this._removeFile(file_index)"
+                                    title="Supprimer">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bouton d'upload manuel -->
+                <div class="upload-actions" t-if="!state.isUploading and props.autoUpload === false">
+                    <button class="btn btn-primary-modern"
+                            t-on-click="onManualUpload"
+                            t-att-disabled="state.selectedFiles.length === 0">
+                        <i class="fa fa-upload"></i>
+                        Téléverser <t t-esc="state.selectedFiles.length"/> fichier(s)
+                    </button>
+                </div>
+            </div>
+
+            <!-- Erreurs de validation -->
+            <div class="validation-errors" t-if="hasErrors">
+                <div class="alert alert-danger-modern">
+                    <i class="fa fa-exclamation-triangle"></i>
+                    <div>
+                        <strong>Erreurs de validation :</strong>
+                        <ul class="mb-0">
+                            <li t-foreach="state.validationErrors" t-as="error" t-key="error_index" t-esc="error"></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- Template pour les opérations en lot -->
+    <t t-name="construction_contact_extension.BulkOperationsTemplate">
+        <div class="bulk-operations-container">
+            <div class="bulk-header">
+                <h4><i class="fa fa-cogs"></i> Opérations en Lot</h4>
+                <p>Sélectionnez une opération à exécuter sur les partenaires sélectionnés.</p>
+            </div>
+
+            <!-- Sélection de l'opération -->
+            <div class="operation-selector">
+                <h5>Choisir une opération</h5>
+                <div class="operations-grid">
+                    <div t-foreach="state.operations" t-as="operation" t-key="operation.key"
+                         class="operation-card"
+                         t-att-class="state.selectedOperation === operation.key ? 'selected' : ''"
+                         t-on-click="() => this.onOperationSelect(operation.key)">
+                        <div class="operation-icon">
+                            <i t-att-class="'fa ' + operation.icon"></i>
+                        </div>
+                        <div class="operation-info">
+                            <h6 t-esc="operation.label"></h6>
+                            <p t-esc="operation.description"></p>
+                        </div>
+                        <div class="operation-check" t-if="state.selectedOperation === operation.key">
+                            <i class="fa fa-check-circle"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations sur l'opération sélectionnée -->
+            <div class="operation-details" t-if="selectedOperationData">
+                <div class="alert alert-info-modern">
+                    <i class="fa fa-info-circle"></i>
+                    <div>
+                        <strong t-esc="selectedOperationData.label"></strong><br/>
+                        <span t-esc="selectedOperationData.description"></span>
+                        <div class="mt-2" t-if="selectedOperationData.requiresSelection">
+                            <small>
+                                <i class="fa fa-users"></i>
+                                Partenaires sélectionnés : <strong t-esc="state.selectedPartners.length"></strong>
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bouton d'exécution -->
+            <div class="execution-controls">
+                <button class="btn btn-primary-modern"
+                        t-on-click="onExecuteOperation"
+                        t-att-disabled="!canExecute">
+                    <i class="fa fa-play" t-if="!state.isProcessing"></i>
+                    <div class="loading-spinner" t-if="state.isProcessing"></div>
+                    <span t-if="!state.isProcessing">Exécuter l'opération</span>
+                    <span t-if="state.isProcessing">Traitement en cours...</span>
+                </button>
+            </div>
+
+            <!-- Barre de progression -->
+            <div class="progress-section" t-if="state.isProcessing">
+                <div class="progress-modern">
+                    <div class="progress-bar-modern" t-att-style="'width: ' + state.progress + '%'"></div>
+                </div>
+                <div class="progress-text">
+                    <t t-esc="state.progress"/>% terminé
+                </div>
+            </div>
+
+            <!-- Résultats -->
+            <div class="results-section" t-if="hasResults">
+                <h5>Résultats de l'opération</h5>
+
+                <!-- Résumé -->
+                <div class="results-summary">
+                    <div class="result-stat success">
+                        <div class="stat-value" t-esc="successResults.length"></div>
+                        <div class="stat-label">Succès</div>
+                    </div>
+                    <div class="result-stat danger">
+                        <div class="stat-value" t-esc="errorResults.length"></div>
+                        <div class="stat-label">Erreurs</div>
+                    </div>
+                </div>
+
+                <!-- Détails des résultats -->
+                <div class="results-details">
+                    <div t-foreach="state.results" t-as="result" t-key="result_index"
+                         class="result-item"
+                         t-att-class="result.status">
+                        <div class="result-icon">
+                            <i class="fa fa-check-circle" t-if="result.status === 'success'"></i>
+                            <i class="fa fa-exclamation-circle" t-if="result.status === 'error'"></i>
+                        </div>
+                        <div class="result-content">
+                            <div class="result-partner" t-if="result.partner" t-esc="result.partner"></div>
+                            <div class="result-message" t-esc="result.message"></div>
+                            <div class="result-data" t-if="result.data">
+                                <small class="text-muted" t-esc="JSON.stringify(result.data)"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- Template pour le générateur de liens portail -->
+    <t t-name="construction_contact_extension.PortalLinkGeneratorTemplate">
+        <div class="portal-link-generator">
+            <div class="generator-header">
+                <h4><i class="fa fa-link"></i> Générateur de Lien Portail</h4>
+                <p t-if="state.partnerName">
+                    Génération d'un lien d'accès sécurisé pour :
+                    <strong t-esc="state.partnerName"></strong>
+                </p>
+            </div>
+
+            <!-- Configuration du lien -->
+            <div class="link-configuration">
+                <h5>Configuration</h5>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label-modern">Durée de validité (jours)</label>
+                            <input type="number"
+                                   class="form-control-modern"
+                                   t-model="state.validityDays"
+                                   min="1" max="30" />
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label-modern">Template d'email</label>
+                            <select class="form-control-modern" t-model="state.emailTemplate">
+                                <option t-foreach="state.templates" t-as="template"
+                                        t-key="template.value"
+                                        t-att-value="template.value"
+                                        t-esc="template.label"></option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label-modern">Message personnalisé</label>
+                    <textarea class="form-control-modern"
+                              rows="3"
+                              t-model="state.customMessage"
+                              placeholder="Message optionnel à inclure dans l'email..."></textarea>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   id="includeQrCode"
+                                   t-model="state.includeQrCode" />
+                            <label class="form-check-label" for="includeQrCode">
+                                Inclure un QR Code
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input type="checkbox"
+                                   class="form-check-input"
+                                   id="sendByEmail"
+                                   t-model="state.sendByEmail" />
+                            <label class="form-check-label" for="sendByEmail">
+                                Envoyer par email
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bouton de génération -->
+            <div class="generation-controls">
+                <button class="btn btn-primary-modern"
+                        t-on-click="onGenerateLink"
+                        t-att-disabled="state.isGenerating">
+                    <div class="loading-spinner" t-if="state.isGenerating"></div>
+                    <i class="fa fa-link" t-if="!state.isGenerating"></i>
+                    <span t-if="state.isGenerating">Génération...</span>
+                    <span t-if="!state.isGenerating">Générer le lien</span>
+                </button>
+
+                <button class="btn btn-secondary-modern"
+                        t-on-click="onPreviewEmail"
+                        t-att-disabled="state.isGenerating">
+                    <i class="fa fa-eye"></i>
+                    Prévisualiser l'email
+                </button>
+            </div>
+
+            <!-- Lien généré -->
+            <div class="generated-link" t-if="hasValidLink">
+                <h5>Lien généré</h5>
+
+                <div class="link-display">
+                    <div class="link-url">
+                        <input type="text"
+                               class="form-control-modern"
+                               t-att-value="state.linkUrl"
+                               readonly="readonly" />
+                        <button class="btn btn-outline-secondary"
+                                t-on-click="onCopyLink"
+                                title="Copier le lien">
+                            <i class="fa fa-copy"></i>
+                        </button>
+                        <button class="btn btn-outline-primary"
+                                t-on-click="onOpenLink"
+                                title="Ouvrir le lien">
+                            <i class="fa fa-external-link"></i>
+                        </button>
+                    </div>
+
+                    <div class="link-info">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <small class="text-muted">
+                                    <i class="fa fa-clock-o"></i>
+                                    Expire le : <strong t-esc="expiryFormatted"></strong>
+                                </small>
+                            </div>
+                            <div class="col-md-6">
+                                <small class="text-muted" t-att-class="isLinkExpired ? 'text-danger' : ''">
+                                    <i class="fa fa-info-circle"></i>
+                                    <span t-if="isLinkExpired">Lien expiré</span>
+                                    <span t-if="!isLinkExpired">Lien actif</span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- QR Code -->
+                <div class="qr-code-section" t-if="state.qrCodeUrl">
+                    <h6>QR Code</h6>
+                    <div class="qr-code-display">
+                        <img t-att-src="state.qrCodeUrl" alt="QR Code" class="qr-code-image" />
+                        <button class="btn btn-sm btn-outline-secondary"
+                                t-on-click="onDownloadQrCode">
+                            <i class="fa fa-download"></i>
+                            Télécharger
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Statistiques -->
+                <div class="link-stats">
+                    <h6>Statistiques d'utilisation</h6>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" t-esc="state.linkStats.clicks"></div>
+                            <div class="stat-label">Clics</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" t-esc="state.linkStats.uploadCount"></div>
+                            <div class="stat-label">Uploads</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" t-esc="lastAccessFormatted"></div>
+                            <div class="stat-label">Dernier accès</div>
+                        </div>
+                    </div>
+
+                    <div class="stats-actions">
+                        <button class="btn btn-sm btn-outline-info"
+                                t-on-click="onRefreshStats">
+                            <i class="fa fa-refresh"></i>
+                            Actualiser
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger"
+                                t-on-click="onRevokeLink">
+                            <i class="fa fa-ban"></i>
+                            Révoquer le lien
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <!-- Template pour le tableau de bord des statistiques -->
+    <t t-name="construction_contact_extension.StatisticsDashboardTemplate">
+        <div class="statistics-dashboard">
+            <div class="dashboard-header">
+                <h3><i class="fa fa-line-chart"></i> Tableau de Bord Statistiques</h3>
+                <div class="dashboard-controls">
+                    <div class="period-selector">
+                        <button class="btn btn-sm"
+                                t-att-class="state.selectedPeriod === '7' ? 'btn-primary' : 'btn-outline-secondary'"
+                                t-on-click="() => this.onPeriodChange('7')">7j</button>
+                        <button class="btn btn-sm"
+                                t-att-class="state.selectedPeriod === '30' ? 'btn-primary' : 'btn-outline-secondary'"
+                                t-on-click="() => this.onPeriodChange('30')">30j</button>
+                        <button class="btn btn-sm"
+                                t-att-class="state.selectedPeriod === '90' ? 'btn-primary' : 'btn-outline-secondary'"
+                                t-on-click="() => this.onPeriodChange('90')">90j</button>
+                    </div>
+
+                    <div class="view-selector">
+                        <button class="btn btn-sm"
+                                t-att-class="isOverviewView ? 'btn-primary' : 'btn-outline-secondary'"
+                                t-on-click="() => this.onViewChange('overview')">
+                            <i class="fa fa-dashboard"></i> Vue d'ensemble
+                        </button>
+                        <button class="btn btn-sm"
+                                t-att-class="isChartsView ? 'btn-primary' : 'btn-outline-secondary'"
+                                t-on-click="() => this.onViewChange('charts')">
+                            <i class="fa fa-bar-chart"></i> Graphiques
+                        </button>
+                        <button class="btn btn-sm"
+                                t-att-class="isAlertsView ? 'btn-primary' : 'btn-outline-secondary'"
+                                t-on-click="() => this.onViewChange('alerts')">
+                            <i class="fa fa-bell"></i> Alertes
+                            <span class="badge badge-danger" t-if="hasCriticalAlerts" t-esc="criticalAlerts.length"></span>
+                        </button>
+                    </div>
+
+                    <div class="action-buttons">
+                        <button class="btn btn-sm btn-outline-secondary"
+                                t-on-click="onRefresh"
+                                t-att-disabled="state.isLoading">
+                            <i class="fa fa-refresh" t-att-class="state.isLoading ? 'fa-spin' : ''"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary"
+                                t-on-click="onExportData">
+                            <i class="fa fa-download"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vue d'ensemble -->
+            <div class="overview-section" t-if="isOverviewView">
+                <div class="overview-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon bg-primary">
+                            <i class="fa fa-users"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" t-esc="overviewData.totalPartners"></div>
+                            <div class="stat-label">Partenaires totaux</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon bg-success">
+                            <i class="fa fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" t-esc="overviewData.completeFiles"></div>
+                            <div class="stat-label">Dossiers complets</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon bg-warning">
+                            <i class="fa fa-clock-o"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" t-esc="overviewData.pendingValidation"></div>
+                            <div class="stat-label">En attente</div>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-icon bg-danger">
+                            <i class="fa fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <div class="stat-value" t-esc="overviewData.expiredDocs"></div>
+                            <div class="stat-label">Documents expirés</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top performers -->
+                <div class="top-performers" t-if="topPerformers.length">
+                    <h5>Partenaires performants</h5>
+                    <div class="performers-list">
+                        <div t-foreach="topPerformers" t-as="performer" t-key="performer.id" class="performer-item">
+                            <div class="performer-info">
+                                <strong t-esc="performer.name"></strong>
+                                <small t-esc="performer.speciality"></small>
+                            </div>
+                            <div class="performer-score">
+                                <div class="score-value" t-esc="performer.score + '%'"></div>
+                                <div class="score-bar">
+                                    <div class="score-fill" t-att-style="'width: ' + performer.score + '%'"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vue graphiques -->
+            <div class="charts-section" t-if="isChartsView">
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h6>Statut des documents</h6>
+                        <canvas id="documentStatusChart" width="400" height="300"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h6>Distribution des scores de santé</h6>
+                        <canvas id="healthScoreChart" width="400" height="300"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h6>Tendances d'upload</h6>
+                        <canvas id="uploadTrendsChart" width="400" height="300"></canvas>
+                    </div>
+
+                    <div class="chart-container">
+                        <h6>Activité des partenaires</h6>
+                        <canvas id="activityChart" width="400" height="300"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vue alertes -->
+            <div class="alerts-section" t-if="isAlertsView">
+                <div class="alerts-list">
+                    <div t-if="!hasCriticalAlerts" class="no-alerts">
+                        <i class="fa fa-check-circle text-success"></i>
+                        <h5>Aucune alerte critique</h5>
+                        <p>Tous les indicateurs sont au vert !</p>
+                    </div>
+
+                    <div t-foreach="criticalAlerts" t-as="alert" t-key="alert.id" class="alert-item" t-att-class="'alert-' + alert.type">
+                        <div class="alert-icon">
+                            <i class="fa fa-exclamation-triangle" t-if="alert.type === 'warning'"></i>
+                            <i class="fa fa-exclamation-circle" t-if="alert.type === 'danger'"></i>
+                            <i class="fa fa-info-circle" t-if="alert.type === 'info'"></i>
+                        </div>
+                        <div class="alert-content">
+                            <h6 t-esc="alert.title"></h6>
+                            <p t-esc="alert.message"></p>
+                            <small class="text-muted" t-esc="alert.created_at"></small>
+                        </div>
+                        <div class="alert-actions">
+                            <button class="btn btn-sm btn-outline-primary"
+                                    t-on-click="() => this.onHandleCriticalAlert(alert.id)">
+                                Traiter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activité récente -->
+            <div class="recent-activity" t-if="recentActivity.length">
+                <h5>Activité récente</h5>
+                <div class="activity-timeline">
+                    <div t-foreach="recentActivity" t-as="activity" t-key="activity.id" class="activity-item">
+                        <div class="activity-time">
+                            <small t-esc="activity.time"></small>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-icon" t-att-class="'bg-' + activity.type">
+                                <i t-att-class="'fa ' + activity.icon"></i>
+                            </div>
+                            <div class="activity-text">
+                                <span t-esc="activity.message"></span>
+                                <small class="text-muted" t-esc="activity.details"></small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Vue formulaire pour le rejet de document -->
+        <record id="document_rejection_wizard_form_view" model="ir.ui.view">
+            <field name="name">document.rejection.wizard.form</field>
+            <field name="model">document.rejection.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Rejeter un Document">
+                    <header>
+                        <button name="action_reject_document" string="Confirmer le Rejet"
+                                type="object" class="btn-danger oe_highlight"/>
+                        <button name="action_preview_notification" string="Prévisualiser Email"
+                                type="object" class="btn-secondary"
+                                invisible="not notify_partner"/>
+                        <button name="action_view_document_history" string="Voir Historique"
+                                type="object" class="btn-link"/>
+                    </header>
+
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                Rejet de Document
+                            </h1>
+                            <h2>
+                                <field name="document_name" readonly="1"/>
+                            </h2>
+                        </div>
+
+                        <!-- Informations du document -->
+                        <group>
+                            <group string="Document à Rejeter">
+                                <field name="document_id" readonly="1"/>
+                                <field name="partner_id" readonly="1"/>
+                                <field name="rejection_count" readonly="1"
+                                       decoration-warning="rejection_count > 0"/>
+                            </group>
+                        </group>
+
+                        <!-- Raison du rejet -->
+                        <group string="Raison du Rejet">
+                            <field name="rejection_reason" widget="radio" options="{'horizontal': true}"/>
+                            <field name="rejection_details" required="1"
+                                   placeholder="Expliquez en détail pourquoi ce document est rejeté..."/>
+                        </group>
+
+                        <!-- Instructions de correction -->
+                        <group string="Instructions de Correction">
+                            <field name="required_actions" widget="html"
+                                   placeholder="Instructions spécifiques pour corriger le document..."/>
+                        </group>
+
+                        <!-- Options de notification -->
+                        <group string="Notification">
+                            <group>
+                                <field name="notify_partner"/>
+                                <field name="send_email" invisible="not notify_partner"/>
+                                <field name="include_instructions" invisible="not notify_partner"/>
+                                <field name="can_send_email" readonly="1"
+                                       invisible="not notify_partner"/>
+                            </group>
+                        </group>
+
+                        <!-- Options d'archivage -->
+                        <group string="Gestion du Document">
+                            <group>
+                                <field name="archive_document"/>
+                                <field name="allow_resubmission"/>
+                            </group>
+                        </group>
+
+                        <!-- Avertissements -->
+                        <div class="alert alert-warning" invisible="rejection_count == 0">
+                            <strong>⚠️ Attention :</strong> Ce type de document a déjà été rejeté
+                            <field name="rejection_count" readonly="1"/> fois pour ce partenaire.
+                        </div>
+
+                        <div class="alert alert-info" invisible="can_send_email">
+                            <strong>ℹ️ Information :</strong> Le partenaire ne peut pas recevoir d'email
+                            (adresse invalide ou manquante).
+                        </div>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action pour le rejet de document -->
+        <record id="document_rejection_wizard_action" model="ir.actions.act_window">
+            <field name="name">Rejeter Document</field>
+            <field name="res_model">document.rejection.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

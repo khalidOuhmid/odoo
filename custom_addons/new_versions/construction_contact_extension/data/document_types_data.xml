@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Types de documents obligatoires pour sous-traitants -->
+
+        <!-- Carte d'identité -->
+        <record id="document_type_identity_card" model="document.type">
+            <field name="name">Carte d'identité</field>
+            <field name="code">identity_card</field>
+            <field name="description">Pièce d'identité officielle (carte d'identité, passeport ou permis de conduire)</field>
+            <field name="sequence">10</field>
+            <field name="is_mandatory">True</field>
+            <field name="has_expiry">True</field>
+            <field name="validity_period_months">120</field>
+            <field name="expiry_warning_days">365</field>
+            <field name="allowed_file_types">.pdf,.jpg,.jpeg,.png</field>
+            <field name="max_file_size_mb">5.0</field>
+            <field name="require_expiry_date">True</field>
+            <field name="upload_instructions"><![CDATA[
+                <ul>
+                    <li>Scannez recto et verso de votre pièce d'identité</li>
+                    <li>Assurez-vous que toutes les informations soient parfaitement lisibles</li>
+                    <li>Format accepté : PDF de préférence, ou image haute qualité</li>
+                    <li>Résolution minimum : 300 DPI</li>
+                </ul>
+            ]]></field>
+            <field name="validation_checklist"><![CDATA[
+                <ul>
+                    <li>Vérifier la lisibilité du nom et prénom</li>
+                    <li>Contrôler la date de naissance</li>
+                    <li>Vérifier la date d'expiration</li>
+                    <li>S'assurer que la photo soit visible</li>
+                    <li>Vérifier la signature si applicable</li>
+                </ul>
+            ]]></field>
+        </record>
+
+        <!-- URSSAF -->
+        <record id="document_type_urssaf" model="document.type">
+            <field name="name">Attestation URSSAF</field>
+            <field name="code">urssaf</field>
+            <field name="description">Attestation de régularité URSSAF de moins de 3 mois</field>
+            <field name="sequence">20</field>
+            <field name="is_mandatory">True</field>
+            <field name="has_expiry">True</field>
+            <field name="validity_period_months">3</field>
+            <field name="expiry_warning_days">15</field>
+            <field name="allowed_file_types">.pdf</field>
+            <field name="max_file_size_mb">10.0</field>
+            <field name="require_expiry_date">True</field>
+            <field name="upload_instructions"><![CDATA[
+                <ul>
+                    <li>Document officiel URSSAF avec cachet et signature</li>
+                    <li>Doit dater de moins de 3 mois</li>
+                    <li>Format PDF uniquement</li>
+                    <li>Toutes les pages si document multi-pages</li>
+                </ul>
+            ]]></field>
+            <field name="validation_checklist"><![CDATA[
+                <ul>
+                    <li>Vérifier la date d'émission (moins de 3 mois)</li>
+                    <li>Contrôler la présence du cachet URSSAF</li>
+                    <li>Vérifier la correspondance du nom/SIRET</li>
+                    <li>S'assurer de la régularité des cotisations</li>
+                </ul>
+            ]]></field>
+        </record>
+
+        <!-- KBIS -->
+        <record id="document_type_kbis" model="document.type">
+            <field name="name">Extrait KBIS</field>
+            <field name="code">kbis</field>
+            <field name="description">Extrait KBIS de moins de 3 mois pour les entreprises</field>
+            <field name="sequence">30</field>
+            <field name="is_mandatory">True</field>
+            <field name="has_expiry">True</field>
+            <field name="validity_period_months">3</field>
+            <field name="expiry_warning_days">15</field>
+            <field name="allowed_file_types">.pdf</field>
+            <field name="max_file_size_mb">10.0</field>
+            <field name="require_expiry_date">True</field>
+            <field name="upload_instructions"><![CDATA[
+                <ul>
+                    <li>Extrait officiel du greffe du tribunal de commerce</li>
+                    <li>Doit dater de moins de 3 mois</li>
+                    <li>Format PDF original (pas de photocopie scannée)</li>
+                    <li>Document complet avec toutes les mentions légales</li>
+                </ul>
+            ]]></field>
+            <field name="validation_checklist"><![CDATA[
+                <ul>
+                    <li>Vérifier la date d'édition (moins de 3 mois)</li>
+                    <li>Contrôler la correspondance de la dénomination sociale</li>
+                    <li>Vérifier le numéro SIREN/SIRET</li>
+                    <li>S'assurer que l'entreprise n'est pas radiée</li>
+                    <li>Contrôler l'activité déclarée</li>
+                </ul>
+            ]]></field>
+        </record>
+
+        <!-- Assurance -->
+        <record id="document_type_insurance" model="document.type">
+            <field name="name">Attestation d'assurance</field>
+            <field name="code">insurance</field>
+            <field name="description">Attestation d'assurance responsabilité civile professionnelle</field>
+            <field name="sequence">40</field>
+            <field name="is_mandatory">True</field>
+            <field name="has_expiry">True</field>
+            <field name="validity_period_months">12</field>
+            <field name="expiry_warning_days">30</field>
+            <field name="allowed_file_types">.pdf</field>
+            <field name="max_file_size_mb">10.0</field>
+            <field name="require_expiry_date">True</field>
+            <field name="upload_instructions"><![CDATA[
+                <ul>
+                    <li>Attestation en cours de validité</li>
+                    <li>Montants de garantie clairement visibles</li>
+                    <li>Activités couvertes correspondant à vos spécialités</li>
+                    <li>Signature et cachet de l'assureur obligatoires</li>
+                </ul>
+            ]]></field>
+            <field name="validation_checklist"><![CDATA[
+                <ul>
+                    <li>Vérifier les dates de validité</li>
+                    <li>Contrôler les montants de garantie minimums</li>
+                    <li>Vérifier la correspondance des activités couvertes</li>
+                    <li>S'assurer de la présence du cachet assureur</li>
+                    <li>Contrôler que le preneur soit bien le sous-traitant</li>
+                </ul>
+            ]]></field>
+        </record>
+
+        <!-- RIB -->
+        <record id="document_type_rib" model="document.type">
+            <field name="name">RIB</field>
+            <field name="code">rib</field>
+            <field name="description">Relevé d'identité bancaire</field>
+            <field name="sequence">50</field>
+            <field name="is_mandatory">True</field>
+            <field name="has_expiry">False</field>
+            <field name="validity_period_months">0</field>
+            <field name="expiry_warning_days">0</field>
+            <field name="allowed_file_types">.pdf,.jpg,.jpeg,.png</field>
+            <field name="max_file_size_mb">5.0</field>
+            <field name="require_expiry_date">False</field>
+            <field name="upload_instructions"><![CDATA[
+                <ul>
+                    <li>RIB original de la banque</li>
+                    <li>IBAN et BIC parfaitement lisibles</li>
+                    <li>Nom du titulaire correspondant à celui du sous-traitant</li>
+                    <li>Éviter les photocopies de photocopies</li>
+                </ul>
+            ]]></field>
+            <field name="validation_checklist"><![CDATA[
+                <ul>
+                    <li>Vérifier la lisibilité de l'IBAN</li>
+                    <li>Contrôler la correspondance du nom du titulaire</li>
+                    <li>Vérifier la validité de l'IBAN (contrôle clé)</li>
+                    <li>S'assurer que le RIB soit authentique</li>
+                </ul>
+            ]]></field>
+        </record>
+
+        <!-- Documents optionnels -->
+
+        <!-- Attestation fiscale -->
+        <record id="document_type_fiscal" model="document.type">
+            <field name="name">Attestation fiscale</field>
+            <field name="code">fiscal</field>
+            <field name="description">Attestation de régularité fiscale</field>
+            <field name="sequence">60</field>
+            <field name="is_mandatory">False</field>
+            <field name="has_expiry">True</field>
+            <field name="validity_period_months">3</field>
+            <field name="expiry_warning_days">15</field>
+            <field name="allowed_file_types">.pdf</field>
+            <field name="max_file_size_mb">10.0</field>
+            <field name="require_expiry_date">True</field>
+        </record>
+
+        <!-- Déclaration TVA -->
+        <record id="document_type_vat" model="document.type">
+            <field name="name">Déclaration TVA</field>
+            <field name="code">vat_declaration</field>
+            <field name="description">Dernière déclaration de TVA</field>
+            <field name="sequence">70</field>
+            <field name="is_mandatory">False</field>
+            <field name="has_expiry">True</field>
+            <field name="validity_period_months">3</field>
+            <field name="expiry_warning_days">30</field>
+            <field name="allowed_file_types">.pdf</field>
+            <field name="max_file_size_mb">10.0</field>
+            <field name="require_expiry_date">True</field>
+        </record>
+
+    </data>
+</odoo>
