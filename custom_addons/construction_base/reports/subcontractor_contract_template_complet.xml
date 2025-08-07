@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="contrat_sous_traitance_template_complet" name="Contrat de sous-traitance complet">
+                <t t-foreach="docs" t-as="o">
+                <t t-set="o" t-value="o.with_context(lang=o.subcontractor_id.lang or o.env.user.lang or 'fr_FR')"/>
+                    <t t-set="company" t-value="o.company_id or env.company"/>
+
+                <!-- Variables sécurisées -->
+                <t t-set="lot_names"
+                   t-value="', '.join([name for name in o.lot_ids.mapped('name') if name]) if o.lot_ids else 'Non défini'"/>
+                <t t-set="formatted_date"
+                   t-value="o.create_date.strftime('%d/%m/%Y') if o.create_date else context.get('current_date', fields.Date.today()).strftime('%d/%m/%Y')"/>
+
+                <!-- CONTRAT PRINCIPAL -->
+                <t t-call="construction_base.contrat_sous_traitance_template"/>
+
+                <!-- ANNEXES DYNAMIQUES -->
+                <t t-foreach="annexes_data" t-as="annexe">
+                    <!-- Saut de page pour annexe -->
+                    <div style="page-break-before: always;"></div>
+                    <div class="page">
+                        <!-- En-tête avec logos pour annexe -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                            <tr>
+                                <td style="width: 15%; text-align: left; vertical-align: middle;">
+                                    <img t-if="blg_logo" t-att-src="blg_logo" alt="Logo BLG GROUPE" style="height: 50px; max-width: 100%;"/>
+                                </td>
+                                <td style="width: 70%; text-align: center; vertical-align: middle;">
+                                    <h1 style="color: #333; font-size: 22px; font-weight: bold; margin: 0;"><t t-esc="annexe['title']"/></h1>
+                                    <p style="color: #666; margin: 5px 0 0 0; font-size: 12px;"><t t-esc="annexe['subtitle']"/></p>
+                                </td>
+                                <td style="width: 15%; text-align: right; vertical-align: middle;">
+                                    <img t-if="blg_logo" t-att-src="blg_logo" alt="Logo BLG GROUPE" style="height: 50px; max-width: 100%;"/>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <!-- Contenu de la page annexe -->
+                        <div style="text-align: center; padding: 50px 0;">
+                            <div class="highlight-box">
+                                <h2 style="color: #20B2AA; margin-bottom: 20px;">📄 <t t-esc="annexe['document_type']"/></h2>
+                                <h3 style="color: #333; margin-bottom: 15px;">Lot : <t t-esc="annexe['lot_name']"/></h3>
+                                <p style="color: #666; font-size: 16px; margin-bottom: 20px;">
+                                    Ce document fait partie intégrante du contrat de sous-traitance.
+                                </p>
+                                <p style="color: #20B2AA; font-weight: bold; font-size: 14px;">
+                                    Document technique joint au contrat
+                                </p>
+                            </div>
+                            
+                            <div style="margin-top: 40px; color: #666; font-size: 12px;">
+                                <p>Ce document est consultable dans sa version complète via les annexes numériques.</p>
+                                <p>Pour toute question technique, merci de vous référer au document original.</p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+
+                <!-- PAGE DE SIGNATURES FINALE -->
+                <div style="page-break-before: always;"></div>
+                <div class="page">
+                    <!-- En-tête avec logos pour signatures -->
+                                            <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                            <tr>
+                                <td style="width: 15%; text-align: left; vertical-align: middle;">
+                                    <img t-if="blg_logo" t-att-src="blg_logo" alt="Logo BLG GROUPE" style="height: 50px; max-width: 100%;"/>
+                                </td>
+                                <td style="width: 70%; text-align: center; vertical-align: middle;">
+                                    <h1 style="color: #333; font-size: 22px; font-weight: bold; margin: 0;">Signatures du Contrat</h1>
+                                    <p style="color: #666; margin: 5px 0 0 0; font-size: 12px;">Validation et acceptation des parties</p>
+                                </td>
+                                <td style="width: 15%; text-align: right; vertical-align: middle;">
+                                    <img t-if="blg_logo" t-att-src="blg_logo" alt="Logo BLG GROUPE" style="height: 50px; max-width: 100%;"/>
+                                </td>
+                            </tr>
+                        </table>
+                    
+                    <!-- Récapitulatif du contrat -->
+                    <div style="background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; padding: 25px; margin-bottom: 40px;">
+                        <h3 style="color: #20B2AA; margin-bottom: 20px; text-align: center;">📋 Récapitulatif du contrat</h3>
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+                            <tr>
+                                <td style="width: 50%; vertical-align: top; padding-right: 20px;">
+                                    <p><strong>Numéro de contrat :</strong> <t t-esc="o.contract_number or 'N/A'"/></p>
+                                    <p><strong>Chantier :</strong> <t t-esc="o.chantier_id.name or 'Non défini'"/></p>
+                                    <p><strong>Sous-traitant :</strong> <t t-esc="o.subcontractor_id.name or 'Non défini'"/></p>
+                                </td>
+                                <td style="width: 50%; vertical-align: top; padding-left: 20px;">
+                                    <p><strong>Montant total :</strong> <t t-esc="o.total_amount or 0"/> €</p>
+                                    <p><strong>Date de création :</strong> <t t-esc="formatted_date"/></p>
+                                    <p><strong>Lots concernés :</strong> <t t-esc="lot_names"/></p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+                    <!-- Signatures principales -->
+                    <div style="margin-bottom: 40px;">
+                        <h3 style="color: #20B2AA; text-align: center; margin-bottom: 30px;">✍️ Signatures des parties contractantes</h3>
+                        
+                        <!-- Signatures côte à côte avec table pour compatibilité PDF -->
+                        <table style="width: 100%; border-collapse: collapse; margin: 0;">
+                            <tr>
+                                <td style="width: 50%; text-align: center; vertical-align: top; padding: 0 25px;">
+                                    <p style="color: #20B2AA; font-weight: bold; margin-bottom: 15px; font-size: 18px;">Contractant général</p>
+                                    <p style="margin-bottom: 15px; font-weight: bold;"><t t-esc="company.name or 'B.L.G GROUPE'"/></p>
+                                    <div style="height: 120px; border: 2px solid #20B2AA; border-radius: 8px; margin: 15px auto; background-color: #f8f9fa; width: 250px; padding-top: 10px;">
+                                        <img t-if="blg_signature" t-att-src="blg_signature" alt="Signature et tampon BLG GROUPE" style="max-height: 100px; max-width: 230px; display: block; margin: 0 auto;"/>
+                                    </div>
+                                    <p style="color: #666; font-size: 12px; margin-bottom: 5px;">(Signature et cachet commercial)</p>
+                                    <p style="color: #20B2AA; font-weight: bold;">Lu et approuvé</p>
+                                </td>
+                                
+                                <td style="width: 50%; text-align: center; vertical-align: top; padding: 0 25px;">
+                                    <p style="color: #20B2AA; font-weight: bold; margin-bottom: 15px; font-size: 18px;">L'entreprise sous-traitante</p>
+                                    <p style="margin-bottom: 15px; font-weight: bold;"><t t-esc="o.subcontractor_id.name or 'Non défini'"/></p>
+                                    <div style="height: 120px; border: 2px solid #20B2AA; border-radius: 8px; margin: 15px auto; background-color: #f8f9fa; width: 250px; padding-top: 10px;">
+                                        <t t-if="o.signature_image">
+                                            <img t-att-src="'data:image/png;base64,%s' % (o.signature_image.decode('utf-8') if isinstance(o.signature_image, bytes) else o.signature_image)" alt="Signature sous-traitant" style="max-height: 100px; max-width: 230px; display: block; margin: 0 auto;"/>
+                                        </t>
+                                        <t t-if="not o.signature_image">
+                                            <p style="color: #999; font-style: italic; margin: 50px 0 0 0; text-align: center; line-height: 1.2;">Signature à apposer</p>
+                                        </t>
+                                    </div>
+                                    <p style="color: #666; font-size: 12px; margin-bottom: 5px;">(Signature et cachet de l'entreprise)</p>
+                                    <p style="color: #20B2AA; font-weight: bold;">Lu et approuvé</p>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    
+
+                    
+                    <!-- Mentions légales finales -->
+                    <div style="border-top: 1px solid #dee2e6; padding-top: 20px; font-size: 12px; color: #666;">
+                        <p style="text-align: center; margin-bottom: 10px;">
+                            <strong>Ce contrat a été établi en deux exemplaires, chaque partie en conservant un.</strong>
+                        </p>
+                        <p style="text-align: center; margin-bottom: 10px;">
+                            Fait à Bordeaux, le <t t-esc="formatted_date"/>
+                        </p>
+                        <p style="text-align: center; font-style: italic;">
+                            Document contractuel - BLG GROUPE - Tous droits réservés
+                        </p>
+                    </div>
+                </div>
+                
+                <!-- PAGE CERTIFICATION DE SIGNATURE ÉLECTRONIQUE -->
+                <t t-if="o.signature_hash and o.signature_hash != ''">
+                    <div style="page-break-before: always;"></div>
+                    <div class="page">
+                        <!-- En-tête avec logos pour certification -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                            <tr>
+                                <td style="width: 15%; text-align: left; vertical-align: middle;">
+                                    <img t-if="blg_logo" t-att-src="blg_logo" alt="Logo BLG GROUPE" style="height: 50px; max-width: 100%;"/>
+                                </td>
+                                <td style="width: 70%; text-align: center; vertical-align: middle;">
+                                    <h1 style="color: #333; font-size: 22px; font-weight: bold; margin: 0;">Certification de signature électronique</h1>
+                                    <p style="color: #666; margin: 5px 0 0 0; font-size: 12px;">Traçabilité et authentification de la signature</p>
+                                </td>
+                                <td style="width: 15%; text-align: right; vertical-align: middle;">
+                                    <img t-if="blg_logo" t-att-src="blg_logo" alt="Logo BLG GROUPE" style="height: 50px; max-width: 100%;"/>
+                                </td>
+                            </tr>
+                        </table>
+                        
+                        <!-- Certificat de signature électronique -->
+                        <div style="border: 1px solid #20B2AA; padding: 20px; margin-bottom: 20px;">
+                            <h3 style="color: #20B2AA; margin-bottom: 15px; text-align: center;">Certification de signature électronique</h3>
+                            
+                            <table style="width: 100%; font-size: 12px; border-collapse: collapse; margin-bottom: 20px;">
+                                <tr>
+                                    <td style="width: 25%; padding: 5px; font-weight: bold;">Contrat :</td>
+                                    <td style="width: 25%; padding: 5px;"><t t-esc="o.contract_number or 'N/A'"/></td>
+                                    <td style="width: 25%; padding: 5px; font-weight: bold;">Date signature :</td>
+                                    <td style="width: 25%; padding: 5px;"><t t-esc="o.signature_timestamp.strftime('%d/%m/%Y %H:%M') if o.signature_timestamp else 'N/A'"/></td>
+                                </tr>
+                                <tr>
+                                    <td style="width: 25%; padding: 5px; font-weight: bold;">Sous-traitant :</td>
+                                    <td style="width: 25%; padding: 5px;"><t t-esc="o.subcontractor_id.name or 'Non défini'"/></td>
+                                    <td style="width: 25%; padding: 5px; font-weight: bold;">Adresse IP :</td>
+                                    <td style="width: 25%; padding: 5px;"><t t-esc="o.signature_ip or 'N/A'"/></td>
+                                </tr>
+                            </table>
+                            
+                            <div style="margin-bottom: 15px;">
+                                <p style="font-weight: bold; margin-bottom: 5px;">Empreinte cryptographique :</p>
+                                <p style="font-family: monospace; font-size: 10px; word-break: break-all; background-color: #f8f9fa; padding: 8px; margin: 0;"><t t-esc="o.signature_hash or 'Non disponible'"/></p>
+                            </div>
+                        </div>
+                        
+                        <!-- Validation juridique -->
+                        <div style="border: 1px solid #28a745; padding: 15px; margin-bottom: 20px;">
+                            <h4 style="color: #28a745; margin-bottom: 10px;">Validation juridique</h4>
+                            <p style="font-size: 11px; margin: 5px 0;">Cette signature électronique respecte le règlement eIDAS et a la même valeur juridique qu'une signature manuscrite (Code civil français - Article 1366).</p>
+                        </div>
+                        
+                        <!-- Mentions de traçabilité -->
+                        <div style="border-top: 1px solid #dee2e6; padding-top: 20px; font-size: 11px; color: #666;">
+                            <p style="text-align: center; margin-bottom: 10px;">
+                                <strong>Document de certification généré automatiquement par BLG GROUPE</strong>
+                            </p>
+                            <p style="text-align: center; margin-bottom: 10px;">
+                                Certificat émis le <t t-esc="o.signature_timestamp.strftime('%d/%m/%Y à %H:%M:%S') if o.signature_timestamp else 'Date non disponible'"/>
+                            </p>
+                            <p style="text-align: center; font-style: italic;">
+                                Ce certificat garantit l'intégrité, l'authenticité et la non-répudiation de la signature électronique
+                            </p>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>

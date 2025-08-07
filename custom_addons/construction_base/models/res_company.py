@@ -2,7 +2,7 @@
 
 from odoo import fields, models
 
-class Partner(models.Model):
-    _inherit = 'res.partner'
+class Company(models.Model):
+    _inherit = 'res.company'
 
     siren = fields.Char(string='SIREN')

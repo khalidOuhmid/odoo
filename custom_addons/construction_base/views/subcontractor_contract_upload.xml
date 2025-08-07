@@ -1,296 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Formulaire de téléversement du contrat de sous-traitance (public) -->
-        <template id="subcontractor_contract_upload_form" name="Téléversement Contrat Sous-traitance">
+        <!-- ================================================================
+             TEMPLATES PORTAIL SIGNATURE CONTRATS
+        ===================================================================-->
+
+        <!-- Template d'accès refusé -->
+        <template id="contract_access_denied" name="Accès refusé - Contrat">
             <t t-call="web.frontend_layout">
-                <link rel="stylesheet"
-                      href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&amp;display=swap"/>
-                <link rel="stylesheet"
-                      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
-                <t t-set="title">Contrat de sous-traitance - BLG Groupe</t>
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&amp;display=swap"/>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+                <t t-set="title">Accès refusé - BLG Groupe</t>
                 <t t-set="no_header" t-value="True"/>
                 <t t-set="no_footer" t-value="True"/>
+
                 <style>
-                    body, .o_document_portal {
+                    body, .o_contract_portal {
                         font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
                         background: linear-gradient(135deg, #f8fafc 0%, #e9f0fa 100%);
                         min-height: 100vh;
                         color: #334155;
                     }
-
-                    .o_document_portal .section-title {
-                        font-size: 1.75rem;
-                        font-weight: 700;
-                        color: #1e40af;
-                        margin-bottom: 1.25rem;
-                        letter-spacing: -0.01em;
-                    }
-
-                    .o_document_portal .upload-card {
-                        border-radius: 16px;
-                        box-shadow: 0 4px 20px rgba(15, 23, 42, 0.08);
-                        border: 1px solid rgba(226, 232, 240, 0.8);
-                        background: #fff;
-                        transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
-                    }
-
-                    .o_document_portal .upload-card:hover {
-                        transform: translateY(-3px);
-                        box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
-                    }
-
-                    .o_document_portal .card-header {
-                        background: rgba(248, 250, 252, 0.7);
-                        border-bottom: 1px solid rgba(226, 232, 240, 0.7);
-                        border-radius: 16px 16px 0 0;
-                        padding: 1rem 1.25rem;
-                    }
-
-                    .o_document_portal .file-upload-wrapper {
-                        position: relative;
-                        border: 2px dashed #cbd5e1;
-                        border-radius: 12px;
-                        padding: 2rem 1.5rem;
-                        text-align: center;
-                        background: #f8fafc;
-                        transition: all 0.2s ease;
-                        cursor: pointer;
-                    }
-
-                    .o_document_portal .file-upload-wrapper:hover,
-                    .o_document_portal .file-upload-wrapper.dragover {
-                        background: #f1f5f9;
-                        border-color: #94a3b8;
-                    }
-
-                    .o_document_portal .file-upload-input {
-                        position: absolute;
-                        top: 0;
-                        left: 0;
-                        width: 100%;
-                        height: 100%;
-                        opacity: 0;
-                        cursor: pointer;
-                        z-index: 10;
-                    }
-
-                    .o_document_portal .upload-content {
-                        pointer-events: none;
-                    }
-
-                    .o_document_portal .upload-content .fa-file-pdf {
-                        color: #1e40af;
-                        font-size: 2.2rem;
-                        margin-bottom: 0.75rem;
-                    }
-
-                    .o_document_portal .upload-text {
-                        color: #64748b;
-                        font-weight: 500;
-                        font-size: 0.95rem;
-                        line-height: 1.5;
-                    }
-
-                    .o_document_portal .uploaded-file {
-                        display: none;
-                        background: #f0fdf4;
-                        border: 1px solid #dcfce7;
-                        border-radius: 10px;
-                        padding: 0.75rem 1rem;
-                        margin-top: 0.75rem;
-                        font-weight: 500;
-                        color: #166534;
-                        animation: fadeSlideIn 0.3s forwards;
-                        align-items: center;
-                    }
-
-                    .o_document_portal .uploaded-file .fa-check-circle {
-                        color: #16a34a;
-                        margin-right: 0.5rem;
-                    }
-
-                    .o_document_portal .uploaded-file .filename {
-                        color: #166534;
-                        font-size: 0.9rem;
-                        text-overflow: ellipsis;
-                        overflow: hidden;
-                        white-space: nowrap;
-                        flex: 1;
-                    }
-
-                    .o_document_portal .alert {
-                        border-radius: 12px;
-                        font-size: 0.975rem;
-                        border: none;
-                        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
-                    }
-
-                    .o_document_portal .alert-success {
-                        background-color: #f0fdf4;
-                        color: #166534;
-                        border-left: 4px solid #22c55e;
-                    }
-
-                    .o_document_portal .alert-danger {
-                        background-color: #fee2e2;
-                        color: #b91c1c;
-                        border-left: 4px solid #dc2626;
-                    }
-
-                    .o_document_portal .btn {
-                        border-radius: 10px;
-                        font-weight: 500;
-                        padding: 0.65rem 1.25rem;
-                        transition: all 0.2s ease;
-                    }
-
-                    .o_document_portal .btn-primary {
-                        background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%);
-                        border: none;
-                        box-shadow: 0 2px 8px rgba(30, 64, 175, 0.25);
-                    }
-
-                    .o_document_portal .btn-primary:hover,
-                    .o_document_portal .btn-primary:focus {
-                        background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
-                        box-shadow: 0 4px 12px rgba(30, 64, 175, 0.35);
-                        transform: translateY(-1px);
-                    }
-
-                    .o_document_portal .custom-header {
+                    .o_contract_portal .custom-header {
                         padding: 1.25rem 0;
                         background: rgba(255, 255, 255, 0.7);
                         backdrop-filter: blur(10px);
-                        -webkit-backdrop-filter: blur(10px);
                         border-bottom: 1px solid rgba(226, 232, 240, 0.8);
                     }
-
-                    .o_document_portal .brand-logo {
+                    .o_contract_portal .brand-logo {
                         height: 42px;
                     }
-
-                    .o_document_portal .brand-text {
+                    .o_contract_portal .brand-text {
                         font-size: 1.5rem;
                         font-weight: 700;
                         color: #1e40af;
                         margin-left: 0.75rem;
                         letter-spacing: -0.01em;
                     }
-
-                    @keyframes fadeSlideIn {
-                        0% {
-                            opacity: 0;
-                            transform: translateY(-8px);
-                        }
-                        100% {
-                            opacity: 1;
-                            transform: translateY(0);
-                        }
+                    .o_contract_portal .error-card {
+                        border-radius: 16px;
+                        box-shadow: 0 8px 32px rgba(15, 23, 42, 0.1);
+                        border: 1px solid rgba(226, 232, 240, 0.8);
+                        background: #fff;
+                    }
+                    .o_contract_portal .btn {
+                        border-radius: 10px;
+                        font-weight: 500;
+                        padding: 0.65rem 1.25rem;
+                        transition: all 0.2s ease;
                     }
                 </style>
-                <div class="o_document_portal d-flex flex-column min-vh-100">
-                    <div class="custom-header py-3">
+
+                <div class="o_contract_portal d-flex flex-column min-vh-100">
+                    <div class="custom-header">
                         <div class="container d-flex align-items-center">
-                            <img t-att-src="'/blg_contacts_extension/static/src/img/icon.png'"
-                                 alt="Logo"
+                            <img src="/construction_base/static/src/img/blg_logo.png"
+                                 alt="Logo BLG GROUPE"
                                  class="brand-logo"
                                  onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
                             <span class="brand-text">BLG Groupe</span>
                         </div>
                     </div>
+
                     <div class="container flex-grow-1 py-5">
                         <div class="row justify-content-center">
-                            <div class="col-lg-8">
-                                <div class="text-center mb-4">
-                                    <div class="section-title">Téléversement du contrat de sous-traitance</div>
-                                    <p class="text-muted mb-0">Merci de déposer votre contrat signé au format PDF</p>
-                                </div>
-                                <div t-if="success" class="alert alert-success mb-4">
-                                    <i class="fa fa-check-circle me-2"></i>
-                                    Contrat téléversé avec succès. Il sera vérifié prochainement par notre équipe.
-                                </div>
-                                <div t-if="error" class="alert alert-danger mb-4">
-                                    <i class="fa fa-exclamation-triangle me-2"></i>
-                                    <t t-esc="error"/>
-                                </div>
-                                <t t-if="contract_download_url">
-                                    <div class="alert alert-info mb-4 text-center">
-                                        <i class="fa fa-download me-2"></i>
-                                        <a t-att-href="contract_download_url" class="btn btn-outline-primary"
-                                           download="download">
-                                            Télécharger le contrat de sous-traitance à signer (PDF)
+                            <div class="col-md-8 col-lg-6">
+                                <div class="error-card text-center p-5">
+                                    <div class="mb-4">
+                                        <i class="fa fa-lock text-danger" style="font-size: 4rem;"></i>
+                                    </div>
+                                    <h2 class="mb-3 text-danger">Accès non autorisé</h2>
+                                    <p class="text-muted mb-4">
+                                        <t t-esc="error or 'Vous n\'avez pas les autorisations nécessaires pour accéder à ce contrat.'"/>
+                                    </p>
+                                    <p class="small text-muted mb-4">
+                                        Si vous pensez qu'il s'agit d'une erreur, veuillez contacter l'équipe BLG Groupe.
+                                    </p>
+                                    <div class="d-flex justify-content-center gap-2">
+                                        <button onclick="window.close();" class="btn btn-outline-secondary">
+                                            <i class="fa fa-times me-2"></i>Fermer
+                                        </button>
+                                        <a href="/" class="btn btn-outline-primary">
+                                            <i class="fa fa-home me-2"></i>Accueil
                                         </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
 
+        <!-- Template page de signature (MODERNIZED) -->
+        <template id="contract_signature_page" name="Signature de contrat">
+            <t t-call="web.frontend_layout">
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&amp;display=swap"/>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+                <script src="https://cdn.jsdelivr.net/npm/signature_pad@4.1.7/dist/signature_pad.umd.min.js"></script>
+
+                <t t-set="title">Signature de contrat - BLG Groupe</t>
+                <t t-set="no_header" t-value="True"/>
+                <t t-set="no_footer" t-value="True"/>
+
+                <div class="o_contract_portal d-flex flex-column min-vh-100" style="font-family: 'Inter', system-ui, -apple-system, sans-serif !important; background: linear-gradient(135deg, #f8fafc 0%, #e9f0fa 100%); color: #334155;">
+                    <div class="custom-header py-3" style="background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border-bottom: 1px solid rgba(226,232,240,0.8);">
+                        <div class="container d-flex align-items-center">
+                            <img src="/construction_base/static/src/img/blg_logo.png" alt="Logo BLG GROUPE" class="brand-logo" style="height: 42px;" onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
+                            <span class="brand-text" style="font-size: 1.5rem; font-weight: 700; color: #1e40af; margin-left: 0.75rem; letter-spacing: -0.01em;">BLG Groupe</span>
+                        </div>
+                    </div>
+
+                    <div class="container flex-grow-1 py-5">
+                        <div class="row justify-content-center">
+                            <div class="col-lg-10">
+                                <div class="text-center mb-4">
+                                    <h1 style="font-size: 1.75rem; font-weight: 700; color: #1e40af; margin-bottom: 1.25rem; letter-spacing: -0.01em;">Signature électronique du contrat</h1>
+                                    <p class="text-muted mb-0">Veuillez vérifier les informations et signer le contrat ci-dessous.</p>
+                                </div>
+
+                                <!-- Informations du contrat -->
+                                <div class="mb-4" style="border-radius: 16px; box-shadow: 0 4px 20px rgba(15,23,42,0.08); border: 1px solid rgba(226,232,240,0.8); background: #fff;">
+                                    <div class="card-header" style="background: rgba(248,250,252,0.7); border-bottom: 1px solid rgba(226,232,240,0.7); border-radius: 16px 16px 0 0; padding: 1rem 1.25rem;">
+                                        <h5 class="mb-0 fw-bold">Détails du contrat</h5>
                                     </div>
-                                </t>
-                                <t t-if="documents">
-                                    <div class="card mb-4">
-                                        <div class="card-header bg-light">
-                                            <h5 class="mb-0">Vos documents</h5>
+                                    <div class="card-body p-4">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p><strong>Chantier:</strong> <t t-esc="chantier.name"/></p>
+                                                <p><strong>Sous-traitant:</strong> <t t-esc="subcontractor.name"/></p>
+                                                <p><strong>Numéro:</strong> <t t-esc="contract.contract_number"/></p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p><strong>Montant:</strong> <span t-field="contract.total_amount" t-options='{"widget": "monetary", "display_currency": contract.currency_id}'/></p>
+                                                <p><strong>Date début:</strong> <span t-field="contract.start_date" t-options='{"format": "dd/MM/yyyy"}'/></p>
+                                                <p><strong>Lots:</strong> <t t-esc="', '.join(contract.lot_ids.mapped('name'))"/></p>
+                                            </div>
                                         </div>
-                                        <div class="card-body p-3">
-                                            <table class="table table-bordered table-sm align-middle mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Type</th>
-                                                        <th>Nom</th>
-                                                        <th>Date</th>
-                                                        <th>Fichier</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <t t-foreach="documents" t-as="doc">
-                                                        <tr>
-                                                            <td><t t-esc="doc.document_type"/></td>
-                                                            <td><t t-esc="doc.name"/></td>
-                                                            <td><t t-esc="doc.create_date and doc.create_date.strftime('%d/%m/%Y') or ''"/></td>
-                                                            <td>
-                                                                <a t-att-href="'/web/content/construction.document/' + str(doc.id) + '/file_data?download=true'"
-                                                                   target="_blank"
-                                                                   class="btn btn-outline-secondary btn-sm">
-                                                                    <i class="fa fa-download"></i> Télécharger
-                                                                </a>
-                                                            </td>
-                                                        </tr>
-                                                    </t>
-                                                </tbody>
-                                            </table>
+                                         <div class="text-center mt-3">
+                                            <a t-att-href="'/portal/contract/%s/html_preview?access_token=%s' % (contract.id, access_token)" target="_blank" class="btn btn-outline-primary me-2">
+                                                <i class="fa fa-eye me-2"></i>Prévisualiser
+                                            </a>
+                                            <a t-att-href="'/portal/contract/%s/download?access_token=%s' % (contract.id, access_token)" class="btn btn-outline-secondary">
+                                                <i class="fa fa-download me-2"></i>Télécharger PDF
+                                            </a>
                                         </div>
                                     </div>
-                                </t>
-                                <form method="post" enctype="multipart/form-data" id="contractUploadForm"
-                                      autocomplete="off">
+                                </div>
+
+                                <!-- Formulaire de signature -->
+                                <form method="post" id="signatureForm">
                                     <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
-                                    <div class="card upload-card mb-4">
-                                        <div class="card-header">
-                                            <h5 class="mb-0 fw-bold">Contrat de sous-traitance (PDF)</h5>
+                                    <input type="hidden" name="signature_image" id="signature_image"/>
+
+                                    <div style="border-radius: 16px; box-shadow: 0 4px 20px rgba(15,23,42,0.08); border: 1px solid rgba(226,232,240,0.8); background: #fff;">
+                                        <div class="card-header" style="background: rgba(248,250,252,0.7); border-bottom: 1px solid rgba(226,232,240,0.7); border-radius: 16px 16px 0 0; padding: 1rem 1.25rem;">
+                                            <h5 class="mb-0 fw-bold">✍️ Votre Signature</h5>
                                         </div>
                                         <div class="card-body p-4">
-                                            <div class="mb-3">
-                                                <div class="file-upload-wrapper" id="dropzone-contract">
-                                                    <input type="file" name="contract_file" id="contract_file"
-                                                           class="file-upload-input" required="1" accept="application/pdf"/>
-                                                    <div class="upload-content">
-                                                        <i class="fa fa-file-pdf upload-icon"></i>
-                                                        <div class="upload-text">
-                                                            Glissez votre fichier PDF ici<br/>ou cliquez pour parcourir
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                                <div id="uploaded-file-contract" class="uploaded-file">
-                                                    <i class="fa fa-check-circle"></i>
-                                                    <span class="filename"></span>
-                                                </div>
+                                            <div id="signature-wrapper" style="position: relative; width: 100%; height: 200px; border: 2px dashed #cbd5e1; border-radius: 12px; background-color: #f8fafc; touch-action: none;">
+                                                <canvas id="signature-pad" class="signature-pad"></canvas>
+                                            </div>
+                                            <div class="text-center mt-2">
+                                                <button type="button" id="clear-signature" class="btn btn-sm btn-outline-secondary">Effacer</button>
+                                            </div>
+                                            <div class="mb-3 mt-3">
+                                                <label for="signature_comment" class="form-label">Commentaire (optionnel)</label>
+                                                <textarea name="signature_comment" id="signature_comment" class="form-control" rows="2" placeholder="Ajoutez un commentaire..."></textarea>
+                                            </div>
+                                            <div class="alert alert-warning mt-3">
+                                                <i class="fa fa-exclamation-triangle me-2"></i>
+                                                <strong>Important:</strong> Cette signature électronique a la même valeur légale qu'une signature manuscrite.
                                             </div>
                                         </div>
                                     </div>
+
                                     <div class="text-center mt-4">
-                                        <button type="submit" id="submitBtn" class="btn btn-primary btn-lg px-4 py-2">
-                                            <i class="fa fa-upload me-2"></i>Envoyer le contrat
+                                        <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
+                                            <i class="fa fa-check me-2"></i>Signer le contrat
                                         </button>
                                         <div class="mt-2 small text-muted">
-                                            <i class="fa fa-shield-alt me-1"></i>
-                                            Transmission sécurisée
+                                            <i class="fa fa-shield-alt me-1"></i>Signature sécurisée avec horodatage
                                         </div>
                                     </div>
                                 </form>
@@ -298,63 +188,166 @@
                         </div>
                     </div>
                 </div>
+
                 <script type="text/javascript">
                     document.addEventListener('DOMContentLoaded', function() {
-                    const input = document.getElementById('contract_file');
-                    const uploadedFileEl = document.getElementById('uploaded-file-contract');
-                    const filenameEl = uploadedFileEl ? uploadedFileEl.querySelector('.filename') : null;
-                    input.addEventListener('change', function() {
-                    if (input.files &amp; input.files[0]) {
-                    const file = input.files[0];
-                    if (filenameEl) {
-                    filenameEl.textContent = file.name;
-                    uploadedFileEl.style.display = 'flex';
-                    }
-                    }
-                    });
+                        var canvas = document.getElementById('signature-pad');
+                        var signaturePad = new SignaturePad(canvas, {
+                            backgroundColor: 'rgb(248, 252, 252)'
+                        });
+
+                        function resizeCanvas() {
+                            var wrapper = document.getElementById('signature-wrapper');
+                            var ratio =  Math.max(window.devicePixelRatio || 1, 1);
+                            canvas.width = wrapper.offsetWidth * ratio;
+                            canvas.height = wrapper.offsetHeight * ratio;
+                            canvas.getContext("2d").scale(ratio, ratio);
+                            signaturePad.clear();
+                        }
+
+                        window.addEventListener("resize", resizeCanvas);
+                        resizeCanvas();
+
+                        document.getElementById('clear-signature').addEventListener('click', function () {
+                            signaturePad.clear();
+                        });
+
+                        document.getElementById('signatureForm').addEventListener('submit', function(e) {
+                            if (signaturePad.isEmpty()) {
+                                alert("Veuillez signer le contrat avant de continuer.");
+                                e.preventDefault();
+                                return false;
+                            }
+                            var signatureImage = document.getElementById('signature_image');
+                            signatureImage.value = signaturePad.toDataURL('image/png');
+                            
+                            const submitBtn = document.getElementById('submitBtn');
+                            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin me-2"></i>Traitement en cours...';
+                            submitBtn.disabled = true;
+                        });
                     });
                 </script>
             </t>
         </template>
-
-        <!-- Template d'erreur pour token invalide ou expiré -->
-        <template id="subcontractor_contract_upload_error" name="Erreur Téléversement Contrat">
+        
+        <!-- Template contrat déjà signé (RESTORED) -->
+        <template id="contract_already_signed" name="Contrat déjà signé">
             <t t-call="web.frontend_layout">
-                <link rel="stylesheet"
-                      href="https://fonts.googleapis.com/css?family=Inter:400,600,700&amp;display=swap"/>
-                <link rel="stylesheet"
-                      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
-                <t t-set="title">Erreur - BLG Groupe</t>
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&amp;display=swap"/>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+                <t t-set="title">Contrat déjà signé - BLG Groupe</t>
                 <t t-set="no_header" t-value="True"/>
                 <t t-set="no_footer" t-value="True"/>
-                <div class="o_document_portal d-flex flex-column min-vh-100">
-                    <div class="custom-header">
+                <div class="o_contract_portal d-flex flex-column min-vh-100" style="font-family: 'Inter', system-ui, -apple-system, sans-serif !important; background: linear-gradient(135deg, #f8fafc 0%, #e9f0fa 100%); color: #334155;">
+                    <div class="custom-header" style="padding: 1.25rem 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(226, 232, 240, 0.8);">
                         <div class="container d-flex align-items-center">
-                            <img t-att-src="'/blg_contacts_extension/static/src/img/icon.png'" alt="Logo"
-                                 class="brand-logo"
-                                 onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
-                            <span class="brand-text">BLG Groupe</span>
+                            <img src="/construction_base/static/src/img/blg_logo.png" alt="Logo BLG GROUPE" class="brand-logo" style="height: 42px;" onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
+                            <span class="brand-text" style="font-size: 1.5rem; font-weight: 700; color: #1e40af; margin-left: 0.75rem;">BLG Groupe</span>
                         </div>
                     </div>
                     <div class="container flex-grow-1 py-5">
                         <div class="row justify-content-center">
-                            <div class="col-md-8 col-lg-6 text-center">
-                                <div class="card border-0 shadow p-5">
+                            <div class="col-md-8 col-lg-6">
+                                <div class="text-center p-5" style="border-radius: 16px; box-shadow: 0 8px 32px rgba(15, 23, 42, 0.1); background: #fff;">
                                     <div class="mb-4">
-                                        <i class="fa fa-exclamation-circle text-danger" style="font-size: 4rem;"></i>
+                                        <i class="fa fa-check-circle text-success" style="font-size: 4rem;"></i>
                                     </div>
-                                    <h2 class="mb-3">Lien expiré ou invalide</h2>
-                                    <p class="text-muted mb-4">
-                                        Ce lien n'est plus valide ou a déjà été utilisé.<br/>
-                                        Merci de contacter l'équipe BLG Groupe si vous pensez qu'il s'agit d'une erreur.
-                                    </p>
-                                    <div class="d-flex justify-content-center gap-2">
-                                        <button onclick="window.close();" class="btn btn-outline-secondary px-4">
+                                    <h2 class="mb-3 text-success">✅ Contrat déjà signé</h2>
+                                    <p class="text-muted mb-4">Ce contrat a déjà été signé électroniquement.</p>
+                                    <div class="alert alert-info">
+                                        <p class="mb-2"><strong>📄 Numéro :</strong> <t t-esc="contract.contract_number"/></p>
+                                        <p class="mb-2"><strong>📅 Signé le :</strong> <t t-esc="contract.signed_date" t-options='{"widget": "datetime", "format": "dd/MM/yyyy"}'/></p>
+                                        <p class="mb-0"><strong>✍️ État :</strong> Signé et actif</p>
+                                    </div>
+                                    <div class="mt-4">
+                                        <button onclick="window.close();" class="btn btn-outline-secondary me-2">
                                             <i class="fa fa-times me-2"></i>Fermer
                                         </button>
-                                        <a href="/" class="btn btn-outline-secondary px-4">
-                                            <i class="fa fa-arrow-left me-2"></i>Retour accueil
+                                        <a t-att-href="contract.portal_url.replace('/sign', '/download')" class="btn btn-primary">
+                                            <i class="fa fa-download me-2"></i>Télécharger PDF
                                         </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Template signature réussie (RESTORED) -->
+        <template id="contract_signature_success" name="Signature réussie">
+            <t t-call="web.frontend_layout">
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&amp;display=swap"/>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+                <t t-set="title">Signature réussie - BLG Groupe</t>
+                <t t-set="no_header" t-value="True"/>
+                <t t-set="no_footer" t-value="True"/>
+                 <div class="o_contract_portal d-flex flex-column min-vh-100" style="font-family: 'Inter', system-ui, -apple-system, sans-serif !important; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); color: #334155;">
+                    <div class="custom-header" style="padding: 1.25rem 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(226, 232, 240, 0.8);">
+                        <div class="container d-flex align-items-center">
+                            <img src="/construction_base/static/src/img/blg_logo.png" alt="Logo BLG GROUPE" class="brand-logo" style="height: 42px;" onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
+                            <span class="brand-text" style="font-size: 1.5rem; font-weight: 700; color: #16a34a; margin-left: 0.75rem;">BLG Groupe</span>
+                        </div>
+                    </div>
+                    <div class="container flex-grow-1 py-5">
+                        <div class="row justify-content-center">
+                            <div class="col-md-8 col-lg-6">
+                                <div class="text-center p-5" style="border-radius: 16px; box-shadow: 0 8px 32px rgba(34, 197, 94, 0.15); background: #fff; border: 2px solid #bbf7d0;">
+                                    <div class="mb-4">
+                                        <i class="fa fa-check-circle text-success" style="font-size: 5rem;"></i>
+                                    </div>
+                                    <h1 class="mb-3 text-success">🎉 Signature réussie !</h1>
+                                    <p class="lead text-muted mb-4">Votre contrat a été signé électroniquement avec succès.</p>
+                                    <div class="d-flex justify-content-center gap-3 mt-4">
+                                        <a t-att-href="contract.portal_url.replace('/sign', '/download')" class="btn btn-success btn-lg">
+                                            <i class="fa fa-download me-2"></i>Télécharger le contrat signé
+                                        </a>
+                                        <button onclick="window.close();" class="btn btn-outline-secondary btn-lg">
+                                            <i class="fa fa-times me-2"></i>Fermer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+
+        <!-- Template erreur de signature (RESTORED) -->
+        <template id="contract_signature_error" name="Erreur de signature">
+            <t t-call="web.frontend_layout">
+                <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&amp;display=swap"/>
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+                <t t-set="title">Erreur de signature - BLG Groupe</t>
+                <t t-set="no_header" t-value="True"/>
+                <t t-set="no_footer" t-value="True"/>
+                <div class="o_contract_portal d-flex flex-column min-vh-100" style="font-family: 'Inter', system-ui, -apple-system, sans-serif !important; background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%); color: #334155;">
+                    <div class="custom-header" style="padding: 1.25rem 0; background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); border-bottom: 1px solid rgba(226, 232, 240, 0.8);">
+                        <div class="container d-flex align-items-center">
+                            <img src="/construction_base/static/src/img/blg_logo.png" alt="Logo BLG GROUPE" class="brand-logo" style="height: 42px;" onerror="this.onerror=null; this.src='/web/static/img/logo.png'"/>
+                            <span class="brand-text" style="font-size: 1.5rem; font-weight: 700; color: #dc2626; margin-left: 0.75rem;">BLG Groupe</span>
+                        </div>
+                    </div>
+                    <div class="container flex-grow-1 py-5">
+                        <div class="row justify-content-center">
+                            <div class="col-md-8 col-lg-6">
+                                <div class="text-center p-5" style="border-radius: 16px; box-shadow: 0 8px 32px rgba(220, 38, 38, 0.15); background: #fff; border: 2px solid #fecaca;">
+                                    <div class="mb-4">
+                                        <i class="fa fa-exclamation-triangle text-danger" style="font-size: 4rem;"></i>
+                                    </div>
+                                    <h2 class="mb-3 text-danger">❌ Erreur de signature</h2>
+                                    <p class="text-muted mb-4">
+                                        <t t-esc="error or 'Une erreur est survenue lors de la signature. Veuillez réessayer.'"/>
+                                    </p>
+                                    <div class="d-flex justify-content-center gap-3">
+                                        <button onclick="window.location.reload();" class="btn btn-primary">
+                                            <i class="fa fa-refresh me-2"></i>Réessayer
+                                        </button>
+                                        <button onclick="window.close();" class="btn btn-outline-secondary">
+                                            <i class="fa fa-times me-2"></i>Fermer
+                                        </button>
                                     </div>
                                 </div>
                             </div>
@@ -364,4 +357,4 @@
             </t>
         </template>
     </data>
-</odoo> 
+</odoo>

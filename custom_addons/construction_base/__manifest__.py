@@ -1,14 +1,13 @@
-
 # -*- coding: utf-8 -*-
 {
     'name': 'BLG Groupe - Construction Base',
     'version': '1.0.1',
     'summary': 'Gestion des chantiers de construction',
     'description': """
-        Module pour la gestion des chantiers de construction,
-        incluant la gestion des lots, sous-traitants, devis,
-        planning et contrats pour les projets BLG Groupe.
-    """,
+                           Module pour la gestion des chantiers de construction,
+                           incluant la gestion des lots, sous-traitants, devis,
+                           planning et contrats pour les projets BLG Groupe.
+                       """,
     'category': 'Construction',
     'author': 'BLG Groupe',
     'website': 'https://www.blggroupe.com',
@@ -29,7 +28,14 @@
         'security/security.xml',
         'security/construction_security.xml',
         'security/ir.model.access.csv',
-        
+
+        # Rapports (templates d'abord, puis actions)
+        'reports/contract_header_footer.xml',
+        'reports/subcontractor_contract_template.xml',
+        'reports/reports.xml',
+        'reports/planning_report.xml',
+        'reports/report_actions.xml',
+
         # Données
         'data/construction_data.xml',
         'data/construction_lot_data.xml',
@@ -38,19 +44,19 @@
         'data/invoice_type_cycles.xml',
         'data/sequence_data.xml',
         'data/email_templates.xml',
-        'reports/subcontractor_contract_template.xml',
         
-        # Wizards (définir les actions avant les vues)
-        'wizard/document_upload_wizard_views.xml',
-        'wizard/lot_subquote_wizard_views.xml',
-        'wizard/lot_subcontractor_assign_wizard_views.xml',
-        'wizard/create_task_planning_views.xml',
-        'wizard/quote_selection_wizard_views.xml',
-        'wizard/force_stage_wizard_view.xml',
-        'views/invoice_schedule_wizard_views.xml',
-        'views/contract_preview_wizard_views.xml',
-        'wizard/lot_document_wizard_views.xml',
-        
+        # Wizards
+        'wizard/views/document_upload_wizard_views.xml',
+        'wizard/views/lot_subquote_wizard_views.xml',
+        'wizard/views/lot_subcontractor_assign_wizard_views.xml',
+        'wizard/views/create_task_planning_views.xml',
+        'wizard/views/quote_selection_wizard_views.xml',
+        'wizard/views/force_stage_wizard_view.xml',
+        'wizard/views/invoice_schedule_wizard_views.xml',
+        'wizard/views/lot_document_wizard_views.xml',
+        'wizard/views/contract_wizzard_views.xml',
+        'wizard/views/invoice_setup_wizard_views.xml',
+
         # Vues principales
         'views/chantier_views.xml',
         'views/lot_views.xml',
@@ -64,14 +70,10 @@
         'views/templates.xml',
         'views/main_views.xml',
         'views/menu.xml',
-        
+
         # Assets
         'views/assets.xml',
-        
-        # Rapports
-        'reports/planning_report.xml',
-        'reports/subcontractor_contract_template.xml',
-        'reports/report_actions.xml',
+
     ],
     'assets': {
         'web.assets_backend': [

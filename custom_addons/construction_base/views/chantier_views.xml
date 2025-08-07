@@ -223,6 +223,14 @@
                             <button name="action_setup_invoice_schedule" type="object" string="Configurer le planning"
                                     class="btn-primary" invisible="invoice_type_id == False"
                                     confirm="Confirmez-vous la configuration du planning ? Cela supprimera tout planning existant."/>
+                            <button name="action_open_invoice_setup_wizard" type="object" string="⚙️ Configurer facturation"
+                                    class="btn-secondary" invisible="show_invoice_setup == False"/>
+                            
+                            <!-- Boutons pour la gestion des factures -->
+                            <button name="action_check_invoice_triggers" type="object" string="🔍 Vérifier seuils"
+                                    class="btn-info" invisible="not invoice_schedule_ids"/>
+                            <button name="action_create_available_invoices" type="object" string="📄 Créer factures disponibles"
+                                    class="btn-success" invisible="not invoice_schedule_ids"/>
                         </group>
 
                         <notebook>

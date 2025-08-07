@@ -72,6 +72,11 @@ class ConstructionLot(models.Model):
 
     # =================== CHAMPS ADDITIONNELS ===================
 
+    urssaf_code = fields.Char(
+        string='Code URSSAF',
+        help="Code URSSAF avec description pour les contrats"
+    )
+
     description = fields.Text(
         string='Description',
         help="Description détaillée du lot de travaux"

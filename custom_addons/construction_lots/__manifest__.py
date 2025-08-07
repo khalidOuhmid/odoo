@@ -16,6 +16,7 @@
     ],
     'data': [
         'data/lot_data.xml',
+        'data/update_urssaf_codes.xml',
     ],
     'installable': True,
     'application': False,

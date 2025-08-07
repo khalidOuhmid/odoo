@@ -5,8 +5,8 @@
             <field name="name">Contrat de sous-traitance</field>
             <field name="model">lot.document.wizard</field>
             <field name="report_type">qweb-pdf</field>
-            <field name="report_name">construction_base.subcontractor_contract_template</field>
-            <field name="report_file">construction_base.subcontractor_contract_template</field>
+            <field name="report_name">construction_base.contrat_sous_traitance_template</field>
+            <field name="report_file">construction_base.contrat_sous_traitance_template</field>
             <field name="print_report_name">'Contrat_sous_traitance_%s' % (object.lot_id.name or 'N/A').replace('/', '_')</field>
         </record>
     </data>

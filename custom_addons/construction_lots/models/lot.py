@@ -6,6 +6,7 @@ class lot(models.Model):
 
     name = fields.Char('Name', required=True)
     code = fields.Char('Code' , required=True)
+    urssaf_code = fields.Char('Code URSSAF', help="Code URSSAF avec description pour les contrats")
     color = fields.Integer(
         string='Color Index',
         default=0,

@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        
+        <!-- Vue formulaire pour le wizard de configuration de facturation -->
+        <record id="view_invoice_setup_wizard_form" model="ir.ui.view">
+            <field name="name">construction.invoice.setup.wizard.form</field>
+            <field name="model">construction.invoice.setup.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Configuration de la facturation">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>💰 Configuration de la facturation</h1>
+                            <p>Chantier : <field name="chantier_id" readonly="1"/></p>
+                        </div>
+                        
+                        <group>
+                            <group string="Devis de référence">
+                                <field name="quote_id" required="1"/>
+                                <field name="quote_amount" widget="monetary" readonly="1"/>
+                                <field name="currency_id" invisible="1"/>
+                            </group>
+                            <group string="Cycle de facturation">
+                                <field name="invoice_type_id" required="1"/>
+                                <field name="total_schedules" readonly="1"/>
+                            </group>
+                        </group>
+                        
+                        <group string="Options avancées">
+                            <group string="Lots concernés">
+                                <field name="lot_ids" widget="many2many_tags"/>
+                                <p class="text-muted">
+                                    <small>Laissez vide pour inclure tous les lots du chantier</small>
+                                </p>
+                            </group>
+                            <group string="Marge">
+                                <field name="margin_percentage" widget="percentage"/>
+                                <p class="text-muted">
+                                    <small>Pourcentage de marge à déduire des montants du devis</small>
+                                </p>
+                            </group>
+                        </group>
+                        
+                        <div class="alert alert-info">
+                            <h4>ℹ️ Informations</h4>
+                            <ul>
+                                <li>Le planning de facturation sera créé automatiquement selon le cycle sélectionné</li>
+                                <li>Les factures seront déclenchées selon l'avancement du chantier</li>
+                                <li>Les emails seront envoyés automatiquement avec les factures en pièce jointe</li>
+                            </ul>
+                        </div>
+                    </sheet>
+                    
+                    <footer>
+                        <button name="action_preview_schedule" string="👁️ Prévisualiser" type="object" class="btn-secondary"/>
+                        <button name="action_create_invoice_schedule" string="✅ Créer le planning" type="object" class="btn-primary"/>
+                        <button string="Annuler" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action pour le wizard -->
+        <record id="action_invoice_setup_wizard" model="ir.actions.act_window">
+            <field name="name">Configuration de la facturation</field>
+            <field name="res_model">construction.invoice.setup.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+            <field name="context">{}</field>
+        </record>
+
+    </data>
+</odoo> 

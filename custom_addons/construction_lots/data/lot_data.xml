@@ -6,67 +6,282 @@
         <record id="lot_general" model="lot">
             <field name="name">Général</field>
             <field name="code">GEN</field>
+            <field name="urssaf_code">41.20Z - Construction de bâtiments résidentiels et non résidentiels</field>
             <field name="color">0</field>
         </record>
 
         <record id="lot_demolition" model="lot">
             <field name="name">Démolition</field>
             <field name="code">DEM</field>
+            <field name="urssaf_code">43.11Z - Travaux de démolition</field>
             <field name="color">1</field>
         </record>
 
         <record id="lot_maconnerie" model="lot">
             <field name="name">Maçonnerie</field>
             <field name="code">MAC</field>
+            <field name="urssaf_code">43.99A - Travaux d'étanchéification</field>
             <field name="color">2</field>
         </record>
 
         <record id="lot_platrerie" model="lot">
             <field name="name">Plâtrerie</field>
             <field name="code">PLA</field>
+            <field name="urssaf_code">43.31Z - Travaux de plâtrerie</field>
             <field name="color">3</field>
         </record>
 
         <record id="lot_plomberie_cvc" model="lot">
             <field name="name">Plomberie CVC</field>
             <field name="code">CVC</field>
+            <field name="urssaf_code">43.22A - Travaux d'installation d'eau et de gaz en tous locaux</field>
             <field name="color">4</field>
         </record>
 
         <record id="lot_electricite" model="lot">
             <field name="name">Électricité</field>
             <field name="code">ELE</field>
+            <field name="urssaf_code">43.21A - Travaux d'installation électrique dans tous locaux</field>
             <field name="color">5</field>
         </record>
 
         <record id="lot_menuiserie_ext" model="lot">
             <field name="name">Menuiserie extérieure</field>
             <field name="code">MEX</field>
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
             <field name="color">6</field>
         </record>
 
         <record id="lot_menuiserie_int" model="lot">
             <field name="name">Menuiserie intérieure</field>
             <field name="code">MIN</field>
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
             <field name="color">7</field>
         </record>
 
         <record id="lot_peinture_finition" model="lot">
             <field name="name">Peinture &amp; finition</field>
             <field name="code">PEI</field>
+            <field name="urssaf_code">43.34Z - Travaux de peinture et vitrerie</field>
             <field name="color">8</field>
         </record>
 
         <record id="lot_sol_parquet" model="lot">
             <field name="name">Sol souple et parquet</field>
             <field name="code">SOL</field>
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
             <field name="color">9</field>
         </record>
 
         <record id="lot_carrelage_faience" model="lot">
             <field name="name">Carrelage &amp; faïence</field>
             <field name="code">CAR</field>
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
             <field name="color">10</field>
+        </record>
+
+        <!-- Lots supplémentaires pour construction complète -->
+        <record id="lot_terrassement" model="lot">
+            <field name="name">Terrassement</field>
+            <field name="code">TER</field>
+            <field name="urssaf_code">43.12A - Travaux de terrassement courants et travaux préparatoires</field>
+            <field name="color">11</field>
+        </record>
+
+        <record id="lot_gros_oeuvre" model="lot">
+            <field name="name">Gros œuvre</field>
+            <field name="code">GRO</field>
+            <field name="urssaf_code">43.99B - Travaux de montage de structures métalliques</field>
+            <field name="color">0</field>
+        </record>
+
+        <record id="lot_charpente" model="lot">
+            <field name="name">Charpente</field>
+            <field name="code">CHA</field>
+            <field name="urssaf_code">43.91A - Travaux de charpente</field>
+            <field name="color">1</field>
+        </record>
+
+        <record id="lot_couverture" model="lot">
+            <field name="name">Couverture</field>
+            <field name="code">COU</field>
+            <field name="urssaf_code">43.91B - Travaux de couverture par éléments</field>
+            <field name="color">2</field>
+        </record>
+
+        <record id="lot_etancheite" model="lot">
+            <field name="name">Étanchéité</field>
+            <field name="code">ETA</field>
+            <field name="urssaf_code">43.99A - Travaux d'étanchéification</field>
+            <field name="color">3</field>
+        </record>
+
+        <record id="lot_isolation" model="lot">
+            <field name="name">Isolation thermique</field>
+            <field name="code">ISO</field>
+            <field name="urssaf_code">43.99C - Travaux de maçonnerie générale et gros œuvre de bâtiment</field>
+            <field name="color">4</field>
+        </record>
+
+        <record id="lot_cloisons" model="lot">
+            <field name="name">Cloisons sèches</field>
+            <field name="code">CLO</field>
+            <field name="urssaf_code">43.31Z - Travaux de plâtrerie</field>
+            <field name="color">5</field>
+        </record>
+
+        <record id="lot_faux_plafonds" model="lot">
+            <field name="name">Faux plafonds</field>
+            <field name="code">FAU</field>
+            <field name="urssaf_code">43.31Z - Travaux de plâtrerie</field>
+            <field name="color">6</field>
+        </record>
+
+        <record id="lot_chauffage" model="lot">
+            <field name="name">Chauffage</field>
+            <field name="code">CHA</field>
+            <field name="urssaf_code">43.22B - Travaux d'installation d'équipements thermiques et de climatisation</field>
+            <field name="color">7</field>
+        </record>
+
+        <record id="lot_ventilation" model="lot">
+            <field name="name">Ventilation</field>
+            <field name="code">VEN</field>
+            <field name="urssaf_code">43.22B - Travaux d'installation d'équipements thermiques et de climatisation</field>
+            <field name="color">8</field>
+        </record>
+
+        <record id="lot_sanitaire" model="lot">
+            <field name="name">Sanitaire</field>
+            <field name="code">SAN</field>
+            <field name="urssaf_code">43.22A - Travaux d'installation d'eau et de gaz en tous locaux</field>
+            <field name="color">9</field>
+        </record>
+
+        <record id="lot_metallerie" model="lot">
+            <field name="name">Métallerie</field>
+            <field name="code">MET</field>
+            <field name="urssaf_code">43.32B - Travaux de menuiserie métallique et serrurerie</field>
+            <field name="color">10</field>
+        </record>
+
+        <record id="lot_serrurerie" model="lot">
+            <field name="name">Serrurerie</field>
+            <field name="code">SER</field>
+            <field name="urssaf_code">43.32B - Travaux de menuiserie métallique et serrurerie</field>
+            <field name="color">11</field>
+        </record>
+
+        <record id="lot_vitrerie" model="lot">
+            <field name="name">Vitrerie - Miroiterie</field>
+            <field name="code">VIT</field>
+            <field name="urssaf_code">43.34Z - Travaux de peinture et vitrerie</field>
+            <field name="color">0</field>
+        </record>
+
+        <record id="lot_carrelage_ext" model="lot">
+            <field name="name">Carrelage extérieur</field>
+            <field name="code">CEX</field>
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
+            <field name="color">1</field>
+        </record>
+
+        <record id="lot_parquet" model="lot">
+            <field name="name">Parquet</field>
+            <field name="code">PAR</field>
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
+            <field name="color">2</field>
+        </record>
+
+        <record id="lot_moquette" model="lot">
+            <field name="name">Moquette</field>
+            <field name="code">MOQ</field>
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
+            <field name="color">3</field>
+        </record>
+
+        <record id="lot_papier_peint" model="lot">
+            <field name="name">Papier peint</field>
+            <field name="code">PAP</field>
+            <field name="urssaf_code">43.34Z - Travaux de peinture et vitrerie</field>
+            <field name="color">4</field>
+        </record>
+
+        <record id="lot_ascenseur" model="lot">
+            <field name="name">Ascenseur</field>
+            <field name="code">ASC</field>
+            <field name="urssaf_code">43.29A - Travaux d'isolation</field>
+            <field name="color">5</field>
+        </record>
+
+        <record id="lot_espaces_verts" model="lot">
+            <field name="name">Espaces verts</field>
+            <field name="code">ESP</field>
+            <field name="urssaf_code">81.30Z - Services d'aménagement paysager</field>
+            <field name="color">6</field>
+        </record>
+
+        <record id="lot_voirie" model="lot">
+            <field name="name">Voirie</field>
+            <field name="code">VOI</field>
+            <field name="urssaf_code">42.11Z - Construction de routes et autoroutes</field>
+            <field name="color">7</field>
+        </record>
+
+        <record id="lot_cloture" model="lot">
+            <field name="name">Clôture</field>
+            <field name="code">CLO</field>
+            <field name="urssaf_code">43.99D - Autres travaux de construction spécialisés</field>
+            <field name="color">8</field>
+        </record>
+
+        <record id="lot_nettoyage" model="lot">
+            <field name="name">Nettoyage fin de chantier</field>
+            <field name="code">NET</field>
+            <field name="urssaf_code">81.22Z - Autres activités de nettoyage des bâtiments et nettoyage industriel</field>
+            <field name="color">9</field>
+        </record>
+
+        <record id="lot_domotique" model="lot">
+            <field name="name">Domotique</field>
+            <field name="code">DOM</field>
+            <field name="urssaf_code">43.21B - Travaux d'installation électrique sur la voie publique</field>
+            <field name="color">10</field>
+        </record>
+
+        <record id="lot_alarme" model="lot">
+            <field name="name">Système d'alarme</field>
+            <field name="code">ALA</field>
+            <field name="urssaf_code">43.21A - Travaux d'installation électrique dans tous locaux</field>
+            <field name="color">11</field>
+        </record>
+
+        <record id="lot_incendie" model="lot">
+            <field name="name">Sécurité incendie</field>
+            <field name="code">INC</field>
+            <field name="urssaf_code">43.21A - Travaux d'installation électrique dans tous locaux</field>
+            <field name="color">0</field>
+        </record>
+
+        <record id="lot_cuisine" model="lot">
+            <field name="name">Cuisine équipée</field>
+            <field name="code">CUI</field>
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
+            <field name="color">1</field>
+        </record>
+
+        <record id="lot_placards" model="lot">
+            <field name="name">Placards intégrés</field>
+            <field name="code">PLA</field>
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
+            <field name="color">2</field>
+        </record>
+
+        <record id="lot_stores" model="lot">
+            <field name="name">Stores et volets</field>
+            <field name="code">STO</field>
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
+            <field name="color">3</field>
         </record>
 
     </data>

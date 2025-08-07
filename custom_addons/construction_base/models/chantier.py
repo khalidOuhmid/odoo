@@ -17,6 +17,9 @@ ACTION_RULES = {
                                                                                    "Travaux"},
     "show_mark_not_pursued": lambda rec: rec.state in {"active", "abandoned"},
     "show_split_quote": lambda rec: rec.can_split_quote_to_purchase() if hasattr(rec, 'can_split_quote_to_purchase') else False,
+    "show_invoice_setup": lambda rec: rec.state == "active" 
+                                      and rec.stage_id.chapter_id.code == "PREP" 
+                                      and rec.stage_id.code == "FD",
 }
 
 STAGE_VALIDATORS = {
@@ -222,6 +225,7 @@ class Chantier(models.Model):
     show_mark_not_pursued = fields.Boolean('Afficher marquer sans suite', compute='_compute_action_visibility',
                                            default=False)
     show_split_quote = fields.Boolean('Afficher diviser devis', compute='_compute_action_visibility', default=False)
+    show_invoice_setup = fields.Boolean('Afficher configuration facturation', compute='_compute_action_visibility', default=False)
 
     planning_task_ids = fields.One2many('construction.planning.task', 'chantier_id', string='Tâches de planning')
     purchase_order_ids = fields.One2many('purchase.order', 'chantier_id', string="Bons de commande")
@@ -628,6 +632,7 @@ class Chantier(models.Model):
           1. Chaque lot possède au moins un sous-traitant.
           2. Au moins un devis du sous-traitant est accepté (état « sale » ou « done »).
           3. Les données de facturation et de planning sont complètes.
+          4. Chaque sous-traitant (sauf internes) a un devis signé.
 
         Retour :
             (bool, str) :
@@ -666,7 +671,28 @@ class Chantier(models.Model):
             msg = "Lots sans devis accepté : " + "; ".join(incomplete_lots)
             return False, msg
 
-        # 4️⃣ Autres vérifications globales
+        # 4️⃣ Vérifier que chaque sous-traitant (sauf internes) a un devis signé
+        external_subcontractors = self.subcontractor_ids.filtered(
+            lambda p: not p.is_company or p.supplier_rank > 0
+        )
+        
+        subcontractors_without_signed_quote = []
+        for subcontractor in external_subcontractors:
+            # Rechercher les devis signés pour ce sous-traitant
+            signed_quotes = self.env["sale.order"].search([
+                ("partner_id", "=", subcontractor.id),
+                ("chantier_id", "=", self.id),
+                ("state", "in", ["sale", "done", "validated"])
+            ])
+            
+            if not signed_quotes:
+                subcontractors_without_signed_quote.append(subcontractor.name)
+        
+        if subcontractors_without_signed_quote:
+            msg = "Sous-traitants sans devis signé : " + ", ".join(subcontractors_without_signed_quote)
+            return False, msg
+
+        # 5️⃣ Autres vérifications globales
         if not self.invoice_type_id:
             return False, "Cycle de facturation non sélectionné"
 
@@ -676,7 +702,7 @@ class Chantier(models.Model):
         if not self.date_start_contract or not self.date_end_contract:
             return False, "Planning de chantier incomplet"
 
-        # 5️⃣ Tout est conforme
+        # 6️⃣ Tout est conforme
         return True, ""
 
     def check_construction_25_percentage_stage(self):
@@ -1326,31 +1352,40 @@ class Chantier(models.Model):
             'context': {'default_active': True}
         }
 
+    def action_open_invoice_setup_wizard(self):
+        """Ouvrir le wizard de configuration de la facturation"""
+        self.ensure_one()
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Configuration de la facturation',
+            'res_model': 'construction.invoice.setup.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.id,
+            }
+        }
+
     def action_trigger_advance_payment(self):
         """Déclencher manuellement l'acompte de signature"""
         self.ensure_one()
 
-        advance_payments = self.invoice_schedule_ids.filtered(
-            lambda s: s.is_advance_payment and s.state == 'planned'
-        )
-
-        if not advance_payments:
-            raise ValidationError(
-                "Aucun acompte de signature en attente pour ce chantier."
-            )
-
-        for payment in advance_payments:
-            payment.write({
-                'state': 'ready',
-                'is_triggered': True
-            })
-
-        self.message_post(
-            body=f"📝 {len(advance_payments)} acompte(s) de signature déclenché(s) manuellement",
-            message_type='notification'
-        )
-
-        return self.action_view_invoice_schedule()
+        # Utiliser le service pour déclencher l'acompte
+        result = self.env['construction.invoice.service'].trigger_advance_payment(self.id)
+        
+        if result['success']:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Acompte déclenché',
+                    'message': result['message'],
+                    'type': 'success'
+                }
+            }
+        else:
+            raise ValidationError(result['message'])
 
     def action_check_invoice_triggers(self):
         """Vérifier manuellement tous les seuils de facturation"""
@@ -1361,21 +1396,89 @@ class Chantier(models.Model):
                 "Aucun planning de facturation configuré pour ce chantier."
             )
 
-        old_ready_count = len(self.invoice_schedule_ids.filtered(lambda s: s.state == 'ready'))
-        self._check_invoice_triggers()
-        new_ready_count = len(self.invoice_schedule_ids.filtered(lambda s: s.state == 'ready'))
-
-        triggered_count = new_ready_count - old_ready_count
-
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': 'Vérification des seuils',
-                'message': f'{triggered_count} nouvelle(s) facture(s) déclenchée(s). Avancement: {self.progress}%',
-                'type': 'success' if triggered_count > 0 else 'info'
+        # Utiliser le service pour vérifier les seuils
+        result = self.env['construction.invoice.service'].check_and_trigger_invoices(self.id)
+        
+        if result['success']:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Vérification des seuils',
+                    'message': f'{result["available_count"]} nouvelle(s) facture(s) disponible(s). Avancement: {result["progress"]}%',
+                    'type': 'success' if result['available_count'] > 0 else 'info'
+                }
             }
-        }
+        else:
+            raise ValidationError(result['message'])
+
+    def action_create_available_invoices(self):
+        """Créer manuellement toutes les factures disponibles"""
+        self.ensure_one()
+
+        if not self.invoice_schedule_ids:
+            raise ValidationError(
+                "Aucun planning de facturation configuré pour ce chantier."
+            )
+
+        # Récupérer toutes les factures prêtes à être créées
+        ready_schedules = self.invoice_schedule_ids.filtered(lambda s: s.state == 'ready')
+        
+        if not ready_schedules:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Aucune facture disponible',
+                    'message': 'Aucune facture n\'est prête à être créée. Vérifiez les seuils d\'avancement.',
+                    'type': 'warning'
+                }
+            }
+
+        # Créer toutes les factures disponibles
+        created_count = 0
+        errors = []
+        
+        for schedule in ready_schedules:
+            try:
+                result = self.env['construction.invoice.service'].create_and_send_invoice(schedule.id)
+                if result['success']:
+                    created_count += 1
+                else:
+                    errors.append(f"{schedule.name}: {result['message']}")
+            except Exception as e:
+                errors.append(f"{schedule.name}: {str(e)}")
+
+        # Message de résultat
+        if created_count > 0:
+            message = f"✅ {created_count} facture(s) créée(s) et envoyée(s) avec succès."
+            if errors:
+                message += f"\n❌ Erreurs: {len(errors)} facture(s) non créée(s)."
+            
+            self.message_post(
+                body=f"📄 Création manuelle de factures: {created_count} créée(s), {len(errors)} erreur(s)",
+                message_type='notification'
+            )
+            
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Création de factures',
+                    'message': message,
+                    'type': 'success' if not errors else 'warning'
+                }
+            }
+        else:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Erreur de création',
+                    'message': f"Aucune facture n'a pu être créée:\n" + "\n".join(errors),
+                    'type': 'danger'
+                }
+            }
 
     @api.onchange('invoice_type_id')
     def _onchange_invoice_type_id(self):
@@ -1407,24 +1510,14 @@ class Chantier(models.Model):
         if not self.invoice_schedule_ids:
             return
 
-        # Vérifier tous les seuils de facturation
-        for schedule_line in self.invoice_schedule_ids:
-            try:
-                schedule_line.check_progress_trigger()
-            except Exception as e:
-                _logger.error(f"Erreur lors de la vérification de {schedule_line.name}: {e}")
-
-        # Compter les nouvelles factures prêtes
-        ready_invoices = self.invoice_schedule_ids.filtered(
-            lambda s: s.state == 'ready' and s.is_triggered
-        )
-
-        if ready_invoices:
-            # Utiliser self.sudo() pour éviter les problèmes de permissions lors de l'appel depuis un compute
-            self.sudo().message_post(
-                body=f"💰 {len(ready_invoices)} facture(s) prête(s) à émettre suite à l'avancement du chantier",
-                message_type='comment'
-            )
+        # Utiliser le service pour vérifier et déclencher les factures
+        result = self.env['construction.invoice.service'].check_and_trigger_invoices(self.id)
+        
+        if result['success'] and result['triggered_count'] > 0:
+            # Le service a déjà posté le message de notification
+            pass
+        elif not result['success']:
+            _logger.error(f"Erreur lors de la vérification des factures: {result['message']}")
 
     @api.model
     def _read_group_stage_id(self, stages, domain, order=None):
