@@ -36,6 +36,42 @@ class PurchaseOrderLine(models.Model):
         help="Notes spécifiques à la construction pour cette ligne"
     )
 
+    # =================== SUIVI DE LIVRAISON ===================
+
+    expected_delivery_date = fields.Datetime(
+        string='Date de livraison prévue',
+        tracking=True,
+        help="Date/heure prévue d'arrivée de cette ligne de commande"
+    )
+
+    tracking_link = fields.Char(
+        string='Lien de tracking',
+        help="URL de suivi du transporteur pour cette livraison"
+    )
+
+    delivery_place = fields.Char(
+        string='Lieu de livraison',
+        help="Lieu prévu de réception (ex: Chantier, Entrepôt, Bâtiment B)"
+    )
+
+    chantier_id = fields.Many2one(
+        comodel_name='construction.chantier',
+        string='Chantier',
+        related='order_id.chantier_id',
+        store=True,
+        index=True,
+        readonly=True,
+    )
+
+    vendor_id = fields.Many2one(
+        comodel_name='res.partner',
+        string='Fournisseur',
+        related='order_id.partner_id',
+        store=True,
+        index=True,
+        readonly=True,
+    )
+
     # =================== MÉTHODES MÉTIER ===================
 
     @api.onchange('product_id')

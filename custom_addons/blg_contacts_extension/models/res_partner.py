@@ -304,6 +304,7 @@ class ResPartner(models.Model):
                 record.chantier_count = 0
 
     @api.depends(
+        'contact_type',
         'document_identity_card', 'document_identity_card_expiry', 'document_identity_card_manual_status',
         'document_URSSAF', 'document_URSSAF_expiry', 'document_URSSAF_manual_status',
         'document_KBIS', 'document_KBIS_expiry', 'document_KBIS_manual_status',
@@ -315,6 +316,13 @@ class ResPartner(models.Model):
         Compute document statuses based on content, expiry dates, and manual validation.
         """
         for record in self:
+            # Pour les contacts internes, ignorer la gestion documentaire partenaire
+            # (les exigences restent au niveau chantier: planning, CCTP, etc.)
+            if getattr(record, 'contact_type', False) == 'employee':
+                for doc_type, config in DOCUMENT_TYPES.items():
+                    status_field = config['status_field']
+                    setattr(record, status_field, 'valid')
+                continue
             for doc_type, config in DOCUMENT_TYPES.items():
                 content_field = config['content_field']
                 manual_status_field = config['manual_status_field']
@@ -351,6 +359,7 @@ class ResPartner(models.Model):
                 setattr(record, status_field, status)
 
     @api.depends(
+        'contact_type',
         'document_identity_card_status', 'document_URSSAF_status',
         'document_KBIS_status', 'document_insurance_status', 'document_RIB_status'
     )
@@ -359,6 +368,11 @@ class ResPartner(models.Model):
         Compute global document status flags.
         """
         for record in self:
+            # Les contacts internes ne doivent pas bloquer par documents partenaires
+            if getattr(record, 'contact_type', False) == 'employee':
+                record.has_expired_documents = False
+                record.has_expiring_documents = False
+                continue
             has_expired = False
             has_expiring = False
             
@@ -380,7 +394,8 @@ class ResPartner(models.Model):
     def _check_lot_assignment_rules(self):
         """Validate lot assignment business rules."""
         for record in self:
-            if record.lot_ids and record.contact_type != 'sous_traitant':
+            # Autoriser l'affectation d'une spécialité aux employés internes
+            if record.lot_ids and record.contact_type not in ('sous_traitant', 'employee'):
                 raise ValidationError(
                     "Trade specializations (lots) can only be assigned to subcontractor contacts. "
                     "Please change the contact type to 'Subcontractor' or remove the lot assignments."
@@ -455,6 +470,10 @@ class ResPartner(models.Model):
         """
         self.ensure_one()
         
+        # Ne pas envoyer d'email de documents aux contacts internes
+        if getattr(self, 'contact_type', False) == 'employee':
+            return self._create_notification('info', "Contact interne: aucun document partenaire requis.")
+
         if not self.email:
             return self._create_notification(
                 'danger', 
@@ -654,6 +673,10 @@ class ResPartner(models.Model):
         """
         self.ensure_one()
         
+        # Ne pas envoyer d'email de documents aux contacts internes
+        if getattr(self, 'contact_type', False) == 'employee':
+            return self._create_notification('info', "Contact interne: aucun document partenaire requis.")
+
         if not self.email:
             return self._create_notification(
                 'danger', 

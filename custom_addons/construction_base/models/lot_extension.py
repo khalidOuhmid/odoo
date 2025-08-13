@@ -47,11 +47,17 @@ class ConstructionLot(models.Model):
 
     # =================== RELATIONS ===================
 
+    standard_lot_id = fields.Many2one(
+        'lot',
+        string='Lot standard',
+        help="Référentiel des lots standards (module construction_lots)"
+    )
+
     subcontractor_ids = fields.Many2many(
         'res.partner',
         string='Sous-traitants',
-        domain="[('supplier_rank', '>', 0)]",
-        help="Sous-traitants assignés à ce lot"
+        domain="['|', ('supplier_rank', '>', 0), ('contact_type', '=', 'employee')]",
+        help="Sous-traitants assignés à ce lot (inclut internes pour suivi/planning)"
     )
 
     # =================== ÉTAT ET PROGRESSION ===================
@@ -169,15 +175,74 @@ class ConstructionLot(models.Model):
                 # Rechercher les lignes du devis qui correspondent à ce lot
                 lot_lines = main_quote.order_line.filtered(
                     lambda line: (
-                        lot.name.lower() in line.name.lower() or 
-                        lot.code.lower() in line.name.lower() or
-                        (line.product_id and lot.name.lower() in line.product_id.name.lower()) or
-                        (line.product_id and lot.code.lower() in line.product_id.name.lower())
-                    ) and not line.display_type
+                        not line.display_type and (
+                            (
+                                lot.name and line.name and 
+                                lot.name.lower() in line.name.lower()
+                            ) or (
+                                lot.code and line.name and 
+                                lot.code.lower() in line.name.lower()
+                            ) or (
+                                line.product_id and line.product_id.name and (
+                                    (lot.name and lot.name.lower() in line.product_id.name.lower()) or 
+                                    (lot.code and lot.code.lower() in line.product_id.name.lower())
+                                )
+                            )
+                        )
+                    )
                 )
                 
                 if lot_lines:
                     lot.price_from_quote = sum(lot_lines.mapped('price_subtotal'))
+
+    @api.onchange('standard_lot_id')
+    def _onchange_standard_lot_id(self):
+        """Lorsque l'on sélectionne un lot standard, pré-remplir les champs."""
+        for lot in self:
+            if lot.standard_lot_id:
+                lot.name = lot.standard_lot_id.name or lot.name
+                if hasattr(lot, 'code'):
+                    lot.code = lot.standard_lot_id.code or getattr(lot, 'code', False)
+                if hasattr(lot, 'urssaf_code'):
+                    lot.urssaf_code = lot.standard_lot_id.urssaf_code or getattr(lot, 'urssaf_code', False)
+                if hasattr(lot, 'color'):
+                    lot.color = lot.standard_lot_id.color
+
+    @api.onchange('name')
+    def _onchange_name_autocode(self):
+        """Génère un code par défaut à partir du nom si aucun code et aucun lot standard."""
+        for lot in self:
+            if not getattr(lot, 'code', False) and not lot.standard_lot_id and lot.name:
+                lot.code = self._generate_code_from_name(lot.name)
+
+    def _generate_code_from_name(self, name):
+        """Génère un code court à partir du nom (3 lettres, upper)."""
+        if not name:
+            return 'GEN'
+        cleaned = ''.join(ch for ch in name if ch.isalnum())
+        if not cleaned:
+            return 'GEN'
+        return cleaned[:3].upper()
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Assure que le champ code requis est renseigné (standard_lot_id ou nom)."""
+        for vals in vals_list:
+            if not vals.get('code'):
+                if vals.get('standard_lot_id'):
+                    std = self.env['lot'].browse(vals['standard_lot_id'])
+                    vals['code'] = std.code or self._generate_code_from_name(vals.get('name'))
+                else:
+                    vals['code'] = self._generate_code_from_name(vals.get('name'))
+        return super().create(vals_list)
+
+    def write(self, vals):
+        """Si standard_lot_id est défini et code manquant, remplir automatiquement."""
+        res = super().write(vals)
+        for rec in self:
+            if not rec.code and rec.standard_lot_id:
+                rec.code = rec.standard_lot_id.code or self._generate_code_from_name(rec.name)
+        return res
 
     # =================== RELATIONS POUR COMMANDES ===================
     

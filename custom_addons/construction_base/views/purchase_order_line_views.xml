@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Liste des lignes de commandes (outil de suivi) -->
+    <record id="view_purchase_order_line_tracking_tree" model="ir.ui.view">
+        <field name="name">purchase.order.line.tracking.list</field>
+        <field name="model">purchase.order.line</field>
+        <field name="arch" type="xml">
+            <list string="Commandes à recevoir" create="false" edit="true" delete="false"
+                  default_order="expected_delivery_date asc">
+                <field name="chantier_id"/>
+                <field name="order_id"/>
+                <field name="product_id"/>
+                <field name="name" string="Description"/>
+                <field name="product_qty"/>
+                <field name="price_unit"/>
+                <field name="expected_delivery_date"/>
+                <field name="delivery_place"/>
+                <field name="tracking_link"/>
+                <field name="room_location" optional="show"/>
+                <field name="floor_level" optional="show"/>
+                <field name="lot_id" optional="show"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Formulaire simplifié -->
+    <record id="view_purchase_order_line_tracking_form" model="ir.ui.view">
+        <field name="name">purchase.order.line.tracking.form</field>
+        <field name="model">purchase.order.line</field>
+        <field name="arch" type="xml">
+            <form string="Ligne de commande">
+                <sheet>
+                    <group>
+                        <group string="Commande">
+                <field name="order_id"/>
+                <field name="chantier_id" readonly="1"/>
+                            <field name="lot_id"/>
+                        </group>
+                        <group string="Produit">
+                            <field name="product_id"/>
+                            <field name="name"/>
+                            <field name="product_qty"/>
+                            <field name="price_unit"/>
+                        </group>
+                    </group>
+                    <separator string="Suivi de livraison"/>
+                    <group>
+                        <group>
+                            <field name="expected_delivery_date"/>
+                            <field name="delivery_place"/>
+                            <field name="tracking_link" placeholder="https://..."/>
+                        </group>
+                        <group>
+                            <field name="room_location"/>
+                            <field name="floor_level"/>
+                            <field name="construction_notes"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Recherche -->
+    <record id="view_purchase_order_line_tracking_search" model="ir.ui.view">
+        <field name="name">purchase.order.line.tracking.search</field>
+        <field name="model">purchase.order.line</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher commandes">
+                <field name="chantier_id"/>
+                <field name="order_id"/>
+                <field name="product_id"/>
+                <field name="name"/>
+                <filter string="A venir" name="upcoming" domain="[('expected_delivery_date','&gt;=', context_today())]"/>
+                <filter string="En retard" name="late" domain="[('expected_delivery_date','&lt;', context_today())]"/>
+                <group expand="0" string="Grouper par">
+                    <filter string="Chantier" name="group_by_chantier" context="{'group_by':'chantier_id'}"/>
+                    <filter string="Date" name="group_by_date" context="{'group_by': 'expected_delivery_date:day'}"/>
+                    <filter string="Fournisseur" name="group_by_vendor" context="{'group_by':'vendor_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_purchase_order_line_tracking" model="ir.actions.act_window">
+        <field name="name">Commandes à recevoir</field>
+        <field name="res_model">purchase.order.line</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="view_purchase_order_line_tracking_tree"/>
+        <field name="search_view_id" ref="view_purchase_order_line_tracking_search"/>
+        <field name="context">{'search_default_upcoming': 1}</field>
+        <field name="help" type="html">
+            <div class="o_view_nocontent_empty_folder">
+                <div class="text-center">
+                    <i class="fa fa-truck fa-3x text-muted mb-3"/>
+                    <h3>Aucune livraison à venir</h3>
+                    <p class="text-muted">Renseignez la date prévue, le lieu et le lien de tracking sur les lignes d'achat.</p>
+                </div>
+            </div>
+        </field>
+    </record>
+
+    <!-- Menu -->
+    <menuitem id="menu_construction_po_tracking" name="Commandes à recevoir"
+              parent="construction_base.menu_construction_root"
+              action="action_purchase_order_line_tracking" sequence="30"/>
+
+</odoo>
+
+

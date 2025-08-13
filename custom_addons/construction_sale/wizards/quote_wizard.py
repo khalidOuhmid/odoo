@@ -480,7 +480,7 @@ class ProductAddDialog(models.TransientModel):
     )
     
     base_price = fields.Float(
-        related='product_id.list_price',
+        related='product_id.standard_price',
         readonly=True
     )
 
@@ -550,9 +550,11 @@ class ProductAddDialog(models.TransientModel):
     
     @api.depends('base_price', 'margin_percent')
     def _compute_unit_price(self):
-        """Calcule le prix unitaire avec la marge"""
+        """Calcule le prix unitaire final = coût * (1 + marge)."""
         for dialog in self:
-            dialog.unit_price = dialog.base_price * (1 + dialog.margin_percent / 100)
+            cost = dialog.base_price or 0.0
+            margin = dialog.margin_percent or 0.0
+            dialog.unit_price = cost * (1 + margin / 100.0)
     
     @api.depends('unit_price', 'quantity')
     def _compute_total_price(self):
@@ -765,12 +767,17 @@ class ProductCreator(models.TransientModel):
     list_price = fields.Float(
         string='Prix de vente',
         default=0.0,
-        required=True
+        required=False
     )
     
     standard_price = fields.Float(
         string='Coût',
         default=0.0
+    )
+
+    computed_sale_price = fields.Float(
+        string='Prix de vente (calculé)',
+        compute='_compute_computed_sale_price'
     )
     
     description_sale = fields.Text(
@@ -806,11 +813,22 @@ class ProductCreator(models.TransientModel):
             raise ValidationError(_("Le prix de vente doit être positif."))
         
         # Créer le produit
+        # Calculer le code produit automatiquement si non renseigné: "<lot>-<index>"
+        generated_code = self.default_code
+        if not generated_code:
+            generated_code = self._generate_default_code_from_lot()
+
+        # Calculer un prix de vente dérivé du coût et de la marge par défaut du wizard si non fourni
+        computed_list_price = self.list_price
+        if (not computed_list_price or computed_list_price <= 0) and self.standard_price and self.quote_wizard_id:
+            default_margin = self.quote_wizard_id.default_margin_percent or 0.0
+            computed_list_price = self.standard_price * (1 + default_margin / 100.0)
+
         product_vals = {
             'name': self.name,
-            'default_code': self.default_code,
+            'default_code': generated_code,
             'categ_id': self.categ_id.id,
-            'list_price': self.list_price,
+            'list_price': computed_list_price or 0.0,
             'standard_price': self.standard_price,
             'description_sale': self.description_sale,
             'sale_ok': True,
@@ -847,15 +865,67 @@ class ProductCreator(models.TransientModel):
     
     def _add_product_to_quote(self, product):
         """Ajouter le produit créé directement au devis"""
+        # Utiliser le coût et la marge par défaut du wizard pour calculer le prix
+        default_margin = self.quote_wizard_id.default_margin_percent or 0.0
+        cost = product.standard_price or 0.0
+        price_unit = cost * (1 + default_margin / 100.0)
+
         # Créer la ligne dans le wizard principal
         line_vals = {
             'wizard_id': self.quote_wizard_id.id,
             'product_id': product.id,
             'quantity': self.quantity,
-            'price_unit': product.list_price,
+            'price_unit': price_unit,
             'lot_id': self.lot_ids[0].id if len(self.lot_ids) == 1 else False,
+            'margin_percent': default_margin,
         }
         
         self.env['construction.quote.line'].create(line_vals)
+
+    # =================== CALCULS ===================
+    @api.depends('standard_price', 'quote_wizard_id.default_margin_percent')
+    def _compute_computed_sale_price(self):
+        """Prévisualisation du prix de vente calculé = coût × (1 + marge)."""
+        for rec in self:
+            margin = rec.quote_wizard_id.default_margin_percent or 0.0
+            cost = rec.standard_price or 0.0
+            rec.computed_sale_price = cost * (1 + margin / 100.0)
+
+    # =================== OUTILS INTERNES ===================
+    def _generate_default_code_from_lot(self):
+        """Génère un code produit basé sur le nom du lot sélectionné et un index unique.
+        Format: <LOTNAME>-<NNN>
+        Si plusieurs lots, utilise le premier. Si aucun lot, retourne None.
+        """
+        lot = self.lot_ids[:1]
+        if not lot:
+            # Essayer d'utiliser un lot du wizard parent si unique
+            parent_lots = self.quote_wizard_id.lot_ids[:1] if self.quote_wizard_id else self.env['construction.lot']
+            lot = parent_lots
+        if not lot:
+            return None
+
+        def slugify(name):
+            # Simplification: majuscules, remplacer espaces par '-', garder alphanum et '-'
+            import re
+            base = (name or '').upper().strip()
+            base = re.sub(r'\s+', '-', base)
+            base = re.sub(r'[^A-Z0-9\-]', '', base)
+            return base
+
+        prefix = slugify(lot.name)
+        # Eviter les préfixes vides
+        if not prefix:
+            prefix = 'PROD'
+
+        Product = self.env['product.product']
+        index = 1
+        # Boucle pour trouver un code unique
+        while True:
+            candidate = f"{prefix}-{index:03d}"
+            exists = Product.search_count([('default_code', '=', candidate)])
+            if not exists:
+                return candidate
+            index += 1
 
 

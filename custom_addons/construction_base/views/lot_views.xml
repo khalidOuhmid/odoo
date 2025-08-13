@@ -19,6 +19,7 @@
                     <div class="oe_title">
                         <label for="name" class="oe_edit_only"/>
                         <h1>
+                            <field name="standard_lot_id" options="{'no_create': True}" context="{'default_name': name, 'default_code': code}"/>
                             <field name="name" placeholder="Nom du lot"/>
                         </h1>
                     </div>

@@ -20,5 +20,64 @@
             <field name="padding">4</field>
             <field name="number_increment">1</field>
         </record>
+
+        <!-- ============================= -->
+        <!-- Report de visite de chantier  -->
+        <!-- ============================= -->
+        <template id="visit_report_template">
+            <t t-call="web.html_container">
+                <t t-call="web.external_layout">
+                    <div class="page" t-foreach="docs" t-as="doc">
+                    <t t-set="attachments" t-value="doc._get_report_attachments()"/>
+                    <h2>Rapport de visite</h2>
+                    <p><strong>Nom:</strong> <span t-esc="doc.name"/></p>
+                    <p><strong>Chantier:</strong> <span t-esc="doc.chantier_id.display_name"/></p>
+                    <p><strong>Date:</strong> <span t-esc="doc.date"/></p>
+                    <p><strong>Type:</strong> <span t-esc="dict(doc._fields['visit_type'].selection).get(doc.visit_type)"/></p>
+                    <p><strong>Durée:</strong> <span t-esc="doc.duration"/> h</p>
+
+                    <h3>Description</h3>
+                    <div t-if="doc.description" t-raw="doc.description"/>
+
+                    <h3>Notes et observations</h3>
+                    <div t-if="doc.notes" t-raw="doc.notes"/>
+
+                    <h3>Rapport</h3>
+                    <div t-if="doc.report" t-raw="doc.report"/>
+
+                    <h3>Participants</h3>
+                    <ul>
+                        <li t-foreach="doc.user_ids" t-as="u"><span t-esc="u.name"/></li>
+                        <li t-foreach="doc.partner_ids" t-as="p"><span t-esc="p.name"/></li>
+                    </ul>
+
+                    <h3>Pièces jointes - Images</h3>
+                    <div t-if="attachments.get('images') and attachments['images']">
+                        <div t-foreach="attachments['images']" t-as="att" style="margin-bottom: 10px; page-break-inside: avoid;">
+                            <div><strong t-esc="att.name"/></div>
+                            <img t-att-src="'data:%s;base64,%s' % (att.mimetype, att.datas)" style="max-width: 100%; height: auto;"/>
+                        </div>
+                    </div>
+
+                    <h3>Autres pièces jointes</h3>
+                    <ul t-if="attachments.get('others') and attachments['others']">
+                        <li t-foreach="attachments['others']" t-as="att">
+                            <span t-esc="att.name"/> (<span t-esc="att.mimetype"/>)
+                        </li>
+                    </ul>
+                    </div>
+                </t>
+            </t>
+        </template>
+
+        <record id="action_visit_report" model="ir.actions.report">
+            <field name="name">Rapport de visite</field>
+            <field name="model">construction.visit</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">construction_base.visit_report_template</field>
+            <field name="report_file">construction_base.visit_report_template</field>
+            <field name="print_report_name">'Rapport_visite_%s' % (object.name or 'Visite').replace('/', '_')</field>
+            <field name="paperformat_id" ref="base.paperformat_euro"/>
+        </record>
     </data>
 </odoo>

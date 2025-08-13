@@ -17,6 +17,8 @@
                             invisible="state in ['completed', 'cancelled']"/>
                     <button name="action_reset_to_planned" string="Remettre en planification" type="object" 
                             invisible="state not in ['cancelled', 'completed']"/>
+                    <button name="action_print_report" string="Imprimer le rapport" type="object"
+                            class="btn-primary" invisible="state != 'completed'"/>
                     <field name="state" widget="statusbar" 
                            statusbar_visible="draft,planned,confirmed,in_progress,completed"/>
                 </header>

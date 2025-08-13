@@ -32,9 +32,12 @@
         # Rapports (templates d'abord, puis actions)
         'reports/contract_header_footer.xml',
         'reports/subcontractor_contract_template.xml',
+        'reports/chantier_invoice_report.xml',
         'reports/reports.xml',
         'reports/planning_report.xml',
         'reports/report_actions.xml',
+        # Nouveau: rapport de visite
+        
 
         # Données
         'data/construction_data.xml',
@@ -45,19 +48,14 @@
         'data/sequence_data.xml',
         'data/email_templates.xml',
         
-        # Wizards
-        'wizard/views/document_upload_wizard_views.xml',
-        'wizard/views/lot_subquote_wizard_views.xml',
-        'wizard/views/lot_subcontractor_assign_wizard_views.xml',
-        'wizard/views/create_task_planning_views.xml',
-        'wizard/views/quote_selection_wizard_views.xml',
-        'wizard/views/force_stage_wizard_view.xml',
+        # Menus et actions nécessaires avant certaines vues
+        'views/menu.xml',
         'wizard/views/invoice_schedule_wizard_views.xml',
-        'wizard/views/lot_document_wizard_views.xml',
-        'wizard/views/contract_wizzard_views.xml',
-        'wizard/views/invoice_setup_wizard_views.xml',
+        'wizard/views/document_upload_wizard_views.xml',
+        'wizard/views/create_purchase_line_wizard_views.xml',
+        'views/purchase_order_line_views.xml',
 
-        # Vues principales
+        # Vues principales (chargées après les actions nécessaires)
         'views/chantier_views.xml',
         'views/lot_views.xml',
         'views/lot_template_views.xml',
@@ -69,7 +67,18 @@
         'views/subcontractor_contract_upload.xml',
         'views/templates.xml',
         'views/main_views.xml',
-        'views/menu.xml',
+
+        # Wizards (chargés après les vues principales)
+        'wizard/views/lot_subquote_wizard_views.xml',
+        'wizard/views/lot_subcontractor_assign_wizard_views.xml',
+        'wizard/views/create_task_planning_views.xml',
+        'wizard/views/quote_selection_wizard_views.xml',
+        'wizard/views/force_stage_wizard_view.xml',
+        'wizard/views/lot_document_wizard_views.xml',
+        'wizard/views/contract_wizzard_views.xml',
+        'wizard/views/invoice_setup_wizard_views.xml',
+        'wizard/views/lot_select_wizard_views.xml',
+        
 
         # Assets
         'views/assets.xml',

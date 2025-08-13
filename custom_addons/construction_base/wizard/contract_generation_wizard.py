@@ -30,8 +30,13 @@ class ContractGenerationWizard(models.TransientModel):
     # Conditions contractuelles
     start_date = fields.Date('Date de début', required=True, default=fields.Date.today)
     end_date = fields.Date('Date de fin')
-    total_amount = fields.Monetary('Montant total', compute='_compute_total_amount',
-                                   store=True, readonly=False)
+    total_amount = fields.Monetary(
+        'Montant total',
+        compute='_compute_total_amount',
+        store=True,
+        readonly=False,
+        help="Montant injecté automatiquement depuis le(s) bon(s) d'achat du sous-traitant pour ce chantier et ces lots"
+    )
     currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id)
 
     payment_terms = fields.Selection([
@@ -86,11 +91,39 @@ class ContractGenerationWizard(models.TransientModel):
     generated_contract_create_date = fields.Datetime(related='generated_contract_id.create_date', string="Date de création")
 
 
-    @api.depends('lot_ids')
+    @api.depends('chantier_id', 'subcontractor_id', 'lot_ids')
     def _compute_total_amount(self):
-        """Calcule automatiquement le montant total."""
+        """Calcule automatiquement le montant total.
+
+        Priorité:
+        1) Somme des montants des bons d'achat (purchase.order.amount_total)
+           liés au chantier, au sous-traitant et aux lots sélectionnés.
+        2) Fallback: somme des prix des lots (avec fallback sur price_from_quote si price est nul).
+        """
+        PurchaseOrder = self.env['purchase.order']
         for wizard in self:
-            wizard.total_amount = sum(lot.price or 0.0 for lot in wizard.lot_ids)
+            total = 0.0
+            if wizard.chantier_id and wizard.subcontractor_id:
+                domain = [
+                    ('chantier_id', '=', wizard.chantier_id.id),
+                    ('partner_id', '=', wizard.subcontractor_id.id),
+                    ('state', 'in', ['purchase', 'done']),
+                ]
+                purchase_orders = PurchaseOrder.search(domain)
+                if wizard.lot_ids:
+                    purchase_orders = purchase_orders.filtered(lambda po: bool(po.lot_ids & wizard.lot_ids))
+
+                if purchase_orders:
+                    total = sum(purchase_orders.mapped('amount_total'))
+
+            if not total:
+                # Fallback sur les lots sélectionnés
+                total = 0.0
+                for lot in wizard.lot_ids:
+                    lot_amount = lot.price if lot.price else getattr(lot, 'price_from_quote', 0.0)
+                    total += (lot_amount or 0.0)
+
+            wizard.total_amount = total
 
     @api.onchange('lot_ids')
     def _onchange_lot_ids(self):

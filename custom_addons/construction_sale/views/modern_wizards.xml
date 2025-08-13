@@ -109,7 +109,7 @@
                                     <field name="display_name"/>
                                     <field name="default_code"/>
                                     <field name="categ_id"/>
-                                    <field name="list_price" widget="monetary" sum="Total"/>
+                                    <field name="standard_price" string="Coût" widget="monetary" sum="Total"/>
                                     <button name="action_add_product" 
                                             type="object" 
                                             icon="fa-plus-circle" 
@@ -168,7 +168,8 @@
                                     
                                     <!-- Quantités et prix -->
                                     <field name="quantity" sum="Total qté"/>
-                                    <field name="price_unit" readonly="1" widget="monetary"/>
+                                    <field name="price_unit" string="Prix (coût + marge)" readonly="1" widget="monetary"/>
+                                    <field name="margin_percent" string="Marge (%)"/>
                                     <field name="subtotal" readonly="1" sum="Total €" widget="monetary"/>
                                     
                                     <!-- Localisation détaillée -->

@@ -64,6 +64,18 @@ class PurchaseSplitService(models.AbstractModel):
             for lot_id, quote_data in lot_groups.items():
                 lot = self.env['construction.lot'].browse(lot_id)
 
+                # Si le lot est géré par un partenaire interne (employee), ne pas créer de bon de commande
+                internal_assignees = lot.subcontractor_ids.filtered(lambda p: getattr(p, 'contact_type', False) == 'employee')
+                if internal_assignees and (len(lot.subcontractor_ids) == len(internal_assignees)):
+                    assignment_results.append({
+                        'lot_name': lot.name,
+                        'assigned': False,
+                        'skipped': True,
+                        'reason': 'internal_lot',
+                        'message': _("Lot géré en interne: aucun bon de commande généré")
+                    })
+                    continue
+
                 # Create purchase order for this lot
                 purchase_order = self._create_lot_purchase_order(main_quote, lot, quote_data)
                 created_purchase_orders.append(purchase_order)
@@ -336,9 +348,10 @@ class PurchaseSplitService(models.AbstractModel):
     def _assign_purchase_order_to_subcontractor(self, chantier, purchase_order, lot):
         """Assign purchase order to appropriate subcontractor with improved logic."""
 
+        # 0. Exclure les contacts internes de toute assignation de fournisseur
         # 1. Chercher les sous-traitants spécialisés dans ce lot (via speciality_ids)
         specialized_subcontractors = chantier.subcontractor_ids.filtered(
-            lambda s: lot in s.speciality_ids or lot in s.lots  # Compatibilité
+            lambda s: (getattr(s, 'contact_type', False) != 'employee') and (lot in getattr(s, 'speciality_ids', self.env['construction.lot']) or lot in getattr(s, 'lots', self.env['construction.lot']))
         ).filtered(lambda s: s.supplier_rank > 0)  # S'assurer que c'est un fournisseur
 
         # 2. Si aucun spécialiste trouvé dans les sous-traitants du chantier,
@@ -347,7 +360,8 @@ class PurchaseSplitService(models.AbstractModel):
             all_specialists = self.env['res.partner'].search([
                 ('is_subcontractor', '=', True),
                 ('supplier_rank', '>', 0),  # Doit être fournisseur
-                ('speciality_ids', 'in', lot.id)
+                ('speciality_ids', 'in', lot.id),
+                ('contact_type', '!=', 'employee')
             ])
 
             # Proposer d'ajouter ces spécialistes au chantier

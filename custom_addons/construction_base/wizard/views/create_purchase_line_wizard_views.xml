@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_create_purchase_line_wizard_form" model="ir.ui.view">
+        <field name="name">construction.create.purchase.line.wizard.form</field>
+        <field name="model">construction.create.purchase.line.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Ajouter un article">
+                <sheet>
+                    <group>
+                        <field name="chantier_id"/>
+                        <field name="vendor_id"/>
+                    </group>
+                    <group>
+                        <group>
+                            <field name="product_id"/>
+                            <field name="name"/>
+                            <field name="product_qty"/>
+                            <field name="price_unit"/>
+                            <field name="lot_id"/>
+                        </group>
+                        <group>
+                            <field name="expected_delivery_date"/>
+                            <field name="delivery_place"/>
+                            <field name="tracking_link"/>
+                        </group>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_create" type="object" string="Créer" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_create_purchase_line_wizard" model="ir.actions.act_window">
+        <field name="name">Ajouter un article</field>
+        <field name="res_model">construction.create.purchase.line.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>
+
+

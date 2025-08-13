@@ -45,6 +45,13 @@
                                 modifiers="{'invisible': [('show_create_quote', '=', False)]}"
                                 invisible="stage_id &lt;= 2"/>
 
+                        <button name="action_open_select_lots_wizard"
+                                string="🧩 Sélectionner lots"
+                                type="object"
+                                class="btn-secondary"
+                                help="Choisir les lots à créer depuis les templates"
+                                invisible="stage_id &lt;= 2"/>
+
                         <button name="action_select_main_quote"
                                 string="📋 Sélectionner devis principal"
                                 type="object"
@@ -215,39 +222,6 @@
                                    widget="text"
                                    class="workflow-info-text"/>
                         </group>
-                        <group string="💳 Cycle de facturation" class="payement-section" invisible="stage_id &lt;= 4">
-                            <field name="invoice_type_id" domain="[('active', '=', True)]"
-                                   readonly="invoice_schedule_ids" options="{'no_create': True, 'no_open': True}"
-                                   placeholder="Sélectionnez un cycle..."/>
-
-                            <button name="action_setup_invoice_schedule" type="object" string="Configurer le planning"
-                                    class="btn-primary" invisible="invoice_type_id == False"
-                                    confirm="Confirmez-vous la configuration du planning ? Cela supprimera tout planning existant."/>
-                            <button name="action_open_invoice_setup_wizard" type="object" string="⚙️ Configurer facturation"
-                                    class="btn-secondary" invisible="show_invoice_setup == False"/>
-                            
-                            <!-- Boutons pour la gestion des factures -->
-                            <button name="action_check_invoice_triggers" type="object" string="🔍 Vérifier seuils"
-                                    class="btn-info" invisible="not invoice_schedule_ids"/>
-                            <button name="action_create_available_invoices" type="object" string="📄 Créer factures disponibles"
-                                    class="btn-success" invisible="not invoice_schedule_ids"/>
-                        </group>
-
-                        <notebook>
-                            <page string="Planning de Facturation" invisible="stage_id &lt;= 4">
-                                <field name="invoice_schedule_ids" mode="list,form">
-                                    <list editable="bottom">
-                                        <field name="name"/>
-                                        <field name="trigger_percentage"/>
-                                        <field name="amount_percentage"/>
-                                        <field name="amount_fixed" widget="monetary"/>
-                                        <field name="state" widget="badge" decoration-info="state == 'planned'"
-                                               decoration-success="state == 'paid'"/>
-                                        <field name="is_advance_payment"/>
-                                    </list>
-                                </field>
-                            </page>
-                        </notebook>
 
                         <!-- Planning -->
                         <group string="📅 Planning du projet">
@@ -336,6 +310,7 @@
                                           decoration-success="is_finished"
                                           decoration-muted="not is_finished"
                                           decoration-warning="not subcontractor_ids">
+                                        <field name="standard_lot_id" optional="show"/>
                                         <field name="name"/>
                                         <field name="price" widget="monetary" sum="Total estimé"/>
                                         <field name="price_from_quote" widget="monetary" sum="Total devis" 
@@ -398,11 +373,11 @@
                                 </div>
                             </page>
 
-                            <!-- Onglet : Commandes par lots -->
-                            <page string="📦 Commandes" name="orders" invisible="stage_id &lt; 3 or not main_quote_id">
+                            <!-- Onglet : Commandes par lots + Ajout d'articles -->
+                            <page string="📦 Commandes" name="orders" invisible="stage_id &lt; 3">
                                 <div class="alert alert-info mb-3" invisible="main_quote_id">
                                     <i class="fa fa-info-circle"/> 
-                                    Veuillez d'abord sélectionner un devis principal pour voir les articles à commander.
+                                    Vous pouvez gérer les commandes même sans devis principal. La sélection d'un devis principal permet un regroupement par lots.
                                 </div>
                                 
                                 <div invisible="not main_quote_id">
@@ -483,6 +458,31 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Ajout et suivi des articles de commandes -->
+                                <separator string="Articles à recevoir"/>
+                                <div class="mb-2">
+                                    <button name="%(construction_base.action_create_purchase_line_wizard)d" type="action" class="btn btn-primary"
+                                            context="{'default_chantier_id': id}">
+                                        ➕ Ajouter un article
+                                    </button>
+                                    <button name="%(action_purchase_order_line_tracking)d" type="action" class="btn btn-secondary"
+                                            context="{'search_default_group_by_chantier': 1, 'search_default_upcoming': 1, 'search_default_chantier_id': id}">
+                                        Ouvrir la liste des commandes
+                                    </button>
+                                </div>
+                                <field name="purchase_order_line_ids" context="{'default_chantier_id': id}">
+                                    <list decoration-warning="expected_delivery_date &lt; context_today()" decoration-success="expected_delivery_date &gt;= context_today()">
+                                        <field name="vendor_id"/>
+                                        <field name="product_id"/>
+                                        <field name="name"/>
+                                        <field name="product_qty"/>
+                                        <field name="expected_delivery_date"/>
+                                        <field name="delivery_place"/>
+                                        <field name="tracking_link"/>
+                                        <field name="order_id"/>
+                                    </list>
+                                </field>
                             </page>
 
                             <!-- Onglet : Documents -->

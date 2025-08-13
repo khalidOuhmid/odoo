@@ -18,7 +18,7 @@
                             <field name="product_name" readonly="1" nolabel="1"/>
                         </h2>
                         <h3 class="text-muted">
-                            Prix de base : <field name="base_price" readonly="1" widget="monetary"/>
+                            Coût (base) : <field name="base_price" readonly="1" widget="monetary"/>
                         </h3>
                     </div>
 
@@ -103,8 +103,10 @@
                         </group>
 
                         <group string="💰 Tarification">
-                            <field name="list_price" widget="monetary"/>
-                            <field name="standard_price" widget="monetary"/>
+                            <field name="standard_price" string="Coût" widget="monetary"/>
+                            <span class="o_form_label">Prix de vente (calculé) = Coût × (1 + Marge %)</span>
+                            <field name="computed_sale_price" string="Prix de vente (calculé)" widget="monetary"/>
+                            <field name="list_price" invisible="1"/>
                         </group>
                     </group>
 
@@ -113,14 +115,11 @@
                     </group>
 
                     <group>
-                        <group string="🏗️ Lots associés">
-                            <field name="lot_ids" widget="one2many" nolabel="1"/>
+                        <group string="🏗️ Lot associé">
+                            <field name="lot_ids" nolabel="1"/>
                         </group>
 
-                        <group string="🛒 Ajout au devis">
-                            <field name="add_to_quote"/>
-                            <field name="quantity" invisible="not add_to_quote"/>
-                        </group>
+
                     </group>
                 </sheet>
                 <footer>

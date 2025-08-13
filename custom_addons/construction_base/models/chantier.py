@@ -60,8 +60,8 @@ class Chantier(models.Model):
         'construction_chantier_subcontractor_rel',
         'chantier_id', 'partner_id',
         string='Sous-traitants',
-        domain="[('supplier_rank', '>', 0)]",
-        help="Sous-traitants assignés à ce chantier"
+        domain="['|', ('supplier_rank', '>', 0), ('contact_type', '=', 'employee')]",
+        help="Sous-traitants assignés à ce chantier (inclut internes pour suivi/planning)"
     )
 
     # Dates contractuelles et internes
@@ -229,6 +229,11 @@ class Chantier(models.Model):
 
     planning_task_ids = fields.One2many('construction.planning.task', 'chantier_id', string='Tâches de planning')
     purchase_order_ids = fields.One2many('purchase.order', 'chantier_id', string="Bons de commande")
+    purchase_order_line_ids = fields.One2many(
+        'purchase.order.line',
+        'chantier_id',
+        string='Articles à recevoir'
+    )
 
     _sql_constraints = [
         ('positive_cost', 'CHECK(total_cost >= 0)', 'Le coût total doit être positif'),
@@ -252,11 +257,7 @@ class Chantier(models.Model):
                 vals['stage_id'] = default_stage.id
 
         chantiers = super().create(vals_list)
-        
-        # Créer les lots par défaut pour chaque nouveau chantier
-        for chantier in chantiers:
-            chantier._create_default_lots()
-            
+
         return chantiers
 
     def write(self, vals):
@@ -330,14 +331,20 @@ class Chantier(models.Model):
             else:
                 record.duration_actual = 0
 
-    @api.depends('lots_ids.price', 'lots_ids.is_finished')
+    @api.depends('lots_ids.price', 'lots_ids.price_from_quote', 'lots_ids.is_finished', 'lots_ids.quote_state')
     def _compute_construction_progression(self):
         """Calcule la progression basée sur le coût des lots terminés"""
         for record in self:
             old_progress = record.progress
-            total_cost = sum(record.lots_ids.mapped('price'))
+            # Utiliser price_from_quote comme fallback si price est nul pour refléter le devis accepté
+            total_cost = sum((lot.price if lot.price else getattr(lot, 'price_from_quote', 0.0)) for lot in record.lots_ids)
             if total_cost > 0:
-                completed_cost = sum(record.lots_ids.filtered('is_finished').mapped('price'))
+                # Considérer un lot « compté » dans la progression s'il est terminé
+                # ou si son devis est accepté (validation métier courante)
+                completed_lots = record.lots_ids.filtered(
+                    lambda l: getattr(l, 'is_finished', False) or getattr(l, 'quote_state', False) == 'accepted'
+                )
+                completed_cost = sum((lot.price if lot.price else getattr(lot, 'price_from_quote', 0.0)) for lot in completed_lots)
                 record.progress = (completed_cost / total_cost) * 100
             else:
                 record.progress = 0.0
@@ -377,10 +384,11 @@ class Chantier(models.Model):
                 record.deadline_status = 'on_time'
                 record.deadline_color = 10  # Vert
 
-    @api.depends('lots_ids.price')
+    @api.depends('lots_ids.price', 'lots_ids.price_from_quote')
     def _compute_total_cost(self):
         for record in self:
-            record.total_cost = sum(record.lots_ids.mapped('price'))
+            # Total du chantier basé sur le devis principal accepté (fallback sur price_from_quote)
+            record.total_cost = sum((lot.price if lot.price else getattr(lot, 'price_from_quote', 0.0)) for lot in record.lots_ids)
 
     def action_view_all_visits(self):
         self.ensure_one()
@@ -619,10 +627,11 @@ class Chantier(models.Model):
             return False, "Date de début contractuelle non définie"
         if not self.date_end_contract:
             return False, "Date de fin contractuelle non définie"
-        if not self.date_end_internal:
-            return False, "Date de fin interne non définie"
-        if not self.date_start_internal:
-            return False, "Date de début interne non définie"
+        # Utiliser les champs existants: réel ou estimé
+        if not (self.date_end_actual or self.date_end_estimated):
+            return False, "Date de fin (réelle ou estimée) non définie"
+        if not (self.date_start_actual or self.date_start_estimated):
+            return False, "Date de début (réelle ou estimée) non définie"
         else:
             return True, "OK"
 
@@ -672,8 +681,10 @@ class Chantier(models.Model):
             return False, msg
 
         # 4️⃣ Vérifier que chaque sous-traitant (sauf internes) a un devis signé
+        # Interprétation: un "interne" est un partenaire avec contact_type = 'employee'.
+        # On exclut donc les internes de l'exigence de devis signé.
         external_subcontractors = self.subcontractor_ids.filtered(
-            lambda p: not p.is_company or p.supplier_rank > 0
+            lambda p: getattr(p, 'contact_type', False) != 'employee' and getattr(p, 'supplier_rank', 0) > 0
         )
         
         subcontractors_without_signed_quote = []
@@ -1176,6 +1187,20 @@ class Chantier(models.Model):
             }
         }
 
+    def action_open_select_lots_wizard(self):
+        """Ouvre le wizard de sélection des lots à créer depuis les templates."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Sélectionner les lots à créer'),
+            'res_model': 'construction.lot.select.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.id,
+            }
+        }
+
     def _update_lots_prices_from_quote(self):
         """Met à jour les prix des lots depuis le devis principal et associe les lignes"""
         self.ensure_one()
@@ -1321,6 +1346,9 @@ class Chantier(models.Model):
             schedule_lines.append({
                 'chantier_id': self.id,
                 'invoice_type_line_id': line.id,
+                'quote_id': self.main_quote_id.id,
+                'margin_percentage': 0.0,
+                'lot_ids': [(6, 0, self.lots_ids.ids)],
                 'name': line.name,
                 'sequence': line.sequence,
                 'trigger_percentage': line.trigger_percentage,
@@ -1663,7 +1691,8 @@ class Chantier(models.Model):
         sent_count = 0
         errors = []
 
-        for partner in self.subcontractor_ids:
+        # Exclure les internes de l'envoi de lien de dépôt
+        for partner in self.subcontractor_ids.filtered(lambda p: getattr(p, 'contact_type', False) != 'employee'):
             try:
                 # Générer le token (cela invalidera automatiquement le cache du champ compute)
                 token = partner._generate_upload_token()

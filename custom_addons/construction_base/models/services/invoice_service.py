@@ -191,12 +191,12 @@ class InvoiceService(models.AbstractModel):
             # Préparer les lignes de facture
             invoice_line_vals = []
             
-            # Ligne principale
+            # Ligne principale avec compte de revenus de la position fiscale/produit par défaut
+            income_account = partner.property_account_receivable_id.id
             invoice_line_vals.append((0, 0, {
                 'name': f"{schedule.name} - {chantier.name}",
                 'quantity': 1,
-                'price_unit': schedule.amount_fixed,
-                'account_id': partner.property_account_receivable_id.id,
+                'price_unit': schedule.amount_fixed or 0.0,
             }))
             
             # Créer la facture
@@ -273,21 +273,17 @@ class InvoiceService(models.AbstractModel):
             date_str = fields.Date.today().strftime('%d/%m/%Y')
             invoice_ref = invoice.name if invoice.name and invoice.name != '/' else f"FACT-{invoice.id}"
             
-            # Message détaillé
-            message_body = f"""
-            <div class="alert alert-success">
-                <h4>🧾 Facture générée automatiquement</h4>
-                <ul>
-                    <li><strong>Référence:</strong> {invoice_ref}</li>
-                    <li><strong>Étape:</strong> {schedule.name}</li>
-                    <li><strong>Montant:</strong> {schedule.amount_fixed:,.2f} €</li>
-                    <li><strong>Client:</strong> {chantier.client.name}</li>
-                    <li><strong>Lots concernés:</strong> {lot_names}</li>
-                    <li><strong>Devis de référence:</strong> {quote_name}</li>
-                    <li><strong>Date:</strong> {date_str}</li>
-                </ul>
-            </div>
-            """
+            # Message HTML simple (balises sûres pour le chatter)
+            message_body = (
+                f"<p><strong>🧾 Facture générée automatiquement</strong></p>"
+                f"<p><strong>Référence:</strong> {invoice_ref}<br/>"
+                f"<strong>Étape:</strong> {schedule.name}<br/>"
+                f"<strong>Montant:</strong> {schedule.amount_fixed:,.2f} €<br/>"
+                f"<strong>Client:</strong> {chantier.client.name}<br/>"
+                f"<strong>Lots concernés:</strong> {lot_names}<br/>"
+                f"<strong>Devis de référence:</strong> {quote_name}<br/>"
+                f"<strong>Date:</strong> {date_str}</p>"
+            )
             
             # Poster le message principal
             subject_text = f"💰 Facture {invoice_ref} générée"
@@ -314,38 +310,34 @@ class InvoiceService(models.AbstractModel):
             invoice_ref: Référence de la facture
         """
         try:
-            # Générer le PDF de la facture
-            pdf_content = self.env['ir.actions.report']._render_qweb_pdf(
-                'account.account_invoices', [invoice.id]
-            )[0]
-            
-            # Créer la pièce jointe
+            # Générer le PDF de la facture avec le report BLG si disponible sinon fallback standard
+            report_xmlid = 'construction_base.chantier_invoice_template'
+            try:
+                pdf_tuple = self.env['ir.actions.report']._render_qweb_pdf(report_xmlid, [invoice.id])
+            except Exception:
+                pdf_tuple = self.env['ir.actions.report']._render_qweb_pdf('account.report_invoice', [invoice.id])
+            pdf_content = pdf_tuple[0]
+
+            # Encodage base64 requis par ir.attachment
+            pdf_b64 = base64.b64encode(pdf_content)
+
+            # Créer la pièce jointe et lier à la facture (modèle cible cohérent)
             attachment = self.env['ir.attachment'].create({
                 'name': f"{invoice_ref}.pdf",
                 'type': 'binary',
-                'datas': pdf_content,
-                'res_model': 'construction.chantier',
-                'res_id': invoice.invoice_origin_id.id if hasattr(invoice, 'invoice_origin_id') else False,
+                'datas': pdf_b64,
+                'res_model': 'account.move',
+                'res_id': invoice.id,
                 'mimetype': 'application/pdf',
             })
-            
-            # Lier la pièce jointe au message
+
+            # Lier la pièce jointe au message déjà posté sur le chantier
             message.attachment_ids = [(6, 0, [attachment.id])]
-            
-            # Message de confirmation avec pièce jointe
-            attachment_url = f"/web/content/{attachment.id}"
-            pdf_message = f"📎 Facture PDF générée et attachée : <a href='{attachment_url}' target='_blank'>{attachment.name}</a>"
-            invoice.invoice_origin_id.message_post(
-                body=pdf_message,
-                message_type='notification'
-            )
             
         except Exception as e:
             _logger.warning(f"Impossible de générer le PDF pour la facture {invoice.id}: {e}")
-            invoice.invoice_origin_id.message_post(
-                body="⚠️ Facture créée mais PDF non généré automatiquement. Vous pouvez l'imprimer depuis la facture.",
-                message_type='notification'
-            )
+            # Informer dans le même fil (chantier) que le PDF n'a pas été généré
+            message.sudo().write({'body': message.body + "<br/><em>⚠️ PDF non généré automatiquement. Imprimez depuis la facture.</em>"})
 
     def get_invoice_schedule_summary(self, chantier_id):
         """

@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+import base64
 
 
 class Visit(models.Model):
@@ -78,6 +79,12 @@ class Visit(models.Model):
                 raise ValidationError(_("Seules les visites en cours peuvent être terminées."))
             visite.state = 'completed'
             visite.message_post(body=_("Visite terminée"))
+            # Générer et attacher le rapport PDF automatiquement
+            try:
+                visite._generate_and_attach_report()
+            except Exception as e:
+                # Ne pas bloquer la fin de visite si le report échoue
+                visite.message_post(body=_("Erreur lors de la génération du rapport: %s") % str(e))
 
     def action_cancel(self):
         """Annuler la visite"""
@@ -92,6 +99,75 @@ class Visit(models.Model):
         for visite in self:
             visite.state = 'planned'
             visite.message_post(body=_("Visite remise en planification"))
+
+    # ------------------------------------------------------------------
+    # Report helpers
+    # ------------------------------------------------------------------
+    def _generate_and_attach_report(self):
+        """Génère le PDF du rapport de visite et l'attache à l'enregistrement.
+
+        - Utilise l'action de report QWeb `construction_base.action_visit_report`.
+        - Crée un `ir.attachment` lié à la visite.
+        - Poste un message avec la pièce jointe.
+        """
+        self.ensure_one()
+        report_action = self.env.ref('construction_base.action_visit_report', raise_if_not_found=False)
+        if not report_action:
+            return False
+
+        # Rendu PDF
+        pdf_bytes, _content_type = report_action._render_qweb_pdf(self.ids)
+        pdf_b64 = base64.b64encode(pdf_bytes)
+
+        safe_name = (self.name or 'Visite').replace('/', '_').replace('\n', ' ').strip()
+        filename = f"Rapport_visite_{safe_name}.pdf"
+
+        attachment = self.env['ir.attachment'].create({
+            'name': filename,
+            'res_model': self._name,
+            'res_id': self.id,
+            'type': 'binary',
+            'mimetype': 'application/pdf',
+            'datas': pdf_b64,
+        })
+
+        self.message_post(
+            body=_('Rapport de visite généré et attaché.'),
+            attachment_ids=[attachment.id]
+        )
+
+        return True
+
+    def _get_report_attachments(self):
+        """Retourne les pièces jointes de la visite, séparées par type.
+
+        Returns:
+            dict: {
+                'images': recordset ir.attachment,
+                'others': recordset ir.attachment,
+            }
+        """
+        self.ensure_one()
+        attachments = self.env['ir.attachment'].search([
+            ('res_model', '=', self._name),
+            ('res_id', '=', self.id),
+        ], order='create_date')
+
+        image_attachments = attachments.filtered(lambda a: (a.mimetype or '').startswith('image/'))
+        other_attachments = attachments - image_attachments
+
+        return {
+            'images': image_attachments,
+            'others': other_attachments,
+        }
+
+    def action_print_report(self):
+        """Action bouton pour imprimer le rapport de visite."""
+        self.ensure_one()
+        action = self.env.ref('construction_base.action_visit_report', raise_if_not_found=False)
+        if not action:
+            raise ValidationError(_('Action de rapport introuvable.'))
+        return action.report_action(self)
 
     def action_view_calendar(self):
         return {

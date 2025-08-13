@@ -50,8 +50,8 @@
         <field name="arch" type="xml">
             <field name="function" position="after">
                 <field name="contact_type" widget="radio" options="{'horizontal': true}"/>
-                <field name="lot_ids" widget="many2many_tags" options="{'no_create': False}" 
-                       invisible="contact_type != 'sous_traitant'" 
+                <field name="lot_ids" widget="many2many_tags" options="{'no_create': False}"
+                       invisible="contact_type != 'sous_traitant' and contact_type != 'employee'"
                        required="contact_type == 'sous_traitant'"/>
             </field>
         </field>

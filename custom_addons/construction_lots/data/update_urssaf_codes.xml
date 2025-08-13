@@ -1,193 +1,155 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Mise à jour des codes URSSAF pour les lots existants -->
+        <!-- Mise à jour des codes URSSAF pour les lots existants via xmlid -->
+        <record id="lot_general" model="lot">
+            <field name="urssaf_code">41.20Z - Construction de bâtiments résidentiels et non résidentiels</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'GEN')]"/>
-            <value eval="{'urssaf_code': '41.20Z - Construction de bâtiments résidentiels et non résidentiels'}"/>
-        </function>
+        <record id="lot_demolition" model="lot">
+            <field name="urssaf_code">43.11Z - Travaux de démolition</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'DEM')]"/>
-            <value eval="{'urssaf_code': '43.11Z - Travaux de démolition'}"/>
-        </function>
+        <record id="lot_maconnerie" model="lot">
+            <field name="urssaf_code">43.99A - Travaux d'étanchéification</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'MAC')]"/>
-            <value eval="{'urssaf_code': '43.99A - Travaux d\'étanchéification'}"/>
-        </function>
+        <record id="lot_platrerie" model="lot">
+            <field name="urssaf_code">43.31Z - Travaux de plâtrerie</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'PLA')]"/>
-            <value eval="{'urssaf_code': '43.31Z - Travaux de plâtrerie'}"/>
-        </function>
+        <record id="lot_plomberie_cvc" model="lot">
+            <field name="urssaf_code">43.22A - Travaux d'installation d'eau et de gaz en tous locaux</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'CVC')]"/>
-            <value eval="{'urssaf_code': '43.22A - Travaux d\'installation d\'eau et de gaz en tous locaux'}"/>
-        </function>
+        <record id="lot_electricite" model="lot">
+            <field name="urssaf_code">43.21A - Travaux d'installation électrique dans tous locaux</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'ELE')]"/>
-            <value eval="{'urssaf_code': '43.21A - Travaux d\'installation électrique dans tous locaux'}"/>
-        </function>
+        <record id="lot_menuiserie_ext" model="lot">
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'MEX')]"/>
-            <value eval="{'urssaf_code': '43.32A - Travaux de menuiserie bois et PVC'}"/>
-        </function>
+        <record id="lot_menuiserie_int" model="lot">
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'MIN')]"/>
-            <value eval="{'urssaf_code': '43.32A - Travaux de menuiserie bois et PVC'}"/>
-        </function>
+        <record id="lot_peinture_finition" model="lot">
+            <field name="urssaf_code">43.34Z - Travaux de peinture et vitrerie</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'PEI')]"/>
-            <value eval="{'urssaf_code': '43.34Z - Travaux de peinture et vitrerie'}"/>
-        </function>
+        <record id="lot_sol_parquet" model="lot">
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'SOL')]"/>
-            <value eval="{'urssaf_code': '43.33Z - Travaux de revêtement des sols et des murs'}"/>
-        </function>
-        
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'CAR')]"/>
-            <value eval="{'urssaf_code': '43.33Z - Travaux de revêtement des sols et des murs'}"/>
-        </function>
+        <record id="lot_carrelage_faience" model="lot">
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
+        </record>
 
         <!-- Lots supplémentaires -->
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'TER')]"/>
-            <value eval="{'urssaf_code': '43.12A - Travaux de terrassement courants et travaux préparatoires'}"/>
-        </function>
+        <record id="lot_terrassement" model="lot">
+            <field name="urssaf_code">43.12A - Travaux de terrassement courants et travaux préparatoires</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'GRO')]"/>
-            <value eval="{'urssaf_code': '43.99B - Travaux de montage de structures métalliques'}"/>
-        </function>
+        <record id="lot_gros_oeuvre" model="lot">
+            <field name="urssaf_code">43.99B - Travaux de montage de structures métalliques</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'CHA')]"/>
-            <value eval="{'urssaf_code': '43.91A - Travaux de charpente'}"/>
-        </function>
+        <record id="lot_charpente" model="lot">
+            <field name="urssaf_code">43.91A - Travaux de charpente</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'COU')]"/>
-            <value eval="{'urssaf_code': '43.91B - Travaux de couverture par éléments'}"/>
-        </function>
+        <record id="lot_couverture" model="lot">
+            <field name="urssaf_code">43.91B - Travaux de couverture par éléments</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'ETA')]"/>
-            <value eval="{'urssaf_code': '43.99A - Travaux d\'étanchéification'}"/>
-        </function>
+        <record id="lot_etancheite" model="lot">
+            <field name="urssaf_code">43.99A - Travaux d'étanchéification</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'ISO')]"/>
-            <value eval="{'urssaf_code': '43.99C - Travaux de maçonnerie générale et gros œuvre de bâtiment'}"/>
-        </function>
+        <record id="lot_isolation" model="lot">
+            <field name="urssaf_code">43.99C - Travaux de maçonnerie générale et gros œuvre de bâtiment</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'CLO')]"/>
-            <value eval="{'urssaf_code': '43.31Z - Travaux de plâtrerie'}"/>
-        </function>
+        <record id="lot_cloisons" model="lot">
+            <field name="urssaf_code">43.31Z - Travaux de plâtrerie</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'FAU')]"/>
-            <value eval="{'urssaf_code': '43.31Z - Travaux de plâtrerie'}"/>
-        </function>
+        <record id="lot_faux_plafonds" model="lot">
+            <field name="urssaf_code">43.31Z - Travaux de plâtrerie</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'VEN')]"/>
-            <value eval="{'urssaf_code': '43.22B - Travaux d\'installation d\'équipements thermiques et de climatisation'}"/>
-        </function>
+        <record id="lot_ventilation" model="lot">
+            <field name="urssaf_code">43.22B - Travaux d'installation d'équipements thermiques et de climatisation</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'SAN')]"/>
-            <value eval="{'urssaf_code': '43.22A - Travaux d\'installation d\'eau et de gaz en tous locaux'}"/>
-        </function>
+        <record id="lot_sanitaire" model="lot">
+            <field name="urssaf_code">43.22A - Travaux d'installation d'eau et de gaz en tous locaux</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'MET')]"/>
-            <value eval="{'urssaf_code': '43.32B - Travaux de menuiserie métallique et serrurerie'}"/>
-        </function>
+        <record id="lot_metallerie" model="lot">
+            <field name="urssaf_code">43.32B - Travaux de menuiserie métallique et serrurerie</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'SER')]"/>
-            <value eval="{'urssaf_code': '43.32B - Travaux de menuiserie métallique et serrurerie'}"/>
-        </function>
+        <record id="lot_serrurerie" model="lot">
+            <field name="urssaf_code">43.32B - Travaux de menuiserie métallique et serrurerie</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'VIT')]"/>
-            <value eval="{'urssaf_code': '43.34Z - Travaux de peinture et vitrerie'}"/>
-        </function>
+        <record id="lot_vitrerie" model="lot">
+            <field name="urssaf_code">43.34Z - Travaux de peinture et vitrerie</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'CEX')]"/>
-            <value eval="{'urssaf_code': '43.33Z - Travaux de revêtement des sols et des murs'}"/>
-        </function>
+        <record id="lot_carrelage_ext" model="lot">
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'PAR')]"/>
-            <value eval="{'urssaf_code': '43.33Z - Travaux de revêtement des sols et des murs'}"/>
-        </function>
+        <record id="lot_parquet" model="lot">
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'MOQ')]"/>
-            <value eval="{'urssaf_code': '43.33Z - Travaux de revêtement des sols et des murs'}"/>
-        </function>
+        <record id="lot_moquette" model="lot">
+            <field name="urssaf_code">43.33Z - Travaux de revêtement des sols et des murs</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'PAP')]"/>
-            <value eval="{'urssaf_code': '43.34Z - Travaux de peinture et vitrerie'}"/>
-        </function>
+        <record id="lot_papier_peint" model="lot">
+            <field name="urssaf_code">43.34Z - Travaux de peinture et vitrerie</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'ASC')]"/>
-            <value eval="{'urssaf_code': '43.29A - Travaux d\'isolation'}"/>
-        </function>
+        <record id="lot_ascenseur" model="lot">
+            <field name="urssaf_code">43.29A - Travaux d'isolation</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'ESP')]"/>
-            <value eval="{'urssaf_code': '81.30Z - Services d\'aménagement paysager'}"/>
-        </function>
+        <record id="lot_espaces_verts" model="lot">
+            <field name="urssaf_code">81.30Z - Services d'aménagement paysager</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'VOI')]"/>
-            <value eval="{'urssaf_code': '42.11Z - Construction de routes et autoroutes'}"/>
-        </function>
+        <record id="lot_voirie" model="lot">
+            <field name="urssaf_code">42.11Z - Construction de routes et autoroutes</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'NET')]"/>
-            <value eval="{'urssaf_code': '81.22Z - Autres activités de nettoyage des bâtiments et nettoyage industriel'}"/>
-        </function>
+        <record id="lot_nettoyage" model="lot">
+            <field name="urssaf_code">81.22Z - Autres activités de nettoyage des bâtiments et nettoyage industriel</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'DOM')]"/>
-            <value eval="{'urssaf_code': '43.21B - Travaux d\'installation électrique sur la voie publique'}"/>
-        </function>
+        <record id="lot_domotique" model="lot">
+            <field name="urssaf_code">43.21B - Travaux d'installation électrique sur la voie publique</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'ALA')]"/>
-            <value eval="{'urssaf_code': '43.21A - Travaux d\'installation électrique dans tous locaux'}"/>
-        </function>
+        <record id="lot_alarme" model="lot">
+            <field name="urssaf_code">43.21A - Travaux d'installation électrique dans tous locaux</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'INC')]"/>
-            <value eval="{'urssaf_code': '43.21A - Travaux d\'installation électrique dans tous locaux'}"/>
-        </function>
+        <record id="lot_incendie" model="lot">
+            <field name="urssaf_code">43.21A - Travaux d'installation électrique dans tous locaux</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'CUI')]"/>
-            <value eval="{'urssaf_code': '43.32A - Travaux de menuiserie bois et PVC'}"/>
-        </function>
+        <record id="lot_cuisine" model="lot">
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
+        </record>
         
-        <function model="lot" name="write">
-            <value eval="[('code', '=', 'STO')]"/>
-            <value eval="{'urssaf_code': '43.32A - Travaux de menuiserie bois et PVC'}"/>
-        </function>
+        <record id="lot_stores" model="lot">
+            <field name="urssaf_code">43.32A - Travaux de menuiserie bois et PVC</field>
+        </record>
         
     </data>
 </odoo>

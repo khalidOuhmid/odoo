@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <record id="view_construction_lot_select_wizard" model="ir.ui.view">
+            <field name="name">construction.lot.select.wizard.form</field>
+            <field name="model">construction.lot.select.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Sélection des lots">
+                    <group>
+                        <field name="chantier_id" readonly="1"/>
+                        <field name="template_ids" widget="many2many_tags" options="{'no_create': True}"/>
+                    </group>
+                    <footer>
+                        <button name="action_create_selected_lots" string="Créer les lots sélectionnés" type="object" class="btn-primary"/>
+                        <button string="Fermer" class="btn-secondary" special="cancel"/>
+                    </footer>
+                </form>
+            </field>
+        </record>
+    </data>
+</odoo>
+
+
