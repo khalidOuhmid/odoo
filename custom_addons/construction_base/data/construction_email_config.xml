@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Configuration de l'adresse email pour les appels d'offre -->
+        <record id="construction_project_email_config" model="ir.config_parameter">
+            <field name="key">construction_base.construction_project_email</field>
+            <field name="value">appel-doffre@blggroupe.com</field>
+        </record>
+        
+        <!-- Configuration pour activer/désactiver la création automatique -->
+        <record id="construction_auto_creation_config" model="ir.config_parameter">
+            <field name="key">construction_base.auto_create_from_email</field>
+            <field name="value">True</field>
+        </record>
+        
+        <!-- Configuration pour activer/désactiver l'envoi automatique d'emails de confirmation -->
+        <record id="construction_auto_email_config" model="ir.config_parameter">
+            <field name="key">construction_base.auto_send_confirmation_email</field>
+            <field name="value">False</field>
+        </record>
+        
+    </data>
+</odoo>

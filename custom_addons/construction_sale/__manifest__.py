@@ -34,6 +34,9 @@ Compatibilité : Odoo 18.0
         # Données de base
         'data/product_category_data.xml',
         'data/product_sequence_data.xml',
+        'data/construction_uom_data.xml',
+        'data/construction_product_categories.xml',
+        'data/construction_products_data.xml',
         
         # Wizards (popup d'abord pour définir les actions)
         'wizards/popup_views.xml',

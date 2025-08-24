@@ -12,8 +12,10 @@
 
                 </header>
                 <footer>
-                    <button name="action_confirm_selection" string="✅ Finaliser le devis"
+                    <button name="action_confirm_selection" string="✅ Ajouter au devis"
                             type="object" class="btn-primary"/>
+                    <button name="action_finalize_quote" string="🏁 Finaliser le devis"
+                            type="object" class="btn-success"/>
                     <button name="action_view_selection" string="🛒 Voir ma sélection"
                             type="object" class="btn-secondary"/>
                     <button name="action_clear_selection" string="🗑️ Vider la sélection"

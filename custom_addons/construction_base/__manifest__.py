@@ -47,6 +47,8 @@
         'data/invoice_type_cycles.xml',
         'data/sequence_data.xml',
         'data/email_templates.xml',
+        'data/construction_email_config.xml',
+        'data/construction_auto_creation_email_template.xml',
         
         # Menus et actions nécessaires avant certaines vues
         'views/menu.xml',

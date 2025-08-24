@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+    <!-- ========== UNITÉS DE MESURE BTP ========== -->
+    
+    <!-- Catégorie pour les unités de surface BTP -->
+    <record id="uom_categ_surface_btp" model="uom.category">
+        <field name="name">Surface BTP</field>
+    </record>
+    
+    <!-- Unités de surface BTP -->
+    <record id="uom_square_meter_btp" model="uom.uom">
+        <field name="name">m²</field>
+        <field name="category_id" ref="uom_categ_surface_btp"/>
+        <field name="factor" eval="1.0"/>
+        <field name="uom_type">reference</field>
+        <field name="rounding" eval="0.01"/>
+    </record>
+    
+    <record id="uom_square_decimeter" model="uom.uom">
+        <field name="name">dm²</field>
+        <field name="category_id" ref="uom_categ_surface_btp"/>
+        <field name="factor" eval="100"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="0.01"/>
+    </record>
+    
+    <record id="uom_square_centimeter" model="uom.uom">
+        <field name="name">cm²</field>
+        <field name="category_id" ref="uom_categ_surface_btp"/>
+        <field name="factor" eval="10000"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="0.01"/>
+    </record>
+    
+    <!-- Catégorie pour les unités de longueur BTP -->
+    <record id="uom_categ_length_btp" model="uom.category">
+        <field name="name">Longueur BTP</field>
+    </record>
+    
+    <!-- Unités de longueur BTP -->
+    <record id="uom_meter_btp" model="uom.uom">
+        <field name="name">m</field>
+        <field name="category_id" ref="uom_categ_length_btp"/>
+        <field name="factor" eval="1.0"/>
+        <field name="uom_type">reference</field>
+        <field name="rounding" eval="0.001"/>
+    </record>
+    
+    <record id="uom_centimeter_btp" model="uom.uom">
+        <field name="name">cm</field>
+        <field name="category_id" ref="uom_categ_length_btp"/>
+        <field name="factor" eval="100"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="0.1"/>
+    </record>
+    
+    <record id="uom_millimeter_btp" model="uom.uom">
+        <field name="name">mm</field>
+        <field name="category_id" ref="uom_categ_length_btp"/>
+        <field name="factor" eval="1000"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="1.0"/>
+    </record>
+    
+    <!-- Catégorie pour les unités de volume BTP -->
+    <record id="uom_categ_volume_btp" model="uom.category">
+        <field name="name">Volume BTP</field>
+    </record>
+    
+    <!-- Unités de volume BTP -->
+    <record id="uom_cubic_meter_btp" model="uom.uom">
+        <field name="name">m³</field>
+        <field name="category_id" ref="uom_categ_volume_btp"/>
+        <field name="factor" eval="1.0"/>
+        <field name="uom_type">reference</field>
+        <field name="rounding" eval="0.001"/>
+    </record>
+    
+    <record id="uom_liter_btp" model="uom.uom">
+        <field name="name">L</field>
+        <field name="category_id" ref="uom_categ_volume_btp"/>
+        <field name="factor" eval="1000"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="0.1"/>
+    </record>
+    
+    <!-- Catégorie pour les unités de poids BTP -->
+    <record id="uom_categ_weight_btp" model="uom.category">
+        <field name="name">Poids BTP</field>
+    </record>
+    
+    <!-- Unités de poids BTP -->
+    <record id="uom_ton_btp" model="uom.uom">
+        <field name="name">t</field>
+        <field name="category_id" ref="uom_categ_weight_btp"/>
+        <field name="factor" eval="1.0"/>
+        <field name="uom_type">reference</field>
+        <field name="rounding" eval="0.001"/>
+    </record>
+    
+    <record id="uom_kilogram_btp" model="uom.uom">
+        <field name="name">kg</field>
+        <field name="category_id" ref="uom_categ_weight_btp"/>
+        <field name="factor" eval="1000"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="0.01"/>
+    </record>
+    
+    <record id="uom_gram_btp" model="uom.uom">
+        <field name="name">g</field>
+        <field name="category_id" ref="uom_categ_weight_btp"/>
+        <field name="factor" eval="1000000"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="1.0"/>
+    </record>
+    
+         <!-- Unités spécialisées BTP -->
+     <!-- Note: L'unité "pièce" existe déjà dans Odoo, nous l'utilisons directement -->
+    
+    <record id="uom_linear_meter" model="uom.uom">
+        <field name="name">ml</field>
+        <field name="category_id" ref="uom_categ_length_btp"/>
+        <field name="factor" eval="0.001"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="0.01"/>
+    </record>
+    
+    <record id="uom_square_meter_linear" model="uom.uom">
+        <field name="name">m² linéaire</field>
+        <field name="category_id" ref="uom_categ_surface_btp"/>
+        <field name="factor" eval="0.1"/>
+        <field name="uom_type">smaller</field>
+        <field name="rounding" eval="0.01"/>
+    </record>
+    
+    <!-- Unités de temps - Utilisation des unités existantes d'Odoo -->
+    <!-- Note: Les unités "h" et "jour" existent déjà dans Odoo, nous les utilisons directement -->
+    
+</odoo>

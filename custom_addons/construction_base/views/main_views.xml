@@ -181,8 +181,8 @@
                     <field name="state" string="État" widget="badge"/>
 
                     <!-- Dates étendues (masquées par défaut) -->
-                    <field name="date_start_actual" string="Début effectif" optional="hide"/>
-                    <field name="date_end_actual" string="Fin effective" optional="hide"/>
+                                            <field name="date_start_internal" string="Début interne" optional="hide"/>
+                        <field name="date_end_internal" string="Fin interne" optional="hide"/>
                     <field name="create_date" string="Créé le" readonly="1" optional="hide"/>
                 </list>
             </field>

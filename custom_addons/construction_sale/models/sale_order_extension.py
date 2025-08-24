@@ -84,6 +84,17 @@ class SaleOrderConstruction(models.Model):
             record.order_line_count = len(product_lines)
             record.total_quantity = sum(product_lines.mapped('product_uom_qty'))
 
+    @api.model
+    def create(self, vals):
+        """Injecter le nom du chantier lors de la création d'un devis"""
+        # Si un chantier est spécifié et que le nom n'est pas défini
+        if vals.get('chantier_id') and (not vals.get('name') or vals.get('name') == '/'):
+            chantier = self.env['construction.chantier'].browse(vals['chantier_id'])
+            if chantier.exists():
+                vals['name'] = f"Devis - {chantier.name}"
+        
+        return super().create(vals)
+
     # =================== SYNCHRONISATION  ===================
 
     @api.onchange('lot_ids')
@@ -228,6 +239,10 @@ class SaleOrderConstruction(models.Model):
             if self.chantier_id.lots_ids:
                 self.lot_ids = self.chantier_id.lots_ids
                 self.lot_selection_ids = self.chantier_id.lots_ids  # Sync pour compatibilité
+            
+            # Injecter le nom du chantier dans le nom du devis
+            if not self.name or self.name == '/':
+                self.name = f"Devis - {self.chantier_id.name}"
 
 
 class SaleOrderLineConstruction(models.Model):

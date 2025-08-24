@@ -17,6 +17,7 @@ from . import invoice_type
 from . import planning
 from . import subcontractor_contract
 from . import services
+from . import mail_thread
 
 # Modèles avec dépendances (après les modèles de base)
 from . import chantier

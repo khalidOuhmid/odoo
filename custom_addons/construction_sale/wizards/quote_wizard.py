@@ -4,6 +4,7 @@ Wizard intelligent pour la création de devis construction
 Respecte les standards Odoo 18 et les principes SOLID
 """
 
+import logging
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -282,7 +283,30 @@ class ConstructionQuoteWizard(models.TransientModel):
                 'lot_ids': [(6, 0, self.lot_ids.ids)]
             })
         
-        # Retourner vers le devis créé pour voir le résultat
+        # Vider la sélection pour permettre d'ajouter d'autres produits
+        self.selected_line_ids.unlink()
+        
+        # Retourner sur l'instance du wizard pour continuer la progression
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Assistant de création de devis - %s') % self.chantier_id.name,
+            'res_model': 'construction.quote.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.chantier_id.id,
+                'default_sale_order_id': self.sale_order_id.id,
+            }
+        }
+
+    def action_finalize_quote(self):
+        """Finaliser le devis et retourner au devis"""
+        # Ajouter les produits sélectionnés s'il y en a
+        if self.selected_line_ids.filtered('quantity'):
+            self.action_confirm_selection()
+        
+        # Retourner vers le devis créé pour voir le résultat final
         return {
             'type': 'ir.actions.act_window',
             'name': _('Devis %s') % self.sale_order_id.name,
@@ -414,10 +438,10 @@ class ConstructionQuoteWizard(models.TransientModel):
         
         if quote_line.room_number or quote_line.room_location:
             location_info = []
-            if quote_line.room_number:
-                location_info.append(f"Salle {quote_line.room_number}")
             if quote_line.room_location:
                 location_info.append(quote_line.room_location)
+            if quote_line.room_number:
+                location_info.append(f"Salle {quote_line.room_number}")
             name_parts.append(f"({' - '.join(location_info)})")
         
         if quote_line.construction_notes:
@@ -526,7 +550,7 @@ class ProductAddDialog(models.TransientModel):
     lot_id = fields.Many2one(
         'construction.lot',
         string='Lot',
-        required=True,
+        required=False,
         help="Lot de construction auquel assigner ce produit"
     )
     
@@ -585,13 +609,16 @@ class ProductAddDialog(models.TransientModel):
         if self.quantity <= 0:
             raise ValidationError(_("La quantité doit être positive."))
         
+        if not self.lot_id:
+            raise ValidationError(_("Veuillez sélectionner un lot pour ce produit."))
+        
         # Créer la ligne dans le wizard principal
         line_vals = {
             'wizard_id': self.quote_wizard_id.id,
             'product_id': self.product_id.id,
             'quantity': self.quantity,
             'price_unit': self.unit_price,
-            'lot_id': self.lot_id.id if self.lot_id else False,
+            'lot_id': self.lot_id.id,
             'room_number': self.room_number,
             'room_location': self.room_location,
             'construction_notes': self.description,
@@ -611,8 +638,16 @@ class ProductAddDialog(models.TransientModel):
         }
 
     def action_cancel(self):
-        """Annuler l'ajout"""
-        return {'type': 'ir.actions.act_window_close'}
+        """Annuler l'ajout et retourner au wizard principal"""
+        # Retourner à la même instance du wizard principal (popup)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Assistant de création de devis - %s') % self.quote_wizard_id.chantier_id.name,
+            'res_model': 'construction.quote.wizard',
+            'res_id': self.quote_wizard_id.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
 
 
 class ConstructionQuoteLine(models.TransientModel):
@@ -749,7 +784,7 @@ class ProductCreator(models.TransientModel):
     
     name = fields.Char(
         string='Nom du produit',
-        required=True,
+        required=False,
         placeholder="Ex: Peinture satinée blanche..."
     )
     
@@ -761,7 +796,17 @@ class ProductCreator(models.TransientModel):
     categ_id = fields.Many2one(
         'product.category',
         string='Catégorie',
-        required=True
+        required=False,
+        default=lambda self: self._get_default_category_id()
+    )
+    
+    uom_id = fields.Many2one(
+        'uom.uom',
+        string='Unité de mesure',
+        required=False,
+        default=lambda self: self._get_default_uom_id(),
+        domain="[('category_id.name', 'in', ['Unit', 'Surface', 'Length / Distance', 'Volume', 'Weight', 'Surface BTP', 'Longueur BTP', 'Volume BTP', 'Poids BTP', 'Working Time'])]",
+        help="Unité de mesure pour ce produit (m², m, kg, pièce, h, jour, etc.)"
     )
     
     list_price = fields.Float(
@@ -790,17 +835,6 @@ class ProductCreator(models.TransientModel):
         string='Lots associés',
         help="Lots pour lesquels ce produit est utilisé"
     )
-    
-    add_to_quote = fields.Boolean(
-        string='Ajouter directement au devis',
-        default=True,
-        help="Ajouter le produit au devis après création"
-    )
-    
-    quantity = fields.Float(
-        string='Quantité à ajouter',
-        default=1.0
-    )
 
     # =================== ACTIONS ===================
     
@@ -808,6 +842,12 @@ class ProductCreator(models.TransientModel):
         """Créer le produit et optionnellement l'ajouter au devis"""
         if not self.name:
             raise ValidationError(_("Le nom du produit est obligatoire."))
+        
+        if not self.categ_id:
+            raise ValidationError(_("Veuillez sélectionner une catégorie pour ce produit."))
+        
+        if not self.uom_id:
+            raise ValidationError(_("Veuillez sélectionner une unité de mesure pour ce produit."))
         
         if self.list_price < 0:
             raise ValidationError(_("Le prix de vente doit être positif."))
@@ -828,6 +868,7 @@ class ProductCreator(models.TransientModel):
             'name': self.name,
             'default_code': generated_code,
             'categ_id': self.categ_id.id,
+            'uom_id': self.uom_id.id,
             'list_price': computed_list_price or 0.0,
             'standard_price': self.standard_price,
             'description_sale': self.description_sale,
@@ -841,10 +882,6 @@ class ProductCreator(models.TransientModel):
             product_vals['lot_ids'] = [(6, 0, self.lot_ids.ids)]
         
         new_product = self.env['product.product'].create(product_vals)
-        
-        # Ajouter au devis si demandé
-        if self.add_to_quote and self.quantity > 0:
-            self._add_product_to_quote(new_product)
         
         # Actualiser la liste des produits du wizard
         self.quote_wizard_id.action_refresh_products()
@@ -860,27 +897,16 @@ class ProductCreator(models.TransientModel):
         }
     
     def action_cancel(self):
-        """Annuler la création"""
-        return {'type': 'ir.actions.act_window_close'}
-    
-    def _add_product_to_quote(self, product):
-        """Ajouter le produit créé directement au devis"""
-        # Utiliser le coût et la marge par défaut du wizard pour calculer le prix
-        default_margin = self.quote_wizard_id.default_margin_percent or 0.0
-        cost = product.standard_price or 0.0
-        price_unit = cost * (1 + default_margin / 100.0)
-
-        # Créer la ligne dans le wizard principal
-        line_vals = {
-            'wizard_id': self.quote_wizard_id.id,
-            'product_id': product.id,
-            'quantity': self.quantity,
-            'price_unit': price_unit,
-            'lot_id': self.lot_ids[0].id if len(self.lot_ids) == 1 else False,
-            'margin_percent': default_margin,
+        """Annuler la création et retourner au wizard principal"""
+        # Retourner à la même instance du wizard principal (popup)
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Assistant de création de devis - %s') % self.quote_wizard_id.chantier_id.name,
+            'res_model': 'construction.quote.wizard',
+            'res_id': self.quote_wizard_id.id,
+            'view_mode': 'form',
+            'target': 'new',
         }
-        
-        self.env['construction.quote.line'].create(line_vals)
 
     # =================== CALCULS ===================
     @api.depends('standard_price', 'quote_wizard_id.default_margin_percent')
@@ -927,5 +953,40 @@ class ProductCreator(models.TransientModel):
             if not exists:
                 return candidate
             index += 1
+
+    def _get_default_uom_id(self):
+        """Retourne l'unité de mesure par défaut pour les produits de construction."""
+        # Chercher l'unité de mesure m² BTP par défaut
+        default_uom = self.env['uom.uom'].search([
+            ('name', '=', 'm²'),
+            ('category_id.name', 'in', ['Surface', 'Surface BTP'])
+        ], limit=1)
+        if default_uom:
+            return default_uom.id
+        # Sinon, chercher une unité de surface BTP
+        surface_uom = self.env['uom.uom'].search([
+            ('category_id.name', 'in', ['Surface', 'Surface BTP'])
+        ], limit=1)
+        if surface_uom:
+            return surface_uom[0].id
+        # En dernier recours, unité standard
+        return self.env['uom.uom'].search([('name', '=', 'Units')], limit=1).id
+
+    def _get_default_category_id(self):
+        """Retourne la catégorie par défaut pour les produits de construction."""
+        # Chercher la catégorie Construction BTP
+        construction_category = self.env['product.category'].search([
+            ('name', '=', 'Construction BTP')
+        ], limit=1)
+        if construction_category:
+            return construction_category.id
+        # Sinon, chercher une catégorie construction
+        construction_category = self.env['product.category'].search([
+            ('name', 'ilike', 'construction')
+        ], limit=1)
+        if construction_category:
+            return construction_category.id
+        # En dernier recours, première catégorie disponible
+        return self.env['product.category'].search([], limit=1).id
 
 

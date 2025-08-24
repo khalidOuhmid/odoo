@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Template d'email pour notification de création automatique de chantier -->
+        <record id="email_template_construction_project_created" model="mail.template">
+            <field name="name">Chantier créé automatiquement</field>
+            <field name="model_id" ref="construction_base.model_construction_chantier"/>
+            <field name="subject">Nouveau chantier créé automatiquement: {{ object.name }}</field>
+            <field name="email_from">{{ user.email_formatted }}</field>
+            <field name="partner_to">{{ object.client.id }}</field>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px;">
+                    <p>Bonjour,</p>
+                    
+                    <p>Un nouveau chantier a été créé automatiquement dans notre système :</p>
+                    
+                    <div style="margin: 20px 0px; padding: 15px; background-color: #f8f9fa; border-left: 4px solid #007bff;">
+                        <h3 style="margin: 0px; color: #007bff;">{{ object.name }}</h3>
+                        <p style="margin: 5px 0px;"><strong>Client :</strong> {{ object.client.name }}</p>
+                        {% if object.address %}
+                        <p style="margin: 5px 0px;"><strong>Adresse :</strong> {{ object.address }}</p>
+                        {% endif %}
+                        {% if object.city %}
+                        <p style="margin: 5px 0px;"><strong>Ville :</strong> {{ object.city }} {{ object.zip_code or '' }}</p>
+                        {% endif %}
+                        {% if object.phone %}
+                        <p style="margin: 5px 0px;"><strong>Téléphone :</strong> {{ object.phone }}</p>
+                        {% endif %}
+                        {% if object.description %}
+                        <p style="margin: 5px 0px;"><strong>Description :</strong> {{ object.description }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <p>Ce chantier a été créé automatiquement depuis un email reçu sur notre adresse dédiée aux appels d'offre.</p>
+                    
+                    <p>Notre équipe va analyser votre demande et vous recontacter dans les plus brefs délais.</p>
+                    
+                    <p>Cordialement,<br/>
+                    L'équipe BLG Groupe</p>
+                    
+                    <hr style="margin: 20px 0px; border: none; border-top: 1px solid #dee2e6;"/>
+                    <p style="font-size: 12px; color: #6c757d;">
+                        Cet email a été généré automatiquement. Merci de ne pas y répondre directement.
+                    </p>
+                </div>
+            </field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+        
+    </data>
+</odoo>

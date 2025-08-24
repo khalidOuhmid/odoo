@@ -232,9 +232,9 @@
                                 <field name="duration_planned" readonly="1"/>
                             </group>
 
-                            <group string="Dates réelles">
-                                <field name="date_start_actual"/>
-                                <field name="date_end_actual"/>
+                            <group string="Dates internes">
+                                <field name="date_start_internal"/>
+                                <field name="date_end_internal"/>
                                 <field name="duration_actual"
                                        readonly="1"
                                        decoration-danger="duration_actual &gt; duration_planned"/>
@@ -777,7 +777,7 @@
                     <!-- Optionnels -->
                     <field name="city" string="Ville" optional="hide"/>
                     <field name="surface_m2" string="Surface (m²)" optional="hide"/>
-                    <field name="date_start_actual" string="Début effectif" optional="hide"/>
+                                            <field name="date_start_internal" string="Début interne" optional="hide"/>
                     <field name="duration_planned" string="Durée prévue" optional="hide"/>
                     <field name="create_date" string="Créé le" readonly="1" optional="hide"/>
 

@@ -67,8 +67,8 @@ class Chantier(models.Model):
     # Dates contractuelles et internes
     date_start_contract = fields.Date('Date de début contractuelle', tracking=True)
     date_end_contract = fields.Date('Date de fin contractuelle', tracking=True)
-    date_start_actual = fields.Date('Date de début réelle', tracking=True)
-    date_end_actual = fields.Date('Date de fin réelle', tracking=True)
+    date_start_internal = fields.Date('Date de début interne', tracking=True)
+    date_end_internal = fields.Date('Date de fin interne', tracking=True)
     date_start_estimated = fields.Date('Date de début estimée', tracking=True)
     date_end_estimated = fields.Date('Date de fin estimée ', tracking=True)
 
@@ -317,16 +317,15 @@ class Chantier(models.Model):
                 delta = record.date_end_contract - record.date_start_contract
                 record.duration_planned = delta.days + 1
 
-    @api.depends('date_start_actual', 'date_end_actual')
+    @api.depends('date_start_internal', 'date_end_internal')
     def _compute_duration_actual(self):
-        """
-        """
+        """Calcule la durée interne du chantier en jours"""
         for record in self:
-            if record.date_start_actual and record.date_end_actual:
-                delta = record.date_end_actual - record.date_start_actual
+            if record.date_start_internal and record.date_end_internal:
+                delta = record.date_end_internal - record.date_start_internal
                 record.duration_actual = delta.days + 1
-            elif record.date_start_actual and record.state == 'active':
-                delta = fields.Date.today() - record.date_start_actual
+            elif record.date_start_internal and record.state == 'active':
+                delta = fields.Date.today() - record.date_start_internal
                 record.duration_actual = delta.days + 1
             else:
                 record.duration_actual = 0
@@ -628,10 +627,10 @@ class Chantier(models.Model):
         if not self.date_end_contract:
             return False, "Date de fin contractuelle non définie"
         # Utiliser les champs existants: réel ou estimé
-        if not (self.date_end_actual or self.date_end_estimated):
-            return False, "Date de fin (réelle ou estimée) non définie"
-        if not (self.date_start_actual or self.date_start_estimated):
-            return False, "Date de début (réelle ou estimée) non définie"
+        if not (self.date_end_internal or self.date_end_estimated):
+            return False, "Date de fin (interne ou estimée) non définie"
+        if not (self.date_start_internal or self.date_start_estimated):
+            return False, "Date de début (interne ou estimée) non définie"
         else:
             return True, "OK"
 

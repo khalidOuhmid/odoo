@@ -1,0 +1,309 @@
+// Styles pour les boutons Reply ajoutés
+.reply-btn-enhanced {
+    color: #017e84 !important;
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+    text-decoration: none !important;
+    border: 1px solid transparent !important;
+    border-radius: 4px !important;
+    transition: all 0.2s ease !important;
+    background: transparent !important;
+
+    &:hover {
+        color: #01565a !important;
+        background-color: rgba(1, 126, 132, 0.1) !important;
+        text-decoration: none !important;
+        border-color: rgba(1, 126, 132, 0.3) !important;
+        transform: translateY(-1px) !important;
+    }
+
+    &:active {
+        transform: translateY(0) !important;
+    }
+
+    .fa {
+        margin-right: 4px;
+        opacity: 0.8;
+    }
+}
+
+// Styles pour le bouton "Envoyer un message" (éditeur avancé)
+.o-mail-Composer-send,
+button.o-mail-Composer-send,
+.o-Chatter_buttonSendMessage {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+    border: none !important;
+    color: white !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3) !important;
+    transition: all 0.2s ease !important;
+    margin-left: 8px !important;
+
+    &:hover {
+        background: linear-gradient(135deg, #218838 0%, #1ea085 100%) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4) !important;
+        color: white !important;
+    }
+
+    &:active {
+        transform: translateY(0) !important;
+        box-shadow: 0 1px 2px rgba(40, 167, 69, 0.3) !important;
+    }
+
+    &::before {
+        content: "📧 ";
+        margin-right: 4px;
+    }
+}
+
+// Styles spécifiques pour le bouton "Send message" (éditeur avancé)
+.o-mail-Chatter-sendMessage {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%) !important;
+    border: none !important;
+    color: white !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-weight: 500 !important;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3) !important;
+    transition: all 0.2s ease !important;
+    position: relative !important;
+
+    &:hover {
+        background: linear-gradient(135deg, #0056b3 0%, #004085 100%) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 4px 8px rgba(0, 123, 255, 0.4) !important;
+        color: white !important;
+    }
+
+    &:active {
+        transform: translateY(0) !important;
+        box-shadow: 0 1px 2px rgba(0, 123, 255, 0.3) !important;
+    }
+
+    // Indicateur visuel que ce bouton ouvre l'éditeur avancé
+    &::after {
+        content: "⚡";
+        position: absolute;
+        top: -6px;
+        right: -6px;
+        font-size: 10px;
+        color: #ffc107;
+        background: white;
+        border-radius: 50%;
+        width: 16px;
+        height: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        animation: pulse 2s infinite;
+    }
+
+    // Texte du bouton avec icône
+    &::before {
+        content: "📧 ";
+        margin-right: 4px;
+    }
+}
+
+// Distinction avec le bouton "Note" (plus discret)
+.o-Chatter_buttonNote,
+button[title="Note"],
+.o-mail-Chatter-logNote {
+    background: #6c757d !important;
+    border: none !important;
+    color: white !important;
+    padding: 6px 12px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    opacity: 0.8 !important;
+    transition: all 0.2s ease !important;
+
+    &:hover {
+        background: #5a6268 !important;
+        opacity: 1 !important;
+        color: white !important;
+        transform: translateY(-1px) !important;
+    }
+
+    &:active {
+        transform: translateY(0) !important;
+    }
+}
+
+// Amélioration de la zone d'actions des messages
+.o-mail-Message-actions {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    margin-top: 8px !important;
+    padding-top: 8px !important;
+    border-top: 1px solid #e9ecef !important;
+    min-height: 32px !important;
+}
+
+// Style pour le chatter global
+.o-mail-Chatter {
+    .o-mail-Composer-send {
+        background: linear-gradient(135deg, #017e84 0%, #01565a 100%) !important;
+        border: none !important;
+        box-shadow: 0 2px 4px rgba(1, 126, 132, 0.3) !important;
+        transition: all 0.2s ease !important;
+
+        &:hover {
+            transform: translateY(-1px) !important;
+            box-shadow: 0 4px 8px rgba(1, 126, 132, 0.4) !important;
+        }
+    }
+
+    // Amélioration de l'apparence générale
+    .o-mail-Message {
+        border-left: 3px solid transparent !important;
+        transition: all 0.2s ease !important;
+        margin-bottom: 12px !important;
+        padding: 12px !important;
+        border-radius: 6px !important;
+
+        &:hover {
+            border-left-color: #017e84 !important;
+            background-color: rgba(1, 126, 132, 0.02) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+        }
+    }
+
+    // Style pour les messages de l'utilisateur actuel
+    .o-mail-Message.o-mail-Message-own {
+        border-left-color: #28a745 !important;
+        background-color: rgba(40, 167, 69, 0.02) !important;
+    }
+
+    // Style pour la barre d'outils du chatter
+    .o-mail-Chatter-topbar {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+        border-bottom: 1px solid #dee2e6 !important;
+        padding: 8px 12px !important;
+        border-radius: 6px 6px 0 0 !important;
+    }
+}
+
+// Animation pour les boutons avec effet de pulsation
+@keyframes pulse {
+    0% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+    50% { 
+        opacity: 0.7; 
+        transform: scale(1.05);
+    }
+    100% { 
+        opacity: 1; 
+        transform: scale(1);
+    }
+}
+
+// Effet de pulsation pour les boutons importants
+.o-mail-Composer-send:focus,
+.reply-btn-enhanced:focus,
+.o-mail-Chatter-sendMessage:focus {
+    animation: pulse 2s infinite !important;
+}
+
+// Styles pour les notifications
+.o_notification_manager {
+    .o_notification {
+        &.o_notification_success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%) !important;
+            border-color: #28a745 !important;
+        }
+
+        &.o_notification_danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%) !important;
+            border-color: #dc3545 !important;
+        }
+
+        &.o_notification_info {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%) !important;
+            border-color: #17a2b8 !important;
+        }
+    }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+    .reply-btn-enhanced {
+        padding: 6px 10px !important;
+        font-size: 11px !important;
+    }
+
+    .o-mail-Message-actions {
+        gap: 6px !important;
+        padding-top: 6px !important;
+    }
+
+    .o-mail-Composer-send,
+    .o-mail-Chatter-sendMessage {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+    }
+}
+
+// Classes utilitaires pour l'email enhancement
+.email-enhanced-chatter {
+    .o-mail-Message {
+        position: relative;
+        
+        &::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(135deg, #017e84 0%, #01565a 100%);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        &:hover::before {
+            opacity: 1;
+        }
+    }
+}
+
+// Styles pour les boutons interceptés
+button[data-enhanced-intercepted="true"] {
+    position: relative;
+    
+    &::after {
+        content: "🚀";
+        position: absolute;
+        top: -8px;
+        right: -8px;
+        font-size: 12px;
+        background: white;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        animation: bounce 1s infinite;
+    }
+}
+
+@keyframes bounce {
+    0%, 20%, 50%, 80%, 100% {
+        transform: translateY(0);
+    }
+    40% {
+        transform: translateY(-3px);
+    }
+    60% {
+        transform: translateY(-1px);
+    }
+}
