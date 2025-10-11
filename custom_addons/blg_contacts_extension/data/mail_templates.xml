@@ -5,7 +5,7 @@
             <field name="name">Demande Manuelle de Documents Manquants/Rejetés</field>
             <field name="model_id" ref="base.model_res_partner"/>
             <field name="subject">BLG Groupe : Demande de documents pour {{ object.name }}</field>
-            <field name="email_from">{{ (user.email_formatted or user.company_id.email_formatted) }}</field>
+            <field name="email_from">${user.email_formatted or company.email_formatted}</field>
             <field name="email_to">{{ object.email }}</field>
             <field name="lang">{{ object.lang }}</field>
             <field name="body_html"><![CDATA[
@@ -38,7 +38,7 @@
             <field name="name">Documents Expirés</field>
             <field name="model_id" ref="base.model_res_partner"/>
             <field name="subject">BLG Groupe : Documents Expirés pour {{ object.name }}</field>
-            <field name="email_from">{{ (user.email_formatted or user.company_id.email_formatted) }}</field>
+            <field name="email_from">${user.email_formatted or company.email_formatted}</field>
             <field name="email_to">{{ object.email }}</field>
             <field name="body_html" type="html">
 <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
@@ -65,7 +65,7 @@
             <field name="name">Demande de RIB</field>
             <field name="model_id" ref="base.model_res_partner"/>
             <field name="subject">BLG Groupe : Demande de RIB pour {{ object.name }}</field>
-            <field name="email_from">{{ (user.email_formatted or user.company_id.email_formatted) }}</field>
+            <field name="email_from">${user.email_formatted or company.email_formatted}</field>
             <field name="email_to">{{ object.email }}</field>
             <field name="body_html" type="html">
 <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">

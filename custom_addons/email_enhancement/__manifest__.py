@@ -1,30 +1,33 @@
 {
-    'name': 'Chatter Enhanced',
+    'name': 'Email Enhancement',
     'version': '18.0.1.0.0',
-    'category': 'Productivity/Discuss',
-    'summary': 'Extension du chatter avec interface Gmail-like',
+    'category': 'Mail',
+    'summary': 'Amélioration de l\'interface du chatter pour les emails',
     'description': """
-        Extension du chatter Odoo
-        ========================
-
-        * Bouton Reply sur chaque message
-        * Ouverture directe de la fenêtre de composition d'email
-        * Interface améliorée similaire à Gmail/Outlook
-        * Gestion avancée des réponses en thread
+        Module d'amélioration de l'interface du chatter Odoo :
+        - Ouverture directe du full composer lors du clic sur "Envoyer un message"
+        - Ajout d'un bouton "Reply" sur les messages pour une vraie réponse
+        - Amélioration de l'expérience utilisateur pour les emails
     """,
-    'author': 'Ton nom',
-    'depends': ['mail', 'web'],
-    'data': [],
-    'demo': [],
-    'images': [],
-    'installable': True,
-    'application': False,
-    'auto_install': False,
-    'license': 'LGPL-3',
+    'author': 'Odoo Developer',
+    'website': 'https://www.odoo.com',
+    'depends': [
+        'base',
+        'mail',
+        'web',
+    ],
+    'data': [
+        'security/ir.model.access.csv',
+    ],
     'assets': {
         'web.assets_backend': [
-            'email_enhancement/static/src/js/chatter_enhanced.js',
+            'email_enhancement/static/src/js/chatter_patch.js',
+            'email_enhancement/static/src/js/message_actions_patch.js',
             'email_enhancement/static/src/scss/chatter_enhanced.scss',
         ],
     },
+    'installable': True,
+    'auto_install': False,
+    'application': False,
+    'license': 'LGPL-3',
 }

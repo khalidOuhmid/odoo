@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Template de prévisualisation des documents -->
+    <template id="document_preview_template" name="Document Preview">
+        <t t-call="web.frontend_layout">
+            <t t-set="title">Prévisualisation - <t t-esc="document_title"/></t>
+            
+            <div class="container-fluid p-0">
+                <!-- En-tête de prévisualisation -->
+                <div class="d-flex justify-content-between align-items-center p-3 bg-light border-bottom">
+                    <div>
+                        <h4 class="mb-0">
+                            <i class="fa fa-eye me-2"/>
+                            <t t-esc="document_title"/>
+                        </h4>
+                        <small class="text-muted">
+                            <t t-esc="partner_name"/> - <t t-esc="filename"/>
+                        </small>
+                    </div>
+                    <div>
+                        <a t-att-href="download_url" 
+                           class="btn btn-secondary oe_inline" 
+                           target="_blank">
+                            <i class="fa fa-download"/>Télécharger
+                        </a>
+                        <button type="button" class="btn btn-light oe_inline" onclick="window.close()">
+                            <i class="fa fa-times"/>Fermer
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Zone de prévisualisation -->
+                <div class="preview-container" style="height: calc(100vh - 80px);">
+                    <t t-if="is_pdf">
+                        <!-- Prévisualisation PDF avec PDF.js -->
+                        <iframe t-att-src="preview_url" 
+                                style="width: 100%; height: 100%; border: none;">
+                        </iframe>
+                    </t>
+                    <t t-elif="is_image">
+                        <!-- Prévisualisation d'image -->
+                        <div class="d-flex justify-content-center align-items-center h-100 bg-dark">
+                            <img t-att-src="preview_url" 
+                                 class="img-fluid" 
+                                 style="max-height: 100%; max-width: 100%; object-fit: contain;"/>
+                        </div>
+                    </t>
+                    <t t-else="">
+                        <!-- Format non supporté pour prévisualisation -->
+                        <div class="d-flex flex-column justify-content-center align-items-center h-100 text-center">
+                            <i class="fa fa-file-o fa-5x text-muted mb-3"/>
+                            <h5>Prévisualisation non disponible</h5>
+                            <p class="text-muted">
+                                Ce type de fichier ne peut pas être prévisualisé dans le navigateur.<br/>
+                                Veuillez télécharger le fichier pour le consulter.
+                            </p>
+                            <a t-att-href="download_url" 
+                               class="btn btn-primary" 
+                               target="_blank">
+                                <i class="fa fa-download me-1"/>Télécharger le fichier
+                            </a>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+    
+    <!-- Template d'erreur pour la prévisualisation -->
+    <template id="document_preview_error" name="Document Preview Error">
+        <t t-call="web.frontend_layout">
+            <t t-set="title">Erreur de prévisualisation</t>
+            
+            <div class="container mt-5">
+                <div class="row justify-content-center">
+                    <div class="col-md-6 text-center">
+                        <i class="fa fa-exclamation-triangle fa-5x text-warning mb-3"/>
+                        <h3>Document non disponible</h3>
+                        <p class="text-muted">
+                            <t t-if="error_message">
+                                <t t-esc="error_message"/>
+                            </t>
+                            <t t-else="">
+                                Le document demandé n'existe pas ou vous n'avez pas les droits pour y accéder.
+                            </t>
+                        </p>
+                        <button type="button" class="btn btn-secondary oe_inline" onclick="window.close()">
+                            <i class="fa fa-times"/>Fermer cette fenêtre
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

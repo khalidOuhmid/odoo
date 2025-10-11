@@ -140,6 +140,25 @@
                                             <i class="fa fa-file-pdf-o me-1"/>
                                             <field name="document_identity_card_filename" readonly="1" class="d-inline"/>
                                         </div>
+                                        <!-- Boutons de prévisualisation et téléchargement -->
+                                        <div class="mt-2 o_document_preview_buttons" invisible="not document_identity_card">
+                                            <button name="action_preview_document" 
+                                                    type="object" 
+                                                    string="Aperçu" 
+                                                    class="btn btn-primary oe_inline"
+                                                    context="{'doc_type': 'identity_card'}"
+                                                    title="Prévisualiser le document dans une nouvelle fenêtre">
+                                                <i class="fa fa-eye"/> Aperçu
+                                            </button>
+                                            <button name="action_download_document" 
+                                                    type="object" 
+                                                    string="Télécharger" 
+                                                    class="btn btn-secondary oe_inline"
+                                                    context="{'doc_type': 'identity_card'}"
+                                                    title="Télécharger le document">
+                                                <i class="fa fa-download"/> Télécharger
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="document_identity_card_expiry" class="fw-bold text-muted small mb-1">Date d'expiration</label>
@@ -199,6 +218,25 @@
                                         <div class="small text-muted mt-1" invisible="not document_URSSAF">
                                             <i class="fa fa-file-pdf-o me-1"/>
                                             <field name="document_URSSAF_filename" readonly="1" class="d-inline"/>
+                                        </div>
+                                        <!-- Boutons de prévisualisation et téléchargement -->
+                                        <div class="mt-2 o_document_preview_buttons" invisible="not document_URSSAF">
+                                            <button name="action_preview_document" 
+                                                    type="object" 
+                                                    string="Aperçu" 
+                                                    class="btn btn-primary oe_inline"
+                                                    context="{'doc_type': 'urssaf'}"
+                                                    title="Prévisualiser le document dans une nouvelle fenêtre">
+                                                <i class="fa fa-eye"/> Aperçu
+                                            </button>
+                                            <button name="action_download_document" 
+                                                    type="object" 
+                                                    string="Télécharger" 
+                                                    class="btn btn-secondary oe_inline"
+                                                    context="{'doc_type': 'urssaf'}"
+                                                    title="Télécharger le document">
+                                                <i class="fa fa-download"/> Télécharger
+                                            </button>
                                         </div>
                                     </div>
                                     <div class="mb-3">
@@ -260,6 +298,25 @@
                                             <i class="fa fa-file-pdf-o me-1"/>
                                             <field name="document_KBIS_filename" readonly="1" class="d-inline"/>
                                         </div>
+                                        <!-- Boutons de prévisualisation et téléchargement -->
+                                        <div class="mt-2 o_document_preview_buttons" invisible="not document_KBIS">
+                                            <button name="action_preview_document" 
+                                                    type="object" 
+                                                    string="Aperçu" 
+                                                    class="btn btn-primary oe_inline"
+                                                    context="{'doc_type': 'kbis'}"
+                                                    title="Prévisualiser le document dans une nouvelle fenêtre">
+                                                <i class="fa fa-eye"/> Aperçu
+                                            </button>
+                                            <button name="action_download_document" 
+                                                    type="object" 
+                                                    string="Télécharger" 
+                                                    class="btn btn-secondary oe_inline"
+                                                    context="{'doc_type': 'kbis'}"
+                                                    title="Télécharger le document">
+                                                <i class="fa fa-download"/> Télécharger
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="document_KBIS_expiry" class="fw-bold text-muted small mb-1">Date d'expiration</label>
@@ -320,6 +377,25 @@
                                             <i class="fa fa-file-pdf-o me-1"/>
                                             <field name="document_insurance_filename" readonly="1" class="d-inline"/>
                                         </div>
+                                        <!-- Boutons de prévisualisation et téléchargement -->
+                                        <div class="mt-2 o_document_preview_buttons" invisible="not document_insurance">
+                                            <button name="action_preview_document" 
+                                                    type="object" 
+                                                    string="Aperçu" 
+                                                    class="btn btn-primary oe_inline"
+                                                    context="{'doc_type': 'insurance'}"
+                                                    title="Prévisualiser le document dans une nouvelle fenêtre">
+                                                <i class="fa fa-eye"/> Aperçu
+                                            </button>
+                                            <button name="action_download_document" 
+                                                    type="object" 
+                                                    string="Télécharger" 
+                                                    class="btn btn-secondary oe_inline"
+                                                    context="{'doc_type': 'insurance'}"
+                                                    title="Télécharger le document">
+                                                <i class="fa fa-download"/> Télécharger
+                                            </button>
+                                        </div>
                                     </div>
                                     <div class="mb-3">
                                         <label for="document_insurance_expiry" class="fw-bold text-muted small mb-1">Date d'expiration</label>
@@ -379,6 +455,25 @@
                                         <div class="small text-muted mt-1" invisible="not document_RIB">
                                             <i class="fa fa-file-pdf-o me-1"/>
                                             <field name="document_RIB_filename" readonly="1" class="d-inline"/>
+                                        </div>
+                                        <!-- Boutons de prévisualisation et téléchargement -->
+                                        <div class="mt-2 o_document_preview_buttons" invisible="not document_RIB">
+                                            <button name="action_preview_document" 
+                                                    type="object" 
+                                                    string="Aperçu" 
+                                                    class="btn btn-primary oe_inline"
+                                                    context="{'doc_type': 'rib'}"
+                                                    title="Prévisualiser le document dans une nouvelle fenêtre">
+                                                <i class="fa fa-eye"/> Aperçu
+                                            </button>
+                                            <button name="action_download_document" 
+                                                    type="object" 
+                                                    string="Télécharger" 
+                                                    class="btn btn-secondary oe_inline"
+                                                    context="{'doc_type': 'rib'}"
+                                                    title="Télécharger le document">
+                                                <i class="fa fa-download"/> Télécharger
+                                            </button>
                                         </div>
                                     </div>
                                     <div class="mb-3">

@@ -38,11 +38,16 @@
         # Views
         'views/document_archive_views.xml',
         'views/res_partner_views.xml',
+        'views/document_preview_templates.xml',
         'views/portal/document_upload_form.xml',
     ],
     'assets': {
         'web.assets_frontend': [
             'blg_contacts_extension/static/src/css/portal_document_upload.css',
+            'blg_contacts_extension/static/src/css/document_preview.css',
+        ],
+        'web.assets_backend': [
+            'blg_contacts_extension/static/src/css/document_preview.css',
         ],
     },
     'installable': True,

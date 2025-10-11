@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Template pour le rendu Gantt avec archiereport -->
+        <template id="planning_gantt_template" name="Planning Gantt Template">
+            <t t-foreach="docs" t-as="o">
+                <div class="gantt-container" style="
+                    font-family: 'Segoe UI', Arial, sans-serif;
+                    background: white;
+                    border: 2px solid #20B2AA;
+                    border-radius: 10px;
+                    padding: 20px;
+                    margin: 20px 0;
+                    box-shadow: 0 4px 12px rgba(32, 178, 170, 0.1);
+                ">
+                    <!-- En-tête du Gantt -->
+                    <div style="margin-bottom: 20px;">
+                        <h4 style="color: #20B2AA; margin: 0 0 10px 0; font-size: 18px; font-weight: bold;">
+                            📊 Diagramme de Gantt - <t t-esc="o.lot_id.name or 'Lot'"/>
+                        </h4>
+                        <p style="margin: 0; color: #666; font-size: 14px;">
+                            Période : <t t-esc="o.date_start.strftime('%d/%m/%Y') if o.date_start else 'Non définie'"/> 
+                            - <t t-esc="o.date_stop.strftime('%d/%m/%Y') if o.date_stop else 'Non définie'"/>
+                        </p>
+                    </div>
+                    
+                    <!-- Contenu du Gantt -->
+                    <div style="position: relative; overflow-x: auto;">
+                        <div style="min-width: 800px; position: relative;">
+                            <!-- Échelle temporelle -->
+                            <div style="height: 40px; border-bottom: 2px solid #20B2AA; margin-bottom: 20px; position: relative;">
+                                <t t-if="o.date_start and o.date_stop">
+                                    <t t-set="start_date" t-value="o.date_start.date()"/>
+                                    <t t-set="end_date" t-value="o.date_stop.date()"/>
+                                    <t t-set="total_days" t-value="(end_date - start_date).days + 1"/>
+                                    
+                                    <t t-foreach="range(total_days)" t-as="day">
+                                        <t t-set="current_date" t-value="start_date + timedelta(days=day)"/>
+                                        <t t-if="current_date.day == 1 or day == 0">
+                                            <div style="
+                                                position: absolute;
+                                                left: <t t-esc="(day / total_days) * 100"/>%;
+                                                transform: translateX(-50%);
+                                                text-align: center;
+                                                font-weight: bold;
+                                                color: #20B2AA;
+                                                font-size: 12px;
+                                                border-left: 1px solid #20B2AA;
+                                                padding-left: 5px;
+                                                height: 100%;
+                                            ">
+                                                <t t-esc="current_date.strftime('%b %Y')"/>
+                                            </div>
+                                        </t>
+                                        
+                                        <t t-if="current_date.weekday() == 0">
+                                            <div style="
+                                                position: absolute;
+                                                left: <t t-esc="(day / total_days) * 100"/>%;
+                                                transform: translateX(-50%);
+                                                text-align: center;
+                                                color: #666;
+                                                font-size: 10px;
+                                                border-left: 1px dashed #ccc;
+                                                padding-left: 3px;
+                                                height: 100%;
+                                                top: 20px;
+                                            ">
+                                                S<t t-esc="current_date.isocalendar()[1]"/>
+                                            </div>
+                                        </t>
+                                    </t>
+                                </t>
+                            </div>
+                            
+                            <!-- Barres de tâches -->
+                            <div style="height: 200px; position: relative; background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%); border-radius: 8px; padding: 20px;">
+                                <t t-if="o.date_start and o.date_stop">
+                                    <t t-set="start_date" t-value="o.date_start.date()"/>
+                                    <t t-set="end_date" t-value="o.date_stop.date()"/>
+                                    <t t-set="total_days" t-value="(end_date - start_date).days + 1"/>
+                                    
+                                    <div class="gantt-task" style="
+                                        position: absolute;
+                                        left: 0%;
+                                        width: 100%;
+                                        background-color: #20B2AA;
+                                        color: white;
+                                        padding: 8px 12px;
+                                        border-radius: 6px;
+                                        font-size: 12px;
+                                        font-weight: bold;
+                                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                                        z-index: 10;
+                                    " title="<t t-esc="o.name"/> - <t t-esc="o.subcontractor_id.name or 'Non assigné'"/>">
+                                        <div style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                                            <t t-esc="o.name"/>
+                                        </div>
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Informations détaillées -->
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #e9ecef;">
+                        <h5 style="color: #20B2AA; margin: 0 0 15px 0; font-size: 16px; font-weight: bold;">📋 Détail de la tâche</h5>
+                        <div style="background: white; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                            <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                <div style="
+                                    width: 12px;
+                                    height: 12px;
+                                    background-color: #20B2AA;
+                                    border-radius: 50%;
+                                    margin-right: 10px;
+                                "></div>
+                                <h6 style="margin: 0; color: #20B2AA; font-weight: bold; font-size: 14px;">
+                                    <t t-esc="o.name"/>
+                                </h6>
+                            </div>
+                            <p style="margin: 5px 0; font-size: 12px; color: #666;">
+                                <strong>👷 Sous-traitant:</strong> <t t-esc="o.subcontractor_id.name or 'Non assigné'"/>
+                            </p>
+                            <p style="margin: 5px 0; font-size: 12px; color: #666;">
+                                <strong>📅 Période:</strong> 
+                                <t t-esc="o.date_start.strftime('%d/%m/%Y') if o.date_start else 'Non définie'"/> 
+                                - <t t-esc="o.date_stop.strftime('%d/%m/%Y') if o.date_stop else 'Non définie'"/>
+                            </p>
+                            <p style="margin: 5px 0; font-size: 12px; color: #666;">
+                                <strong>📊 Statut:</strong> 
+                                <t t-esc="dict(o._fields['state'].selection).get(o.state, 'Inconnu')"/>
+                            </p>
+                            <t t-if="o.description">
+                                <p style="margin: 5px 0; font-size: 12px; color: #666;">
+                                    <strong>📝 Description:</strong> <t t-esc="o.description"/>
+                                </p>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </template>
+    </data>
+</odoo>

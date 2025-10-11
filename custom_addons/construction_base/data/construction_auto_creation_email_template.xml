@@ -7,7 +7,7 @@
             <field name="name">Chantier créé automatiquement</field>
             <field name="model_id" ref="construction_base.model_construction_chantier"/>
             <field name="subject">Nouveau chantier créé automatiquement: {{ object.name }}</field>
-            <field name="email_from">{{ user.email_formatted }}</field>
+            <field name="email_from">${user.email_formatted}</field>
             <field name="partner_to">{{ object.client.id }}</field>
             <field name="body_html" type="html">
                 <div style="margin: 0px; padding: 0px;">

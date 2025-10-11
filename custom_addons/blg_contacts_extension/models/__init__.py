@@ -7,3 +7,4 @@ from . import services
 from . import document_archive
 from . import res_partner
 from . import document_email_utils
+from . import document_preview_wizard

@@ -817,7 +817,150 @@ class ResPartner(models.Model):
             'target': 'current',
         }
 
-    # API methods for external integration
+    # =================== DOCUMENT PREVIEW METHODS ===================
+
+    def action_preview_document(self):
+        """
+        Ouvre la prévisualisation du document dans une nouvelle fenêtre/onglet.
+        Le type de document est récupéré du contexte via 'doc_type'.
+        
+        Returns:
+            dict: Action pour ouvrir la prévisualisation
+        """
+        self.ensure_one()
+        
+        # Récupérer le type de document depuis le contexte
+        doc_type = self.env.context.get('doc_type')
+        if not doc_type:
+            return self._create_notification('error', 'Type de document non spécifié dans le contexte.')
+        
+        # Vérifier que le type de document est valide
+        if doc_type not in DOCUMENT_TYPES:
+            return self._create_notification('error', f'Type de document invalide: {doc_type}')
+        
+        config = DOCUMENT_TYPES[doc_type]
+        content_field = config['content_field']
+        
+        # Vérifier que le document existe
+        document_content = getattr(self, content_field, False)
+        if not document_content:
+            return self._create_notification('warning', f'Aucun document {config["display_name_fr"]} disponible pour prévisualisation.')
+        
+        # Générer l'URL de prévisualisation sécurisée
+        preview_url = f'/blg_contacts/document/preview/{self.id}/{doc_type}'
+        
+        # Retourner l'action pour ouvrir dans une nouvelle fenêtre
+        return {
+            'type': 'ir.actions.act_url',
+            'url': preview_url,
+            'target': 'new',
+        }
+
+    def action_download_document(self):
+        """
+        Télécharge un document. Le type de document est récupéré du contexte.
+        
+        Returns:
+            dict: Action pour télécharger le document
+        """
+        self.ensure_one()
+        
+        # Récupérer le type de document depuis le contexte
+        doc_type = self.env.context.get('doc_type')
+        if not doc_type:
+            return self._create_notification('error', 'Type de document non spécifié dans le contexte.')
+        
+        # Vérifier que le type de document est valide
+        if doc_type not in DOCUMENT_TYPES:
+            return self._create_notification('error', f'Type de document invalide: {doc_type}')
+        
+        config = DOCUMENT_TYPES[doc_type]
+        content_field = config['content_field']
+        
+        # Vérifier que le document existe
+        document_content = getattr(self, content_field, False)
+        if not document_content:
+            return self._create_notification('warning', f'Aucun document {config["display_name_fr"]} disponible pour téléchargement.')
+        
+        # Générer l'URL de téléchargement sécurisée
+        download_url = f'/blg_contacts/document/download/{self.id}/{doc_type}'
+        
+        # Retourner l'action pour ouvrir l'URL de téléchargement
+        return {
+            'type': 'ir.actions.act_url',
+            'url': download_url,
+            'target': 'new',
+        }
+
+    def get_document_preview_url(self, doc_type):
+        """
+        Génère une URL sécurisée pour la prévisualisation d'un document.
+        
+        Args:
+            doc_type (str): Type de document
+            
+        Returns:
+            str: URL de prévisualisation ou False si le document n'existe pas
+        """
+        self.ensure_one()
+        
+        if doc_type not in DOCUMENT_TYPES:
+            return False
+            
+        config = DOCUMENT_TYPES[doc_type]
+        content_field = config['content_field']
+        
+        # Vérifier que le document existe
+        if not getattr(self, content_field, False):
+            return False
+            
+        return f'/blg_contacts/document/preview/{self.id}/{doc_type}'
+
+    def get_document_download_url(self, doc_type):
+        """
+        Génère une URL sécurisée pour le téléchargement d'un document.
+        
+        Args:
+            doc_type (str): Type de document
+            
+        Returns:
+            str: URL de téléchargement ou False si le document n'existe pas
+        """
+        self.ensure_one()
+        
+        if doc_type not in DOCUMENT_TYPES:
+            return False
+            
+        config = DOCUMENT_TYPES[doc_type]
+        content_field = config['content_field']
+        
+        # Vérifier que le document existe
+        if not getattr(self, content_field, False):
+            return False
+            
+        return f'/blg_contacts/document/download/{self.id}/{doc_type}'
+
+    def has_document(self, doc_type):
+        """
+        Vérifie si un document spécifique existe pour ce partenaire.
+        
+        Args:
+            doc_type (str): Type de document à vérifier
+            
+        Returns:
+            bool: True si le document existe, False sinon
+        """
+        self.ensure_one()
+        
+        if doc_type not in DOCUMENT_TYPES:
+            return False
+            
+        config = DOCUMENT_TYPES[doc_type]
+        content_field = config['content_field']
+        
+        return bool(getattr(self, content_field, False))
+
+    # =================== API methods for external integration ===================
     @api.model
     def get_subcontractors_with_expired_documents(self):
         """Get subcontractors with expired documents."""

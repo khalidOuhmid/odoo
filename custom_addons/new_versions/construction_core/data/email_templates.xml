@@ -6,7 +6,7 @@
         <field name="name">Documents manquants - Sous-traitant</field>
         <field name="model_id" ref="base.model_res_partner"/>
         <field name="subject">{{ company_name }} - Documents manquants</field>
-        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_from">${user.email_formatted}</field>
         <field name="email_to">{{ object.email }}</field>
         <field name="body_html" type="html">
             <div style="margin: 0px; padding: 0px;">
@@ -41,7 +41,7 @@
         <field name="name">Documents expirant bientôt</field>
         <field name="model_id" ref="base.model_res_partner"/>
         <field name="subject">{{ company_name }} - Documents expirant bientôt</field>
-        <field name="email_from">{{ user.email_formatted }}</field>
+        <field name="email_from">${user.email_formatted}</field>
         <field name="email_to">{{ object.email }}</field>
         <field name="body_html" type="html">
             <div style="margin: 0px; padding: 0px;">
