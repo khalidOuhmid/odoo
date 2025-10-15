@@ -1,3 +1,10 @@
+"""
+Construction Site (Chantier) Model
+
+This module defines the core construction site management model including
+workflow, validation, invoicing, and planning functionalities.
+"""
+
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from datetime import datetime, timedelta
@@ -5,9 +12,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-# -------------------------------------------------
-#  CONSTANTES / RÈGLES MÉTIER
-# -------------------------------------------------
+# Business Rules and Constants
 ACTION_RULES = {
     "show_schedule_visit": lambda rec: rec.state == "active",
     "show_create_quote": lambda rec: rec.state == "active"
@@ -37,11 +42,21 @@ STAGE_VALIDATORS = {
 
 
 class Chantier(models.Model):
+    """
+    Construction Site Model
+    
+    Manages construction projects from initial reception through completion,
+    including workflow stages, budget tracking, invoicing, and subcontractor management.
+    
+    Inherits:
+        mail.thread: Provides messaging and activity tracking
+        mail.activity.mixin: Enables activity scheduling
+    """
     _name = 'construction.chantier'
     _description = 'Construction Project'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
-    # ===========Attributes==========#
+    # Field Definitions
     name = fields.Char('Project Name', required=True)
     reference = fields.Char('Reference', copy=False, readonly=True, default='/')
     stage_id = fields.Many2one('construction.stage', 'Stage', group_expand='_read_group_stage_id', readonly=True)
@@ -244,7 +259,19 @@ class Chantier(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Créer le chantier avec génération automatique de référence et stage initial"""
+        """
+        Create construction site records with automatic reference generation.
+        
+        Args:
+            vals_list (list): List of value dictionaries for record creation
+            
+        Returns:
+            recordset: Created chantier records
+            
+        Note:
+            - Generates unique reference if not provided
+            - Assigns default initial stage (reception)
+        """
         for vals in vals_list:
             # Génération automatique de référence
             if not vals.get('reference') or vals.get('reference') == '/':
@@ -261,7 +288,22 @@ class Chantier(models.Model):
         return chantiers
 
     def write(self, vals):
-        """Empêcher la modification directe du stage_id sauf par workflow ou admin"""
+        """
+        Override write to control stage modifications and trigger invoice checks.
+        
+        Args:
+            vals (dict): Values to update
+            
+        Returns:
+            bool: True if successful
+            
+        Raises:
+            ValidationError: If non-admin user tries to modify stage directly
+            
+        Note:
+            - Only administrators or workflow methods can modify stage_id
+            - Automatically triggers invoice checks when needed
+        """
         if 'stage_id' in vals and not self.env.context.get('bypass_stage_validation', False):
             # Vérifier si l'utilisateur a les droits d'administrateur
             if not self.env.user.has_group('base.group_system'):
@@ -302,6 +344,11 @@ class Chantier(models.Model):
 
     @api.depends('stage_id', 'stage_id.chapter_id', 'stage_id.chapter_id.name')
     def _compute_chapter_name(self):
+        """
+        Compute chapter name from current stage.
+        
+        Sets chapter_name field based on the stage's chapter reference.
+        """
         for record in self:
             if record.stage_id and record.stage_id.chapter_id:
                 record.chapter_name = record.stage_id.chapter_id.name
@@ -311,6 +358,9 @@ class Chantier(models.Model):
     @api.depends('date_start_contract', 'date_end_contract')
     def _compute_duration_planned(self):
         """
+        Compute planned duration in days from contract dates.
+        
+        Calculates the number of days between contract start and end dates.
         """
         for record in self:
             if record.date_start_contract and record.date_end_contract:
@@ -319,7 +369,12 @@ class Chantier(models.Model):
 
     @api.depends('date_start_internal', 'date_end_internal')
     def _compute_duration_actual(self):
-        """Calcule la durée interne du chantier en jours"""
+        """
+        Compute actual duration in days from internal dates.
+        
+        Calculates duration from internal start/end dates, or from start to today
+        if the project is still active.
+        """
         for record in self:
             if record.date_start_internal and record.date_end_internal:
                 delta = record.date_end_internal - record.date_start_internal
@@ -492,9 +547,9 @@ class Chantier(models.Model):
     def _compute_stage_validation_info(self):
         """Récapitulatif des pré-requis pour l’étape suivante, sans copier-coller."""
         for rec in self:
-            # ───── Étape absente → on sort ─────
+            # Check if stage is defined
             if not (rec.stage_id and rec.stage_id.chapter_id):
-                rec.stage_validation_info = "❌ Aucune étape définie"
+                rec.stage_validation_info = "[ERROR] No stage defined"
                 continue
 
             chap_code, stage_code = rec.stage_id.chapter_id.code, rec.stage_id.code
@@ -515,11 +570,9 @@ class Chantier(models.Model):
                 if next_pct and rec.progress < next_pct:
                     ok, details = False, f"Progression insuffisante ({rec.progress:.1f}% < {next_pct}%)"
 
-            # ------------------------------------------------------------------
-            # 3️⃣  Message unique à l’utilisateur
-            # ------------------------------------------------------------------
-            header = f"📍 Étape : {rec.stage_id.chapter_id.name} – {rec.stage_id.name}"
-            footer = "✅ PRÊT POUR L’ÉTAPE SUIVANTE" if ok else "❌ CONDITIONS NON REMPLIES"
+            # Build user message
+            header = f"Stage: {rec.stage_id.chapter_id.name} - {rec.stage_id.name}"
+            footer = "[OK] Ready for next stage" if ok else "[BLOCKED] Conditions not met"
             rec.stage_validation_info = "\n".join(
                 filter(None, (header, details, "", footer))
             )
@@ -959,8 +1012,8 @@ class Chantier(models.Model):
                         })
 
                     self.message_post(
-                        body=f"💰 {len(advance_payments)} acompte(s) de signature automatiquement activé(s) "
-                             f"(étape finalisation dossier atteinte)",
+                        body=f"Advance payments: {len(advance_payments)} signature advance payment(s) "
+                             f"automatically activated (file completion stage reached)",
                         message_type='notification'
                     )
 
@@ -983,13 +1036,13 @@ class Chantier(models.Model):
         if not self.env.user.has_group('base.group_system'):
             raise ValidationError("Seuls les administrateurs peuvent forcer un changement d'étape.")
 
-        # Temporairement simple message - wizard sera ajouté plus tard
+        # Temporarily simple message - wizard will be added later
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': '⚠️ Fonction admin',
-                'message': 'Cette fonction sera disponible prochainement',
+                'title': 'Admin Function',
+                'message': 'This function will be available soon',
                 'type': 'info'
             }
         }
@@ -1305,7 +1358,7 @@ class Chantier(models.Model):
         if not quote:
             return 0.0
         order_lines = quote.order_line.sorted('sequence')
-        lot_section_name = f"📋 {lot.name}"  # Nom de la section générée par _create_section_for_lot
+        lot_section_name = f"[{lot.name}]"  # Section name generated by _create_section_for_lot
         in_section = False
         total = 0.0
         for line in order_lines:
@@ -1476,14 +1529,14 @@ class Chantier(models.Model):
             except Exception as e:
                 errors.append(f"{schedule.name}: {str(e)}")
 
-        # Message de résultat
+        # Result message
         if created_count > 0:
-            message = f"✅ {created_count} facture(s) créée(s) et envoyée(s) avec succès."
+            message = f"Success: {created_count} invoice(s) created and sent successfully."
             if errors:
-                message += f"\n❌ Erreurs: {len(errors)} facture(s) non créée(s)."
+                message += f"\nErrors: {len(errors)} invoice(s) not created."
             
             self.message_post(
-                body=f"📄 Création manuelle de factures: {created_count} créée(s), {len(errors)} erreur(s)",
+                body=f"Manual invoice creation: {created_count} created, {len(errors)} error(s)",
                 message_type='notification'
             )
             

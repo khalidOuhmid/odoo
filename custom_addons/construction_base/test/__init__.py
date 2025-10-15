@@ -1,4 +1,13 @@
-# -*- coding: utf-8 -*-
+"""
+Construction Base Test Suite
 
-from . import debug_contract_data
-from . import test_enhanced_contract_generation
+This package contains all unit and integration tests for the construction_base module.
+"""
+
+from . import (
+    test_chantier_model,
+    test_chantier_compute,
+    test_chantier_validation,
+    test_chantier_workflow,
+    test_chantier_actions,
+)
