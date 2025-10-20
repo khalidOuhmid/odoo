@@ -6,26 +6,27 @@
     <record id="construction_quote_wizard_form" model="ir.ui.view">
         <field name="name">construction.quote.wizard.form</field>
         <field name="model">construction.quote.wizard</field>
-        <field name="arch" type="xml">
-            <form string="Assistant de création de devis">
+            <field name="arch" type="xml">
+            <form string="Assistant de création de devis" class="construction-quote-wizard"
+                  options="{'background': 'static', 'no_breadcrumbs': true}">
                 <header>
 
                 </header>
                 <footer>
-                    <button name="action_confirm_selection" string="✅ Ajouter au devis"
+                    <button name="action_confirm_selection" string="Ajouter au Devis"
                             type="object" class="btn-primary"/>
-                    <button name="action_finalize_quote" string="🏁 Finaliser le devis"
+                    <button name="action_finalize_quote" string="Finaliser le Devis"
                             type="object" class="btn-success"/>
-                    <button name="action_view_selection" string="🛒 Voir ma sélection"
+                    <button name="action_view_selection" string="Voir la Sélection"
                             type="object" class="btn-secondary"/>
-                    <button name="action_clear_selection" string="🗑️ Vider la sélection"
+                    <button name="action_clear_selection" string="Vider la Sélection"
                             type="object" class="btn-link"/>
-                    <button name="action_safe_close" string="❌ Fermer l'assistant"
+                    <button name="action_safe_close" string="Fermer l'Assistant"
                             type="object" class="btn-outline-danger"/>
                 </footer>
                 <sheet>
                     <div class="oe_title">
-                        <h1>Assistant de création de devis</h1>
+                        <h1>Assistant de Création de Devis</h1>
                         <h2>
                             <field name="chantier_id" readonly="1" nolabel="1"/>
                         </h2>
@@ -35,11 +36,11 @@
                     </div>
                                      <div class="alert alert-info" role="alert">
                         <strong><i class="fa fa-info-circle"/> Mode d'emploi :</strong><br/>
-                        1️⃣ <strong>Sélectionnez d'abord les lots</strong> à traiter dans votre devis<br/>
-                        2️⃣ Cliquez sur <strong>"+"</strong> à côté d'un produit pour l'ajouter<br/>
-                        3️⃣ <strong>Assignez chaque produit à UN lot spécifique</strong><br/>
-                        4️⃣ Utilisez <strong>"🆕 Nouveau produit"</strong> pour créer un produit personnalisé<br/>
-                        5️⃣ <strong>"✅ Finaliser"</strong> pour organiser le devis par sections de lots
+                        1. <strong>Sélectionnez d'abord les lots</strong> à traiter dans votre devis<br/>
+                        2. Cliquez sur <strong>"+"</strong> à côté d'un produit pour l'ajouter<br/>
+                        3. <strong>Assignez chaque produit à UN lot spécifique</strong><br/>
+                        4. Utilisez <strong>"Nouveau Produit"</strong> pour créer un produit personnalisé<br/>
+                        5. <strong>"Finaliser"</strong> pour organiser le devis par sections de lots
                     </div>
 
                     <!-- Informations cachées -->
@@ -87,6 +88,14 @@
                                     type="action" icon="fa-plus"
                                     title="Ajouter ce produit"
                                     context="{'default_product_id': id, 'default_quote_wizard_id': parent.id, 'default_margin_percent': parent.default_margin_percent}"/>
+                            <button name="action_open_edit_modal"
+                                    type="object" icon="fa-external-link"
+                                    title="Ouvrir et modifier ce produit (modal)"
+                                    context="{'product_id': id}"/>
+                            <button name="action_open_product_in_new_tab"
+                                    type="object" icon="fa-external-link-square"
+                                    title="Ouvrir dans un nouvel onglet"
+                                    context="{'product_id': id}"/>
                         </list>
                     </field>
                      <separator string="Ma sélection"/>

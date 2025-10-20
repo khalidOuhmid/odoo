@@ -1,0 +1,186 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- =================== BONS DE COMMANDE =================== -->
+        
+        <record id="test_purchase_order_1" model="purchase.order">
+            <field name="name">PO/2024/001</field>
+            <field name="partner_id" ref="test_subcontractor_1"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+            <field name="notes">Bon de commande pour travaux d'électricité - Appartement Paris</field>
+        </record>
+
+        <record id="test_purchase_order_2" model="purchase.order">
+            <field name="name">PO/2024/002</field>
+            <field name="partner_id" ref="test_subcontractor_2"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+            <field name="notes">Bon de commande pour travaux de plomberie - Appartement Paris</field>
+        </record>
+
+        <record id="test_purchase_order_3" model="purchase.order">
+            <field name="name">PO/2024/003</field>
+            <field name="partner_id" ref="test_subcontractor_4"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+            <field name="notes">Bon de commande pour travaux de peinture - Appartement Paris</field>
+        </record>
+
+        <record id="test_purchase_order_4" model="purchase.order">
+            <field name="name">PO/2024/004</field>
+            <field name="partner_id" ref="test_subcontractor_3"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+            <field name="notes">Bon de commande pour gros œuvre - Maison Lyon</field>
+        </record>
+
+        <record id="test_purchase_order_5" model="purchase.order">
+            <field name="name">PO/2024/005</field>
+            <field name="partner_id" ref="test_subcontractor_1"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=90)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+            <field name="notes">Bon de commande pour travaux d'électricité - Maison Lyon</field>
+        </record>
+
+        <record id="test_purchase_order_6" model="purchase.order">
+            <field name="name">PO/2024/006</field>
+            <field name="partner_id" ref="test_subcontractor_2"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=120)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+            <field name="notes">Bon de commande pour travaux de plomberie - Maison Lyon</field>
+        </record>
+
+        <record id="test_purchase_order_7" model="purchase.order">
+            <field name="name">PO/2024/007</field>
+            <field name="partner_id" ref="test_subcontractor_4"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=150)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+            <field name="notes">Bon de commande pour travaux de peinture - Maison Lyon</field>
+        </record>
+
+        <!-- =================== LIGNES DE BONS DE COMMANDE =================== -->
+        
+        <record id="test_purchase_line_1" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_1"/>
+            <field name="product_id" ref="test_product_electricity_service"/>
+            <field name="name">Installation électrique complète - Appartement Paris</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="7000.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_1"/>
+        </record>
+
+        <record id="test_purchase_line_2" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_1"/>
+            <field name="product_id" ref="test_product_electrical_material"/>
+            <field name="name">Matériel électrique</field>
+            <field name="product_qty" eval="10.0"/>
+            <field name="price_unit" eval="120.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_1"/>
+        </record>
+
+        <record id="test_purchase_line_3" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_2"/>
+            <field name="product_id" ref="test_product_plumbing_service"/>
+            <field name="name">Installation plomberie complète - Appartement Paris</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="10000.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_2"/>
+        </record>
+
+        <record id="test_purchase_line_4" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_2"/>
+            <field name="product_id" ref="test_product_plumbing_material"/>
+            <field name="name">Matériel plomberie</field>
+            <field name="product_qty" eval="15.0"/>
+            <field name="price_unit" eval="160.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_2"/>
+        </record>
+
+        <record id="test_purchase_line_5" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_3"/>
+            <field name="product_id" ref="test_product_painting_service"/>
+            <field name="name">Peinture intérieure et extérieure - Appartement Paris</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="2800.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_3"/>
+        </record>
+
+        <record id="test_purchase_line_6" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_3"/>
+            <field name="product_id" ref="test_product_paint_material"/>
+            <field name="name">Peinture et accessoires</field>
+            <field name="product_qty" eval="20.0"/>
+            <field name="price_unit" eval="40.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_3"/>
+        </record>
+
+        <record id="test_purchase_line_7" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_4"/>
+            <field name="product_id" ref="test_product_masonry_service"/>
+            <field name="name">Gros œuvre - Fondations et structure - Maison Lyon</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="38000.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_4"/>
+        </record>
+
+        <record id="test_purchase_line_8" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_4"/>
+            <field name="product_id" ref="test_product_masonry_material"/>
+            <field name="name">Matériel maçonnerie</field>
+            <field name="product_qty" eval="50.0"/>
+            <field name="price_unit" eval="250.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_4"/>
+        </record>
+
+        <record id="test_purchase_line_9" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_5"/>
+            <field name="product_id" ref="test_product_electricity_house_service"/>
+            <field name="name">Installation électrique maison - Maison Lyon</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="12000.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=90)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_5"/>
+        </record>
+
+        <record id="test_purchase_line_10" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_6"/>
+            <field name="product_id" ref="test_product_plumbing_house_service"/>
+            <field name="name">Installation plomberie maison - Maison Lyon</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="15000.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=120)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_6"/>
+        </record>
+
+        <record id="test_purchase_line_11" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_7"/>
+            <field name="product_id" ref="test_product_painting_house_service"/>
+            <field name="name">Peinture complète maison - Maison Lyon</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="6500.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=150)).strftime('%Y-%m-%d')"/>
+            <field name="lot_id" ref="test_lot_7"/>
+        </record>
+
+        <!-- =================== RELATIONS LOTS-BONS DE COMMANDE =================== -->
+        <!-- Les relations sont gérées via les champs lot_id dans les lignes de commande -->
+
+    </data>
+</odoo>

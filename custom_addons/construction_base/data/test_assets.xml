@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- =================== CLIENTS =================== -->
+        
+        <record id="test_client_1" model="res.partner">
+            <field name="name">M. et Mme Dupont</field>
+            <field name="is_company" eval="False"/>
+            <field name="email">dupont@example.com</field>
+            <field name="phone">01 23 45 67 89</field>
+            <field name="street">123 Rue de la Paix</field>
+            <field name="city">Paris</field>
+            <field name="zip">75001</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="customer_rank" eval="1"/>
+        </record>
+
+        <record id="test_client_2" model="res.partner">
+            <field name="name">SARL Immobilier Moderne</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">contact@immobilier-moderne.fr</field>
+            <field name="phone">01 98 76 54 32</field>
+            <field name="street">456 Avenue des Champs</field>
+            <field name="city">Lyon</field>
+            <field name="zip">69000</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="customer_rank" eval="1"/>
+        </record>
+
+        <!-- =================== SOUS-TRAITANTS =================== -->
+        
+        <record id="test_subcontractor_1" model="res.partner">
+            <field name="name">Électricité Pro SARL</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">contact@electricite-pro.fr</field>
+            <field name="phone">01 11 22 33 44</field>
+            <field name="street">789 Rue de l'Électricité</field>
+            <field name="city">Paris</field>
+            <field name="zip">75012</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="supplier_rank" eval="1"/>
+            <field name="siret">12345678901234</field>
+            <field name="vat">FR12345678901</field>
+        </record>
+
+        <record id="test_subcontractor_2" model="res.partner">
+            <field name="name">Plomberie Express</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">info@plomberie-express.fr</field>
+            <field name="phone">01 22 33 44 55</field>
+            <field name="street">321 Avenue de la Plomberie</field>
+            <field name="city">Lyon</field>
+            <field name="zip">69001</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="supplier_rank" eval="1"/>
+            <field name="siret">23456789012345</field>
+            <field name="vat">FR23456789012</field>
+        </record>
+
+        <record id="test_subcontractor_3" model="res.partner">
+            <field name="name">Maçonnerie Tradition</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">contact@maconnerie-tradition.fr</field>
+            <field name="phone">01 33 44 55 66</field>
+            <field name="street">654 Rue de la Maçonnerie</field>
+            <field name="city">Marseille</field>
+            <field name="zip">13001</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="supplier_rank" eval="1"/>
+            <field name="siret">34567890123456</field>
+            <field name="vat">FR34567890123</field>
+        </record>
+
+        <record id="test_subcontractor_4" model="res.partner">
+            <field name="name">Peinture &amp; Décoration</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">devis@peinture-decoration.fr</field>
+            <field name="phone">01 44 55 66 77</field>
+            <field name="street">987 Boulevard de la Peinture</field>
+            <field name="city">Toulouse</field>
+            <field name="zip">31000</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="supplier_rank" eval="1"/>
+            <field name="siret">45678901234567</field>
+            <field name="vat">FR45678901234</field>
+        </record>
+
+        <!-- =================== CHANTIERS =================== -->
+        
+        <record id="test_chantier_1" model="construction.chantier">
+            <field name="name">Rénovation Appartement Paris 15ème</field>
+            <field name="client" ref="test_client_1"/>
+            <field name="description">Rénovation complète d'un appartement 3 pièces de 85m² au 3ème étage</field>
+            <field name="address">123 Rue de la Paix, 75015 Paris</field>
+            <field name="city">Paris</field>
+            <field name="zip_code">75015</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="phone">01 23 45 67 89</field>
+            <field name="surface_m2" eval="85.0"/>
+            <field name="nb_levels" eval="1"/>
+            <field name="date_start_contract" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="date_end_contract" eval="(DateTime.now() + timedelta(days=120)).strftime('%Y-%m-%d')"/>
+            <field name="date_start_internal" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
+            <field name="date_end_internal" eval="(DateTime.now() + timedelta(days=90)).strftime('%Y-%m-%d')"/>
+            <field name="state">active</field>
+            <field name="stage_id" ref="construction_base.stage_reception"/>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_1'), ref('test_subcontractor_2'), ref('test_subcontractor_4')])]"/>
+        </record>
+
+        <record id="test_chantier_2" model="construction.chantier">
+            <field name="name">Construction Maison Individuelle Lyon</field>
+            <field name="client" ref="test_client_2"/>
+            <field name="description">Construction d'une maison individuelle de 120m² avec garage et jardin</field>
+            <field name="address">456 Avenue des Champs, 69000 Lyon</field>
+            <field name="city">Lyon</field>
+            <field name="zip_code">69000</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="phone">01 98 76 54 32</field>
+            <field name="surface_m2" eval="120.0"/>
+            <field name="nb_levels" eval="2"/>
+            <field name="date_start_contract" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="date_end_contract" eval="(DateTime.now() + timedelta(days=300)).strftime('%Y-%m-%d')"/>
+            <field name="date_start_internal" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
+            <field name="date_end_internal" eval="(DateTime.now() + timedelta(days=270)).strftime('%Y-%m-%d')"/>
+            <field name="state">active</field>
+            <field name="stage_id" ref="construction_base.stage_reception"/>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_1'), ref('test_subcontractor_2'), ref('test_subcontractor_3'), ref('test_subcontractor_4')])]"/>
+        </record>
+
+        <!-- =================== LOTS DE TRAVAUX =================== -->
+        
+        <record id="test_lot_1" model="construction.lot">
+            <field name="name">Électricité</field>
+            <field name="code">ELEC</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="description">Installation électrique complète, tableau, prises, éclairage</field>
+            <field name="price" eval="8500.0"/>
+            <field name="is_finished" eval="False"/>
+            <field name="quote_state">draft</field>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_1')])]"/>
+            <field name="urssaf_code">43.2A - Travaux d'installation électrique</field>
+        </record>
+
+        <record id="test_lot_2" model="construction.lot">
+            <field name="name">Plomberie</field>
+            <field name="code">PLOMB</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="description">Installation plomberie, salle de bain, cuisine, chauffage</field>
+            <field name="price" eval="12000.0"/>
+            <field name="is_finished" eval="False"/>
+            <field name="quote_state">draft</field>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_2')])]"/>
+            <field name="urssaf_code">43.2B - Travaux de plomberie et chauffage</field>
+        </record>
+
+        <record id="test_lot_3" model="construction.lot">
+            <field name="name">Peinture</field>
+            <field name="code">PEINT</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="description">Peinture intérieure et extérieure, finitions</field>
+            <field name="price" eval="3500.0"/>
+            <field name="is_finished" eval="False"/>
+            <field name="quote_state">draft</field>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_4')])]"/>
+            <field name="urssaf_code">43.3A - Travaux de peinture</field>
+        </record>
+
+        <record id="test_lot_4" model="construction.lot">
+            <field name="name">Gros Œuvre</field>
+            <field name="code">GROS</field>
+            <field name="chantier_id" ref="test_chantier_2"/>
+            <field name="description">Fondations, murs porteurs, charpente, toiture</field>
+            <field name="price" eval="45000.0"/>
+            <field name="is_finished" eval="False"/>
+            <field name="quote_state">draft</field>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_3')])]"/>
+            <field name="urssaf_code">41.1 - Travaux de gros œuvre</field>
+        </record>
+
+        <record id="test_lot_5" model="construction.lot">
+            <field name="name">Électricité Maison</field>
+            <field name="code">ELEC2</field>
+            <field name="chantier_id" ref="test_chantier_2"/>
+            <field name="description">Installation électrique complète maison individuelle</field>
+            <field name="price" eval="15000.0"/>
+            <field name="is_finished" eval="False"/>
+            <field name="quote_state">draft</field>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_1')])]"/>
+            <field name="urssaf_code">43.2A - Travaux d'installation électrique</field>
+        </record>
+
+        <record id="test_lot_6" model="construction.lot">
+            <field name="name">Plomberie Maison</field>
+            <field name="code">PLOMB2</field>
+            <field name="chantier_id" ref="test_chantier_2"/>
+            <field name="description">Installation plomberie complète, 2 salles de bain, cuisine</field>
+            <field name="price" eval="18000.0"/>
+            <field name="is_finished" eval="False"/>
+            <field name="quote_state">draft</field>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_2')])]"/>
+            <field name="urssaf_code">43.2B - Travaux de plomberie et chauffage</field>
+        </record>
+
+        <record id="test_lot_7" model="construction.lot">
+            <field name="name">Peinture Maison</field>
+            <field name="code">PEINT2</field>
+            <field name="chantier_id" ref="test_chantier_2"/>
+            <field name="description">Peinture intérieure et extérieure, finitions complètes</field>
+            <field name="price" eval="8000.0"/>
+            <field name="is_finished" eval="False"/>
+            <field name="quote_state">draft</field>
+            <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_4')])]"/>
+            <field name="urssaf_code">43.3A - Travaux de peinture</field>
+        </record>
+
+        <!-- =================== DEVIS PRINCIPAUX =================== -->
+        
+        <record id="test_quote_1" model="sale.order">
+            <field name="name">Devis - Rénovation Appartement Paris 15ème</field>
+            <field name="partner_id" ref="test_client_1"/>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_1'), ref('test_lot_2'), ref('test_lot_3')])]"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_quote_2" model="sale.order">
+            <field name="name">Devis - Construction Maison Individuelle Lyon</field>
+            <field name="partner_id" ref="test_client_2"/>
+            <field name="chantier_id" ref="test_chantier_2"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_4'), ref('test_lot_5'), ref('test_lot_6'), ref('test_lot_7')])]"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <!-- =================== LIGNES DE DEVIS =================== -->
+        
+        <record id="test_quote_line_1" model="sale.order.line">
+            <field name="order_id" ref="test_quote_1"/>
+            <field name="product_id" ref="product.product_product_1"/>
+            <field name="name">Installation électrique complète</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="8500.0"/>
+            <field name="lot_id" ref="test_lot_1"/>
+        </record>
+
+        <record id="test_quote_line_2" model="sale.order.line">
+            <field name="order_id" ref="test_quote_1"/>
+            <field name="product_id" ref="product.product_product_2"/>
+            <field name="name">Installation plomberie complète</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="12000.0"/>
+            <field name="lot_id" ref="test_lot_2"/>
+        </record>
+
+        <record id="test_quote_line_3" model="sale.order.line">
+            <field name="order_id" ref="test_quote_1"/>
+            <field name="product_id" ref="product.product_product_3"/>
+            <field name="name">Peinture intérieure et extérieure</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="3500.0"/>
+            <field name="lot_id" ref="test_lot_3"/>
+        </record>
+
+        <record id="test_quote_line_4" model="sale.order.line">
+            <field name="order_id" ref="test_quote_2"/>
+            <field name="product_id" ref="product.product_product_4"/>
+            <field name="name">Gros œuvre - Fondations et structure</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="45000.0"/>
+            <field name="lot_id" ref="test_lot_4"/>
+        </record>
+
+        <record id="test_quote_line_5" model="sale.order.line">
+            <field name="order_id" ref="test_quote_2"/>
+            <field name="product_id" ref="product.product_product_5"/>
+            <field name="name">Installation électrique maison</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="15000.0"/>
+            <field name="lot_id" ref="test_lot_5"/>
+        </record>
+
+        <record id="test_quote_line_6" model="sale.order.line">
+            <field name="order_id" ref="test_quote_2"/>
+            <field name="product_id" ref="product.product_product_6"/>
+            <field name="name">Installation plomberie maison</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="18000.0"/>
+            <field name="lot_id" ref="test_lot_6"/>
+        </record>
+
+        <record id="test_quote_line_7" model="sale.order.line">
+            <field name="order_id" ref="test_quote_2"/>
+            <field name="product_id" ref="product.product_product_7"/>
+            <field name="name">Peinture complète maison</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="8000.0"/>
+            <field name="lot_id" ref="test_lot_7"/>
+        </record>
+
+        <!-- =================== DEVIS SOUS-TRAITANTS =================== -->
+        
+        <record id="test_subquote_1" model="sale.order">
+            <field name="name">Devis Électricité - Appartement Paris</field>
+            <field name="partner_id" ref="test_subcontractor_1"/>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_1')])]"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_subquote_2" model="sale.order">
+            <field name="name">Devis Plomberie - Appartement Paris</field>
+            <field name="partner_id" ref="test_subcontractor_2"/>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_2')])]"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_subquote_3" model="sale.order">
+            <field name="name">Devis Peinture - Appartement Paris</field>
+            <field name="partner_id" ref="test_subcontractor_4"/>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_3')])]"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <!-- =================== CONTRATS SOUS-TRAITANCE =================== -->
+        
+        <record id="test_contract_1" model="construction.subcontractor.contract">
+            <field name="name">Contrat Électricité - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="subcontractor_id" ref="test_subcontractor_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_1')])]"/>
+            <field name="start_date" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="end_date" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="total_amount" eval="8500.0"/>
+            <field name="payment_terms">30_days</field>
+            <field name="warranty_period" eval="24"/>
+            <field name="state">draft</field>
+            <field name="signature_state">pending</field>
+        </record>
+
+        <record id="test_contract_2" model="construction.subcontractor.contract">
+            <field name="name">Contrat Plomberie - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="subcontractor_id" ref="test_subcontractor_2"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_2')])]"/>
+            <field name="start_date" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
+            <field name="end_date" eval="(DateTime.now() + timedelta(days=75)).strftime('%Y-%m-%d')"/>
+            <field name="total_amount" eval="12000.0"/>
+            <field name="payment_terms">30_days</field>
+            <field name="warranty_period" eval="24"/>
+            <field name="state">draft</field>
+            <field name="signature_state">pending</field>
+        </record>
+
+        <record id="test_contract_3" model="construction.subcontractor.contract">
+            <field name="name">Contrat Peinture - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="subcontractor_id" ref="test_subcontractor_4"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_3')])]"/>
+            <field name="start_date" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="end_date" eval="(DateTime.now() + timedelta(days=90)).strftime('%Y-%m-%d')"/>
+            <field name="total_amount" eval="3500.0"/>
+            <field name="payment_terms">30_days</field>
+            <field name="warranty_period" eval="12"/>
+            <field name="state">draft</field>
+            <field name="signature_state">pending</field>
+        </record>
+
+        <!-- =================== VISITES TECHNIQUES =================== -->
+        
+        <record id="test_visit_1" model="construction.visit">
+            <field name="name">Visite technique - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="visit_date" eval="(DateTime.now() + timedelta(days=7)).strftime('%Y-%m-%d')"/>
+            <field name="visit_type">technical</field>
+            <field name="description">Visite technique pour évaluation des travaux</field>
+            <field name="state">planned</field>
+        </record>
+
+        <record id="test_visit_2" model="construction.visit">
+            <field name="name">Visite technique - Maison Lyon</field>
+            <field name="chantier_id" ref="test_chantier_2"/>
+            <field name="visit_date" eval="(DateTime.now() + timedelta(days=14)).strftime('%Y-%m-%d')"/>
+            <field name="visit_type">technical</field>
+            <field name="description">Visite technique pour évaluation du terrain et des travaux</field>
+            <field name="state">planned</field>
+        </record>
+
+        <!-- =================== DOCUMENTS =================== -->
+        
+        <record id="test_document_1" model="construction.document">
+            <field name="name">Plan architectural - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="document_type">plan</field>
+            <field name="description">Plans architecturaux de l'appartement à rénover</field>
+            <field name="is_required" eval="True"/>
+        </record>
+
+        <record id="test_document_2" model="construction.document">
+            <field name="name">CCTP Électricité</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="document_type">cctp</field>
+            <field name="description">Cahier des Clauses Techniques Particulières pour l'électricité</field>
+            <field name="is_required" eval="True"/>
+        </record>
+
+        <record id="test_document_3" model="construction.document">
+            <field name="name">Plan architectural - Maison Lyon</field>
+            <field name="chantier_id" ref="test_chantier_2"/>
+            <field name="document_type">plan</field>
+            <field name="description">Plans architecturaux de la maison à construire</field>
+            <field name="is_required" eval="True"/>
+        </record>
+
+        <!-- =================== TÂCHES DE PLANNING =================== -->
+        
+        <record id="test_planning_task_1" model="construction.planning.task">
+            <field name="name">Préparation chantier - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="lot_id" ref="test_lot_1"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="date_stop" eval="(DateTime.now() + timedelta(days=35)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">draft</field>
+            <field name="description">Préparation du chantier pour les travaux d'électricité</field>
+        </record>
+
+        <record id="test_planning_task_2" model="construction.planning.task">
+            <field name="name">Installation électrique - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="lot_id" ref="test_lot_1"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=35)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="date_stop" eval="(DateTime.now() + timedelta(days=50)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">draft</field>
+            <field name="description">Installation complète de l'électricité</field>
+        </record>
+
+        <record id="test_planning_task_3" model="construction.planning.task">
+            <field name="name">Installation plomberie - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="lot_id" ref="test_lot_2"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="date_stop" eval="(DateTime.now() + timedelta(days=70)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">draft</field>
+            <field name="description">Installation complète de la plomberie</field>
+        </record>
+
+        <record id="test_planning_task_4" model="construction.planning.task">
+            <field name="name">Peinture - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="lot_id" ref="test_lot_3"/>
+            <field name="date_start" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="date_stop" eval="(DateTime.now() + timedelta(days=80)).strftime('%Y-%m-%d %H:%M:%S')"/>
+            <field name="state">draft</field>
+            <field name="description">Peinture intérieure et extérieure</field>
+        </record>
+
+        <!-- =================== CYCLES DE FACTURATION =================== -->
+        
+        <record id="test_invoice_type_1" model="construction.invoice_type">
+            <field name="name">Cycle Standard Rénovation</field>
+            <field name="active" eval="True"/>
+        </record>
+
+        <record id="test_invoice_type_line_1" model="construction.invoice_type.line">
+            <field name="invoice_type_id" ref="test_invoice_type_1"/>
+            <field name="name">Acompte de signature</field>
+            <field name="sequence" eval="1"/>
+            <field name="trigger_percentage" eval="0.0"/>
+            <field name="percentage" eval="10.0"/>
+            <field name="is_advance_payment" eval="True"/>
+            <field name="notes">Acompte versé à la signature du contrat</field>
+        </record>
+
+        <record id="test_invoice_type_line_2" model="construction.invoice_type.line">
+            <field name="invoice_type_id" ref="test_invoice_type_1"/>
+            <field name="name">Facture 30%</field>
+            <field name="sequence" eval="2"/>
+            <field name="trigger_percentage" eval="30.0"/>
+            <field name="percentage" eval="30.0"/>
+            <field name="is_advance_payment" eval="False"/>
+            <field name="notes">Facture à 30% d'avancement</field>
+        </record>
+
+        <record id="test_invoice_type_line_3" model="construction.invoice_type.line">
+            <field name="invoice_type_id" ref="test_invoice_type_1"/>
+            <field name="name">Facture 60%</field>
+            <field name="sequence" eval="3"/>
+            <field name="trigger_percentage" eval="60.0"/>
+            <field name="percentage" eval="30.0"/>
+            <field name="is_advance_payment" eval="False"/>
+            <field name="notes">Facture à 60% d'avancement</field>
+        </record>
+
+        <record id="test_invoice_type_line_4" model="construction.invoice_type.line">
+            <field name="invoice_type_id" ref="test_invoice_type_1"/>
+            <field name="name">Solde</field>
+            <field name="sequence" eval="4"/>
+            <field name="trigger_percentage" eval="100.0"/>
+            <field name="percentage" eval="30.0"/>
+            <field name="is_advance_payment" eval="False"/>
+            <field name="notes">Solde à la réception des travaux</field>
+        </record>
+
+        <!-- =================== PLANNING DE FACTURATION =================== -->
+        
+        <record id="test_invoice_schedule_1" model="construction.invoice.schedule">
+            <field name="name">Acompte de signature - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="quote_id" ref="test_quote_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_1'), ref('test_lot_2'), ref('test_lot_3')])]"/>
+            <field name="sequence" eval="1"/>
+            <field name="trigger_percentage" eval="0.0"/>
+            <field name="amount_percentage" eval="10.0"/>
+            <field name="amount_fixed" eval="2400.0"/>
+            <field name="is_advance_payment" eval="True"/>
+            <field name="state">planned</field>
+            <field name="notes">Acompte versé à la signature du contrat</field>
+        </record>
+
+        <record id="test_invoice_schedule_2" model="construction.invoice.schedule">
+            <field name="name">Facture 30% - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="quote_id" ref="test_quote_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_1'), ref('test_lot_2'), ref('test_lot_3')])]"/>
+            <field name="sequence" eval="2"/>
+            <field name="trigger_percentage" eval="30.0"/>
+            <field name="amount_percentage" eval="30.0"/>
+            <field name="amount_fixed" eval="7200.0"/>
+            <field name="is_advance_payment" eval="False"/>
+            <field name="state">planned</field>
+            <field name="notes">Facture à 30% d'avancement</field>
+        </record>
+
+        <record id="test_invoice_schedule_3" model="construction.invoice.schedule">
+            <field name="name">Facture 60% - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="quote_id" ref="test_quote_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_1'), ref('test_lot_2'), ref('test_lot_3')])]"/>
+            <field name="sequence" eval="3"/>
+            <field name="trigger_percentage" eval="60.0"/>
+            <field name="amount_percentage" eval="30.0"/>
+            <field name="amount_fixed" eval="7200.0"/>
+            <field name="is_advance_payment" eval="False"/>
+            <field name="state">planned</field>
+            <field name="notes">Facture à 60% d'avancement</field>
+        </record>
+
+        <record id="test_invoice_schedule_4" model="construction.invoice.schedule">
+            <field name="name">Solde - Appartement Paris</field>
+            <field name="chantier_id" ref="test_chantier_1"/>
+            <field name="quote_id" ref="test_quote_1"/>
+            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_1'), ref('test_lot_2'), ref('test_lot_3')])]"/>
+            <field name="sequence" eval="4"/>
+            <field name="trigger_percentage" eval="100.0"/>
+            <field name="amount_percentage" eval="30.0"/>
+            <field name="amount_fixed" eval="7200.0"/>
+            <field name="is_advance_payment" eval="False"/>
+            <field name="state">planned</field>
+            <field name="notes">Solde à la réception des travaux</field>
+        </record>
+
+    </data>
+</odoo>

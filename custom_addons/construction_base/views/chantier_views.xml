@@ -45,13 +45,6 @@
                                 modifiers="{'invisible': [('show_create_quote', '=', False)]}"
                                 invisible="stage_id &lt;= 2"/>
 
-                        <button name="action_open_select_lots_wizard"
-                                string="🧩 Sélectionner lots"
-                                type="object"
-                                class="btn-secondary"
-                                help="Choisir les lots à créer depuis les templates"
-                                invisible="stage_id &lt;= 2"/>
-
                         <button name="action_select_main_quote"
                                 string="📋 Sélectionner devis principal"
                                 type="object"
@@ -349,6 +342,16 @@
                                                 invisible="parent.stage_id &lt;= 3"/>
                                     </list>
                                 </field>
+                                
+                                <!-- Bouton pour contrat unifié -->
+                                <div class="mt-3">
+                                    <button name="action_open_multi_lot_contract_wizard"
+                                            type="object"
+                                            string="📄 Contrat unifié par sous-traitant"
+                                            class="btn btn-primary"
+                                            icon="fa-file-text"
+                                            help="Générer un contrat unifié pour un sous-traitant sur plusieurs lots"/>
+                                </div>
                             </page>
 
                             <!-- Onglet : Devis & commandes -->

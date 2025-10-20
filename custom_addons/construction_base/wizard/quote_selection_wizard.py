@@ -79,3 +79,42 @@ class ConstructionQuoteSelectionWizard(models.TransientModel):
                 'type': 'success'
             }
         }
+
+    @api.model
+    def default_get(self, fields_list):
+        """Ensure defaults for quote list and selected quote to avoid required errors at open time."""
+        res = super().default_get(fields_list)
+
+        chantier_id = res.get('chantier_id') or self.env.context.get('default_chantier_id')
+        if chantier_id:
+            quotes = self.env['sale.order'].search([
+                ('chantier_id', '=', chantier_id),
+                ('state', 'in', ['draft', 'sent', 'sale'])
+            ])
+            if 'quote_ids' in fields_list:
+                res['quote_ids'] = [(6, 0, quotes.ids)]
+
+            # Prefer explicit default passed in context, else first available quote
+            explicit_selected = self.env.context.get('default_selected_quote_id')
+            if 'selected_quote_id' in fields_list and not res.get('selected_quote_id'):
+                if explicit_selected:
+                    res['selected_quote_id'] = explicit_selected
+                elif quotes:
+                    res['selected_quote_id'] = quotes[0].id
+
+        return res
+
+    @api.model
+    def create(self, vals):
+        """Robust creation: backfill quote_ids and selected_quote_id if missing."""
+        chantier_id = vals.get('chantier_id') or self.env.context.get('default_chantier_id')
+        if chantier_id:
+            quotes = self.env['sale.order'].search([
+                ('chantier_id', '=', chantier_id),
+                ('state', 'in', ['draft', 'sent', 'sale'])
+            ])
+            if 'quote_ids' not in vals:
+                vals['quote_ids'] = [(6, 0, quotes.ids)]
+            if not vals.get('selected_quote_id') and quotes:
+                vals['selected_quote_id'] = self.env.context.get('default_selected_quote_id') or quotes[0].id
+        return super().create(vals)

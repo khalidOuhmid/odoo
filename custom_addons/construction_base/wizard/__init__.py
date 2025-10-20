@@ -19,5 +19,6 @@ try:
     from . import contract_generation_wizard
     from . import invoice_setup_wizard
     from . import lot_select_wizard
+    from . import multi_lot_contract_wizard
 except Exception as e:
     _logger.error("Erreur lors de l'import des wizards complémentaires: %s", e)

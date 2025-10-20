@@ -29,10 +29,10 @@
                 <!-- Modification des boutons d'action -->
                 <xpath expr="//button[@name='action_quotation_send']" position="after">
                     <button name="action_open_quote_wizard"
-                            string="🚀 Assistant intelligent"
+                            string="Assistant Intelligent"
                             type="object"
                             class="btn-primary"
-                            invisible="state not in ['draft', 'sent'] or not chantier_id"/>
+                            invisible="not chantier_id"/>
 
                 </xpath>
 
@@ -42,7 +42,7 @@
                 </xpath>
                 <xpath expr="//button[@name='action_confirm']" position="after">
                     <button name="action_validate_quote"
-                            string="Valider le devis"
+                            string="Valider le Devis"
                             type="object"
                             class="btn-primary"
                             invisible="state not in ['draft', 'sent'] or not chantier_id"/>
@@ -63,7 +63,7 @@
                 <!-- Statistiques du devis construction -->
                 <xpath expr="//group[@name='sale_total']" position="before">
                     <group name="construction_stats"
-                           string="Statistiques construction"
+                           string="Statistiques Construction"
                            invisible="not chantier_id">
                         <field name="order_line_count" readonly="1"/>
                         <field name="total_quantity" readonly="1"/>
@@ -122,7 +122,7 @@
         <!-- ========== ACTIONS SPÉCIALISÉES ========== -->
 
         <record id="action_sale_orders_construction" model="ir.actions.act_window">
-            <field name="name">Devis construction</field>
+            <field name="name">Devis Construction</field>
             <field name="res_model">sale.order</field>
             <field name="view_mode">kanban,list,form</field>
             <field name="domain">[('chantier_id', '!=', False)]</field>

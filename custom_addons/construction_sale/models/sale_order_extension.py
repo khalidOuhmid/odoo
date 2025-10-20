@@ -99,20 +99,24 @@ class SaleOrderConstruction(models.Model):
 
     @api.onchange('lot_ids')
     def _onchange_lot_ids_sync(self):
-        """Synchroniser lot_ids avec lot_selection_ids pour compatibilité"""
-        if self.lot_ids:
+        """Synchronize lot_ids with lot_selection_ids for compatibility"""
+        if self.lot_ids and not getattr(self, '_syncing', False):
+            self._syncing = True
             self.lot_selection_ids = self.lot_ids
+            self._syncing = False
 
     @api.onchange('lot_selection_ids') 
     def _onchange_lot_selection_ids_sync(self):
-        """Synchroniser lot_selection_ids avec lot_ids pour compatibilité"""
-        if self.lot_selection_ids:
+        """Synchronize lot_selection_ids with lot_ids for compatibility"""
+        if self.lot_selection_ids and not getattr(self, '_syncing', False):
+            self._syncing = True
             self.lot_ids = self.lot_selection_ids
+            self._syncing = False
 
     # =================== ACTIONS PRINCIPALES ===================
 
     def action_add_product_wizard(self):
-        """Ouvrir l'assistant de sélection de produits"""
+        """Open the product selection assistant"""
         self.ensure_one()
         
         if not self.chantier_id:
@@ -122,7 +126,7 @@ class SaleOrderConstruction(models.Model):
         
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Assistant de création de devis'),
+            'name': _('Assistant de Création de Devis'),
             'res_model': 'construction.quote.wizard',
             'view_mode': 'form',
             'target': 'new',
@@ -134,7 +138,7 @@ class SaleOrderConstruction(models.Model):
         }
 
     def action_organize_by_lots(self):
-        """Organise le devis par sections de lots"""
+        """Organize the quote by lot sections"""
         self.ensure_one()
         
         if not self.lot_ids:
@@ -148,26 +152,26 @@ class SaleOrderConstruction(models.Model):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Devis organisé'),
+                'title': _('Devis Organisé'),
                 'message': _('%d section(s) créée(s) pour les lots.') % len(self.lot_ids),
                 'type': 'success'
             }
         }
 
     def action_validate_quote(self):
-        """Valide le devis et met à jour le chantier"""
+        """Validate the quote and update the construction site"""
         self.ensure_one()
         
-        # Validation métier
+        # Business validation
         if not self.order_line.filtered(lambda l: not l.display_type):
             raise ValidationError(_(
                 "Impossible de valider un devis sans ligne de produit."
             ))
         
-        # Confirmation de la commande
+        # Confirm the order
         self.action_confirm()
         
-        # Mise à jour du chantier
+        # Update the construction site
         if self.chantier_id:
             self._update_chantier_on_validation()
         
@@ -175,7 +179,7 @@ class SaleOrderConstruction(models.Model):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Devis validé'),
+                'title': _('Devis Validé'),
                 'message': _('Le devis %s a été validé avec succès.') % self.name,
                 'type': 'success'
             }
@@ -184,7 +188,7 @@ class SaleOrderConstruction(models.Model):
     # =================== MÉTHODES PRIVÉES ===================
 
     def _create_lot_sections(self):
-        """Crée des sections pour chaque lot dans le devis"""
+        """Create sections for each lot in the quote"""
         sequence = self._get_next_sequence()
         
         for lot in self.lot_ids:
@@ -192,55 +196,60 @@ class SaleOrderConstruction(models.Model):
             sequence += 10
 
     def _create_section_for_lot(self, lot, sequence):
-        """Crée une section pour un lot donné"""
+        """Create a section for a given lot"""
         section_vals = {
             'order_id': self.id,
             'display_type': 'line_section',
-            'name': _('📋 %s') % lot.name,
+            'name': _('Lot : %s') % lot.name,
             'sequence': sequence,
         }
         
         self.env['sale.order.line'].create(section_vals)
 
     def _get_next_sequence(self):
-        """Retourne la prochaine séquence disponible"""
+        """Return the next available sequence"""
         if self.order_line:
             return max(self.order_line.mapped('sequence')) + 10
         return 10
 
     def _update_chantier_on_validation(self):
-        """Met à jour le chantier lors de la validation du devis"""
+        """Update the construction site when validating the quote"""
         try:
-            # Faire progresser le chantier vers l'étape "Devis accepté"
+            # Move the construction site to the next stage
             if hasattr(self.chantier_id, 'action_move_to_next_stage'):
                 self.chantier_id.action_move_to_next_stage()
                 
-            # Log de la validation
+            # Log the validation
             self.chantier_id.message_post(
-                body=_("Devis %s validé - Montant: %s") % (
+                body=_("Devis %s validé - Montant : %s") % (
                     self.name, 
                     f"{self.amount_total:,.2f} {self.currency_id.symbol}"
                 ),
                 message_type='notification'
             )
+        except AttributeError as e:
+            # Method not available on construction site
+            _logger.warning(f"Method not available on construction site: {e}")
         except Exception as e:
-            # Ne pas bloquer la validation si la mise à jour du chantier échoue
-            _logger.warning(f"Erreur lors de la mise à jour du chantier: {e}")
+            # Don't block validation if construction site update fails
+            _logger.error(f"Error updating construction site: {e}")
+            # Re-raise the exception to ensure it's logged properly
+            raise
 
     @api.onchange('chantier_id')
     def _onchange_chantier_id(self):
-        """Mise à jour automatique lors du changement de chantier"""
+        """Automatic update when changing construction site"""
         if self.chantier_id:
-            # Mettre à jour le partenaire si nécessaire
+            # Update partner if necessary
             if self.chantier_id.client and not self.partner_id:
                 self.partner_id = self.chantier_id.client
                 
-            # Pré-sélectionner les lots du chantier
+            # Pre-select construction site lots
             if self.chantier_id.lots_ids:
                 self.lot_ids = self.chantier_id.lots_ids
-                self.lot_selection_ids = self.chantier_id.lots_ids  # Sync pour compatibilité
+                self.lot_selection_ids = self.chantier_id.lots_ids  # Sync for compatibility
             
-            # Injecter le nom du chantier dans le nom du devis
+            # Inject construction site name into quote name
             if not self.name or self.name == '/':
                 self.name = f"Devis - {self.chantier_id.name}"
 

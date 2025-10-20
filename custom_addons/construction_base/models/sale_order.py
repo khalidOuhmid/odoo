@@ -399,23 +399,36 @@ class SaleOrder(models.Model):
         if not self.chantier_id:
             raise ValidationError(_("Ce devis n'est pas lié à un chantier."))
 
-        # Créer le wizard avec les lots du chantier
-        wizard = self.env['construction.quote.wizard'].create({
-            'sale_order_id': self.id,
+        # TODO: Implémenter l'assistant de création de devis
+        # Le wizard construction.quote.wizard n'existe pas encore
+        raise ValidationError(_("Cette fonctionnalité n'est pas encore implémentée."))
+
+    def action_open_main_quote_selection(self):
+        """Ouvrir le wizard de sélection du devis principal du chantier"""
+        self.ensure_one()
+
+        if not self.chantier_id:
+            raise ValidationError(_("Ce devis n'est pas lié à un chantier."))
+
+        wizard = self.env['construction.quote.selection.wizard'].with_context(
+            default_chantier_id=self.chantier_id.id,
+            default_selected_quote_id=self.id,
+        ).create({
             'chantier_id': self.chantier_id.id,
-            'lot_ids': [(6, 0, self.chantier_id.lots_ids.ids)],
         })
 
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Assistant de création de devis - %s') % self.chantier_id.name,
-            'res_model': 'construction.quote.wizard',
+            'name': _('Sélection du Devis Principal - %s') % self.chantier_id.name,
+            'res_model': 'construction.quote.selection.wizard',
             'res_id': wizard.id,
             'view_mode': 'form',
             'target': 'new',
             'context': {
                 'active_model': 'sale.order',
                 'active_id': self.id,
+                'default_chantier_id': self.chantier_id.id,
+                'default_selected_quote_id': self.id,
             }
         }
 

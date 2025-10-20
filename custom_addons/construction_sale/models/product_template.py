@@ -1,5 +1,5 @@
 # models/product_template.py
-from odoo import models, fields
+from odoo import models, fields, _
 
 
 class ProductTemplate(models.Model):
@@ -31,6 +31,32 @@ class ProductProduct(models.Model):
 
     lot_ids = fields.Many2many(related='product_tmpl_id.lot_ids', readonly=False)
     construction_specialty = fields.Selection(related='product_tmpl_id.construction_specialty', readonly=False)
+
+    def action_open_edit_modal(self):
+        """Open this product in a modal form for editing from wizards/lists."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Edit Product - %s') % (self.display_name or self.name),
+            'res_model': 'product.product',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'form_view_initial_mode': 'edit',
+                'default_categ_id': self.categ_id.id,
+            },
+        }
+
+    def action_open_product_in_new_tab(self):
+        """Open the product in a new browser tab to avoid closing the wizard modal."""
+        self.ensure_one()
+        url = '/web#id=%d&model=product.product&view_type=form' % self.id
+        return {
+            'type': 'ir.actions.act_url',
+            'url': url,
+            'target': 'new',
+        }
 
     def action_add_product(self):
         """Ajouter ce produit au wizard de devis actif"""
