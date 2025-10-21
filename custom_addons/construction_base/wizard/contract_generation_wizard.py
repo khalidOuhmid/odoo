@@ -93,7 +93,7 @@ class ContractGenerationWizard(models.TransientModel):
 
     @api.depends('chantier_id', 'subcontractor_id', 'lot_ids')
     def _compute_total_amount(self):
-        """Calcule automatiquement le montant total.
+        """Calcule automatiquement le montant total pour un ou plusieurs lots.
 
         Priorité:
         1) Somme des montants des bons d'achat (purchase.order.amount_total)
@@ -127,15 +127,25 @@ class ContractGenerationWizard(models.TransientModel):
 
     @api.onchange('lot_ids')
     def _onchange_lot_ids(self):
-        """Met à jour automatiquement le code URSSAF selon le lot principal."""
+        """Met à jour automatiquement le code URSSAF selon les lots sélectionnés."""
         if self.lot_ids:
-            # Prendre le premier lot comme référence pour le code URSSAF
-            primary_lot = self.lot_ids[0]
-            # Vérifier si le champ urssaf_code existe et a une valeur
-            if hasattr(primary_lot, 'urssaf_code') and primary_lot.urssaf_code:
-                # Extraire juste le code (ex: "43.34Z" depuis "43.34Z - Description")
-                urssaf_code = primary_lot.urssaf_code.split(' - ')[0]
-                self.urssaf_code = urssaf_code
+            # Pour les lots multiples, essayer de trouver un code URSSAF commun
+            urssaf_codes = set()
+            for lot in self.lot_ids:
+                if hasattr(lot, 'urssaf_code') and lot.urssaf_code:
+                    # Extraire juste le code (ex: "43.34Z" depuis "43.34Z - Description")
+                    urssaf_code = lot.urssaf_code.split(' - ')[0]
+                    urssaf_codes.add(urssaf_code)
+            
+            if len(urssaf_codes) == 1:
+                # Tous les lots ont le même code URSSAF
+                self.urssaf_code = list(urssaf_codes)[0]
+            elif len(urssaf_codes) > 1:
+                # Codes différents - garder le premier ou laisser l'utilisateur choisir
+                self.urssaf_code = list(urssaf_codes)[0]
+            else:
+                # Aucun code trouvé, garder la valeur par défaut
+                pass
 
     @api.onchange('chantier_id')
     def _onchange_chantier_id(self):
@@ -232,7 +242,7 @@ class ContractGenerationWizard(models.TransientModel):
         return self.action_generate_preview()
 
     def _validate_configuration(self):
-        """Valide la configuration avant génération."""
+        """Valide la configuration avant génération pour un ou plusieurs lots."""
         errors = []
 
         if not self.chantier_id:
@@ -243,6 +253,12 @@ class ContractGenerationWizard(models.TransientModel):
 
         if not self.lot_ids:
             errors.append("Veuillez sélectionner au moins un lot.")
+
+        # Vérifier que tous les lots appartiennent au même sous-traitant
+        if self.lot_ids and self.subcontractor_id:
+            for lot in self.lot_ids:
+                if self.subcontractor_id not in lot.subcontractor_ids:
+                    errors.append(f"Le lot '{lot.name}' n'est pas assigné au sous-traitant '{self.subcontractor_id.name}'.")
 
         if not self.total_amount or self.total_amount <= 0:
             errors.append("Le montant total doit être supérieur à 0.")

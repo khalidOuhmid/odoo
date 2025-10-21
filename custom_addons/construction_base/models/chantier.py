@@ -1900,3 +1900,70 @@ class Chantier(models.Model):
                 'default_lot_ids': [(6, 0, self.lots_ids.ids)]
             }
         }
+
+    def action_generate_grouped_contracts(self):
+        """Génère des contrats groupés pour les lots sélectionnés avec le même sous-traitant."""
+        self.ensure_one()
+        
+        # Récupérer les lots sélectionnés
+        selected_lots = self.lots_ids.filtered('selected_for_contract')
+        
+        if not selected_lots:
+            raise ValidationError(_("Aucun lot sélectionné. Veuillez sélectionner au moins un lot."))
+        
+        # Grouper les lots par sous-traitant
+        subcontractor_groups = {}
+        for lot in selected_lots:
+            if not lot.subcontractor_ids:
+                raise ValidationError(_("Le lot '%s' n'a pas de sous-traitant assigné.") % lot.name)
+            
+            # Pour chaque lot, vérifier qu'il n'a qu'un seul sous-traitant
+            if len(lot.subcontractor_ids) > 1:
+                raise ValidationError(_("Le lot '%s' a plusieurs sous-traitants. Un contrat groupé ne peut être généré que pour un seul sous-traitant par lot.") % lot.name)
+            
+            subcontractor = lot.subcontractor_ids[0]
+            if subcontractor.id not in subcontractor_groups:
+                subcontractor_groups[subcontractor.id] = {
+                    'subcontractor': subcontractor,
+                    'lots': []
+                }
+            subcontractor_groups[subcontractor.id]['lots'].append(lot)
+        
+        # Créer un wizard pour chaque groupe de sous-traitant
+        wizards = []
+        for subcontractor_id, group_data in subcontractor_groups.items():
+            wizard = self.env['construction.contract.generation.wizard'].create({
+                'chantier_id': self.id,
+                'subcontractor_id': subcontractor_id,
+                'lot_ids': [(6, 0, [lot.id for lot in group_data['lots']])],
+                'start_date': fields.Date.today(),
+                'total_amount': sum(lot.price for lot in group_data['lots']),
+            })
+            wizards.append(wizard)
+        
+        # Retourner l'action pour ouvrir le premier wizard
+        if wizards:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Génération de contrat groupé'),
+                'res_model': 'construction.contract.generation.wizard',
+                'res_id': wizards[0].id,
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_chantier_id': self.id,
+                    'grouped_contract_mode': True,
+                    'wizard_ids': [w.id for w in wizards],
+                }
+            }
+        
+        return {'type': 'ir.actions.act_window_close'}
+
+    def action_clear_lot_selection(self):
+        """Désélectionne tous les lots."""
+        self.ensure_one()
+        self.lots_ids.write({'selected_for_contract': False})
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }

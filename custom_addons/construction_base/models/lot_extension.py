@@ -45,6 +45,14 @@ class ConstructionLot(models.Model):
         help="Prix calculé depuis le devis principal du chantier"
     )
 
+    # =================== SÉLECTION POUR CONTRAT ===================
+    
+    selected_for_contract = fields.Boolean(
+        string='Sélectionné pour contrat',
+        default=False,
+        help="Cocher pour inclure ce lot dans la génération de contrat groupé"
+    )
+
     # =================== RELATIONS ===================
 
     standard_lot_id = fields.Many2one(

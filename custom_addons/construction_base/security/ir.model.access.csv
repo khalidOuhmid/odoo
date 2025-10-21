@@ -27,4 +27,3 @@ access_construction_subcontractor_contract_manager,construction.subcontractor.co
 access_construction_contract_generation_wizard,construction.contract.generation.wizard.user,model_construction_contract_generation_wizard,base.group_user,1,1,1,1
 access_construction_create_purchase_line_wizard,construction.create.purchase.line.wizard.user,model_construction_create_purchase_line_wizard,base.group_user,1,1,1,0
 access_construction_lot_select_wizard_user,construction.lot.select.wizard.user,model_construction_lot_select_wizard,base.group_user,1,1,1,0
-access_construction_multi_lot_contract_wizard_user,construction.multi.lot.contract.wizard.user,model_construction_multi_lot_contract_wizard,base.group_user,1,1,1,1
