@@ -7,19 +7,19 @@
         <field name="name">construction.quote.wizard.form.modern</field>
         <field name="model">construction.quote.wizard</field>
         <field name="arch" type="xml">
-            <form string="Assistant de création de devis intelligent" class="construction-quote-wizard">
+            <form string="Assistant Intelligent de Création de Devis" class="construction-quote-wizard">
                 <header>
-                    <button name="action_confirm_selection" string="✅ Confirmer et ajouter" 
+                    <button name="action_confirm_selection" string="Confirmer et Ajouter" 
                             type="object" class="btn-primary" 
                             invisible="not selected_line_ids"/>
-                    <button name="action_clear_selection" string="🗑️ Vider la sélection" 
+                    <button name="action_clear_selection" string="Vider la Sélection" 
                             type="object" class="btn-secondary" 
                             invisible="not selected_line_ids"/>
                 </header>
                 
                 <sheet>
                     <div class="oe_title">
-                        <h1>🚀 Assistant intelligent de devis</h1>
+                        <h1>Assistant Intelligent de Devis</h1>
                         <h2>
                             <i class="fa fa-building-o"/> <field name="chantier_id" readonly="1" nolabel="1"/>
                         </h2>

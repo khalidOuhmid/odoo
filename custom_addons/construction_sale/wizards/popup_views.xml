@@ -7,7 +7,7 @@
         <field name="name">construction.product.dialog.form</field>
         <field name="model">construction.product.dialog</field>
         <field name="arch" type="xml">
-            <form string="Ajouter un produit" options="{'no_save': true, 'no_discard': true}">
+            <form string="Ajouter un Produit" options="{'no_save': true, 'no_discard': true}">
                 <header>
 
                 </header>
@@ -18,7 +18,7 @@
                             <field name="product_name" readonly="1" nolabel="1"/>
                         </h2>
                         <h3 class="text-muted">
-                            Coût (base) : <field name="base_price" readonly="1" widget="monetary"/>
+                            Coût de Base : <field name="base_price" readonly="1" widget="monetary"/>
                         </h3>
                     </div>
 
@@ -30,15 +30,16 @@
                     </group>
 
                     <group>
-                        <group string="📦 Quantité et unité">
+                        <group string="Quantité et Unité">
                             <field name="quantity"
                                    decoration-danger="quantity &lt;= 0"/>
                             <field name="uom_id" 
                                    placeholder="Sélectionner une unité..."
-                                   help="m², ml, lots, kg, pièces, etc."/>
+                                   help="m², ml, lots, kg, pièces, etc."
+                                   domain="[('category_id', '=', product_id.uom_id.category_id)]"/>
                         </group>
 
-                        <group string="💰 Tarification">
+                        <group string="Tarification">
                             <field name="margin_percent"/>
                             <field name="unit_price" readonly="1" widget="monetary"/>
                             <field name="total_price" readonly="1" widget="monetary"
@@ -47,28 +48,28 @@
                     </group>
 
                     <group>
-                        <group string="📍 Localisation">
+                        <group string="Localisation">
                             <field name="room_number" placeholder="S01, C12..."/>
                             <field name="room_location" placeholder="Salon, Cuisine..."/>
                         </group>
 
-                        <group string="🏗️ Lot">
+                        <group string="Lot">
                             <field name="lot_id"
                                    placeholder="Sélectionner un lot..."
                                    domain="[('id', 'in', available_lot_ids)]"/>
                         </group>
                     </group>
 
-                    <group string="📝 Description/Notes">
+                    <group string="Description/Notes">
                         <field name="description" nolabel="1"
                                placeholder="Notes techniques, spécifications..."/>
                     </group>
                 </sheet>
                 <footer>
-                    <button name="action_confirm_add" string="✅ Confirmer et ajouter"
+                    <button name="action_confirm_add" string="Confirmer et Ajouter"
                             type="object" class="btn-primary"
                             title="Ajouter ce produit au devis"/>
-                    <button name="action_cancel" string="❌ Annuler"
+                    <button name="action_cancel" string="Annuler"
                             type="object" class="btn-secondary"/>
                 </footer>
             </form>
@@ -101,7 +102,7 @@
                     <group>
                         <group string="📦 Informations produit">
                             <field name="name"/>
-                            <field name="default_code"/>
+                            <field name="default_code" invisible="1"/>
                             <field name="categ_id"/>
                             <field name="uom_id" 
                                    placeholder="Sélectionner une unité..."
@@ -122,7 +123,9 @@
 
                     <group>
                         <group string="🏗️ Lot associé">
-                            <field name="lot_ids" nolabel="1"/>
+                            <field name="lot_id" 
+                                   placeholder="Sélectionnez un lot..."
+                                   help="Lot pour lequel ce produit est utilisé"/>
                         </group>
 
 
@@ -183,7 +186,8 @@
                                    decoration-danger="quantity &lt;= 0"/>
                             <field name="uom_id" 
                                    placeholder="Sélectionner une unité..."
-                                   help="m², ml, lots, kg, pièces, etc."/>
+                                   help="m², ml, lots, kg, pièces, etc."
+                                   domain="[('category_id', '=', product_id.uom_id.category_id)]"/>
                         </group>
 
                         <group string="💰 Tarification">

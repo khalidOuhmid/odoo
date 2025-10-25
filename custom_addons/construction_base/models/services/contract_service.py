@@ -21,11 +21,21 @@ class ContractService(models.AbstractModel):
     _description = 'Service de génération de contrats'
 
     def generate_contract(self, chantier, subcontractor, lot_ids, contract_data):
-        """Génère un contrat de sous-traitance complet."""
+        """Génère un contrat de sous-traitance complet pour un ou plusieurs lots."""
         if not all([chantier, subcontractor, lot_ids]):
             raise ValidationError(_("Données manquantes pour la génération du contrat."))
 
-        contract_vals = self._prepare_contract_vals(chantier, subcontractor, lot_ids, contract_data)
+        # Vérifier que tous les lots appartiennent au même sous-traitant
+        if isinstance(lot_ids, (list, tuple)):
+            lots = self.env['construction.lot'].browse(lot_ids)
+        else:
+            lots = lot_ids
+            
+        for lot in lots:
+            if subcontractor not in lot.subcontractor_ids:
+                raise ValidationError(_("Le lot '%s' n'est pas assigné au sous-traitant '%s'.") % (lot.name, subcontractor.name))
+
+        contract_vals = self._prepare_contract_vals(chantier, subcontractor, lots, contract_data)
         contract = self.env['construction.subcontractor.contract'].create(contract_vals)
 
         pdf_content = self._generate_pdf_with_full_template(contract)
@@ -33,9 +43,13 @@ class ContractService(models.AbstractModel):
         access_token = contract._generate_access_token()
         portal_url = self._create_portal_link(contract, access_token)
 
+        # Nom du fichier adapté pour les contrats groupés
+        lot_names = "_".join([lot.name.replace(" ", "_") for lot in lots])
+        filename = f"Contrat_{subcontractor.name}_{lot_names}_{datetime.now().strftime('%Y%m%d')}.pdf"
+
         contract.write({
             'contract_pdf': base64.b64encode(pdf_content),
-            'filename': f"Contrat_{subcontractor.name}_{datetime.now().strftime('%Y%m%d')}.pdf",
+            'filename': filename,
             'portal_url': portal_url,
             'access_token': access_token
         })
@@ -228,7 +242,7 @@ class ContractService(models.AbstractModel):
 </html>"""
         return html_content
 
-    def _prepare_contract_vals(self, chantier, subcontractor, lot_ids, contract_data):
+    def _prepare_contract_vals(self, chantier, subcontractor, lots, contract_data):
         """Prépare les valeurs pour créer le contrat."""
         # Préparer le code URSSAF avec description complète
         urssaf_code = contract_data.get('urssaf_code', '43.34Z')
@@ -258,12 +272,19 @@ class ContractService(models.AbstractModel):
         }
         urssaf_code_full = urssaf_descriptions.get(urssaf_code, f"{urssaf_code} - Travaux de peinture et vitrerie")
         
+        # Nom du contrat adapté pour les lots multiples
+        if len(lots) > 1:
+            lot_names = ", ".join([lot.name for lot in lots])
+            contract_name = f'Contrat groupé {subcontractor.name} - {chantier.name} ({lot_names})'
+        else:
+            contract_name = f'Contrat {subcontractor.name} - {chantier.name} - {lots[0].name}'
+        
         return {
-            'name': f'Contrat {subcontractor.name} - {chantier.name}',
+            'name': contract_name,
             'contract_number': self._generate_contract_number(),
             'chantier_id': chantier.id,
             'subcontractor_id': subcontractor.id,
-            'lot_ids': [(6, 0, lot_ids.ids)],
+            'lot_ids': [(6, 0, lots.ids)],
             'start_date': contract_data.get('start_date', fields.Date.today()),
             'end_date': contract_data.get('end_date'),
             'total_amount': contract_data.get('total_amount', 0.0),
@@ -305,6 +326,20 @@ class ContractService(models.AbstractModel):
             # ===== GÉNÉRATION DES PDF D'ANNEXES =====
             annex_pdfs = []
             
+            # ===== CONSOLIDATION DES BONS DE COMMANDE POUR TOUS LES LOTS =====
+            if len(contract.lot_ids) > 1:
+                # Pour les contrats groupés, consolider tous les bons de commande
+                consolidated_purchase_orders_pdf = self._generate_consolidated_purchase_orders_pdf(contract, blg_images)
+                if consolidated_purchase_orders_pdf:
+                    annex_pdfs.append(consolidated_purchase_orders_pdf)
+            else:
+                # Pour un seul lot, utiliser la méthode existante
+                lot = contract.lot_ids[0]
+                purchase_orders_pdf = self._generate_purchase_orders_pdf(lot, contract, blg_images)
+                if purchase_orders_pdf:
+                    annex_pdfs.append(purchase_orders_pdf)
+            
+            # ===== GÉNÉRATION DES ANNEXES PAR LOT =====
             for lot in contract.lot_ids:
                 _logger.info(f"🔍 Génération des annexes pour lot: {lot.name}")
                 
@@ -318,14 +353,7 @@ class ContractService(models.AbstractModel):
                 if hasattr(lot, 'document_subcontractor_planning') and lot.document_subcontractor_planning:
                     annex_pdfs.append(self._generate_document_annex_pdf(lot, "Planning Sous-traitant", blg_images))
                 
-                # ===== NOUVELLES ANNEXES PDF =====
-                
-                # 1. Bons de commande en PDF
-                purchase_orders_pdf = self._generate_purchase_orders_pdf(lot, contract, blg_images)
-                if purchase_orders_pdf:
-                    annex_pdfs.append(purchase_orders_pdf)
-                
-                # 2. Planning Gantt en PDF
+                # Planning Gantt en PDF (un par lot)
                 planning_gantt_pdf = self._generate_planning_gantt_pdf(lot, contract, blg_images)
                 if planning_gantt_pdf:
                     annex_pdfs.append(planning_gantt_pdf)
@@ -1340,6 +1368,36 @@ class ContractService(models.AbstractModel):
         </div>
         """
 
+    def _generate_consolidated_purchase_orders_pdf(self, contract, blg_images):
+        """Génère un PDF consolidé pour tous les bons de commande des lots du contrat."""
+        try:
+            all_purchase_orders = []
+            total_amount = 0.0
+            
+            # Récupérer tous les bons de commande pour tous les lots
+            for lot in contract.lot_ids:
+                lot_orders = self._get_lot_purchase_orders(lot, contract)
+                for order in lot_orders:
+                    all_purchase_orders.append({
+                        'order': order,
+                        'lot': lot,
+                        'lot_amount': sum(line.price_subtotal for line in order.order_line.filtered(lambda l: l.lot_id.id == lot.id or not l.lot_id))
+                    })
+                    total_amount += sum(line.price_subtotal for line in order.order_line.filtered(lambda l: l.lot_id.id == lot.id or not l.lot_id))
+            
+            if not all_purchase_orders:
+                return None
+            
+            # Générer le HTML consolidé
+            html_content = self._generate_consolidated_purchase_orders_html(contract, all_purchase_orders, total_amount, blg_images)
+            
+            # Générer le PDF
+            return self._generate_single_pdf(html_content, f"Bons de commande consolidés - {contract.subcontractor_id.name}")
+            
+        except Exception as e:
+            _logger.error(f"❌ Erreur génération PDF bons de commande consolidés: {e}")
+            return None
+
     def _generate_purchase_orders_pdf(self, lot, contract, blg_images):
         """Génère un PDF séparé pour les bons de commande du lot."""
         try:
@@ -1466,11 +1524,84 @@ class ContractService(models.AbstractModel):
             </div>
             """
         
+    def _generate_consolidated_purchase_orders_html(self, contract, all_purchase_orders, total_amount, blg_images):
+        """Génère le HTML consolidé pour tous les bons de commande des lots du contrat."""
+        # Construire le contenu HTML consolidé
+        orders_content = ""
+        lot_groups = {}
+        
+        # Grouper les commandes par lot
+        for order_data in all_purchase_orders:
+            lot = order_data['lot']
+            if lot.id not in lot_groups:
+                lot_groups[lot.id] = {
+                    'lot': lot,
+                    'orders': [],
+                    'lot_total': 0.0
+                }
+            lot_groups[lot.id]['orders'].append(order_data['order'])
+            lot_groups[lot.id]['lot_total'] += order_data['lot_amount']
+        
+        # Générer le contenu pour chaque lot
+        for lot_id, lot_data in lot_groups.items():
+            lot = lot_data['lot']
+            orders = lot_data['orders']
+            lot_total = lot_data['lot_total']
+            
+            orders_content += f"""
+            <div style="margin-bottom: 40px; border: 3px solid #20B2AA; border-radius: 15px; padding: 25px; background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%); box-shadow: 0 4px 12px rgba(32, 178, 170, 0.15);">
+                <h3 style="color: #20B2AA; text-align: center; margin: 0 0 25px 0; font-size: 24px; font-weight: bold;">📦 Lot : {lot.name}</h3>
+                <p style="text-align: center; color: #1a7a7a; font-size: 16px; margin-bottom: 25px;">Montant total du lot : <strong>{lot_total:,.2f} €</strong></p>
+            """
+            
+            for order in orders:
+                # Filtrer les lignes spécifiques au lot
+                order_lines = order.order_line.filtered(lambda l: l.lot_id.id == lot.id or not l.lot_id)
+                order_total = sum(line.price_subtotal for line in order_lines)
+                
+                # État avec style formel
+                state_display = {
+                    'draft': ('Brouillon', '#6c757d', '📝'),
+                    'sent': ('Envoyé', '#17a2b8', '📤'),
+                    'to_approve': ('À approuver', '#ffc107', '⏳'),
+                    'purchase': ('Confirmé', '#28a745', '✅'),
+                    'done': ('Terminé', '#20B2AA', '🏁'),
+                    'cancel': ('Annulé', '#dc3545', '❌')
+                }.get(order.state, (order.state, '#6c757d', '❓'))
+                
+                orders_content += f"""
+                <div style="margin-bottom: 30px; border: 2px solid #20B2AA; border-radius: 10px; padding: 25px; background-color: #f8f9fa; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #20B2AA; padding-bottom: 15px;">
+                        <h4 style="color: #20B2AA; margin: 0; font-size: 18px; font-weight: bold;">{state_display[2]} {order.name}</h4>
+                        <span style="background-color: {state_display[1]}; color: white; padding: 8px 15px; border-radius: 25px; font-size: 13px; font-weight: bold; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                            {state_display[0]}
+                        </span>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px; background-color: #ffffff; padding: 15px; border-radius: 8px; border-left: 4px solid #20B2AA;">
+                        <p style="margin: 8px 0; font-weight: bold;"><strong>📅 Date de commande :</strong> {order.date_order.strftime('%d/%m/%Y') if order.date_order else 'Non définie'}</p>
+                        <p style="margin: 8px 0;"><strong>🏢 Fournisseur :</strong> {order.partner_id.name or 'Non défini'}</p>
+                        <p style="margin: 8px 0;"><strong>📋 Référence :</strong> {order.partner_ref or 'Non définie'}</p>
+                        <p style="margin: 8px 0;"><strong>📝 Notes :</strong> {order.notes or 'Aucune note'}</p>
+                    </div>
+                    
+                    {self._generate_order_lines_table_formal(order_lines)}
+                    
+                    <div style="text-align: right; margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #20B2AA 0%, #1a9999 100%); border-radius: 8px; color: white;">
+                        <p style="margin: 0; font-size: 18px; font-weight: bold;">
+                            💰 Total : {order_total:,.2f} {order.currency_id.symbol}
+                        </p>
+                    </div>
+                </div>
+                """
+            
+            orders_content += "</div>"
+        
         return f"""<!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>Bons de commande - {lot.name}</title>
+    <title>Bons de commande consolidés - {contract.subcontractor_id.name}</title>
     <style>
         body {{
             font-family: 'Segoe UI', Arial, sans-serif;
@@ -1575,9 +1706,9 @@ class ContractService(models.AbstractModel):
         <div style="display: flex; align-items: center; justify-content: center; padding: 25px 0; border-bottom: 3px solid #20B2AA; margin-bottom: 35px;">
             <img src="{blg_images['logo']}" alt="Logo BLG GROUPE" style="height: 70px; margin-right: 40px;"/>
             <div style="text-align: center;">
-                <h1>🛒 Bons de commande</h1>
-                <h2>Lot : {lot.name}</h2>
-                <p style="color: #666; margin: 5px 0 0 0; font-size: 16px;">Détail des commandes et prestations contractuelles</p>
+                <h1>🛒 Bons de commande consolidés</h1>
+                <h2>Sous-traitant : {contract.subcontractor_id.name}</h2>
+                <p style="color: #666; margin: 5px 0 0 0; font-size: 16px;">Détail consolidé des commandes pour tous les lots du contrat</p>
             </div>
             <img src="{blg_images['logo']}" alt="Logo BLG GROUPE" style="height: 70px; margin-left: 40px;"/>
         </div>
@@ -1588,356 +1719,37 @@ class ContractService(models.AbstractModel):
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
                 <div>
                     <p style="margin: 8px 0; font-weight: bold;"><strong>🏗️ Chantier :</strong> {contract.chantier_id.name}</p>
-                    <p style="margin: 8px 0; font-weight: bold;"><strong>📦 Lot :</strong> {lot.name}</p>
+                    <p style="margin: 8px 0; font-weight: bold;"><strong>👷 Sous-traitant :</strong> {contract.subcontractor_id.name}</p>
                 </div>
                 <div>
-                    <p style="margin: 8px 0; font-weight: bold;"><strong>👷 Sous-traitant :</strong> {contract.subcontractor_id.name}</p>
-                    <p style="margin: 8px 0; font-weight: bold;"><strong>📊 Nombre de commandes :</strong> {len(purchase_orders)}</p>
+                    <p style="margin: 8px 0; font-weight: bold;"><strong>📦 Nombre de lots :</strong> {len(contract.lot_ids)}</p>
+                    <p style="margin: 8px 0; font-weight: bold;"><strong>📊 Nombre de commandes :</strong> {len(all_purchase_orders)}</p>
                 </div>
             </div>
         </div>
         
-        <!-- Liste des bons de commande -->
+        <!-- Liste consolidée des bons de commande -->
         <div style="margin-bottom: 35px;">
-            <h3>📄 Détail des commandes contractuelles</h3>
+            <h3>📄 Détail consolidé des commandes contractuelles</h3>
             {orders_content}
         </div>
         
-        <!-- Récapitulatif financier -->
+        <!-- Récapitulatif financier consolidé -->
         <div style="border: 3px solid #20B2AA; border-radius: 15px; padding: 25px; background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%); margin-bottom: 35px; box-shadow: 0 4px 12px rgba(32, 178, 170, 0.15);">
-            <h3 style="text-align: center; margin: 0 0 20px 0; font-size: 24px; font-weight: bold;">💰 Récapitulatif financier contractuel</h3>
+            <h3 style="text-align: center; margin: 0 0 20px 0; font-size: 24px; font-weight: bold;">💰 Récapitulatif financier consolidé</h3>
             <div style="text-align: center;">
-                <p style="font-size: 20px; margin: 15px 0; font-weight: bold; color: #1a7a7a;">Montant total des commandes :</p>
+                <p style="font-size: 20px; margin: 15px 0; font-weight: bold; color: #1a7a7a;">Montant total consolidé :</p>
                 <p style="font-size: 28px; font-weight: bold; color: #20B2AA; margin: 0; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    {total_amount:,.2f} {purchase_orders[0].currency_id.symbol if purchase_orders else '€'}
+                    {total_amount:,.2f} €
                 </p>
             </div>
         </div>
         
         <!-- Note légale -->
         <div style="border-top: 2px solid #20B2AA; padding-top: 20px; font-size: 12px; color: #666; text-align: center; background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <p style="margin: 8px 0; font-weight: bold;">Les bons de commande ci-dessus constituent la base contractuelle des prestations à réaliser.</p>
+            <p style="margin: 8px 0; font-weight: bold;">Les bons de commande ci-dessus constituent la base contractuelle consolidée des prestations à réaliser.</p>
             <p style="margin: 8px 0;">Tous les montants sont exprimés HT sauf mention contraire.</p>
-            <p style="margin: 8px 0; font-style: italic;">Document contractuel - BLG GROUPE - Tous droits réservés</p>
-        </div>
-    </div>
-</body>
-</html>"""
-
-    def _generate_planning_gantt_html(self, lot, contract, planning_tasks, blg_images):
-        """Génère le HTML pour le planning Gantt avec style formel."""
-        # Calculer la durée totale
-        if planning_tasks:
-            start_date = min(task.date_start for task in planning_tasks if task.date_start)
-            end_date = max(task.date_stop for task in planning_tasks if task.date_stop)
-            duration = (end_date.date() - start_date.date()).days if start_date and end_date else 0
-        else:
-            start_date = end_date = None
-            duration = 0
-        
-        # Générer le Gantt
-        gantt_html = self._generate_gantt_with_archiereport(planning_tasks, lot, contract)
-        
-        return f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Planning Gantt - {lot.name}</title>
-    <style>
-        body {{
-            font-family: 'Segoe UI', Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            color: #2c3e50;
-            background-color: #ffffff;
-        }}
-        .page {{
-            min-height: 800px;
-            max-width: 800px;
-            margin: 0 auto;
-        }}
-        
-        /* ===== HIÉRARCHIE DES TITRES ===== */
-        h1 {{
-            font-size: 28px;
-            color: #20B2AA;
-            text-align: center;
-            margin: 30px 0 25px 0;
-            padding: 15px 0;
-            border-top: 3px solid #20B2AA;
-            border-bottom: 3px solid #20B2AA;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }}
-        
-        h2 {{
-            font-size: 20px;
-            color: #1a7a7a;
-            margin: 35px 0 20px 0;
-            padding: 12px 0 8px 0;
-            border-bottom: 2px solid #20B2AA;
-            font-weight: 600;
-        }}
-        h2::before {{
-            content: ">";
-            color: #20B2AA;
-            margin-right: 10px;
-            font-size: 16px;
-        }}
-        
-        h3 {{
-            font-size: 16px;
-            color: #20B2AA;
-            margin: 25px 0 15px 0;
-            padding: 8px 0 5px 0;
-            border-bottom: 1px solid #20B2AA;
-            font-weight: 600;
-        }}
-        h3::before {{
-            content: "-";
-            color: #20B2AA;
-            margin-right: 8px;
-            font-size: 12px;
-        }}
-        
-        /* ===== STYLES POUR LE GANTT ===== */
-        .gantt-container {{
-            background: white;
-            border: 2px solid #20B2AA;
-            border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            box-shadow: 0 4px 12px rgba(32, 178, 170, 0.1);
-        }}
-        
-        .gantt-task {{
-            position: absolute;
-            background-color: #20B2AA;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: bold;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-            z-index: 10;
-        }}
-        
-        /* ===== TABLEAUX ===== */
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            margin: 25px 0;
-            background-color: #ffffff;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }}
-        
-        th {{
-            background: linear-gradient(135deg, #20B2AA 0%, #1a9999 100%);
-            color: white;
-            font-weight: 600;
-            padding: 15px 12px;
-            text-align: left;
-            font-size: 13px;
-            letter-spacing: 0.5px;
-        }}
-        
-        td {{
-            padding: 12px;
-            border-bottom: 1px solid #e9ecef;
-            vertical-align: top;
-        }}
-        
-        tr:nth-child(even) {{
-            background-color: #f8f9fa;
-        }}
-        
-        p {{
-            margin: 12px 0;
-            line-height: 1.6;
-            text-align: justify;
-        }}
-    </style>
-</head>
-<body>
-    <div class="page">
-        <!-- En-tête avec logos -->
-        <div style="display: flex; align-items: center; justify-content: center; padding: 25px 0; border-bottom: 3px solid #20B2AA; margin-bottom: 35px;">
-            <img src="{blg_images['logo']}" alt="Logo BLG GROUPE" style="height: 70px; margin-right: 40px;"/>
-            <div style="text-align: center;">
-                <h1>📅 Planning Gantt</h1>
-                <h2>Lot : {lot.name}</h2>
-                <p style="color: #666; margin: 5px 0 0 0; font-size: 16px;">Planification contractuelle des tâches et calendrier</p>
-            </div>
-            <img src="{blg_images['logo']}" alt="Logo BLG GROUPE" style="height: 70px; margin-left: 40px;"/>
-        </div>
-        
-        <!-- Informations du planning -->
-        <div style="background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%); border-left: 5px solid #20B2AA; padding: 20px; margin-bottom: 30px; border-radius: 8px; box-shadow: 0 2px 8px rgba(32, 178, 170, 0.1);">
-            <h3>📋 Informations contractuelles du planning</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-                <div>
-                    <p style="margin: 8px 0; font-weight: bold;"><strong>🏗️ Chantier :</strong> {contract.chantier_id.name}</p>
-                    <p style="margin: 8px 0; font-weight: bold;"><strong>📦 Lot :</strong> {lot.name}</p>
-                </div>
-                <div>
-                    <p style="margin: 8px 0; font-weight: bold;"><strong>👷 Sous-traitant :</strong> {contract.subcontractor_id.name}</p>
-                    <p style="margin: 8px 0; font-weight: bold;"><strong>📊 Nombre de tâches :</strong> {len(planning_tasks)}</p>
-                </div>
-            </div>
-            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #20B2AA;">
-                <p style="margin: 8px 0; font-weight: bold;"><strong>📅 Période contractuelle :</strong> 
-                    {start_date.strftime('%d/%m/%Y') if start_date else 'Non définie'} 
-                    - {end_date.strftime('%d/%m/%Y') if end_date else 'Non définie'} 
-                    ({duration} jours)
-                </p>
-            </div>
-        </div>
-        
-        <!-- Rendu Gantt -->
-        <div style="margin-bottom: 35px;">
-            <h3>📈 Planning contractuel - Diagramme de Gantt</h3>
-            {gantt_html}
-        </div>
-        
-        <!-- Légende des statuts -->
-        <div style="border: 3px solid #20B2AA; border-radius: 15px; padding: 25px; background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%); margin-bottom: 35px; box-shadow: 0 4px 12px rgba(32, 178, 170, 0.15);">
-            <h3 style="text-align: center; margin: 0 0 20px 0; font-size: 24px; font-weight: bold;">🔖 Légende des statuts contractuels</h3>
-            <div style="display: flex; flex-wrap: wrap; justify-content: center; gap: 25px;">
-                <div style="text-align: center; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <span style="background-color: #6c757d; color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; display: block; margin-bottom: 8px;">Brouillon</span>
-                    <p style="margin: 0; font-size: 12px; color: #666;">Tâche en préparation</p>
-                </div>
-                <div style="text-align: center; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <span style="background-color: #17a2b8; color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; display: block; margin-bottom: 8px;">Planifiée</span>
-                    <p style="margin: 0; font-size: 12px; color: #666;">Tâche programmée</p>
-                </div>
-                <div style="text-align: center; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <span style="background-color: #ffc107; color: black; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; display: block; margin-bottom: 8px;">En cours</span>
-                    <p style="margin: 0; font-size: 12px; color: #666;">Tâche en exécution</p>
-                </div>
-                <div style="text-align: center; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <span style="background-color: #28a745; color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; display: block; margin-bottom: 8px;">Terminée</span>
-                    <p style="margin: 0; font-size: 12px; color: #666;">Tâche achevée</p>
-                </div>
-                <div style="text-align: center; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <span style="background-color: #dc3545; color: white; padding: 8px 15px; border-radius: 20px; font-size: 13px; font-weight: bold; display: block; margin-bottom: 8px;">Annulée</span>
-                    <p style="margin: 0; font-size: 12px; color: #666;">Tâche supprimée</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Notes planning -->
-        <div style="border-top: 2px solid #20B2AA; padding-top: 20px; font-size: 12px; color: #666; text-align: center; background-color: #f8f9fa; padding: 15px; border-radius: 8px;">
-            <p style="margin: 8px 0; font-weight: bold;">Ce planning est contractuel et peut être ajusté selon les contraintes du chantier.</p>
-            <p style="margin: 8px 0;">Les dates de début et fin peuvent être modifiées en accord avec toutes les parties contractantes.</p>
-            <p style="margin: 8px 0; font-style: italic;">Document contractuel - BLG GROUPE - Tous droits réservés</p>
-        </div>
-    </div>
-</body>
-</html>"""
-
-    def _create_document_page_html(self, lot, document_type, blg_images):
-        """Crée le HTML pour une page de document annexe."""
-        return f"""<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>{document_type} - {lot.name}</title>
-    <style>
-        body {{
-            font-family: 'Segoe UI', Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.6;
-            margin: 0;
-            padding: 20px;
-            color: #2c3e50;
-            background-color: #ffffff;
-        }}
-        .page {{
-            min-height: 800px;
-            max-width: 800px;
-            margin: 0 auto;
-        }}
-        
-        /* ===== HIÉRARCHIE DES TITRES ===== */
-        h1 {{
-            font-size: 28px;
-            color: #20B2AA;
-            text-align: center;
-            margin: 30px 0 25px 0;
-            padding: 15px 0;
-            border-top: 3px solid #20B2AA;
-            border-bottom: 3px solid #20B2AA;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }}
-        
-        h2 {{
-            font-size: 20px;
-            color: #1a7a7a;
-            margin: 35px 0 20px 0;
-            padding: 12px 0 8px 0;
-            border-bottom: 2px solid #20B2AA;
-            font-weight: 600;
-        }}
-        h2::before {{
-            content: ">";
-            color: #20B2AA;
-            margin-right: 10px;
-            font-size: 16px;
-        }}
-        
-        h3 {{
-            font-size: 16px;
-            color: #20B2AA;
-            margin: 25px 0 15px 0;
-            padding: 8px 0 5px 0;
-            border-bottom: 1px solid #20B2AA;
-            font-weight: 600;
-        }}
-        h3::before {{
-            content: "-";
-            color: #20B2AA;
-            margin-right: 8px;
-            font-size: 12px;
-        }}
-    </style>
-</head>
-<body>
-    <div class="page">
-        <!-- En-tête avec logos -->
-        <div style="display: flex; align-items: center; justify-content: center; padding: 20px 0; border-bottom: 2px solid #20B2AA; margin-bottom: 30px;">
-            <img src="{blg_images['logo']}" alt="Logo BLG GROUPE" style="height: 60px; margin-right: 30px;"/>
-            <div style="text-align: center;">
-                <h1>{document_type} - {lot.name}</h1>
-                <p style="color: #666; margin: 5px 0 0 0; font-size: 14px;">Document technique joint au contrat</p>
-            </div>
-            <img src="{blg_images['logo']}" alt="Logo BLG GROUPE" style="height: 60px; margin-left: 30px;"/>
-        </div>
-        
-        <!-- Message d'information -->
-        <div style="text-align: center; padding: 50px 0;">
-            <div style="background-color: #f0f8ff; border: 2px solid #20B2AA; border-radius: 10px; padding: 40px; margin: 20px 0;">
-                <h2>📄 {document_type}</h2>
-                <h3>Lot : {lot.name}</h3>
-                <p style="color: #20B2AA; font-size: 16px; margin-bottom: 20px;">
-                    Ce document fait partie intégrante du contrat de sous-traitance.
-                </p>
-                <p style="color: #20B2AA; font-weight: bold; font-size: 14px;">
-                    Document technique joint au contrat
-                </p>
-            </div>
-            
-            <div style="margin-top: 40px; color: #666; font-size: 12px;">
-                <p>Ce document est consultable dans sa version complète via les annexes numériques.</p>
-                <p>Pour toute question technique, merci de vous référer au document original.</p>
-            </div>
+            <p style="margin: 8px 0; font-style: italic;">Document contractuel consolidé - BLG GROUPE - Tous droits réservés</p>
         </div>
     </div>
 </body>

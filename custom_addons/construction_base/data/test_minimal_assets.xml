@@ -1,0 +1,266 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- =================== CLIENTS =================== -->
+        
+        <record id="test_client_1" model="res.partner">
+            <field name="name">M. et Mme Dupont</field>
+            <field name="is_company" eval="False"/>
+            <field name="email">dupont@example.com</field>
+            <field name="phone">01 23 45 67 89</field>
+            <field name="street">123 Rue de la Paix</field>
+            <field name="city">Paris</field>
+            <field name="zip">75001</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="customer_rank" eval="1"/>
+        </record>
+
+        <record id="test_client_2" model="res.partner">
+            <field name="name">SARL Immobilier Moderne</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">contact@immobilier-moderne.fr</field>
+            <field name="phone">01 98 76 54 32</field>
+            <field name="street">456 Avenue des Champs</field>
+            <field name="city">Lyon</field>
+            <field name="zip">69000</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="customer_rank" eval="1"/>
+        </record>
+
+        <!-- =================== SOUS-TRAITANTS =================== -->
+        
+        <record id="test_subcontractor_1" model="res.partner">
+            <field name="name">Électricité Pro SARL</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">contact@electricite-pro.fr</field>
+            <field name="phone">01 11 22 33 44</field>
+            <field name="street">789 Rue de l'Électricité</field>
+            <field name="city">Paris</field>
+            <field name="zip">75012</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="supplier_rank" eval="1"/>
+        </record>
+
+        <record id="test_subcontractor_2" model="res.partner">
+            <field name="name">Plomberie Express</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">info@plomberie-express.fr</field>
+            <field name="phone">01 22 33 44 55</field>
+            <field name="street">321 Avenue de la Plomberie</field>
+            <field name="city">Lyon</field>
+            <field name="zip">69001</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="supplier_rank" eval="1"/>
+        </record>
+
+        <record id="test_subcontractor_3" model="res.partner">
+            <field name="name">Maçonnerie Tradition</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">contact@maconnerie-tradition.fr</field>
+            <field name="phone">01 33 44 55 66</field>
+            <field name="street">654 Rue de la Maçonnerie</field>
+            <field name="city">Marseille</field>
+            <field name="zip">13001</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="supplier_rank" eval="1"/>
+        </record>
+
+        <record id="test_subcontractor_4" model="res.partner">
+            <field name="name">Peinture &amp; Décoration</field>
+            <field name="is_company" eval="True"/>
+            <field name="email">devis@peinture-decoration.fr</field>
+            <field name="phone">01 44 55 66 77</field>
+            <field name="street">987 Boulevard de la Peinture</field>
+            <field name="city">Toulouse</field>
+            <field name="zip">31000</field>
+            <field name="country_id" ref="base.fr"/>
+            <field name="supplier_rank" eval="1"/>
+        </record>
+
+        <!-- =================== DEVIS PRINCIPAUX =================== -->
+        
+        <record id="test_quote_1" model="sale.order">
+            <field name="name">Devis - Rénovation Appartement Paris 15ème</field>
+            <field name="partner_id" ref="test_client_1"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_quote_2" model="sale.order">
+            <field name="name">Devis - Construction Maison Individuelle Lyon</field>
+            <field name="partner_id" ref="test_client_2"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <!-- =================== LIGNES DE DEVIS =================== -->
+        
+        <record id="test_quote_line_1" model="sale.order.line">
+            <field name="order_id" ref="test_quote_1"/>
+            <field name="product_id" ref="test_product_electricity_service"/>
+            <field name="name">Installation électrique complète</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="8500.0"/>
+        </record>
+
+        <record id="test_quote_line_2" model="sale.order.line">
+            <field name="order_id" ref="test_quote_1"/>
+            <field name="product_id" ref="test_product_plumbing_service"/>
+            <field name="name">Installation plomberie complète</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="12000.0"/>
+        </record>
+
+        <record id="test_quote_line_3" model="sale.order.line">
+            <field name="order_id" ref="test_quote_1"/>
+            <field name="product_id" ref="test_product_painting_service"/>
+            <field name="name">Peinture intérieure et extérieure</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="3500.0"/>
+        </record>
+
+        <record id="test_quote_line_4" model="sale.order.line">
+            <field name="order_id" ref="test_quote_2"/>
+            <field name="product_id" ref="test_product_masonry_service"/>
+            <field name="name">Gros œuvre - Fondations et structure</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="45000.0"/>
+        </record>
+
+        <record id="test_quote_line_5" model="sale.order.line">
+            <field name="order_id" ref="test_quote_2"/>
+            <field name="product_id" ref="test_product_electricity_house_service"/>
+            <field name="name">Installation électrique maison</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="15000.0"/>
+        </record>
+
+        <record id="test_quote_line_6" model="sale.order.line">
+            <field name="order_id" ref="test_quote_2"/>
+            <field name="product_id" ref="test_product_plumbing_house_service"/>
+            <field name="name">Installation plomberie maison</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="18000.0"/>
+        </record>
+
+        <record id="test_quote_line_7" model="sale.order.line">
+            <field name="order_id" ref="test_quote_2"/>
+            <field name="product_id" ref="test_product_painting_house_service"/>
+            <field name="name">Peinture complète maison</field>
+            <field name="product_uom_qty" eval="1.0"/>
+            <field name="price_unit" eval="8000.0"/>
+        </record>
+
+        <!-- =================== DEVIS SOUS-TRAITANTS =================== -->
+        
+        <record id="test_subquote_1" model="sale.order">
+            <field name="name">Devis Électricité - Appartement Paris</field>
+            <field name="partner_id" ref="test_subcontractor_1"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_subquote_2" model="sale.order">
+            <field name="name">Devis Plomberie - Appartement Paris</field>
+            <field name="partner_id" ref="test_subcontractor_2"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_subquote_3" model="sale.order">
+            <field name="name">Devis Peinture - Appartement Paris</field>
+            <field name="partner_id" ref="test_subcontractor_4"/>
+            <field name="state">draft</field>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="validity_date" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <!-- =================== BONS DE COMMANDE =================== -->
+        
+        <record id="test_purchase_order_1" model="purchase.order">
+            <field name="name">PO/2024/001</field>
+            <field name="partner_id" ref="test_subcontractor_1"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+        </record>
+
+        <record id="test_purchase_order_2" model="purchase.order">
+            <field name="name">PO/2024/002</field>
+            <field name="partner_id" ref="test_subcontractor_2"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+        </record>
+
+        <record id="test_purchase_order_3" model="purchase.order">
+            <field name="name">PO/2024/003</field>
+            <field name="partner_id" ref="test_subcontractor_4"/>
+            <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+            <field name="state">draft</field>
+        </record>
+
+        <!-- =================== LIGNES DE BONS DE COMMANDE =================== -->
+        
+        <record id="test_purchase_line_1" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_1"/>
+            <field name="product_id" ref="test_product_electricity_service"/>
+            <field name="name">Installation électrique complète - Appartement Paris</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="7000.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_purchase_line_2" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_1"/>
+            <field name="product_id" ref="test_product_electrical_material"/>
+            <field name="name">Matériel électrique</field>
+            <field name="product_qty" eval="10.0"/>
+            <field name="price_unit" eval="120.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_purchase_line_3" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_2"/>
+            <field name="product_id" ref="test_product_plumbing_service"/>
+            <field name="name">Installation plomberie complète - Appartement Paris</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="10000.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_purchase_line_4" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_2"/>
+            <field name="product_id" ref="test_product_plumbing_material"/>
+            <field name="name">Matériel plomberie</field>
+            <field name="product_qty" eval="15.0"/>
+            <field name="price_unit" eval="160.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_purchase_line_5" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_3"/>
+            <field name="product_id" ref="test_product_painting_service"/>
+            <field name="name">Peinture intérieure et extérieure - Appartement Paris</field>
+            <field name="product_qty" eval="1.0"/>
+            <field name="price_unit" eval="2800.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+        </record>
+
+        <record id="test_purchase_line_6" model="purchase.order.line">
+            <field name="order_id" ref="test_purchase_order_3"/>
+            <field name="product_id" ref="test_product_paint_material"/>
+            <field name="name">Peinture et accessoires</field>
+            <field name="product_qty" eval="20.0"/>
+            <field name="price_unit" eval="40.0"/>
+            <field name="date_planned" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
+        </record>
+
+    </data>
+</odoo>

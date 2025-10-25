@@ -65,10 +65,11 @@ class DocumentUploadWizard(models.TransientModel):
 
     def action_generate_subcontractor_contracts(self):
         """Lance le wizard de génération de contrats de sous-traitance."""
+        # Rediriger vers le wizard de génération de contrats existant
         return {
             'type': 'ir.actions.act_window',
             'name': 'Générer contrats de sous-traitance',
-            'res_model': 'construction.contract.preview.wizard',
+            'res_model': 'construction.contract.generation.wizard',
             'view_mode': 'form',
             'target': 'new',
             'context': {

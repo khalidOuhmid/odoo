@@ -119,6 +119,14 @@ class ConstructionQuoteWizard(models.TransientModel):
         """Initialise les valeurs par défaut du wizard."""
         res = super().default_get(fields_list)
         
+        # Auto-remplir les lots depuis le chantier
+        chantier_id = self.env.context.get('default_chantier_id')
+        if chantier_id and 'lot_ids' in fields_list:
+            chantier = self.env['construction.chantier'].browse(chantier_id)
+            if chantier.lots_ids:
+                res['lot_ids'] = [(6, 0, chantier.lots_ids.ids)]
+        
+        # Si des lots sont fournis dans le contexte, les utiliser
         if 'lot_ids' in fields_list and self.env.context.get('default_lot_ids'):
             res['lot_ids'] = self.env.context['default_lot_ids']
         
@@ -195,11 +203,83 @@ class ConstructionQuoteWizard(models.TransientModel):
                 "avant d'ajouter des produits."
             ))
         
-        dialog = self.env['construction.product.dialog'].create({
+        # Pré-initialiser les valeurs par défaut
+        product = self.env['product.product'].browse(product_id)
+        dialog_vals = {
             'quote_wizard_id': self.id,
             'product_id': product_id,
             'margin_percent': self.default_margin_percent,
-        })
+        }
+        
+        # Auto-assigner l'unité de mesure du produit
+        if product.uom_id:
+            dialog_vals['uom_id'] = product.uom_id.id
+        
+        # Auto-assigner le lot si le produit en a un qui correspond aux lots du wizard
+        if hasattr(product, 'lot_ids') and product.lot_ids:
+            # Prendre le premier lot du produit qui est aussi dans les lots du wizard
+            common_lots = product.lot_ids & self.lot_ids
+            if common_lots:
+                dialog_vals['lot_id'] = common_lots[0].id
+            else:
+                # Si aucun lot commun, prendre le premier lot du produit
+                dialog_vals['lot_id'] = product.lot_ids[0].id
+        elif self.lot_ids:
+            # Sinon, prendre le premier lot du wizard
+            dialog_vals['lot_id'] = self.lot_ids[0].id
+        
+        dialog = self.env['construction.product.dialog'].create(dialog_vals)
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Ajouter : %s') % dialog.product_name,
+            'res_model': 'construction.product.dialog',
+            'res_id': dialog.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+        
+    def action_open_product_from_catalog(self):
+        """Open the selected catalog product in edit mode (product.product form)."""
+        self.ensure_one()
+        product_id = self.env.context.get('product_id')
+        if not product_id:
+            return False
+        product = self.env['product.product'].browse(product_id)
+        if not product:
+            return False
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Edit Product - %s') % product.display_name,
+            'res_model': 'product.product',
+            'res_id': product.id,
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_categ_id': product.categ_id.id,
+                'form_view_initial_mode': 'edit',
+            }
+        }
+
+
+        # Auto-assigner l'unité de mesure du produit
+        if product.uom_id:
+            dialog_vals['uom_id'] = product.uom_id.id
+        
+        # Auto-assigner le lot si le produit en a un qui correspond aux lots du wizard
+        if hasattr(product, 'lot_ids') and product.lot_ids:
+            # Prendre le premier lot du produit qui est aussi dans les lots du wizard
+            common_lots = product.lot_ids & self.lot_ids
+            if common_lots:
+                dialog_vals['lot_id'] = common_lots[0].id
+            else:
+                # Si aucun lot commun, prendre le premier lot du produit
+                dialog_vals['lot_id'] = product.lot_ids[0].id
+        elif self.lot_ids:
+            # Sinon, prendre le premier lot du wizard
+            dialog_vals['lot_id'] = self.lot_ids[0].id
+        
+        dialog = self.env['construction.product.dialog'].create(dialog_vals)
         
         return {
             'type': 'ir.actions.act_window',
@@ -239,7 +319,7 @@ class ConstructionQuoteWizard(models.TransientModel):
         }
 
     def action_confirm_selection(self):
-        """Confirmer et ajouter les produits au devis."""
+        """Confirm and add products to the quote."""
         if not self.selected_line_ids.filtered('quantity'):
             raise ValidationError(_("Veuillez sélectionner au moins un produit."))
         
@@ -257,7 +337,7 @@ class ConstructionQuoteWizard(models.TransientModel):
         
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Assistant de création de devis - %s') % self.chantier_id.name,
+            'name': _('Assistant de Création de Devis - %s') % self.chantier_id.name,
             'res_model': 'construction.quote.wizard',
             'res_id': self.id,
             'view_mode': 'form',
@@ -269,12 +349,12 @@ class ConstructionQuoteWizard(models.TransientModel):
         }
 
     def action_finalize_quote(self):
-        """Finaliser le devis et retourner au devis."""
-        # Ajouter les produits sélectionnés s'il y en a
+        """Finalize the quote and return to the quote."""
+        # Add selected products if any
         if self.selected_line_ids.filtered('quantity'):
             self.action_confirm_selection()
         
-        # Retourner vers le devis créé
+        # Return to the created quote
         return {
             'type': 'ir.actions.act_window',
             'name': _('Devis %s') % self.sale_order_id.name,
@@ -289,9 +369,9 @@ class ConstructionQuoteWizard(models.TransientModel):
         }
 
     def action_cancel_wizard(self):
-        """Annuler le wizard avec confirmation si nécessaire."""
+        """Cancel the wizard with confirmation if necessary."""
         if self.selected_line_ids:
-            # Il y a des produits sélectionnés, demander confirmation
+            # There are selected products, ask for confirmation
             return {
                 'type': 'ir.actions.act_window',
                 'name': _('Attention - Progression en cours'),
@@ -303,15 +383,15 @@ class ConstructionQuoteWizard(models.TransientModel):
                 }
             }
         else:
-            # Pas de progression, fermer directement
+            # No progress, close directly
             return {'type': 'ir.actions.act_window_close'}
 
     def action_safe_close(self):
-        """Fermeture sécurisée avec vérification de progression."""
+        """Safe closure with progress verification."""
         return self.action_cancel_wizard()
 
     def _return_to_sale_order(self):
-        """Retourne vers le devis de vente."""
+        """Return to the sale order."""
         return {
             'type': 'ir.actions.act_window',
             'res_model': 'sale.order',
@@ -321,13 +401,13 @@ class ConstructionQuoteWizard(models.TransientModel):
         }
 
     def action_view_selection(self):
-        """Afficher la sélection dans un popup"""
+        """Display the selection in a popup"""
         if not self.selected_line_ids:
             raise ValidationError(_("Aucun produit sélectionné à afficher."))
         
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Ma sélection - %s') % self.chantier_id.name,
+            'name': _('Ma Sélection - %s') % self.chantier_id.name,
             'res_model': 'construction.quote.line',
             'view_mode': 'list,form',
             'domain': [('wizard_id', '=', self.id)],
@@ -338,12 +418,12 @@ class ConstructionQuoteWizard(models.TransientModel):
         }
 
     def action_clear_selection(self):
-        """Vider la sélection"""
+        """Clear the selection"""
         self.selected_line_ids.unlink()
         return self._reload_wizard()
 
     def action_refresh_products(self):
-        """Actualiser la liste des produits"""
+        """Refresh the product list"""
         self._compute_available_products()
         return self._reload_wizard()
 
@@ -389,11 +469,19 @@ class ConstructionQuoteWizard(models.TransientModel):
 
     def _create_order_line(self, quote_line, sequence):
         """Crée une ligne de commande à partir d'une ligne du wizard."""
+        # Vérifier la compatibilité des unités de mesure
+        product = quote_line.product_id
+        selected_uom = quote_line.uom_id
+        
+        # Si l'unité sélectionnée n'est pas compatible avec le produit, utiliser l'unité du produit
+        if selected_uom.category_id != product.uom_id.category_id:
+            selected_uom = product.uom_id
+        
         values = {
             'order_id': self.sale_order_id.id,
             'product_id': quote_line.product_id.id,
             'product_uom_qty': quote_line.quantity,
-            'product_uom': quote_line.uom_id.id,
+            'product_uom': selected_uom.id,
             'price_unit': quote_line.price_unit,
             'sequence': sequence,
         }
@@ -555,6 +643,16 @@ class ProductAddDialog(models.TransientModel):
             else:
                 dialog.available_lot_ids = self.env['construction.lot']
     
+    @api.onchange('product_id')
+    def _onchange_product_id(self):
+        """Filtrer les unités de mesure compatibles avec le produit."""
+        if self.product_id and self.product_id.uom_id:
+            # Réinitialiser l'unité de mesure si elle n'est pas compatible
+            if self.uom_id and self.uom_id.category_id != self.product_id.uom_id.category_id:
+                self.uom_id = self.product_id.uom_id
+            elif not self.uom_id:
+                self.uom_id = self.product_id.uom_id
+    
     @api.depends('base_price', 'margin_percent')
     def _compute_unit_price(self):
         """Calcule le prix unitaire final = coût * (1 + marge)."""
@@ -576,20 +674,6 @@ class ProductAddDialog(models.TransientModel):
         
         if dialog.quote_wizard_id:
             dialog._compute_available_lots_for_dialog()
-            # Auto-assigner le lot unique ou le premier disponible
-            if len(dialog.available_lot_ids) == 1:
-                dialog.lot_id = dialog.available_lot_ids[0]
-            elif not dialog.lot_id and dialog.available_lot_ids:
-                dialog.lot_id = dialog.available_lot_ids[0]
-        
-        # Initialiser l'unité de mesure du produit
-        if dialog.product_id and dialog.product_id.uom_id:
-            dialog.uom_id = dialog.product_id.uom_id
-        elif not dialog.uom_id:
-            # Unité par défaut
-            default_uom = self.env['uom.uom'].search([('name', '=', 'Units')], limit=1)
-            if default_uom:
-                dialog.uom_id = default_uom
         
         return dialog
     
@@ -958,6 +1042,15 @@ class ProductCreator(models.TransientModel):
         string='Lots associés',
         help="Lots pour lesquels ce produit est utilisé"
     )
+    
+    # Champ virtuel pour l'interface utilisateur (sélection unique)
+    lot_id = fields.Many2one(
+        'construction.lot',
+        string='Lot associé',
+        compute='_compute_lot_id',
+        inverse='_inverse_lot_id',
+        help="Lot pour lequel ce produit est utilisé"
+    )
 
     @api.model
     def create(self, vals):
@@ -970,6 +1063,20 @@ class ProductCreator(models.TransientModel):
         
         return creator
 
+    @api.depends('lot_ids')
+    def _compute_lot_id(self):
+        """Synchronise lot_id avec le premier lot de lot_ids."""
+        for rec in self:
+            rec.lot_id = rec.lot_ids[:1] if rec.lot_ids else False
+    
+    def _inverse_lot_id(self):
+        """Synchronise lot_ids avec lot_id."""
+        for rec in self:
+            if rec.lot_id:
+                rec.lot_ids = [(6, 0, [rec.lot_id.id])]
+            else:
+                rec.lot_ids = [(5, 0, 0)]
+    
     @api.depends('standard_price', 'quote_wizard_id.default_margin_percent')
     def _compute_computed_sale_price(self):
         """Calcule le prix de vente = coût × (1 + marge)."""
@@ -1009,9 +1116,10 @@ class ProductCreator(models.TransientModel):
             'sale_ok': True,
             'purchase_ok': False,
             'type': 'consu',
+            'lot_ids': [(6, 0, self.lot_ids.ids)] if self.lot_ids else [],
         }
         
-        self.env['product.product'].create(product_vals)
+        product = self.env['product.product'].create(product_vals)
         self.quote_wizard_id.action_refresh_products()
         
         return self._return_to_wizard()
@@ -1032,7 +1140,7 @@ class ProductCreator(models.TransientModel):
         }
 
     def _generate_default_code_from_lot(self):
-        """Génère un code produit basé sur le lot."""
+        """Generate a product code based on the lot."""
         lot = self.lot_ids[:1]
         if not lot and self.quote_wizard_id:
             lot = self.quote_wizard_id.lot_ids[:1]
@@ -1041,18 +1149,21 @@ class ProductCreator(models.TransientModel):
             return None
 
         import re
+        import time
         base = (lot.name or '').upper().strip()
         base = re.sub(r'\s+', '-', base)
         base = re.sub(r'[^A-Z0-9\-]', '', base)
-        prefix = base or 'PROD'
+        prefix = (base or 'PROD')[:10]  # Limit prefix length
 
-        index = 1
-        while True:
+        # Try to find a unique code with safety limit
+        for index in range(1, 1000):  # Safety limit to prevent infinite loop
             candidate = f"{prefix}-{index:03d}"
             exists = self.env['product.product'].search_count([('default_code', '=', candidate)])
             if not exists:
                 return candidate
-            index += 1
+        
+        # Fallback if all codes are taken
+        return f"PROD-{int(time.time())}"
 
     def _get_default_uom_id(self):
         """Retourne l'unité de mesure par défaut."""

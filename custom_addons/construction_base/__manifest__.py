@@ -50,6 +50,10 @@
         'data/construction_email_config.xml',
         'data/construction_auto_creation_email_template.xml',
         
+        # Données de test (version minimale compatible)
+        'data/test_products.xml',
+        'data/test_minimal_assets.xml',
+        
         # Menus et actions nécessaires avant certaines vues
         'views/menu.xml',
         'wizard/views/invoice_schedule_wizard_views.xml',
