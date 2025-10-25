@@ -634,3 +634,4 @@ class TestChantierCompute(TransactionCase):
             "Schedule visit should be shown for active state"
         )
 
+

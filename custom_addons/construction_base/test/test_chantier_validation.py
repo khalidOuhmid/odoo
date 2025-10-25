@@ -593,3 +593,4 @@ class TestChantierValidation(TransactionCase):
         self.assertFalse(ok, "Should fail without main quote")
         self.assertIn('devis principal', message.lower(), "Message should mention main quote")
 
+

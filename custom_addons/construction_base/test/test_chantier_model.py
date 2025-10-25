@@ -332,3 +332,4 @@ class TestChantierModel(TransactionCase):
             "Name should be updated in copy"
         )
 
+
