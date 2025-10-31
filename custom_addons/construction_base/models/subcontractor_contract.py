@@ -23,11 +23,15 @@ class SubcontractorContract(models.Model):
     contract_number = fields.Char('Numéro', required=True, copy=False, readonly=True)
 
     # Relations
-    chantier_id = fields.Many2one('construction.chantier', 'Chantier', required=True, tracking=True)
-    subcontractor_id = fields.Many2one('res.partner', 'Sous-traitant', required=True, tracking=True)
-    lot_ids = fields.Many2many('construction.lot', 'contract_lot_rel', 'contract_id', 'lot_id', 'Lots concernés')
-    company_id = fields.Many2one('res.company', 'Entreprise', default=lambda self: self.env.company)
-    lot_names = fields.Char(string='Lots (noms)', compute='_compute_lot_names', store=False)
+    chantier_id = fields.Many2one('construction.chantier', 'Construction Site', required=True, tracking=True)
+    subcontractor_id = fields.Many2one('res.partner', 'Subcontractor', required=True, tracking=True)
+    lot_ids = fields.Many2many('construction.lot', 'contract_lot_rel', 'contract_id', 'lot_id', 'Related Lots')
+    company_id = fields.Many2one('res.company', 'Company', default=lambda self: self.env.company)
+    lot_names = fields.Char(string='Lot Names', compute='_compute_lot_names', store=False)
+    
+    # Multi-lot support
+    is_multi_lot = fields.Boolean('Multi-Lot Contract', compute='_compute_multi_lot_info', store=True)
+    lot_count = fields.Integer('Lot Count', compute='_compute_multi_lot_info', store=True)
 
     # Conditions contractuelles
     start_date = fields.Date('Date de début', required=True, default=fields.Date.today, tracking=True)
@@ -197,9 +201,16 @@ class SubcontractorContract(models.Model):
         
     @api.depends('lot_ids')
     def _compute_lot_names(self):
-        """Concatène les noms des lots pour l’affichage dans les mails / PDF."""
+        """Concatenate lot names for display in emails/PDF."""
         for rec in self:
             rec.lot_names = ', '.join(rec.lot_ids.mapped('name')) if rec.lot_ids else ''
+
+    @api.depends('lot_ids')
+    def _compute_multi_lot_info(self):
+        """Compute multi-lot contract information."""
+        for rec in self:
+            rec.lot_count = len(rec.lot_ids)
+            rec.is_multi_lot = len(rec.lot_ids) > 1
 
     def _generate_access_token(self):
         self.ensure_one()
