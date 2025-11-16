@@ -164,19 +164,34 @@
 
     <div class="contract-footer">
         <p>Fait en deux exemplaires originaux,</p>
-        <p>À _____________, le {{ contract.date }}</p>
+        <p>À {% if subcontractor_signature and subcontractor_signature.signature_date and subcontractor.city %}{{ subcontractor.city }}{% elif company.city %}{{ company.city }}{% else %}_____________{% endif %}, le {% if subcontractor_signature and subcontractor_signature.signature_date %}{{ subcontractor_signature.signature_date }}{% else %}{{ contract.date }}{% endif %}</p>
 
         <div class="signature-block">
             <div class="signature-left">
                 <p><strong>Pour l'Entrepreneur Principal</strong></p>
-                <p>Nom et signature :</p>
-                <br/><br/>
+                <p>{{ company.name }}</p>
+                {% if company_signature %}
+                    <p><strong>Signature électronique :</strong></p>
+                    <img src="{{ company_signature.image_data }}" alt="Signature de l'entreprise" style="max-width: 250px; max-height: 100px; border: 1px solid #ddd; margin-top: 10px;"/>
+                {% else %}
+                    <p>Signature électronique</p>
+                    <br/><br/>
+                {% endif %}
             </div>
 
             <div class="signature-right">
                 <p><strong>Pour le Sous-Traitant</strong></p>
                 <p>{{ subcontractor.name }}</p>
-                <p>Signature électronique</p>
+                {% if subcontractor_signature %}
+                    <p><strong>Signature électronique :</strong></p>
+                    <img src="{{ subcontractor_signature.image_data }}" alt="Signature du sous-traitant" style="max-width: 250px; max-height: 100px; border: 1px solid #ddd; margin-top: 10px;"/>
+                    <p style="margin-top: 5px; font-size: 10px; color: #666;">
+                        Signé le {{ subcontractor_signature.signature_date }}
+                    </p>
+                {% else %}
+                    <p>Signature électronique</p>
+                    <br/><br/>
+                {% endif %}
             </div>
         </div>
     </div>

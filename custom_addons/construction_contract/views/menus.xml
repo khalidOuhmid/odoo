@@ -16,13 +16,21 @@
               sequence="10"
               groups="group_construction_pilote,group_construction_comptable,group_construction_admin"/>
 
-    <!-- Templates Submenu (Admin only) -->
+    <!-- Templates Submenu -->
     <menuitem id="menu_construction_contract_template"
-              name="Contract Templates"
+              name="Modèles de Contrat"
               parent="menu_construction_contract_root"
               action="action_construction_contract_template"
               sequence="20"
-              groups="group_construction_admin"/>
+              groups="group_construction_pilote,group_construction_comptable,group_construction_admin"/>
+
+    <!-- URSSAF Codes Submenu -->
+    <menuitem id="menu_construction_urssaf_code"
+              name="Codes URSSAF"
+              parent="menu_construction_contract_root"
+              action="action_urssaf_code"
+              sequence="30"
+              groups="group_construction_pilote,group_construction_comptable,group_construction_admin"/>
 
     <!-- Configuration Submenu -->
     <menuitem id="menu_construction_contract_config"

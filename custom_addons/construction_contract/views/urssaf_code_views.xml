@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Tree view for URSSAF codes -->
+    <record id="view_urssaf_code_tree" model="ir.ui.view">
+        <field name="name">construction.urssaf.code.tree</field>
+        <field name="model">construction.urssaf.code</field>
+        <field name="arch" type="xml">
+            <list string="Codes URSSAF">
+                <field name="code" string="Code"/>
+                <field name="name" string="Libellé"/>
+                <field name="category" string="Catégorie"/>
+                <field name="rate" string="Taux (%)" optional="show"/>
+                <field name="legal_reference" string="Référence légale" optional="hide"/>
+                <field name="effective_date" string="Date d'effet" optional="hide"/>
+                <field name="end_date" string="Date de fin" optional="hide"/>
+                <field name="active" string="Actif" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+    
+    <!-- Form view for URSSAF codes -->
+    <record id="view_urssaf_code_form" model="ir.ui.view">
+        <field name="name">construction.urssaf.code.form</field>
+        <field name="model">construction.urssaf.code</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form string="Code URSSAF">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <widget name="web_ribbon" title="Archivé" bg_color="bg-danger" 
+                                invisible="active == True"/>
+                    </div>
+                    
+                    <group>
+                        <group string="Informations principales">
+                            <field name="code" placeholder="Ex: 001"/>
+                            <field name="name" placeholder="Ex: Cotisation maladie"/>
+                            <field name="category"/>
+                            <field name="rate"/>
+                            <field name="active"/>
+                        </group>
+                        
+                        <group string="Références et dates">
+                            <field name="legal_reference" placeholder="Ex: Article L243-1 du CSS"/>
+                            <field name="effective_date"/>
+                            <field name="end_date"/>
+                        </group>
+                    </group>
+                    
+                    <group string="Description">
+                        <field name="description" nolabel="1" 
+                               placeholder="Description détaillée du code URSSAF..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Search view for URSSAF codes -->
+    <record id="view_urssaf_code_search" model="ir.ui.view">
+        <field name="name">construction.urssaf.code.search</field>
+        <field name="model">construction.urssaf.code</field>
+        <field name="type">search</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher codes URSSAF">
+                <field name="code" string="Code" 
+                       filter_domain="[('code', 'ilike', self)]"/>
+                <field name="name" string="Libellé" 
+                       filter_domain="[('name', 'ilike', self)]"/>
+                <field name="description" string="Description" 
+                       filter_domain="[('description', 'ilike', self)]"/>
+                <field name="legal_reference" string="Référence légale" 
+                       filter_domain="[('legal_reference', 'ilike', self)]"/>
+                
+                <separator/>
+                
+                <filter string="Cotisations" name="filter_cotisation" 
+                        domain="[('category', '=', 'cotisation')]"/>
+                <filter string="Exonérations" name="filter_exoneration" 
+                        domain="[('category', '=', 'exoneration')]"/>
+                <filter string="Réductions" name="filter_reduction" 
+                        domain="[('category', '=', 'reduction')]"/>
+                <filter string="Autres" name="filter_autre" 
+                        domain="[('category', '=', 'autre')]"/>
+                
+                <separator/>
+                
+                <filter string="Actifs" name="filter_active" 
+                        domain="[('active', '=', True)]"/>
+                <filter string="Archivés" name="filter_inactive" 
+                        domain="[('active', '=', False)]"/>
+                
+                <separator/>
+                
+                <filter string="En vigueur" name="filter_current" 
+                        domain="['|', ('effective_date', '=', False), 
+                                 ('effective_date', '&lt;=', context_today().strftime('%Y-%m-%d')),
+                                 '|', ('end_date', '=', False), 
+                                 ('end_date', '&gt;=', context_today().strftime('%Y-%m-%d'))]"/>
+                
+                <group expand="0" string="Grouper par">
+                    <filter string="Catégorie" name="group_category" 
+                            context="{'group_by': 'category'}"/>
+                    <filter string="Date d'effet" name="group_effective_date" 
+                            context="{'group_by': 'effective_date'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+    
+    <!-- Action for URSSAF codes -->
+    <record id="action_urssaf_code" model="ir.actions.act_window">
+        <field name="name">Codes URSSAF</field>
+        <field name="res_model">construction.urssaf.code</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créer un nouveau code URSSAF
+            </p>
+            <p>
+                Les codes URSSAF permettent de référencer les cotisations sociales,
+                exonérations et réductions applicables dans les contrats de sous-traitance.
+            </p>
+        </field>
+    </record>
+    
+</odoo>

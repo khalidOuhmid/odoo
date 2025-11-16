@@ -155,7 +155,7 @@ class DeliverableSelectorWizard(models.TransientModel):
             'type': 'ir.actions.act_window',
             'name': _('Deliverables'),
             'res_model': 'construction.contract.deliverable',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('contract_id', '=', self.contract_id.id)],
             'context': {'default_contract_id': self.contract_id.id},
         }

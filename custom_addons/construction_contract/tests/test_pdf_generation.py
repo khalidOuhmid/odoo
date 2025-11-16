@@ -347,3 +347,4 @@ class TestPDFGeneration(common.TransactionCase):
             "Hash should change when template content changes"
         )
 
+

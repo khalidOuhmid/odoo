@@ -58,11 +58,13 @@
         'data/email_templates.xml',
         'data/sms_templates.xml',
         'data/default_contract_template.xml',
+        'data/urssaf_codes.xml',
 
         # Views
         'views/contract_views.xml',
         'views/contract_template_views.xml',
         'views/chantier_views.xml',
+        'views/urssaf_code_views.xml',
         'views/menus.xml',
 
         # Wizards
@@ -81,7 +83,11 @@
 
     # Frontend assets
     'assets': {
-        'web.assets_backend': [],
+        'web.assets_backend': [
+            'construction_contract/static/src/js/urssaf_code_selector.js',
+            'construction_contract/static/src/xml/urssaf_code_selector.xml',
+            'construction_contract/static/src/css/urssaf_code_selector.css',
+        ],
         'construction_contract.assets_template_editor': [
             'construction_contract/static/src/lib/grapesjs/grapes.min.js',
             'construction_contract/static/src/lib/grapesjs/grapes.min.css',
@@ -90,11 +96,8 @@
             'construction_contract/static/src/scss/template_editor.scss',
         ],
         'construction_contract.assets_signature_portal': [
-            'construction_contract/static/src/lib/pdfjs/pdf.min.js',
-            'construction_contract/static/src/lib/pdfjs/pdf.worker.min.js',
-            'construction_contract/static/src/js/pdf_viewer.js',
-            'construction_contract/static/src/js/signature_pad.js',
-            'construction_contract/static/src/js/page_validator.js',
+            # Note: JavaScript files are loaded directly in template to avoid AMD wrapping issues
+            # Only CSS is loaded via assets
             'construction_contract/static/src/scss/signature_portal.scss',
         ],
         'construction_contract.assets_contract_builder': [

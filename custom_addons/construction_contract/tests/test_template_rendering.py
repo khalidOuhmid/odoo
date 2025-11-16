@@ -437,3 +437,4 @@ class TestTemplateRendering(common.TransactionCase):
         )
         self.assertIsNotNone(html)
 
+

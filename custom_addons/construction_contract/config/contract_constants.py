@@ -26,6 +26,7 @@ AUTHENTICATION_METHODS = [
 DELIVERABLE_TYPES = [
     ('planning_general', 'General Planning'),
     ('planning_subcontractor', 'Subcontractor Planning'),
+    ('purchase_order', 'Purchase Order'),
     ('technical_doc', 'Technical Documentation'),
     ('insurance', 'Insurance Certificate'),
     ('urssaf', 'URSSAF Certificate'),

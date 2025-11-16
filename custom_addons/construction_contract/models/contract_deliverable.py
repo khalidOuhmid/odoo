@@ -105,6 +105,18 @@ class ConstructionContractDeliverable(models.Model):
         help="If checked, this document will be annexed to the contract PDF"
     )
 
+    merge_in_contract = fields.Boolean(
+        string='Merge in Contract',
+        default=False,
+        help="If checked, this document will be merged into the main contract PDF"
+    )
+
+    merge_order = fields.Integer(
+        string='Merge Order',
+        default=10,
+        help="Order of appearance in the merged contract (lower numbers appear first)"
+    )
+
     is_generated = fields.Boolean(
         string='Auto-Generated',
         default=False,

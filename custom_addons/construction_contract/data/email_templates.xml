@@ -58,7 +58,7 @@
         </p>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a href="${ctx.get('portal_url', '#')}"
+            <a href="${object.portal_url or '#'}"
                style="display: inline-block; padding: 15px 40px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
                 📄 Review and Sign Contract
             </a>
@@ -128,7 +128,7 @@
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-            <a href="${ctx.get('portal_url', '#')}"
+            <a href="${object.portal_url or '#'}"
                style="display: inline-block; padding: 15px 40px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
                 📄 Sign Now
             </a>

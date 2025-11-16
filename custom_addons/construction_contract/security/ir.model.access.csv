@@ -24,3 +24,6 @@ access_contract_wizard_pilote,contract.wizard.pilote,model_contract_creation_wiz
 access_contract_wizard_admin,contract.wizard.admin,model_contract_creation_wizard,group_construction_admin,1,1,1,1
 access_deliverable_wizard_pilote,deliverable.wizard.pilote,model_deliverable_selector_wizard,group_construction_pilote,1,1,1,1
 access_deliverable_wizard_admin,deliverable.wizard.admin,model_deliverable_selector_wizard,group_construction_admin,1,1,1,1
+access_urssaf_code_pilote,urssaf.code.pilote,model_construction_urssaf_code,group_construction_pilote,1,0,0,0
+access_urssaf_code_comptable,urssaf.code.comptable,model_construction_urssaf_code,group_construction_comptable,1,0,0,0
+access_urssaf_code_admin,urssaf.code.admin,model_construction_urssaf_code,group_construction_admin,1,1,1,1

@@ -5,7 +5,7 @@ Main model for subcontractor contracts
 Handles contract lifecycle, PDF generation, and signature workflow
 """
 
-from odoo import models, fields, api, _
+from odoo import models, fields, api, _, http
 from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta
 import base64
@@ -214,6 +214,12 @@ class ConstructionContract(models.Model):
         string='Related Purchase Orders',
         help="Purchase orders linked to selected lots and subcontractor"
     )
+    
+    purchase_order_count = fields.Integer(
+        string='Purchase Order Count',
+        compute='_compute_purchase_orders',
+        store=True
+    )
 
     # ============================================================
     # TEMPLATE & PDF GENERATION
@@ -294,6 +300,11 @@ class ConstructionContract(models.Model):
         copy=False,
         index=True,
         help="Unique token for secure portal access"
+    )
+    portal_url = fields.Char(
+        string='Portal URL',
+        compute='_compute_portal_url',
+        help="Full URL for accessing the contract signature portal"
     )
 
     token_expiry_date = fields.Datetime(
@@ -384,8 +395,10 @@ class ConstructionContract(models.Model):
                     ('lot_ids', 'in', contract.lot_ids.ids),
                     ('partner_id', '=', contract.subcontractor_id.id),
                 ])
+                contract.purchase_order_count = len(contract.purchase_order_ids)
             else:
                 contract.purchase_order_ids = False
+                contract.purchase_order_count = 0
 
     @api.depends('name')
     def _compute_pdf_filename(self):
@@ -404,6 +417,18 @@ class ConstructionContract(models.Model):
                 contract.certificate_filename = f"{contract.name.replace('/', '_')}_certificate.pdf"
             else:
                 contract.certificate_filename = 'certificate.pdf'
+
+    @api.depends('access_token')
+    def _compute_portal_url(self):
+        """
+        Generate the full portal URL for contract signature
+        """
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        for record in self:
+            if record.id and record.access_token:
+                record.portal_url = f"{base_url}/my/contract/{record.id}/sign?access_token={record.access_token}"
+            else:
+                record.portal_url = False
 
     @api.depends('pdf_document')
     def _compute_pdf_page_count(self):
@@ -458,10 +483,20 @@ class ConstructionContract(models.Model):
         # Subscribe followers
         contract.message_subscribe(partner_ids=[contract.subcontractor_id.id])
 
+        # Update template contract count
+        if contract.template_id:
+            contract.template_id._compute_contract_count()
+
         return contract
 
     def write(self, vals):
         """Override write to track important changes"""
+        # Track old template_id if it's being changed
+        old_templates = {}
+        if 'template_id' in vals:
+            for contract in self:
+                old_templates[contract.id] = contract.template_id
+
         result = super(ConstructionContract, self).write(vals)
 
         # Log important state changes
@@ -472,14 +507,40 @@ class ConstructionContract(models.Model):
                     message_type='notification'
                 )
 
+        # Update template contract counts if template changed
+        if 'template_id' in vals:
+            templates_to_update = set()
+            for contract in self:
+                # Add old template
+                if contract.id in old_templates and old_templates[contract.id]:
+                    templates_to_update.add(old_templates[contract.id])
+                # Add new template
+                if contract.template_id:
+                    templates_to_update.add(contract.template_id)
+            
+            # Update all affected templates
+            for template in templates_to_update:
+                template._compute_contract_count()
+
         return result
 
     def unlink(self):
         """Prevent deletion of signed contracts"""
+        # Store templates before deletion
+        templates_to_update = set()
         for contract in self:
             if contract.state == 'signed':
                 raise UserError(_("Cannot delete a signed contract. Archive it instead."))
-        return super(ConstructionContract, self).unlink()
+            if contract.template_id:
+                templates_to_update.add(contract.template_id)
+        
+        result = super(ConstructionContract, self).unlink()
+        
+        # Update template contract counts
+        for template in templates_to_update:
+            template._compute_contract_count()
+        
+        return result
 
     # ============================================================
     # CONSTRAINTS & VALIDATIONS
@@ -668,22 +729,64 @@ class ConstructionContract(models.Model):
         """
         Generate PDF from template using Jinja2
         Delegates to PDF generation service
+        Includes company signature (from Odoo or default file) in the PDF
+        Merges with deliverable attachments if configured
         """
         self.ensure_one()
 
-        if self.state not in ['draft']:
-            raise UserError(_("PDF can only be generated in Draft state."))
+        if self.state not in ['draft', 'generated']:
+            raise UserError(_("PDF can only be generated in Draft or Generated state."))
 
         # Call PDF generation service
+        # Company signature will be automatically loaded by template renderer
         pdf_service = self.env['construction.contract.pdf.generator']
         pdf_service.generate_pdf(self)
+        
+        _logger.info(f"PDF generated for contract {self.name}, state={self.state}, has_pdf={bool(self.pdf_document)}")
 
-        self.write({'state': 'generated'})
-
-        self.message_post(
-            body=_("Contract PDF generated successfully."),
-            message_type='notification'
+        # Check if there are deliverables to merge
+        deliverables_to_merge = self.deliverable_ids.filtered(
+            lambda d: d.merge_in_contract and d.document
         )
+        
+        if deliverables_to_merge:
+            _logger.info(
+                f"Merging {len(deliverables_to_merge)} deliverables into contract {self.name}: "
+                f"{', '.join(deliverables_to_merge.mapped('name'))}"
+            )
+            
+            try:
+                # Call PDF merger service
+                merger_service = self.env['construction.contract.pdf.merger']
+                merged_pdf = merger_service.merge_contract_with_attachments(self)
+                
+                # Update contract with merged PDF
+                self.write({
+                    'pdf_document': base64.b64encode(merged_pdf)
+                })
+                
+                _logger.info(f"✓ PDF merged successfully for contract {self.name}")
+                
+                self.message_post(
+                    body=_("Contract PDF generated and merged with %d attachments.") % len(deliverables_to_merge),
+                    message_type='notification'
+                )
+            except Exception as e:
+                _logger.error(f"PDF merge failed for contract {self.name}: {e}", exc_info=True)
+                # Don't fail the whole generation, just warn
+                self.message_post(
+                    body=_("Contract PDF generated but merge failed: %s") % str(e),
+                    message_type='notification'
+                )
+        else:
+            self.message_post(
+                body=_("Contract PDF generated successfully."),
+                message_type='notification'
+            )
+
+        # Only change state if currently draft
+        if self.state == 'draft':
+            self.write({'state': 'generated'})
 
         return {
             'type': 'ir.actions.client',
@@ -789,12 +892,40 @@ class ConstructionContract(models.Model):
     def action_mark_signed(self):
         """
         Mark contract as signed (called after successful signature)
-        Generate certificate of completion
+        Generate certificate of completion and regenerate PDF with signature
         """
         self.ensure_one()
 
         if self.state not in ['in_progress']:
             raise UserError(_("Contract must be in 'In Progress' state to be signed."))
+
+        # Regenerate PDF with BOTH signatures (company + subcontractor) included in HTML template
+        _logger.info(f"Regenerating PDF with both signatures for contract {self.name}")
+        # Get subcontractor signature from context (passed during signature save) or from contract
+        subcontractor_signature = self.env.context.get('contract_signature') or self.signature_id
+        
+        if not subcontractor_signature:
+            _logger.error(f"No subcontractor signature found for contract {self.name} - cannot regenerate PDF")
+            raise UserError(_("Subcontractor signature not found. Cannot regenerate PDF."))
+        
+        # Generate PDF with subcontractor signature in context
+        # Company signature will be automatically loaded by template renderer
+        pdf_service = self.env['construction.contract.pdf.generator']
+        pdf_service.with_context(contract_signature=subcontractor_signature).generate_pdf(self)
+        
+        # Verify PDF was regenerated
+        if not self.pdf_document:
+            _logger.error(f"PDF regeneration failed for contract {self.name} - no PDF document after generation")
+            raise UserError(_("PDF regeneration failed. Please try again."))
+        
+        # Calculate hash after signature for integrity
+        import hashlib
+        pdf_content = base64.b64decode(self.pdf_document)
+        pdf_hash_after = hashlib.sha256(pdf_content).hexdigest()
+        self.write({
+            'pdf_hash_after_signature': pdf_hash_after
+        })
+        _logger.info(f"PDF regenerated successfully with both signatures for contract {self.name}, hash: {pdf_hash_after[:16]}..., size: {len(pdf_content)/1024:.1f} KB")
 
         # Generate certificate of completion
         self._generate_certificate_of_completion()
@@ -898,6 +1029,18 @@ class ConstructionContract(models.Model):
             'context': {'default_contract_id': self.id},
         }
 
+    def action_view_purchase_orders(self):
+        """Open related purchase orders"""
+        self.ensure_one()
+
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Purchase Orders'),
+            'res_model': 'purchase.order',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', self.purchase_order_ids.ids)],
+        }
+
     def action_view_signature_details(self):
         """View signature details"""
         self.ensure_one()
@@ -931,14 +1074,48 @@ class ConstructionContract(models.Model):
             'signature': self.signature_id,
             'page_validations': self.page_validation_ids.sorted('page_number'),
             'generated_date': fields.Datetime.now(),
+            'company': self.env.company,  # Add company to context for template
         }
 
         # Generate PDF certificate using QWeb
-        report = self.env.ref('construction_contract.action_report_certificate')
-        pdf_content, _ = report._render_qweb_pdf([self.id], data=certificate_data)
-
-        # Store certificate
-        self.certificate_of_completion = base64.b64encode(pdf_content)
+        # Get the report by report_name (not XML ID) to avoid account module issues
+        report = self.env['ir.actions.report'].sudo().search([
+            ('report_name', '=', 'construction_contract.report_certificate_document'),
+            ('model', '=', 'construction.contract')
+        ], limit=1)
+        
+        if not report:
+            _logger.error(f"Certificate report not found for contract {self.name}")
+            raise UserError(_("Certificate report not found. Please contact administrator."))
+        
+        # Render PDF directly by bypassing account module's _pre_render_qweb_pdf
+        # The issue is that account module intercepts _render_qweb_pdf and tries to use report_ref
+        # which gets confused when report_ref is a list instead of a string XML ID
+        try:
+            # Render HTML first using QWeb template
+            template = self.env.ref('construction_contract.report_certificate_document', raise_if_not_found=False)
+            if not template:
+                raise UserError(_("Certificate template not found."))
+            
+            # Prepare template context
+            docs = self
+            context = dict(certificate_data)
+            context['docs'] = docs
+            context['o'] = docs
+            
+            # Render HTML
+            html = self.env['ir.qweb']._render(template.id, context)
+            
+            # Convert HTML to PDF using WeasyPrint (same as contract PDF generation)
+            pdf_service = self.env['construction.contract.pdf.generator']
+            pdf_content = pdf_service._convert_html_to_pdf(html)
+            
+            # Store certificate
+            self.certificate_of_completion = base64.b64encode(pdf_content)
+                
+        except Exception as e:
+            _logger.error(f"Error rendering certificate PDF for contract {self.name}: {e}", exc_info=True)
+            raise UserError(_("Error generating certificate: %s") % str(e))
 
         _logger.info(f"Certificate of completion generated for contract {self.name}")
 
@@ -1030,13 +1207,15 @@ class ConstructionContract(models.Model):
             'validation_status': self._get_page_validation_status(access_token),
         }
 
-    def portal_save_signature(self, signature_data, access_token):
+    def portal_save_signature(self, signature_data, access_token, ip_address=None, user_agent=None):
         """
         Save electronic signature from portal
 
         Args:
             signature_data (str): Base64 encoded signature image
             access_token (str): Portal access token
+            ip_address (str): IP address of signer (optional, will try to get from request if not provided)
+            user_agent (str): User agent string (optional, will try to get from request if not provided)
 
         Returns:
             dict: Signature save result
@@ -1055,6 +1234,56 @@ class ConstructionContract(models.Model):
                 "Remaining: %d pages."
             ) % validation_status['remaining_pages'])
 
+        # Get request information if not provided
+        if not ip_address or ip_address == '0.0.0.0':
+            try:
+                request = http.request
+                if request and hasattr(request, 'httprequest'):
+                    # Get IP address from request
+                    remote_addr = request.httprequest.environ.get('REMOTE_ADDR', '')
+                    if remote_addr and remote_addr != '127.0.0.1':
+                        ip_address = str(remote_addr)
+                    else:
+                        # Try proxy headers
+                        forwarded_for = request.httprequest.environ.get('HTTP_X_FORWARDED_FOR', '')
+                        if forwarded_for:
+                            # Ensure it's a string (not a list)
+                            if isinstance(forwarded_for, (list, tuple)):
+                                forwarded_for = forwarded_for[0] if forwarded_for else ''
+                            
+                            # Convert to string if needed
+                            if not isinstance(forwarded_for, str):
+                                forwarded_for = str(forwarded_for) if forwarded_for else ''
+                            
+                            # Only split if it's a string
+                            if forwarded_for and isinstance(forwarded_for, str):
+                                parts = forwarded_for.split(',')
+                                if parts:
+                                    ip_address = parts[0].strip()
+                        if not ip_address or ip_address == '127.0.0.1':
+                            real_ip = request.httprequest.environ.get('HTTP_X_REAL_IP', '')
+                            if real_ip:
+                                ip_address = str(real_ip)
+            except Exception:
+                pass
+        
+        # Ensure we have a valid IP address
+        if not ip_address or ip_address == '0.0.0.0':
+            ip_address = '0.0.0.0'
+        
+        if not user_agent:
+            try:
+                request = http.request
+                if request and hasattr(request, 'httprequest'):
+                    user_agent = request.httprequest.environ.get('HTTP_USER_AGENT', '')
+                    if user_agent and not isinstance(user_agent, str):
+                        user_agent = str(user_agent)
+            except Exception:
+                pass
+        
+        if not user_agent:
+            user_agent = ''
+        
         # Create signature record
         signature = self.env['construction.contract.signature'].create({
             'contract_id': self.id,
@@ -1064,11 +1293,15 @@ class ConstructionContract(models.Model):
             'signer_email': self.subcontractor_id.email,
             'signer_phone': self.subcontractor_id.mobile or self.subcontractor_id.phone,
             'access_token': access_token,
+            'ip_address': str(ip_address),
+            'user_agent': str(user_agent),
         })
 
-        # Update contract
-        self.signature_id = signature.id
-        self.action_mark_signed()
+        # Update contract with signature_id (use write to ensure it's saved)
+        self.write({'signature_id': signature.id})
+        
+        # Now call action_mark_signed with signature in context for PDF regeneration
+        self.with_context(contract_signature=signature).action_mark_signed()
 
         return {
             'status': 'success',

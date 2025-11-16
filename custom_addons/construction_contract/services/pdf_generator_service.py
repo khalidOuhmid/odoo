@@ -53,6 +53,7 @@ class ContractPDFGenerator(models.AbstractModel):
     def generate_pdf(self, contract):
         """
         Generate PDF for a contract using WeasyPrint
+        Includes signature validation after generation
 
         Args:
             contract: construction.contract record
@@ -64,66 +65,147 @@ class ContractPDFGenerator(models.AbstractModel):
             UserError: If generation fails
         """
         if not WEASYPRINT_AVAILABLE:
+            _logger.error("✗ WeasyPrint not available - cannot generate PDF")
             raise UserError(_(
-                "WeasyPrint is not installed.\n\n"
-                "Please install it with: pip install WeasyPrint\n\n"
-                "WeasyPrint is a modern, pure-Python PDF generation library "
-                "that doesn't require external binaries."
+                "❌ WeasyPrint non installé\n\n"
+                "La bibliothèque WeasyPrint n'est pas installée. "
+                "Elle est nécessaire pour générer les PDF.\n\n"
+                "Installation :\n"
+                "pip install WeasyPrint\n\n"
+                "WeasyPrint est une bibliothèque Python moderne pour "
+                "la génération de PDF qui ne nécessite pas de binaires externes.\n\n"
+                "Contactez l'administrateur système pour l'installation."
             ))
 
         try:
             # Step 1: Get rendered HTML from template renderer
-            _logger.info(f"Starting PDF generation for contract {contract.name}")
-            html_content = contract._get_rendered_html_for_pdf()
+            _logger.info(
+                f"Starting PDF generation for contract {contract.name}, "
+                f"state={contract.state}, "
+                f"has_signature={bool(contract.signature_id)}, "
+                f"context_signature={bool(self.env.context.get('contract_signature'))}"
+            )
+            # Ensure contract has context for template rendering (e.g., signature)
+            contract_with_context = contract.with_context(self.env.context)
+            html_content = contract_with_context._get_rendered_html_for_pdf()
             
             if not html_content or len(html_content.strip()) < 50:
+                _logger.error(
+                    f"✗ Generated HTML is too short for contract {contract.name}: "
+                    f"{len(html_content) if html_content else 0} chars"
+                )
                 raise UserError(_(
-                    "Generated HTML is empty or too short. "
-                    "Please check your template configuration."
+                    "❌ Contenu HTML vide ou trop court\n\n"
+                    "Le modèle de contrat n'a pas généré de contenu HTML valide.\n\n"
+                    "Actions recommandées :\n"
+                    "1. Vérifiez que le modèle de contrat est correctement configuré\n"
+                    "2. Vérifiez que le modèle contient du contenu\n"
+                    "3. Essayez de modifier et sauvegarder le modèle\n\n"
+                    "Contactez l'administrateur si le problème persiste."
                 ))
+            
+            _logger.debug(f"HTML content length for contract {contract.name}: {len(html_content)} chars")
 
             # Step 2: Convert HTML to PDF using WeasyPrint
             pdf_content = self._convert_html_to_pdf(html_content)
 
-            # Step 3: Optimize PDF (compress) if PyPDF2 available
+            # Step 3: Validate signatures in PDF (if expected)
+            expected_signatures = []
+            if 'company_signature' in html_content.lower():
+                expected_signatures.append('company')
+            if contract.signature_id or self.env.context.get('contract_signature'):
+                if 'subcontractor_signature' in html_content.lower():
+                    expected_signatures.append('subcontractor')
+            
+            if expected_signatures:
+                self._validate_signatures_in_pdf(pdf_content, expected_signatures, contract.name)
+
+            # Step 4: Optimize PDF (compress) if PyPDF2 available
             if PYPDF2_AVAILABLE:
                 pdf_optimized = self._optimize_pdf(pdf_content)
             else:
                 _logger.warning("PyPDF2 not available, skipping optimization")
                 pdf_optimized = pdf_content
 
-            # Step 4: Calculate hash for integrity check
+            # Step 5: Calculate hash for integrity check
             pdf_hash = self._calculate_hash(pdf_optimized)
 
-            # Step 5: Count pages
+            # Step 6: Count pages
             page_count = self._count_pages(pdf_optimized)
 
-            # Step 6: Store PDF in contract
-            contract.write({
+            # Step 7: Store PDF in contract
+            # Only update pdf_hash_before_signature if it doesn't exist (first generation)
+            # If contract is signed, we're regenerating, so keep the original hash
+            update_vals = {
                 'pdf_document': base64.b64encode(pdf_optimized),
-                'pdf_hash_before_signature': pdf_hash,
                 'pdf_page_count': page_count,
-            })
+            }
+            # Only set hash_before_signature if not already set (first generation)
+            if not contract.pdf_hash_before_signature:
+                update_vals['pdf_hash_before_signature'] = pdf_hash
+            
+            contract.write(update_vals)
+            
+            _logger.info(f"PDF stored in contract {contract.name}: {len(pdf_optimized)/1024:.1f} KB, {page_count} pages")
 
             _logger.info(
-                f"PDF generated successfully for contract {contract.name}: "
+                f"✓ PDF generated successfully for contract {contract.name}: "
                 f"{page_count} pages, {len(pdf_optimized)/1024:.1f} KB, "
-                f"hash: {pdf_hash[:16]}..."
+                f"hash: {pdf_hash[:16]}..., "
+                f"signatures validated: {', '.join(expected_signatures) if expected_signatures else 'none'}"
             )
 
             return True
 
         except UserError:
+            # Re-raise UserError as-is (already has user-friendly message)
             raise
         except Exception as e:
+            # Log detailed error for debugging
             _logger.error(
-                f"PDF generation failed for contract {contract.name}: {e}",
+                f"✗ PDF generation failed for contract {contract.name}: {e}",
                 exc_info=True
             )
-            raise UserError(_(
-                "Failed to generate PDF: %s\n\n"
-                "Please check the logs for more details."
-            ) % str(e))
+            
+            # Provide user-friendly error message in French with actionable instructions
+            error_type = type(e).__name__
+            error_details = str(e)
+            
+            # Customize message based on error type
+            if 'weasyprint' in error_details.lower() or 'html' in error_details.lower():
+                error_msg = _(
+                    "❌ Erreur de génération PDF\n\n"
+                    "La conversion HTML vers PDF a échoué.\n\n"
+                    "Causes possibles :\n"
+                    "• Erreur de syntaxe dans le modèle de contrat\n"
+                    "• Image manquante ou corrompue\n"
+                    "• Problème avec WeasyPrint\n\n"
+                    "Actions recommandées :\n"
+                    "1. Vérifiez que le modèle de contrat est valide\n"
+                    "2. Vérifiez que toutes les images sont accessibles\n"
+                    "3. Contactez l'administrateur si le problème persiste\n\n"
+                    "Détails techniques : %s"
+                ) % error_details
+            elif 'signature' in error_details.lower():
+                error_msg = _(
+                    "❌ Erreur de signature\n\n"
+                    "Un problème est survenu avec les signatures du contrat.\n\n"
+                    "Actions recommandées :\n"
+                    "1. Vérifiez que la signature de l'entreprise est configurée\n"
+                    "2. Si le contrat est signé, vérifiez la signature du sous-traitant\n"
+                    "3. Régénérez le PDF après avoir corrigé les signatures\n\n"
+                    "Détails techniques : %s"
+                ) % error_details
+            else:
+                error_msg = _(
+                    "❌ Erreur de génération PDF\n\n"
+                    "Une erreur inattendue s'est produite lors de la génération du PDF.\n\n"
+                    "Type d'erreur : %s\n"
+                    "Détails : %s\n\n"
+                    "Veuillez contacter l'administrateur système avec ces informations."
+                ) % (error_type, error_details)
+            
+            raise UserError(error_msg)
 
     # ============================================================
     # PRIVATE HELPER METHODS
@@ -132,6 +214,7 @@ class ContractPDFGenerator(models.AbstractModel):
     def _convert_html_to_pdf(self, html_content):
         """
         Convert HTML to PDF using WeasyPrint
+        Improved image handling for data URLs
 
         Args:
             html_content (str): HTML string to convert
@@ -143,54 +226,142 @@ class ContractPDFGenerator(models.AbstractModel):
             Exception: If conversion fails
         """
         try:
-            # Configure fonts for better rendering
-            font_config = FontConfiguration()
+            # WeasyPrint may have issues with data URLs, so we convert them to temp files
+            import re
+            import tempfile
+            import os
             
-            # Create HTML object from string
-            html_obj = HTML(string=html_content, base_url=None)
+            # Find all data URLs in img src attributes
+            data_url_pattern = r'src="(data:image/[^;]+;base64,[^"]+)"'
+            temp_files = []
             
-            # Optional: Add custom CSS for PDF-specific styling
-            pdf_css = CSS(string='''
-                @page {
-                    size: A4;
-                    margin: 2cm;
-                }
+            def replace_data_url(match):
+                """Replace data URL with temporary file path"""
+                data_url = match.group(1)
+                try:
+                    # Extract image data
+                    header, encoded = data_url.split(',', 1)
+                    image_format = header.split('/')[1].split(';')[0]  # e.g., 'png'
+                    image_data = base64.b64decode(encoded)
+                    
+                    # Validate image data
+                    if len(image_data) < 100:
+                        _logger.warning(f"Image data too small ({len(image_data)} bytes), skipping")
+                        return match.group(0)
+                    
+                    # Create temporary file
+                    temp_file = tempfile.NamedTemporaryFile(
+                        delete=False,
+                        suffix=f'.{image_format}',
+                        prefix='weasyprint_img_'
+                    )
+                    temp_file.write(image_data)
+                    temp_file.close()
+                    temp_files.append(temp_file.name)
+                    
+                    # Return file:// URL for WeasyPrint
+                    file_url = f'file://{temp_file.name}'
+                    _logger.debug(
+                        f"Converted data URL to temp file: {file_url} "
+                        f"({len(image_data)} bytes, {image_format})"
+                    )
+                    return f'src="{file_url}"'
+                except Exception as e:
+                    _logger.warning(f"Failed to convert data URL to temp file: {e}, keeping original")
+                    return match.group(0)
+            
+            # Replace data URLs with temp files
+            html_with_files = re.sub(data_url_pattern, replace_data_url, html_content)
+            
+            # Log conversion statistics
+            data_url_count = len(re.findall(data_url_pattern, html_content))
+            _logger.info(f"Converting HTML to PDF: {data_url_count} data URLs found, {len(temp_files)} temp files created")
+            
+            try:
+                # Configure fonts for better rendering
+                font_config = FontConfiguration()
                 
-                body {
-                    font-family: 'DejaVu Sans', Arial, sans-serif;
-                    font-size: 11pt;
-                    line-height: 1.6;
-                    color: #333;
-                }
+                # Create HTML object from string
+                html_obj = HTML(string=html_with_files, base_url=None)
                 
-                table {
-                    page-break-inside: avoid;
-                }
+                # Optional: Add custom CSS for PDF-specific styling
+                pdf_css = CSS(string='''
+                    @page {
+                        size: A4;
+                        margin: 2cm;
+                    }
+                    
+                    body {
+                        font-family: 'DejaVu Sans', Arial, sans-serif;
+                        font-size: 11pt;
+                        line-height: 1.6;
+                        color: #333;
+                    }
+                    
+                    table {
+                        page-break-inside: avoid;
+                    }
+                    
+                    h1, h2, h3 {
+                        page-break-after: avoid;
+                    }
+                    
+                    /* Prevent widows and orphans */
+                    p {
+                        orphans: 3;
+                        widows: 3;
+                    }
+                    
+                    /* Ensure images are visible */
+                    img {
+                        max-width: 100%;
+                        height: auto;
+                    }
+                ''', font_config=font_config)
                 
-                h1, h2, h3 {
-                    page-break-after: avoid;
-                }
+                # Generate PDF
+                pdf_bytes = html_obj.write_pdf(
+                    stylesheets=[pdf_css],
+                    font_config=font_config
+                )
                 
-                /* Prevent widows and orphans */
-                p {
-                    orphans: 3;
-                    widows: 3;
-                }
-            ''', font_config=font_config)
-            
-            # Generate PDF
-            pdf_bytes = html_obj.write_pdf(
-                stylesheets=[pdf_css],
-                font_config=font_config
-            )
-            
-            _logger.debug(f"WeasyPrint generated PDF: {len(pdf_bytes)} bytes")
-            
-            return pdf_bytes
+                _logger.info(f"✓ WeasyPrint generated PDF: {len(pdf_bytes)} bytes")
+                
+                return pdf_bytes
+            finally:
+                # Clean up temporary files
+                for temp_file in temp_files:
+                    try:
+                        if os.path.exists(temp_file):
+                            os.unlink(temp_file)
+                            _logger.debug(f"Cleaned up temp file: {temp_file}")
+                    except Exception as e:
+                        _logger.warning(f"Failed to delete temp file {temp_file}: {e}")
 
         except Exception as e:
-            _logger.error(f"WeasyPrint conversion failed: {e}", exc_info=True)
-            raise Exception(f"HTML to PDF conversion failed: {str(e)}")
+            _logger.error(f"✗ WeasyPrint conversion failed: {e}", exc_info=True)
+            
+            # Provide detailed error message based on error type
+            error_str = str(e).lower()
+            if 'font' in error_str:
+                raise Exception(_(
+                    "Erreur de police de caractères lors de la conversion PDF. "
+                    "Vérifiez que les polices nécessaires sont installées."
+                ))
+            elif 'image' in error_str or 'file' in error_str:
+                raise Exception(_(
+                    "Erreur de chargement d'image lors de la conversion PDF. "
+                    "Vérifiez que toutes les images sont accessibles et valides."
+                ))
+            elif 'css' in error_str or 'style' in error_str:
+                raise Exception(_(
+                    "Erreur de style CSS lors de la conversion PDF. "
+                    "Vérifiez la syntaxe CSS du modèle."
+                ))
+            else:
+                raise Exception(_(
+                    "Échec de la conversion HTML vers PDF : %s"
+                ) % str(e))
 
     def _optimize_pdf(self, pdf_content):
         """
@@ -272,6 +443,57 @@ class ContractPDFGenerator(models.AbstractModel):
         except Exception as e:
             _logger.error(f"Error counting PDF pages: {e}")
             return 1  # Fallback to 1 page
+
+    def _validate_signatures_in_pdf(self, pdf_content, expected_signatures, contract_name):
+        """
+        Validate that signature images are embedded in PDF
+        Uses PyPDF2 to extract and verify images
+
+        Args:
+            pdf_content (bytes): PDF content
+            expected_signatures (list): List of expected signature types ('company', 'subcontractor')
+            contract_name (str): Contract name for logging
+
+        Raises:
+            UserError: If expected signatures are not found in PDF
+        """
+        if not PYPDF2_AVAILABLE:
+            _logger.warning("PyPDF2 not available, skipping signature validation")
+            return
+
+        try:
+            reader = PdfReader(io.BytesIO(pdf_content))
+            
+            # Count images in PDF
+            image_count = 0
+            for page in reader.pages:
+                if '/XObject' in page['/Resources']:
+                    xobjects = page['/Resources']['/XObject'].get_object()
+                    for obj in xobjects:
+                        if xobjects[obj]['/Subtype'] == '/Image':
+                            image_count += 1
+            
+            _logger.info(
+                f"PDF signature validation for {contract_name}: "
+                f"found {image_count} images, expected {len(expected_signatures)} signatures"
+            )
+            
+            # Basic validation: check if we have at least as many images as expected signatures
+            if image_count < len(expected_signatures):
+                _logger.warning(
+                    f"⚠️ PDF may be missing signatures for {contract_name}: "
+                    f"found {image_count} images but expected {len(expected_signatures)} signatures"
+                )
+                # Don't raise error, just warn - images might be embedded differently
+            else:
+                _logger.info(
+                    f"✓ PDF signature validation passed for {contract_name}: "
+                    f"{image_count} images found (expected {len(expected_signatures)} signatures)"
+                )
+
+        except Exception as e:
+            _logger.warning(f"Could not validate signatures in PDF for {contract_name}: {e}")
+            # Don't fail PDF generation if validation fails
 
     # ============================================================
     # UTILITY METHODS

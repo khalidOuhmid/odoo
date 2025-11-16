@@ -40,7 +40,7 @@
                             <field name="template_id"/>
                             <field name="generate_deliverables"/>
                             <field name="send_immediately"
-                                   modifiers="{'invisible': [('template_id', '=', False)]}"/>
+                                   invisible="template_id == False"/>
                         </group>
                     </group>
                 </sheet>

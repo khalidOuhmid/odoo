@@ -52,6 +52,15 @@
             const coords = this.getCoordinates(e);
             this.lastX = coords.x;
             this.lastY = coords.y;
+            
+            // Add visual feedback
+            this.canvas.classList.add('drawing');
+            
+            // Hide overlay text when drawing starts
+            const overlay = document.querySelector('.signature-pad-overlay');
+            if (overlay) {
+                overlay.style.display = 'none';
+            }
         }
 
         draw(e) {
@@ -72,6 +81,9 @@
 
         stopDrawing() {
             this.isDrawing = false;
+            
+            // Remove visual feedback
+            this.canvas.classList.remove('drawing');
         }
 
         getCoordinates(e) {
@@ -93,6 +105,12 @@
 
         clear() {
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // Show overlay text again
+            const overlay = document.querySelector('.signature-pad-overlay');
+            if (overlay) {
+                overlay.style.display = 'block';
+            }
         }
 
         isEmpty() {
@@ -137,57 +155,89 @@
         if (signBtn) {
             signBtn.addEventListener('click', async function() {
                 if (window.signaturePad.isEmpty()) {
-                    alert('Please draw your signature before signing.');
+                    // Show confirmation dialog in French
+                    if (!confirm('Veuillez dessiner votre signature avant de signer le contrat.')) {
+                        return;
+                    }
+                    return;
+                }
+
+                // Confirmation dialog
+                if (!confirm('Êtes-vous sûr de vouloir signer ce contrat ? Cette action est irréversible.')) {
                     return;
                 }
 
                 // Disable button
                 signBtn.disabled = true;
-                signBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Signing...';
+                signBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Signature en cours...';
 
                 try {
                     // Get signature data
                     const signatureData = window.signaturePad.getDataURL();
 
-                    // Send to server
-                    const response = await fetch(`/my/contract/${contractId}/save_signature`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            jsonrpc: '2.0',
-                            method: 'call',
-                            params: {
-                                contract_id: contractId,
-                                access_token: accessToken,
-                                signature_data: signatureData,
-                            },
-                        }),
-                    });
+                    // Use Odoo JSON-RPC format
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `/my/contract/${contractId}/save_signature`, true);
+                    xhr.setRequestHeader('Content-Type', 'application/json');
+                    xhr.onload = function() {
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            try {
+                                const response = JSON.parse(xhr.responseText);
+                                let data;
+                                
+                                if (response.result) {
+                                    data = response.result;
+                                } else if (response.error) {
+                                    throw new Error(response.error.data?.message || response.error.message || 'Unknown error');
+                                } else {
+                                    data = response;
+                                }
 
-                    const result = await response.json();
-
-                    if (result.error) {
-                        throw new Error(result.error.data.message || 'Unknown error');
-                    }
-
-                    const data = result.result;
-
-                    if (data.status === 'success') {
-                        // Redirect to confirmation page
-                        window.location.href = data.redirect_url;
-                    } else {
-                        alert('Error: ' + data.message);
+                                if (data.status === 'success') {
+                                    // Redirect to confirmation page
+                                    window.location.href = data.redirect_url;
+                                } else {
+                                    alert('Erreur : ' + (data.message || 'Erreur inconnue'));
+                                    signBtn.disabled = false;
+                                    signBtn.innerHTML = '<i class="fa fa-check-circle"></i> Signer le contrat';
+                                }
+                            } catch (e) {
+                                console.error('Signature parsing error:', e);
+                                console.error('Response text:', xhr.responseText);
+                                alert('Erreur lors de l\'analyse de la réponse : ' + e.message);
+                                signBtn.disabled = false;
+                                signBtn.innerHTML = '<i class="fa fa-check-circle"></i> Signer le contrat';
+                            }
+                        } else {
+                            console.error('HTTP error:', xhr.status);
+                            console.error('Response text:', xhr.responseText);
+                            alert('Erreur lors de l\'enregistrement de la signature : HTTP ' + xhr.status);
+                            signBtn.disabled = false;
+                            signBtn.innerHTML = '<i class="fa fa-check-circle"></i> Signer le contrat';
+                        }
+                    };
+                    xhr.onerror = function() {
+                        console.error('Network error');
+                        alert('Erreur réseau lors de l\'enregistrement de la signature');
                         signBtn.disabled = false;
-                        signBtn.innerHTML = '<i class="fa fa-check-circle"></i> Sign Contract';
-                    }
+                        signBtn.innerHTML = '<i class="fa fa-check-circle"></i> Signer le contrat';
+                    };
+                    xhr.send(JSON.stringify({
+                        jsonrpc: '2.0',
+                        method: 'call',
+                        params: {
+                            contract_id: parseInt(contractId, 10),
+                            access_token: accessToken,
+                            signature_data: signatureData,
+                        },
+                        id: Math.floor(Math.random() * 1000000000)
+                    }));
 
                 } catch (error) {
                     console.error('Signature error:', error);
-                    alert('Error saving signature: ' + error.message);
+                    alert('Erreur lors de l\'enregistrement de la signature : ' + error.message);
                     signBtn.disabled = false;
-                    signBtn.innerHTML = '<i class="fa fa-check-circle"></i> Sign Contract';
+                    signBtn.innerHTML = '<i class="fa fa-check-circle"></i> Signer le contrat';
                 }
             });
         }

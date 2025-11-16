@@ -93,7 +93,15 @@
                                             <strong>Date et heure de signature :</strong>
                                         </td>
                                         <td>
-                                            <t t-esc="contract.signature_date.strftime('%d/%m/%Y à %H:%M:%S')"/>
+                                            <t t-if="contract.signature_id and contract.signature_id.signature_date">
+                                                <t t-esc="contract.signature_id.signature_date.strftime('%d/%m/%Y à %H:%M:%S')"/>
+                                            </t>
+                                            <t t-elif="contract.signature_date and contract.signature_date != False">
+                                                <t t-esc="contract.signature_date.strftime('%d/%m/%Y à %H:%M:%S')"/>
+                                            </t>
+                                            <t t-else="">
+                                                N/A
+                                            </t>
                                         </td>
                                     </tr>
                                     <tr>
@@ -152,8 +160,13 @@
                                     <t t-foreach="contract.page_validation_ids.sorted('page_number')" t-as="validation">
                                         <tr>
                                             <td><t t-esc="validation.page_number"/></td>
-                                            <td><t t-esc="validation.validated_date.strftime('%d/%m/%Y %H:%M:%S')"/></td>
-                                            <td><t t-esc="validation.time_spent"/></td>
+                                            <td>
+                                                <t t-if="validation.validated_date and validation.validated_date != False">
+                                                    <t t-esc="validation.validated_date.strftime('%d/%m/%Y %H:%M:%S')"/>
+                                                </t>
+                                                <t t-else="">N/A</t>
+                                            </td>
+                                            <td><t t-esc="validation.time_spent or 0"/></td>
                                         </tr>
                                     </t>
                                 </tbody>
@@ -194,10 +207,19 @@
                         <div class="text-center" style="margin-top: 40px; font-size: 12px; color: #666;">
                             <p>
                                 Certificat généré automatiquement le
-                                <t t-esc="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M:%S')"/>
+                                <t t-esc="generated_date.strftime('%d/%m/%Y à %H:%M:%S') if generated_date else ''"/>
                             </p>
                             <p>
-                                <t t-esc="contract.company_id.name"/> -
+                                <t t-if="company">
+                                    <t t-esc="company.name"/>
+                                </t>
+                                <t t-elif="contract.chantier_id and contract.chantier_id.company_id">
+                                    <t t-esc="contract.chantier_id.company_id.name"/>
+                                </t>
+                                <t t-else="">
+                                    Company
+                                </t>
+                                 -
                                 Système de gestion des contrats
                             </p>
                         </div>

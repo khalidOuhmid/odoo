@@ -249,9 +249,11 @@ class ContractCreationWizard(models.TransientModel):
         if self.generate_deliverables:
             self._generate_deliverables(contract)
 
-        # Generate and send if requested
+        # Always generate PDF
+        contract.action_generate_pdf()
+        
+        # Send immediately if requested
         if self.send_immediately:
-            contract.action_generate_pdf()
             contract.action_send_for_signature()
 
         _logger.info(f"Contract {contract.name} created via wizard by user {self.env.user.name}")

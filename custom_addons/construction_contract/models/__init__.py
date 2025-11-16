@@ -10,6 +10,7 @@ from . import contract_template
 from . import contract_signature
 from . import contract_deliverable
 from . import contract_page_validation
+from . import urssaf_code
 
 # Extensions to other modules
 from . import chantier_extension

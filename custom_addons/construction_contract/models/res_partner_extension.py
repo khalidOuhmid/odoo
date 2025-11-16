@@ -56,7 +56,7 @@ class ResPartnerExtension(models.Model):
             'type': 'ir.actions.act_window',
             'name': _('Subcontractor Contracts'),
             'res_model': 'construction.contract',
-            'view_mode': 'tree,form',
+            'view_mode': 'list,form',
             'domain': [('subcontractor_id', '=', self.id)],
             'context': {'default_subcontractor_id': self.id},
         }

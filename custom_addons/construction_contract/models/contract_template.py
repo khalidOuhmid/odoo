@@ -103,12 +103,22 @@ class ConstructionContractTemplate(models.Model):
     )
 
     # ============================================================
+    # URSSAF CODE INTEGRATION
+    # ============================================================
+
+    urssaf_code_helper = fields.Char(
+        string='URSSAF Code Helper',
+        help="Helper field for URSSAF code selector widget"
+    )
+
+    # ============================================================
     # USAGE STATISTICS
     # ============================================================
 
     contract_count = fields.Integer(
         string='Contracts Using This Template',
         compute='_compute_contract_count',
+        store=True,
         help="Number of contracts using this template"
     )
 
@@ -121,7 +131,6 @@ class ConstructionContractTemplate(models.Model):
     # COMPUTED FIELDS
     # ============================================================
 
-    @api.depends('name')
     def _compute_contract_count(self):
         """Count contracts using this template"""
         for template in self:
@@ -320,19 +329,54 @@ class ConstructionContractTemplate(models.Model):
         except Exception as e:
             raise ValidationError(_("Error generating preview: %s") % str(e))
 
+    def copy(self, default=None):
+        """
+        Override copy to ensure proper field copying
+        
+        Args:
+            default: dict of default values to override
+            
+        Returns:
+            New template record
+        """
+        self.ensure_one()
+        
+        if default is None:
+            default = {}
+        
+        # Ensure is_default is False for copies
+        if 'is_default' not in default:
+            default['is_default'] = False
+            
+        # Add (Copy) suffix if name not provided
+        if 'name' not in default:
+            default['name'] = _("%s (Copy)") % self.name
+            
+        # Call parent copy - this will automatically copy One2many fields (variable_ids)
+        new_template = super(ConstructionContractTemplate, self).copy(default)
+        
+        _logger.info(
+            "Template '%s' duplicated to '%s' (ID: %d)",
+            self.name, new_template.name, new_template.id
+        )
+        
+        return new_template
+
     def action_duplicate(self):
         """
-        Duplicate this template
-
+        Duplicate this template with proper field copying
+        
+        Creates a complete copy including:
+        - All template content (HTML, CSS, components)
+        - All variables
+        - All settings except is_default
+        
         Returns:
             dict: Action to open duplicated template
         """
         self.ensure_one()
 
-        new_template = self.copy({
-            'name': _("%s (Copy)") % self.name,
-            'is_default': False,
-        })
+        new_template = self.copy()
 
         return {
             'type': 'ir.actions.act_window',
@@ -340,6 +384,9 @@ class ConstructionContractTemplate(models.Model):
             'res_id': new_template.id,
             'view_mode': 'form',
             'target': 'current',
+            'context': {
+                'form_view_initial_mode': 'edit',
+            }
         }
 
     def action_set_as_default(self):

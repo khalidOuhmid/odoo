@@ -9,3 +9,5 @@ from . import pdf_generator_service
 from . import template_renderer_service
 from . import notification_service
 from . import validation_service
+from . import signature_loader_service
+from . import pdf_merger_service
