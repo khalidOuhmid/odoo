@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- TEMPLATE EDITOR PAGE (GrapesJS)                            -->
+    <!-- ========================================================== -->
+
+    <template id="template_editor_page" name="Template Editor">
+        <t t-call="portal.layout">
+            <t t-call-assets="construction_contract.assets_template_editor"/>
+            <t t-set="head">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <link rel="stylesheet" href="/construction_contract/static/src/lib/grapesjs/grapes.min.css"/>
+                <style>
+                    html, body {
+                        margin: 0;
+                        padding: 0;
+                        height: 100%;
+                        background-color: #f4f6f9;
+                    }
+
+                    #grapesjs-editor {
+                        min-height: 80vh;
+                    }
+
+                    .o_portal_wrap {
+                        padding: 0 !important;
+                    }
+                </style>
+            </t>
+
+            <section class="o_container_xxl mt-0">
+                <div class="contract-template-editor">
+                    <div class="o_portal_editor_container">
+                        <div class="alert alert-info rounded-0 mb-0">
+                            <strong><i class="fa fa-paint-brush me-2"></i>Template:</strong>
+                            <t t-esc="template.name"/>
+                        </div>
+                        <div id="grapesjs-editor"></div>
+                    </div>
+                </div>
+            </section>
+
+            <script src="/construction_contract/static/src/lib/grapesjs/grapes.min.js"></script>
+            <script src="/construction_contract/static/src/lib/grapesjs/grapesjs-preset-webpage.min.js"></script>
+            <script type="text/javascript">
+                // Template data
+                var templateId = <t t-esc="template.id"/>;
+                var templateName = '<t t-esc="template.name"/>';
+                var variableBlocks = <t t-raw="variable_blocks"/>;
+
+                // Initialize GrapesJS
+                var editor = grapesjs.init({
+                    container: '#grapesjs-editor',
+                    height: '100vh',
+                    width: 'auto',
+
+                    // Storage Manager - Save to Odoo backend
+                    storageManager: {
+                        type: 'remote',
+                        autosave: true,
+                        autoload: true,
+                        stepsBeforeSave: 3,
+
+                        urlStore: '/contract/template/save',
+                        urlLoad: '/contract/template/load/' + templateId,
+
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+
+                        onStore: function(data) {
+                            return {
+                                template_id: templateId,
+                                html: editor.getHtml(),
+                                css: editor.getCss(),
+                                components: JSON.stringify(data.components),
+                                styles: JSON.stringify(data.styles),
+                            };
+                        },
+                    },
+
+                    // Plugins
+                    plugins: ['gjs-preset-webpage'],
+                    pluginsOpts: {
+                        'gjs-preset-webpage': {
+                            blocks: ['column1', 'column2', 'column3', 'text', 'link', 'image', 'video', 'map'],
+                        }
+                    },
+
+                    // Canvas settings
+                    canvas: {
+                        styles: [
+                            'https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css',
+                        ],
+                    },
+
+                    // Block Manager
+                    blockManager: {
+                        appendTo: '.gjs-blocks-c',
+                        blocks: variableBlocks.concat([
+                            // Custom contract blocks
+                            {
+                                id: 'section',
+                                label: 'Section',
+                                category: 'Layout',
+                                content: '<div class="contract-section"><h3>Section Title</h3><p>Content...</p></div>',
+                            },
+                            {
+                                id: 'article',
+                                label: 'Article',
+                                category: 'Contract',
+                                content: '<div class="contract-article"><h4>ARTICLE X - Title</h4><p>Article content...</p></div>',
+                            },
+                            {
+                                id: 'signature-block',
+                                label: 'Signature Block',
+                                category: 'Contract',
+                                content: `
+                                    <div class="signature-block" style="display: flex; justify-content: space-between; margin-top: 50px;">
+                                        <div style="width: 45%;">
+                                            <p><strong>For the Main Contractor</strong></p>
+                                            <p>Name and Signature:</p>
+                                            <br/><br/>
+                                        </div>
+                                        <div style="width: 45%;">
+                                            <p><strong>For the Subcontractor</strong></p>
+                                            <p>Electronic Signature</p>
+                                            <br/><br/>
+                                        </div>
+                                    </div>
+                                `,
+                            },
+                        ]),
+                    },
+
+                    // Layer Manager
+                    layerManager: {
+                        appendTo: '.gjs-pn-views-container',
+                    },
+
+                    // Style Manager
+                    styleManager: {
+                        appendTo: '.gjs-sm-sectors',
+                        sectors: [
+                            {
+                                name: 'Dimension',
+                                open: false,
+                                buildProps: ['width', 'min-height', 'padding', 'margin'],
+                            },
+                            {
+                                name: 'Typography',
+                                open: false,
+                                buildProps: ['font-family', 'font-size', 'font-weight', 'letter-spacing', 'color', 'line-height', 'text-align'],
+                            },
+                            {
+                                name: 'Decorations',
+                                open: false,
+                                buildProps: ['background-color', 'border', 'border-radius', 'box-shadow'],
+                            },
+                        ],
+                    },
+                });
+
+                // Add custom commands
+                editor.Commands.add('show-json', {
+                    run: function(editor, sender) {
+                        sender &amp;&amp; sender.set('active', 0);
+                        alert(JSON.stringify(editor.getComponents(), null, 2));
+                    }
+                });
+
+                // Add panels
+                editor.Panels.addButton('options', {
+                    id: 'save-template',
+                    className: 'fa fa-save',
+                    command: 'core:canvas-clear',
+                    attributes: { title: 'Save Template' },
+                });
+            </script>
+        </t>
+
+    </template>
+
+</odoo>

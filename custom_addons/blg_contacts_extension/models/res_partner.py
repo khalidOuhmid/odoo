@@ -7,11 +7,14 @@ capabilities specifically designed for subcontractor workflow in construction pr
 It follows SOLID principles and clean architecture patterns.
 """
 
-from odoo import models, fields, api
-from odoo.exceptions import ValidationError
+from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError, AccessError
+from odoo.osv import expression
 import logging
 from datetime import date, timedelta
 from .document_config import DOCUMENT_TYPES
+from . import document_email_utils
+import urllib.parse
 
 _logger = logging.getLogger(__name__)
 
@@ -44,6 +47,13 @@ class ResPartner(models.Model):
         'lot_id',
         string="Trade Specializations",
         help="Construction trades/lots this subcontractor specializes in"
+    )
+
+    urssaf_code = fields.Char(
+        string="Code URSSAF",
+        compute='_compute_urssaf_code',
+        store=True,
+        help="Codes URSSAF agrégés depuis les spécialités (lots) liées"
     )
 
     # Computed fields for better UX
@@ -289,6 +299,17 @@ class ResPartner(models.Model):
             else:
                 record.lot_names = ''
 
+    @api.depends('lot_ids.urssaf_code')
+    def _compute_urssaf_code(self):
+        """Agrège les codes URSSAF provenant des lots liés."""
+        for record in self:
+            codes = [code.strip() for code in record.lot_ids.mapped('urssaf_code') if code]
+            unique_codes = []
+            for code in codes:
+                if code and code not in unique_codes:
+                    unique_codes.append(code)
+            record.urssaf_code = ', '.join(unique_codes) if unique_codes else False
+
     def _compute_related_counts(self):
         """Compute counts of related construction records for performance."""
         for record in self:
@@ -339,6 +360,9 @@ class ResPartner(models.Model):
                     status = 'rejected'
                 elif manual_status == 'to_check':
                     status = 'to_check'
+                elif manual_status == 'valid':
+                    # La validation manuelle doit toujours prévaloir
+                    status = 'valid'
                 elif config.get('has_expiry'):
                     # Check expiry for documents that have expiry dates
                     expiry_field = config['expiry_field']
@@ -440,7 +464,7 @@ class ResPartner(models.Model):
             )
             return False
 
-    def _create_notification(self, notification_type, message, title=None):
+    def _create_notification(self, notification_type, message, title=None, reload=False):
         """
         Create a standardized UI notification.
         """
@@ -459,8 +483,9 @@ class ResPartner(models.Model):
                 'title': title or notification_type.title(),
                 'message': message,
                 'sticky': False,
-                'type': type_mapping.get(notification_type, 'info')
-            }
+                'type': type_mapping.get(notification_type, 'info'),
+                **({'next': {'type': 'ir.actions.client', 'tag': 'reload'}} if reload else {}),
+            },
         }
 
     def _send_missing_documents_email(self):
@@ -556,23 +581,92 @@ class ResPartner(models.Model):
         
         return token
 
-    def _get_portal_upload_url(self, rib_request=False, reminder=False):
+    def _get_portal_upload_url(self, rib_request=False, reminder=False, extra_params=None):
         """
-        Génère l'URL du portail de téléversement avec le token.
+        Build the public upload URL associated with the partner token.
         """
-        if not self.upload_token:
+        self.ensure_one()
+        now = fields.Datetime.now()
+        if not self.upload_token or not self.token_expiration or self.token_expiration < now:
             self._generate_upload_token()
             
-        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        base_url = (self.env['ir.config_parameter']
+                    .sudo()
+                    .get_param('web.base.url', '')
+                    .rstrip('/'))
         params = {'token': self.upload_token}
         
         if rib_request:
             params['rib_request'] = '1'
         if reminder:
             params['reminder'] = '1'
+        if extra_params:
+            params.update(extra_params)
             
         query_string = '&'.join([f'{k}={v}' for k, v in params.items()])
-        return f"{base_url}/documents/upload/{self.upload_token}?{query_string}"
+        safe_token = urllib.parse.quote(self.upload_token, safe='')
+        return f"{base_url}/documents/upload/{safe_token}?{query_string}"
+
+    def _generate_upload_token_details(self):
+        """
+        Return the upload URL used inside mail templates and notifications.
+        """
+        extra_params = {}
+        if self.env.context.get('request'):
+            extra_params['request'] = '1'
+        return self._get_portal_upload_url(
+            rib_request=bool(self.env.context.get('rib_request')),
+            reminder=bool(self.env.context.get('reminder')),
+            extra_params=extra_params or None,
+        )
+
+    def send_document_rejection_notification(self, doc_name, rejection_reason):
+        """
+        Send the rejection email with a secure upload link.
+        """
+        self.ensure_one()
+        if not self.email:
+            return False
+        return document_email_utils.send_document_notification(
+            self,
+            'rejection',
+            doc_name=doc_name,
+            rejection_reason=rejection_reason or _('Document not compliant'),
+        )
+
+    def send_missing_documents_request(self, missing_documents):
+        """
+        Send the reminder email that lists all missing or rejected documents.
+        """
+        self.ensure_one()
+        if not self.email or not missing_documents:
+            return False
+        return document_email_utils.send_document_notification(
+            self,
+            'request',
+            documents_to_request=missing_documents,
+        )
+
+    def _validate_document_access_rights(self):
+        """
+        Ensure the current user has the right groups to manipulate documents.
+        """
+        required_groups = [
+            'base.group_system',
+            'blg_contacts_extension.group_conductrice_travaux',
+            'blg_contacts_extension.group_directeur_general',
+        ]
+        if not any(self.env.user.has_group(xml_id) for xml_id in required_groups):
+            raise AccessError(
+                _("You don't have sufficient rights to manage subcontractor documents.")
+            )
+        return True
+
+    def _get_document_config_by_key(self, doc_type_key):
+        """
+        Helper returning the configuration dictionary for a document key.
+        """
+        return DOCUMENT_TYPES.get(doc_type_key)
 
     def action_validate_document(self):
         """
@@ -599,7 +693,11 @@ class ResPartner(models.Model):
             subtype_xmlid='mail.mt_note',
         )
         
-        return self._create_notification('success', f"Document {config['display_name_fr']} validé avec succès")
+        return self._create_notification(
+            'success',
+            _("Document %s validé avec succès") % config['display_name_fr'],
+            reload=True,
+        )
 
     def action_reject_document(self):
         """
@@ -665,7 +763,11 @@ class ResPartner(models.Model):
             subtype_xmlid='mail.mt_note',
         )
         
-        return self._create_notification('success', f"Document rejeté et email envoyé à {self.email}")
+        return self._create_notification(
+            'info',
+            _("Document rejeté et email envoyé à %s") % self.email,
+            reload=True,
+        )
 
     def action_send_all_missing_documents_email(self):
         """
@@ -752,6 +854,27 @@ class ResPartner(models.Model):
     # Remplacer l'ancienne méthode par la nouvelle
     action_send_missing_documents_email = action_send_all_missing_documents_email
 
+    def action_send_rib_request_email(self):
+        """
+        Send a dedicated email requesting the partner's bank details (RIB).
+        """
+        self.ensure_one()
+        if not self.email:
+            return self._create_notification(
+                'danger',
+                _("This partner does not have an email address.")
+            )
+        success = document_email_utils.send_document_notification(self, 'rib_request')
+        if success:
+            return self._create_notification(
+                'success',
+                _("RIB request email sent to %s.") % self.email
+            )
+        return self._create_notification(
+            'danger',
+            _("An error occurred while sending the RIB request email.")
+        )
+
     def write(self, vals):
         """
         Override write pour gérer automatiquement le statut des documents.
@@ -797,6 +920,94 @@ class ResPartner(models.Model):
                 'original_expiry_date': expiry_date,
                 'original_status': status,
             })
+
+    def _send_expiry_email(self, doc_config, expiry_date, status, is_expired_doc=False):
+        """
+        Send an expiry notification for the given document configuration.
+        """
+        self.ensure_one()
+        success = document_email_utils.send_document_notification(
+            self,
+            'expiry',
+            doc_config=doc_config,
+            expiry_date=expiry_date,
+            status=status,
+            is_expired=is_expired_doc,
+        )
+        if success and doc_config.get('last_notif_field'):
+            self.sudo().write({doc_config['last_notif_field']: fields.Date.today()})
+        return success
+
+    @api.model
+    def check_document_expiry(self):
+        """
+        Cron entry point: scans subcontractors and sends expiry reminders.
+        """
+        today = date.today()
+        warning_threshold = today + timedelta(days=30)
+        domain = [
+            ('contact_type', '=', 'sous_traitant'),
+            ('disable_document_emails', '=', False),
+            ('email', '!=', False),
+        ]
+        partners = self.search(domain)
+        batch_size = 100
+        total_sent = 0
+        _logger.info(
+            "Starting subcontractor document expiry check for %s partners",
+            len(partners),
+        )
+        for start in range(0, len(partners), batch_size):
+            batch = partners[start:start + batch_size]
+            try:
+                total_sent += self._process_document_expiry_batch(
+                    batch, today, warning_threshold
+                )
+                self.env.cr.commit()
+            except Exception as exc:
+                _logger.error(
+                    "Error while processing document expiry batch %s-%s: %s",
+                    start,
+                    start + batch_size,
+                    exc,
+                    exc_info=True,
+                )
+                self.env.cr.rollback()
+        _logger.info("Document expiry check completed. Notifications sent: %s", total_sent)
+        return total_sent
+
+    def _process_document_expiry_batch(self, partners, today, warning_threshold):
+        """
+        Scan a batch of partners and send expiry or expiring notifications.
+        """
+        notifications = 0
+        for partner in partners:
+            if partner.disable_document_emails:
+                continue
+            for doc_key, config in DOCUMENT_TYPES.items():
+                expiry_field = config.get('expiry_field')
+                if not expiry_field:
+                    continue
+                content = getattr(partner, config['content_field'])
+                expiry_date = getattr(partner, expiry_field)
+                if not (content and expiry_date):
+                    continue
+                last_notif_field = config.get('last_notif_field')
+                last_notif = getattr(partner, last_notif_field) if last_notif_field else False
+                if expiry_date <= today:
+                    if last_notif and (today - last_notif).days < 7:
+                        continue
+                    if partner._send_expiry_email(config, expiry_date, 'expiré', True):
+                        notifications += 1
+                    continue
+                if expiry_date <= warning_threshold:
+                    if last_notif and (today - last_notif).days < 30:
+                        continue
+                    if partner._send_expiry_email(
+                        config, expiry_date, "sur le point d'expirer", False
+                    ):
+                        notifications += 1
+        return notifications
 
     def action_view_document(self):
         """
@@ -961,6 +1172,80 @@ class ResPartner(models.Model):
         return bool(getattr(self, content_field, False))
 
     # =================== API methods for external integration ===================
+    @api.model
+    def _build_status_domain(self, status):
+        """
+        Build an OR-domain that matches subcontractors based on a single status.
+        """
+        domain_parts = [[(config['status_field'], '=', status)] for config in DOCUMENT_TYPES.values()]
+        return expression.OR(domain_parts) if domain_parts else []
+
+    @api.model
+    def get_all_subcontractors(self):
+        """
+        Return every partner flagged as subcontractor.
+        """
+        return self.search([('contact_type', '=', 'sous_traitant')])
+
+    @api.model
+    def get_subcontractors_by_document_status(self, status=None):
+        """
+        Filter subcontractors by aggregated document status.
+        """
+        domain = [('contact_type', '=', 'sous_traitant')]
+        if status == 'expired':
+            domain.append(('has_expired_documents', '=', True))
+            return self.search(domain)
+        if status == 'expiring':
+            domain.append(('has_expiring_documents', '=', True))
+            return self.search(domain)
+        if status in {'missing', 'rejected', 'to_check', 'valid'}:
+            status_domain = self._build_status_domain(status)
+            if status_domain:
+                domain = expression.AND([domain, status_domain])
+        return self.search(domain)
+
+    @api.model
+    def get_subcontractors_by_lot(self, lot_id=None):
+        """
+        Return subcontractors linked to a specific trade lot.
+        """
+        domain = [('contact_type', '=', 'sous_traitant')]
+        if lot_id:
+            domain.append(('lot_ids', 'in', [lot_id]))
+        return self.search(domain)
+
+    @api.model
+    def filter_subcontractors(self, status=None, lot_id=None, document_type=None):
+        """
+        Flexible helper that combines lot and document filters.
+        """
+        domain = [('contact_type', '=', 'sous_traitant')]
+        if lot_id:
+            domain.append(('lot_ids', 'in', [lot_id]))
+        if status and not document_type:
+            if status == 'expired':
+                domain.append(('has_expired_documents', '=', True))
+            elif status == 'expiring':
+                domain.append(('has_expiring_documents', '=', True))
+            elif status in {'missing', 'rejected', 'to_check', 'valid'}:
+                status_domain = self._build_status_domain(status)
+                if status_domain:
+                    domain = expression.AND([domain, status_domain])
+        if document_type and status and document_type in DOCUMENT_TYPES:
+            config = DOCUMENT_TYPES[document_type]
+            domain.append((config['status_field'], '=', status))
+        return self.search(domain)
+
+    def get_subcontractors_with_valid_docs(self):
+        """
+        Return subcontractors that present a valid KBIS document.
+        """
+        return self.filter_subcontractors(
+            status='valid',
+            document_type='kbis'
+        ).sorted('chantier_count', reverse=True)
+
     @api.model
     def get_subcontractors_with_expired_documents(self):
         """Get subcontractors with expired documents."""

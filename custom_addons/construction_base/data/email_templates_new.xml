@@ -56,27 +56,5 @@
             <field name="attachment_ids" eval="[(0, 0, {'name': 'Planning.pdf', 'res_model': 'construction.chantier', 'res_id': object.chantier_id.id})]"/>
         </record>
 
-        <record id="email_template_subcontractor_contract_upload" model="mail.template">
-            <field name="name">Notification de Téléversement Sous-traitant</field>
-            <field name="model_id" ref="construction_base.model_construction_subcontractor"/>
-            <field name="subject">Nouveau Document Téléversé - {{ object.name }}</field>
-            <field name="email_from">${user.email_formatted or company.email_formatted}</field>
-            <field name="email_to">{{ object.email }}</field>
-            <field name="lang">{{ object.lang }}</field>
-            <field name="body_html" type="html"><![CDATA[
-<div style="font-family: Arial, sans-serif; font-size: 14px; color: #333; line-height: 1.6;">
-    <p>Bonjour <t t-out="object.name or ''"></t>,</p>
-    <p>Un nouveau document a été téléversé pour votre chantier.</p>
-    <p>Détails :</p>
-    <ul>
-        <li>Nom du fichier : <t t-out="object.document_name or ''"></t></li>
-        <li>Date : <t t-out="object.upload_date.strftime('%d/%m/%Y %H:%M') if object.upload_date else ''"></t></li>
-        <li>Utilisateur : <t t-out="user.name or ''"></t></li>
-    </ul>
-    <p>Vous pouvez accéder à ce document via votre portail.</p>
-    <p>Cordialement,<br/><t t-out="user.name or ''"></t></p>
-</div>
-            ]]></field>
-        </record>
     </data>
 </odoo>

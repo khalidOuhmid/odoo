@@ -1,65 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <record id="email_template_contract_signature" model="mail.template">
-            <field name="name">Signature électronique de contrat</field>
-            <field name="model_id" ref="model_construction_subcontractor_contract"/>
-            <field name="subject">Signature de contrat - ${object.chantier_id.name}</field>
-            <field name="email_from">${object.company_id.email or user.email}</field>
-            <field name="email_to">${object.subcontractor_id.email}</field>
-            <field name="body_html" type="html">
-<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background: #20B2AA; color: white; padding: 20px; text-align: center;">
-        <h1 style="margin: 0;">Contrat de sous-traitance</h1>
-        <p style="margin: 5px 0;"><t t-out="object.company_id.name"/></p>
-    </div>
-
-    <div style="padding: 20px;">
-        <p>Bonjour <strong><t t-out="object.subcontractor_id.name"/></strong>,</p>
-
-        <p>Votre contrat de sous-traitance est prêt pour signature électronique.</p>
-
-        <div style="background: #f8f9fa; padding: 15px; margin: 20px 0; border-radius: 5px;">
-            <h3 style="color: #20B2AA; margin-top: 0;">Détails du contrat</h3>
-            <p><strong>Numéro :</strong> <t t-out="object.contract_number"/></p>
-            <p><strong>Chantier :</strong> <t t-out="object.chantier_id.name"/></p>
-            <p><strong>Montant :</strong> <t t-out="'{:,.2f}'.format(object.total_amount)"/> <t t-out="object.currency_id.symbol"/></p>
-            <p><strong>Date de début :</strong> <t t-out="object.start_date"/></p>
-            <p><strong>Lots concernés :</strong> <t t-out="object.lot_names"/></p>
-        </div>
-
-        <div style="text-align: center; margin: 30px 0;">
-            <a t-att-href="object.portal_url"
-               style="background: #20B2AA; color: white; padding: 15px 30px; text-decoration: none;
-                      border-radius: 5px; display: inline-block; font-weight: bold;">
-                📝 SIGNER LE CONTRAT EN LIGNE
-            </a>
-        </div>
-
-        <div style="background: #fff3cd; padding: 15px; margin: 20px 0; border-radius: 5px;">
-            <p style="margin: 0;"><strong>Actions possibles :</strong></p>
-            <ul style="margin: 10px 0;">
-                <li><a t-att-href="object.portal_url.replace('/sign', '/preview')">Prévisualiser le contrat</a></li>
-                <li><a t-att-href="object.portal_url.replace('/sign', '/download')">Télécharger le PDF</a></li>
-            </ul>
-        </div>
-
-        <p><small><strong>Sécurité :</strong> Ce lien est personnel et sécurisé.
-        Ne le partagez pas avec d'autres personnes.</small></p>
-
-        <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;"/>
-
-        <p>Pour toute question, contactez-nous :<br/>
-        📧 <t t-out="object.company_id.email"/><br/>
-        📞 <t t-out="object.company_id.phone"/></p>
-
-        <p>Cordialement,<br/>
-        <strong><t t-out="object.company_id.name"/></strong></p>
-    </div>
-</div>
-            </field>
-        </record>
-
         <!-- Template pour l'envoi automatique des factures -->
         <record id="email_template_invoice_ready" model="mail.template">
             <field name="name">Facture prête - Envoi automatique</field>

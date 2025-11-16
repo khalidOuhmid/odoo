@@ -53,6 +53,11 @@
                 <field name="lot_ids" widget="many2many_tags" options="{'no_create': False}"
                        invisible="contact_type != 'sous_traitant' and contact_type != 'employee'"
                        required="contact_type == 'sous_traitant'"/>
+                <field name="urssaf_code"
+                       readonly="1"
+                       placeholder="Aucun code URSSAF détecté"
+                       modifiers="{'invisible': [('contact_type', '!=', 'sous_traitant')]}"
+                       help="Codes URSSAF détectés sur les spécialités (lots) liées"/>
             </field>
         </field>
     </record>

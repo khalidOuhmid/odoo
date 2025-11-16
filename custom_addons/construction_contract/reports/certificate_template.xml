@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- CERTIFICATE REPORT ACTION                                  -->
+    <!-- ========================================================== -->
+
+    <record id="action_report_certificate" model="ir.actions.report">
+        <field name="name">Certificate of Completion</field>
+        <field name="model">construction.contract</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_contract.report_certificate_document</field>
+        <field name="report_file">construction_contract.report_certificate_document</field>
+        <field name="print_report_name">'Certificate_%s' % object.name</field>
+        <field name="binding_model_id" ref="model_construction_contract"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- CERTIFICATE TEMPLATE                                       -->
+    <!-- ========================================================== -->
+
+    <template id="report_certificate_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="contract">
+                <t t-call="web.basic_layout">
+                    <div class="page" style="font-family: Arial, sans-serif;">
+
+                        <!-- Header -->
+                        <div class="text-center" style="background-color: #28a745; color: white; padding: 20px; margin-bottom: 30px;">
+                            <h1 style="margin: 0;">✅ CERTIFICAT DE PREUVE</h1>
+                            <h3 style="margin: 10px 0 0 0; font-weight: normal;">
+                                Signature Électronique de Contrat
+                            </h3>
+                        </div>
+
+                        <!-- Contract Information -->
+                        <div style="background-color: #f9f9f9; padding: 20px; margin-bottom: 30px; border-left: 4px solid #28a745;">
+                            <h4 style="margin-top: 0; color: #28a745;">Informations du Contrat</h4>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td style="width: 40%;"><strong>Référence contrat :</strong></td>
+                                    <td><t t-esc="contract.name"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Chantier :</strong></td>
+                                    <td><t t-esc="contract.chantier_id.name"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sous-traitant :</strong></td>
+                                    <td><t t-esc="contract.subcontractor_id.name"/></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Montant TTC :</strong></td>
+                                    <td>
+                                        <strong style="color: #28a745; font-size: 16px;">
+                                            <t t-esc="'{:,.2f}'.format(contract.total_amount_ttc)"/>
+                                            <t t-esc="contract.currency_id.symbol"/>
+                                        </strong>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Signature Details -->
+                        <t t-if="contract.signature_id">
+                            <div style="margin-bottom: 30px;">
+                                <h4 style="color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">
+                                    Détails de la Signature Électronique
+                                </h4>
+
+                                <table class="table table-sm table-bordered">
+                                    <tr>
+                                        <td style="width: 40%; background-color: #f5f5f5;">
+                                            <strong>Signataire :</strong>
+                                        </td>
+                                        <td><t t-esc="contract.signature_id.signer_name"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f5f5f5;">
+                                            <strong>Email :</strong>
+                                        </td>
+                                        <td><t t-esc="contract.signature_id.signer_email"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f5f5f5;">
+                                            <strong>Téléphone :</strong>
+                                        </td>
+                                        <td><t t-esc="contract.signature_id.signer_phone or 'N/A'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f5f5f5;">
+                                            <strong>Date et heure de signature :</strong>
+                                        </td>
+                                        <td>
+                                            <t t-esc="contract.signature_date.strftime('%d/%m/%Y à %H:%M:%S')"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f5f5f5;">
+                                            <strong>Adresse IP :</strong>
+                                        </td>
+                                        <td><t t-esc="contract.signature_id.ip_address"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f5f5f5;">
+                                            <strong>Géolocalisation :</strong>
+                                        </td>
+                                        <td><t t-esc="contract.signature_id.geolocation or 'Non disponible'"/></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f5f5f5;">
+                                            <strong>Type d'appareil :</strong>
+                                        </td>
+                                        <td>
+                                            <t t-esc="dict(contract.signature_id._fields['device_type'].selection).get(contract.signature_id.device_type, 'Unknown')"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="background-color: #f5f5f5;">
+                                            <strong>Méthode d'authentification :</strong>
+                                        </td>
+                                        <td>
+                                            <t t-esc="dict(contract.signature_id._fields['authentication_method'].selection).get(contract.signature_id.authentication_method, 'Unknown')"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </t>
+
+                        <!-- Page Validation Summary -->
+                        <div style="margin-bottom: 30px;">
+                            <h4 style="color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">
+                                Validation des Pages
+                            </h4>
+                            <p>
+                                <strong>Total de pages :</strong> <t t-esc="contract.pdf_page_count"/><br/>
+                                <strong>Pages validées :</strong> <t t-esc="len(contract.page_validation_ids)"/><br/>
+                                <strong>Temps total de lecture :</strong>
+                                <t t-esc="sum(contract.page_validation_ids.mapped('time_spent'))"/> secondes
+                            </p>
+
+                            <table class="table table-sm table-bordered">
+                                <thead style="background-color: #0056b3; color: white;">
+                                    <tr>
+                                        <th>Page</th>
+                                        <th>Date de validation</th>
+                                        <th>Temps passé (s)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="contract.page_validation_ids.sorted('page_number')" t-as="validation">
+                                        <tr>
+                                            <td><t t-esc="validation.page_number"/></td>
+                                            <td><t t-esc="validation.validated_date.strftime('%d/%m/%Y %H:%M:%S')"/></td>
+                                            <td><t t-esc="validation.time_spent"/></td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Hash Integrity -->
+                        <div style="margin-bottom: 30px;">
+                            <h4 style="color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 5px;">
+                                Intégrité du Document
+                            </h4>
+                            <p style="font-size: 11px; font-family: monospace; background-color: #f5f5f5; padding: 10px; word-break: break-all;">
+                                <strong>Hash SHA-256 avant signature :</strong><br/>
+                                <t t-esc="contract.pdf_hash_before_signature"/>
+                            </p>
+                            <t t-if="contract.pdf_hash_after_signature">
+                                <p style="font-size: 11px; font-family: monospace; background-color: #f5f5f5; padding: 10px; word-break: break-all;">
+                                    <strong>Hash SHA-256 après signature :</strong><br/>
+                                    <t t-esc="contract.pdf_hash_after_signature"/>
+                                </p>
+                            </t>
+                        </div>
+
+                        <!-- Legal Notice -->
+                        <div style="background-color: #fffbea; border: 2px solid #ffc107; padding: 15px; margin-top: 40px;">
+                            <h5 style="color: #856404; margin-top: 0;">
+                                ⚖️ Valeur Légale
+                            </h5>
+                            <p style="font-size: 12px; margin: 0;">
+                                Ce certificat atteste de la signature électronique du contrat référencé ci-dessus.
+                                La signature électronique a été réalisée conformément au règlement eIDAS
+                                (Règlement UE n°910/2014) et au Code Civil français (articles 1366 et 1367).
+                                Ce document a la même valeur probante qu'une signature manuscrite.
+                            </p>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="text-center" style="margin-top: 40px; font-size: 12px; color: #666;">
+                            <p>
+                                Certificat généré automatiquement le
+                                <t t-esc="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M:%S')"/>
+                            </p>
+                            <p>
+                                <t t-esc="contract.company_id.name"/> -
+                                Système de gestion des contrats
+                            </p>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

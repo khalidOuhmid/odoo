@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-from . import contract_generation_wizard
 from . import create_purchase_line_wizard
 from . import create_task_planning
 from . import document_upload_wizard

@@ -12,7 +12,7 @@
                             type="object"
                             class="btn-info"
                             icon="fa-folder-open"
-                            help="Gérer les documents du lot et envoyer l'email au sous-traitant"/>
+                            help="Gérer les documents du lot"/>
                 </header>
                 
                 <sheet>
@@ -67,11 +67,6 @@
                         </page>
                         <page string="Documents" name="documents">
                             <group>
-                                <group string="📄 Contrat de sous-traitance">
-                                    <field name="document_subcontractor_contract" 
-                                           filename="contrat_sous_traitance.pdf"
-                                           help="Contrat de sous-traitance pour ce lot"/>
-                                </group>
                                 <group string="📋 CCTP">
                                     <field name="document_cctp" 
                                            filename="cctp.pdf"

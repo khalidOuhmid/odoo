@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- REPORT ACTION                                              -->
+    <!-- ========================================================== -->
+
+    <record id="action_report_contract" model="ir.actions.report">
+        <field name="name">Contract PDF</field>
+        <field name="model">construction.contract</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_contract.report_contract_document</field>
+        <field name="report_file">construction_contract.report_contract_document</field>
+        <field name="print_report_name">'Contract_%s' % object.name</field>
+        <field name="binding_model_id" ref="model_construction_contract"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- REPORT TEMPLATE (QWeb Fallback)                            -->
+    <!-- ========================================================== -->
+
+    <template id="report_contract_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="contract">
+                <t t-call="web.external_layout">
+                    <div class="page">
+
+                        <!-- Header -->
+                        <div class="text-center" style="margin-bottom: 30px;">
+                            <h2 style="color: #0056b3; text-transform: uppercase; letter-spacing: 2px;">
+                                CONTRAT DE SOUS-TRAITANCE
+                            </h2>
+                            <h3 style="color: #666;">
+                                <t t-esc="contract.name"/>
+                            </h3>
+                        </div>
+
+                        <!-- Parties -->
+                        <div style="margin-bottom: 30px;">
+                            <h4>ENTRE LES SOUSSIGNÉS :</h4>
+
+                            <p>
+                                <strong>L'Entreprise Principale :</strong><br/>
+                                <t t-esc="contract.company_id.name"/><br/>
+                                SIRET: <t t-esc="contract.company_id.company_registry or 'N/A'"/><br/>
+                                <t t-esc="contract.company_id.street"/>,
+                                <t t-esc="contract.company_id.zip"/> <t t-esc="contract.company_id.city"/>
+                            </p>
+
+                            <p>Ci-après dénommée "l'Entrepreneur Principal"</p>
+                            <p><strong>D'UNE PART,</strong></p>
+
+                            <p>
+                                <strong>Et le Sous-Traitant :</strong><br/>
+                                <t t-esc="contract.subcontractor_id.name"/><br/>
+                                SIRET: <t t-esc="contract.subcontractor_id.company_registry or 'N/A'"/><br/>
+                                <t t-esc="contract.subcontractor_id.street"/>,
+                                <t t-esc="contract.subcontractor_id.zip"/> <t t-esc="contract.subcontractor_id.city"/>
+                            </p>
+
+                            <p>Ci-après dénommé "le Sous-Traitant"</p>
+                            <p><strong>D'AUTRE PART,</strong></p>
+                        </div>
+
+                        <!-- Article 1: Objet -->
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #0056b3; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+                                ARTICLE 1 - OBJET DU CONTRAT
+                            </h4>
+                            <p>
+                                Le présent contrat a pour objet la réalisation des travaux suivants
+                                dans le cadre du chantier :
+                            </p>
+                            <p>
+                                <strong>Chantier :</strong> <t t-esc="contract.chantier_id.name"/><br/>
+                                <strong>Référence :</strong> <t t-esc="contract.chantier_id.reference"/><br/>
+                                <strong>Adresse :</strong> <t t-esc="contract.chantier_id.address"/>
+                            </p>
+
+                            <h5>Lots concernés :</h5>
+                            <table class="table table-sm table-bordered">
+                                <thead style="background-color: #0056b3; color: white;">
+                                    <tr>
+                                        <th>Lot</th>
+                                        <th>Description</th>
+                                        <th class="text-right">Montant HT</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="contract.lot_ids" t-as="lot">
+                                        <tr>
+                                            <td><t t-esc="lot.name"/></td>
+                                            <td><t t-esc="lot.description or '-'"/></td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:,.2f}'.format(sum(lot.purchase_order_ids.filtered(lambda po: po.partner_id == contract.subcontractor_id).mapped('amount_untaxed')))"/> €
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Article 2: Durée -->
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #0056b3; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+                                ARTICLE 2 - DURÉE ET DÉLAIS
+                            </h4>
+                            <p>
+                                <strong>Date de début des travaux :</strong>
+                                <t t-esc="contract.start_date.strftime('%d/%m/%Y')"/><br/>
+                                <strong>Date de fin prévue :</strong>
+                                <t t-esc="contract.end_date.strftime('%d/%m/%Y')"/>
+                            </p>
+                        </div>
+
+                        <!-- Article 3: Prix -->
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="color: #0056b3; border-bottom: 1px solid #ddd; padding-bottom: 5px;">
+                                ARTICLE 3 - PRIX ET MODALITÉS DE PAIEMENT
+                            </h4>
+                            <table class="table table-sm">
+                                <tr>
+                                    <td style="width: 60%;"><strong>Montant total HT :</strong></td>
+                                    <td class="text-right">
+                                        <t t-esc="'{:,.2f}'.format(contract.total_amount_ht)"/>
+                                        <t t-esc="contract.currency_id.symbol"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td><strong>TVA :</strong></td>
+                                    <td class="text-right">
+                                        <t t-esc="'{:,.2f}'.format(contract.total_amount_tva)"/>
+                                        <t t-esc="contract.currency_id.symbol"/>
+                                    </td>
+                                </tr>
+                                <tr style="border-top: 2px solid #0056b3;">
+                                    <td><strong>Montant total TTC :</strong></td>
+                                    <td class="text-right" style="font-size: 18px; color: #0056b3;">
+                                        <strong>
+                                            <t t-esc="'{:,.2f}'.format(contract.total_amount_ttc)"/>
+                                            <t t-esc="contract.currency_id.symbol"/>
+                                        </strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>Retenue de garantie
+                                        (<t t-esc="contract.retention_rate"/>%) :</strong>
+                                    </td>
+                                    <td class="text-right">
+                                        <t t-esc="'{:,.2f}'.format(contract.retention_amount)"/>
+                                        <t t-esc="contract.currency_id.symbol"/>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+
+                        <!-- Signatures -->
+                        <div style="margin-top: 60px;">
+                            <p>Fait en deux exemplaires originaux,</p>
+                            <p>À _____________, le <t t-esc="contract.date.strftime('%d/%m/%Y')"/></p>
+
+                            <div class="row" style="margin-top: 40px;">
+                                <div class="col-6">
+                                    <p><strong>Pour l'Entrepreneur Principal</strong></p>
+                                    <p>Nom et signature :</p>
+                                    <br/><br/><br/>
+                                </div>
+                                <div class="col-6">
+                                    <p><strong>Pour le Sous-Traitant</strong></p>
+                                    <p><t t-esc="contract.subcontractor_id.name"/></p>
+                                    <p>Signature électronique</p>
+                                    <t t-if="contract.signature_id">
+                                        <p style="font-size: 12px; color: #666;">
+                                            Signé le <t t-esc="contract.signature_date.strftime('%d/%m/%Y à %H:%M')"/>
+                                        </p>
+                                    </t>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

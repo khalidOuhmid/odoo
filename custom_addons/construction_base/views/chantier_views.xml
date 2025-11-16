@@ -58,14 +58,6 @@
                                 class="btn-info"
                                 invisible="stage_id &lt;= 3"/>
 
-                        <button name="action_generate_subcontractor_contracts"
-                                string="📄 Générer contrats"
-                                type="object"
-                                class="btn-success"
-                                invisible="stage_id &lt;= 2"
-                                help="Générer les contrats de sous-traitance pour ce chantier"/>
-
-
                         <!-- Statut -->
                         <field name="state"
                                widget="statusbar"
@@ -300,19 +292,6 @@
                             <page string="🏗️ Lots de travaux" name="lots" invisible="stage_id &lt;= 2">
                                 <!-- Boutons d'action groupés -->
                                 <div class="oe_button_box" style="margin-bottom: 10px;">
-                                    <button name="action_generate_grouped_contracts"
-                                            type="object"
-                                            string="📋 Générer contrats groupés"
-                                            class="btn btn-primary"
-                                            icon="fa-file-contract"
-                                            help="Générer des contrats groupés pour les lots sélectionnés avec le même sous-traitant"
-                                            invisible="stage_id &lt;= 3"/>
-                                    <button name="action_clear_lot_selection"
-                                            type="object"
-                                            string="🗑️ Désélectionner tout"
-                                            class="btn btn-secondary"
-                                            icon="fa-times"
-                                            help="Désélectionner tous les lots"/>
                                 </div>
                                 
                                 <field name="lots_ids"
@@ -321,9 +300,6 @@
                                           decoration-success="is_finished"
                                           decoration-muted="not is_finished"
                                           decoration-warning="not subcontractor_ids">
-                                        <field name="selected_for_contract" widget="checkbox" 
-                                               string="Sélectionner" 
-                                               help="Cocher pour inclure ce lot dans la génération de contrat groupé"/>
                                         <field name="standard_lot_id" optional="show"/>
                                         <field name="name"/>
                                         <field name="price" widget="monetary" sum="Total estimé"/>

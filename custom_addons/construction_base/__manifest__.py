@@ -30,8 +30,6 @@
         'security/ir.model.access.csv',
 
         # Rapports (templates d'abord, puis actions)
-        'reports/contract_header_footer.xml',
-        'reports/subcontractor_contract_template.xml',
         'reports/chantier_invoice_report.xml',
         'reports/reports.xml',
         'reports/planning_report.xml',
@@ -69,8 +67,6 @@
         'views/planning_views.xml',
         'views/invoice_type_views.xml',
         'views/sale_order_line_orders_views.xml',
-        'views/subcontractor_contract_views.xml',
-        'views/subcontractor_contract_upload.xml',
         'views/templates.xml',
         'views/main_views.xml',
 
@@ -81,8 +77,6 @@
         'wizard/views/quote_selection_wizard_views.xml',
         'wizard/views/force_stage_wizard_view.xml',
         'wizard/views/lot_document_wizard_views.xml',
-        'wizard/views/contract_wizzard_views.xml',
-        'wizard/views/contract_generation_wizard_views.xml',
         'wizard/views/invoice_setup_wizard_views.xml',
         'wizard/views/lot_select_wizard_views.xml',
         
@@ -96,7 +90,6 @@
             # SCSS/CSS Files
             'construction_base/static/src/scss/kanban_clean.scss',
             'construction_base/static/src/scss/chantier_views.scss',
-            'construction_base/static/src/scss/contract_generation_wizard.scss',
             # JavaScript Files
             'construction_base/static/src/js/construction_kanban.js',
             'construction_base/static/src/js/planning_gantt.js',

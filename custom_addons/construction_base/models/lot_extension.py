@@ -45,14 +45,6 @@ class ConstructionLot(models.Model):
         help="Prix calculé depuis le devis principal du chantier"
     )
 
-    # =================== SÉLECTION POUR CONTRAT ===================
-    
-    selected_for_contract = fields.Boolean(
-        string='Sélectionné pour contrat',
-        default=False,
-        help="Cocher pour inclure ce lot dans la génération de contrat groupé"
-    )
-
     # =================== RELATIONS ===================
 
     standard_lot_id = fields.Many2one(
@@ -86,11 +78,6 @@ class ConstructionLot(models.Model):
 
     # =================== CHAMPS ADDITIONNELS ===================
 
-    urssaf_code = fields.Char(
-        string='Code URSSAF',
-        help="Code URSSAF avec description pour les contrats"
-    )
-
     description = fields.Text(
         string='Description',
         help="Description détaillée du lot de travaux"
@@ -107,12 +94,6 @@ class ConstructionLot(models.Model):
         string="CCTP",
         attachment=True,
         help="Cahier des Clauses Techniques Particulières"
-    )
-    
-    document_subcontractor_contract = fields.Binary(
-        string="Contrat de sous-traitance",
-        attachment=True,
-        help="Contrat de sous-traitance pour ce lot"
     )
     
     document_general_planning = fields.Binary(
@@ -211,8 +192,6 @@ class ConstructionLot(models.Model):
                 lot.name = lot.standard_lot_id.name or lot.name
                 if hasattr(lot, 'code'):
                     lot.code = lot.standard_lot_id.code or getattr(lot, 'code', False)
-                if hasattr(lot, 'urssaf_code'):
-                    lot.urssaf_code = lot.standard_lot_id.urssaf_code or getattr(lot, 'urssaf_code', False)
                 if hasattr(lot, 'color'):
                     lot.color = lot.standard_lot_id.color
 
