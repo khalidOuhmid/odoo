@@ -1,0 +1,322 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Custom layout without navbar for builder -->
+    <template id="contract_builder_layout" name="Contract Builder Layout">
+        <t t-call="web.layout">
+            <t t-set="head_website" t-value="None"/>
+            <t t-set="head">
+                <t t-call-assets="web.assets_common"/>
+                <t t-call-assets="web.assets_backend"/>
+                <t t-call-assets="construction_contract.assets_contract_builder"/>
+                <style>
+                    /* Hide all navigation elements */
+                    .o_main_navbar,
+                    .o_navbar_apps_menu,
+                    header.o_navbar,
+                    nav.navbar,
+                    .o_menu_systray {
+                        display: none !important;
+                    }
+                    body {
+                        padding-top: 0 !important;
+                    }
+                </style>
+            </t>
+            <t t-raw="0"/>
+        </t>
+    </template>
+
+    <template id="contract_live_builder_selector" name="Contract Builder Selector">
+        <t t-call="portal.portal_layout">
+            <section class="o_container_xxl mt32 mb64">
+                <div class="row justify-content-center">
+                    <div class="col-lg-10">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4">
+                                    <div>
+                                        <h2 class="h3 mb-1">
+                                            <i class="fa fa-hard-hat me-2"/>
+                                            Sélectionnez un chantier
+                                        </h2>
+                                        <p class="text-muted mb-0">
+                                            Choisissez un chantier pour ouvrir l’éditeur de contrat en direct.
+                                        </p>
+                                    </div>
+                                    <a class="btn btn-outline-secondary mt-3 mt-md-0" href="/web#model=construction.chantier&amp;view_type=list">
+                                        <i class="fa fa-external-link me-1"/>
+                                        Gérer les chantiers
+                                    </a>
+                                </div>
+
+                                <t t-if="error_message">
+                                    <div class="alert alert-warning">
+                                        <i class="fa fa-info-circle me-2"/>
+                                        <t t-esc="error_message"/>
+                                    </div>
+                                </t>
+
+                                <t t-if="chantiers">
+                                    <div class="table-responsive">
+                                        <table class="table align-middle">
+                                            <thead>
+                                                <tr>
+                                                    <th>Chantier</th>
+                                                    <th class="d-none d-md-table-cell">Référence</th>
+                                                    <th class="d-none d-md-table-cell">Ville</th>
+                                                    <th class="text-end">Action</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <t t-foreach="chantiers" t-as="chantier">
+                                                    <tr>
+                                                        <td>
+                                                            <div class="fw-bold"><t t-esc="chantier.name"/></div>
+                                                            <div class="text-muted small">
+                                                                <t t-esc="chantier.address or ''"/>
+                                                            </div>
+                                                        </td>
+                                                        <td class="d-none d-md-table-cell">
+                                                            <t t-esc="chantier.reference or '-'"/>
+                                                        </td>
+                                                        <td class="d-none d-md-table-cell">
+                                                            <t t-esc="chantier.city or ''"/>
+                                                        </td>
+                                                        <td class="text-end">
+                                                            <a t-attf-href="/contract/live-builder?chantier_id=#{chantier.id}"
+                                                               class="btn btn-primary">
+                                                                <i class="fa fa-magic me-1"/>
+                                                                Ouvrir l’éditeur
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                </t>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div class="alert alert-info mb-0">
+                                        <i class="fa fa-info-circle me-2"/>
+                                        Aucun chantier actif n’a été trouvé. Créez-en un dans le backend pour continuer.
+                                    </div>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </t>
+    </template>
+
+    <template id="contract_live_builder_page" name="Contract Live Builder">
+        <t t-call="construction_contract.contract_builder_layout">
+            <section class="contract-builder-shell">
+                <div id="contract-live-builder" t-att-data-config="builder_config">
+                    <div class="contract-builder-header">
+                        <div>
+                            <h2>Live Contract Editor</h2>
+                            <p class="text-muted mb-0">
+                                Construction Site: <strong><t t-esc="chantier.name"/></strong>
+                            </p>
+                        </div>
+                        <a class="btn btn-outline-secondary"
+                           t-attf-href="/web#id={{ chantier.id }}&amp;model=construction.chantier&amp;view_type=form">
+                            Back to Site
+                        </a>
+                    </div>
+
+                    <script type="text/javascript">
+                        console.log("[Template] Contract builder page loaded");
+                        console.log("[Template] Document ready state:", document.readyState);
+                        console.log("[Template] Container exists:", !!document.getElementById("contract-live-builder"));
+                    </script>
+
+                    <div class="contract-builder-grid">
+                        <div class="contract-builder-panel">
+                            <h3>Settings</h3>
+
+                            <div class="mb-3">
+                                <label class="form-label">Subcontractor</label>
+                                <select name="subcontractor_id" class="form-select js-builder-input" required="1">
+                                    <option value="">Select</option>
+                                    <t t-foreach="subcontractors" t-as="partner">
+                                        <option t-att-value="partner.id"
+                                                t-att-selected="partner.id == default_values.get('subcontractor_id') and 'selected' or None">
+                                            <t t-esc="partner.name"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Work Packages</label>
+                                <select name="lot_ids" class="form-select js-builder-input" multiple="1" size="8">
+                                    <t t-foreach="chantier.lots_ids" t-as="lot">
+                                        <option t-att-value="lot.id"
+                                                t-att-selected="lot.id in default_values.get('lot_ids', []) and 'selected' or None">
+                                            <t t-esc="lot.name"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+
+                            <div class="builder-section-divider"/>
+
+                            <div class="mb-3">
+                                <label class="form-label">Contract Template</label>
+                                <select name="template_id" class="form-select js-builder-input" required="1">
+                                    <option value="">Select</option>
+                                    <t t-foreach="templates" t-as="template">
+                                        <option t-att-value="template.id"
+                                                t-att-selected="template.id == default_values.get('template_id') and 'selected' or None">
+                                            <t t-esc="template.name"/>
+                                        </option>
+                                    </t>
+                                </select>
+                            </div>
+
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label">Contract Date</label>
+                                    <input type="date" class="form-control js-builder-input" name="contract_date"
+                                           t-att-value="default_values.get('contract_date')"/>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Retention (%)</label>
+                                    <input type="number" step="0.1" min="0" max="20"
+                                           class="form-control js-builder-input" name="retention_rate"
+                                           t-att-value="default_values.get('retention_rate')"/>
+                                </div>
+                            </div>
+
+                            <div class="row g-2 mt-2">
+                                <div class="col-6">
+                                    <label class="form-label">Work Start Date</label>
+                                    <input type="date" class="form-control js-builder-input" name="start_date"
+                                           t-att-value="default_values.get('start_date')"/>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label">Work End Date</label>
+                                    <input type="date" class="form-control js-builder-input" name="end_date"
+                                           t-att-value="default_values.get('end_date')"/>
+                                </div>
+                            </div>
+
+                            <div class="form-check form-switch mt-4">
+                                <input class="form-check-input js-builder-input" type="checkbox" id="builder-deliverables"
+                                       name="generate_deliverables"
+                                       t-att-checked="default_values.get('generate_deliverables') and 'checked' or None"/>
+                                <label class="form-check-label" for="builder-deliverables">
+                                    Auto-generate deliverables
+                                </label>
+                            </div>
+
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input js-builder-input" type="checkbox" id="builder-send"
+                                       name="send_immediately"
+                                       t-att-checked="default_values.get('send_immediately') and 'checked' or None"/>
+                                <label class="form-check-label" for="builder-send">
+                                    Send immediately for signature
+                                </label>
+                            </div>
+
+                            <div class="builder-summary">
+                                <div class="builder-summary-card">
+                                    <span>Site</span>
+                                    <strong><t t-esc="chantier.name"/></strong>
+                                </div>
+                                <div class="builder-summary-card">
+                                    <span>Packages</span>
+                                    <strong><t t-esc="len(chantier.lots_ids)"/></strong>
+                                </div>
+                                <div class="builder-summary-card">
+                                    <span>Templates</span>
+                                    <strong><t t-esc="len(templates)"/></strong>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="contract-builder-panel">
+                            <div class="builder-toolbar">
+                                <button class="btn btn-light js-builder-refresh">
+                                    <i class="fa fa-refresh"/> Refresh Preview
+                                </button>
+                                <button class="btn btn-outline-primary js-builder-toggle-edit js-edit-enable" data-mode="enable">
+                                    <i class="fa fa-edit"/> Enable Editing
+                                </button>
+                                <button class="btn btn-outline-secondary js-builder-toggle-edit js-edit-disable d-none" data-mode="disable">
+                                    <i class="fa fa-times"/> Disable Editing
+                                </button>
+                                <button class="btn btn-primary js-builder-generate">
+                                    <i class="fa fa-check"/> Generate Contract
+                                </button>
+                            </div>
+
+                            <div class="builder-preview-wrapper">
+                                <iframe id="builder-preview-frame" class="builder-preview-frame"
+                                        srcdoc="&lt;div class='alert alert-info p-4'&gt;Select a subcontractor, work packages, and a template to display the contract preview.&lt;/div&gt;"></iframe>
+                                <div class="builder-floating-message builder-edit-state d-none">
+                                    <i class="fa fa-edit"/>
+                                    Editing Active
+                                </div>
+                            </div>
+
+                            <div class="builder-status mt-3"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <script type="text/javascript">
+                <![CDATA[
+                console.log("[Template] End of page, initializing builder...");
+                
+                // Force initialization
+                (function() {
+                    var attempts = 0;
+                    var maxAttempts = 50;
+                    
+                    function tryInit() {
+                        attempts++;
+                        console.log("[Template] Init attempt", attempts);
+                        
+                        var container = document.getElementById("contract-live-builder");
+                        if (container) {
+                            console.log("[Template] Container found!");
+                            
+                            // Check if builder class exists
+                            if (typeof window.contractBuilder !== 'undefined') {
+                                console.log("[Template] Builder already initialized");
+                                return;
+                            }
+                            
+                            // Check if scripts are loaded
+                            var scripts = document.querySelectorAll('script[src*="contract_builder"]');
+                            console.log("[Template] Found", scripts.length, "contract_builder scripts");
+                            
+                            if (attempts < maxAttempts) {
+                                setTimeout(tryInit, 100);
+                            } else {
+                                console.error("[Template] Failed to initialize after", maxAttempts, "attempts");
+                                console.log("[Template] Available on window:", Object.keys(window).filter(function(k) { return k.includes('contract') || k.includes('builder'); }));
+                            }
+                        } else {
+                            console.error("[Template] Container not found!");
+                        }
+                    }
+                    
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', tryInit);
+                    } else {
+                        tryInit();
+                    }
+                })();
+                ]]>
+            </script>
+        </t>
+    </template>
+
+</odoo>
+

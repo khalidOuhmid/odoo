@@ -1,0 +1,338 @@
+.contract-template-editor {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+
+    #grapesjs-editor {
+        font-family: inherit;
+    }
+
+    .gjs-pn-panel {
+        background-color: #2c3e50;
+        border-right: 1px solid #34495e;
+    }
+
+    .gjs-pn-btn {
+        color: #ecf0f1;
+        border: none;
+        transition: all 0.3s ease;
+
+        &:hover {
+            background-color: #34495e;
+            color: #3498db;
+        }
+
+        &.gjs-pn-active {
+            background-color: #3498db;
+            color: white;
+        }
+    }
+
+    .gjs-blocks-c {
+        padding: 10px;
+    }
+
+    .gjs-block {
+        background-color: #ffffff;
+        border: 2px solid #ecf0f1;
+        border-radius: 4px;
+        padding: 12px;
+        margin: 8px 0;
+        cursor: grab;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+
+        &:hover {
+            border-color: #3498db;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+            transform: translateY(-2px);
+        }
+
+        &:active {
+            cursor: grabbing;
+        }
+    }
+
+    .gjs-block-label {
+        font-size: 13px;
+        font-weight: 500;
+        color: #2c3e50;
+        margin-top: 8px;
+    }
+
+    .gjs-block-category {
+        border-bottom: 2px solid #3498db;
+        margin: 15px 0 10px 0;
+        padding-bottom: 5px;
+
+        .gjs-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #2c3e50;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    }
+
+    .gjs-cv-canvas {
+        background-color: #f5f7fa;
+        background-image:
+            linear-gradient(45deg, #f0f0f0 25%, transparent 25%),
+            linear-gradient(-45deg, #f0f0f0 25%, transparent 25%),
+            linear-gradient(45deg, transparent 75%, #f0f0f0 75%),
+            linear-gradient(-45deg, transparent 75%, #f0f0f0 75%);
+        background-size: 20px 20px;
+        background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+    }
+
+    .gjs-frame {
+        border: 1px solid #dfe6e9;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        margin: 20px;
+    }
+
+    .gjs-selected {
+        outline: 3px solid #3498db !important;
+        outline-offset: 2px;
+    }
+
+    .gjs-hovered {
+        outline: 2px dashed #3498db !important;
+        outline-offset: 2px;
+    }
+
+    .gjs-layer {
+        padding: 8px 10px;
+        border-bottom: 1px solid #ecf0f1;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+            background-color: #f8f9fa;
+        }
+
+        &.gjs-selected {
+            background-color: #e3f2fd;
+            border-left: 3px solid #3498db;
+        }
+    }
+
+    .gjs-layer-name {
+        font-size: 13px;
+        color: #2c3e50;
+    }
+
+    .gjs-layer-icon {
+        color: #7f8c8d;
+    }
+
+    .gjs-sm-sectors {
+        background-color: #ffffff;
+    }
+
+    .gjs-sm-sector {
+        border-bottom: 1px solid #ecf0f1;
+
+        &-title {
+            background-color: #f8f9fa;
+            padding: 12px 15px;
+            font-weight: 600;
+            color: #2c3e50;
+            border-bottom: 1px solid #dfe6e9;
+        }
+    }
+
+    .gjs-sm-properties {
+        padding: 10px;
+    }
+
+    .gjs-sm-property {
+        margin-bottom: 15px;
+    }
+
+    .gjs-sm-label {
+        font-size: 12px;
+        color: #7f8c8d;
+        margin-bottom: 5px;
+        text-transform: uppercase;
+        font-weight: 500;
+        letter-spacing: 0.5px;
+    }
+
+    .gjs-field {
+        background-color: #ffffff;
+        border: 1px solid #dfe6e9;
+        border-radius: 4px;
+        padding: 8px 10px;
+        transition: border-color 0.3s ease;
+
+        &:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+    }
+
+    .gjs-trt-traits {
+        padding: 15px;
+    }
+
+    .gjs-trt-trait {
+        margin-bottom: 15px;
+    }
+
+    .gjs-trt-trait-label {
+        font-size: 12px;
+        color: #7f8c8d;
+        margin-bottom: 5px;
+        font-weight: 500;
+    }
+
+    .gjs-toolbar {
+        background-color: rgba(52, 152, 219, 0.95);
+        border: none;
+        border-radius: 4px;
+        padding: 5px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .gjs-toolbar-item {
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        margin: 0 2px;
+        border-radius: 3px;
+        transition: background-color 0.2s ease;
+
+        &:hover {
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+    }
+
+    .contract-section {
+        padding: 20px;
+        margin: 15px 0;
+        border-left: 4px solid #3498db;
+        background-color: #f8f9fa;
+
+        h3 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-top: 0;
+        }
+    }
+
+    .contract-article {
+        margin: 20px 0;
+        padding: 15px;
+        background-color: #ffffff;
+        border: 1px solid #ecf0f1;
+
+        h4 {
+            color: #3498db;
+            font-size: 16px;
+            text-transform: uppercase;
+            margin-top: 0;
+            border-bottom: 1px solid #ecf0f1;
+            padding-bottom: 10px;
+        }
+    }
+
+    .contract-var {
+        display: inline-block;
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        padding: 2px 8px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        border: 1px dashed #4caf50;
+    }
+
+    .signature-block {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 50px;
+        padding: 20px;
+        border-top: 2px solid #3498db;
+
+        > div {
+            width: 45%;
+        }
+    }
+
+    .gjs-mdl-dialog {
+        border-radius: 8px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .gjs-mdl-title {
+        background-color: #3498db;
+        color: white;
+        padding: 15px 20px;
+        font-weight: 600;
+        border-radius: 8px 8px 0 0;
+    }
+
+    .gjs-mdl-content {
+        padding: 20px;
+    }
+
+    .contract-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+
+        th,
+        td {
+            border: 1px solid #dfe6e9;
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #3498db;
+            color: white;
+            font-weight: 600;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .gjs-pn-panel {
+            width: 100%;
+            height: auto;
+        }
+
+        .gjs-frame {
+            margin: 10px;
+        }
+    }
+
+    .gjs-blocks-c::-webkit-scrollbar,
+    .gjs-sm-sectors::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .gjs-blocks-c::-webkit-scrollbar-track,
+    .gjs-sm-sectors::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+
+    .gjs-blocks-c::-webkit-scrollbar-thumb,
+    .gjs-sm-sectors::-webkit-scrollbar-thumb {
+        background: #bdc3c7;
+        border-radius: 4px;
+    }
+
+    .gjs-blocks-c::-webkit-scrollbar-thumb:hover,
+    .gjs-sm-sectors::-webkit-scrollbar-thumb:hover {
+        background: #95a5a6;
+    }
+}
+/**
+ * Template Editor Styles (GrapesJS)
+ * Custom styling for the visual template editor
+ */
+
+

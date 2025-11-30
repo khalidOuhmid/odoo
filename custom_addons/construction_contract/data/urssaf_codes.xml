@@ -1,0 +1,299 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Cotisations sociales -->
+        <record id="urssaf_code_001" model="construction.urssaf.code">
+            <field name="code">001</field>
+            <field name="name">Cotisation maladie</field>
+            <field name="description">Cotisation d'assurance maladie, maternité, invalidité et décès</field>
+            <field name="category">cotisation</field>
+            <field name="rate">13.00</field>
+            <field name="legal_reference">Article L243-1 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_002" model="construction.urssaf.code">
+            <field name="code">002</field>
+            <field name="name">Cotisation vieillesse plafonnée</field>
+            <field name="description">Cotisation d'assurance vieillesse dans la limite du plafond de la sécurité sociale</field>
+            <field name="category">cotisation</field>
+            <field name="rate">15.45</field>
+            <field name="legal_reference">Article L241-3 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_003" model="construction.urssaf.code">
+            <field name="code">003</field>
+            <field name="name">Cotisation vieillesse déplafonnée</field>
+            <field name="description">Cotisation d'assurance vieillesse sur la totalité du salaire</field>
+            <field name="category">cotisation</field>
+            <field name="rate">2.30</field>
+            <field name="legal_reference">Article L241-3 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_004" model="construction.urssaf.code">
+            <field name="code">004</field>
+            <field name="name">Allocations familiales</field>
+            <field name="description">Cotisation d'allocations familiales</field>
+            <field name="category">cotisation</field>
+            <field name="rate">3.45</field>
+            <field name="legal_reference">Article L241-6 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_005" model="construction.urssaf.code">
+            <field name="code">005</field>
+            <field name="name">Accidents du travail</field>
+            <field name="description">Cotisation d'accidents du travail et maladies professionnelles</field>
+            <field name="category">cotisation</field>
+            <field name="rate">2.00</field>
+            <field name="legal_reference">Article L241-5 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_006" model="construction.urssaf.code">
+            <field name="code">006</field>
+            <field name="name">FNAL (Fonds National d'Aide au Logement)</field>
+            <field name="description">Contribution au Fonds National d'Aide au Logement</field>
+            <field name="category">cotisation</field>
+            <field name="rate">0.50</field>
+            <field name="legal_reference">Article L834-1 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_007" model="construction.urssaf.code">
+            <field name="code">007</field>
+            <field name="name">Contribution solidarité autonomie</field>
+            <field name="description">Contribution de solidarité pour l'autonomie des personnes âgées et handicapées</field>
+            <field name="category">cotisation</field>
+            <field name="rate">0.30</field>
+            <field name="legal_reference">Article L14-10-4 du Code de l'action sociale et des familles</field>
+        </record>
+        
+        <record id="urssaf_code_008" model="construction.urssaf.code">
+            <field name="code">008</field>
+            <field name="name">Assurance chômage</field>
+            <field name="description">Contribution d'assurance chômage</field>
+            <field name="category">cotisation</field>
+            <field name="rate">4.05</field>
+            <field name="legal_reference">Article L5422-9 du Code du travail</field>
+        </record>
+        
+        <record id="urssaf_code_009" model="construction.urssaf.code">
+            <field name="code">009</field>
+            <field name="name">AGS (Garantie des Salaires)</field>
+            <field name="description">Contribution à l'Association pour la Gestion du régime de garantie des créances des Salariés</field>
+            <field name="category">cotisation</field>
+            <field name="rate">0.15</field>
+            <field name="legal_reference">Article L3253-14 du Code du travail</field>
+        </record>
+        
+        <record id="urssaf_code_010" model="construction.urssaf.code">
+            <field name="code">010</field>
+            <field name="name">Retraite complémentaire AGIRC-ARRCO</field>
+            <field name="description">Cotisation de retraite complémentaire obligatoire</field>
+            <field name="category">cotisation</field>
+            <field name="rate">7.87</field>
+            <field name="legal_reference">Accord national interprofessionnel du 17 novembre 2017</field>
+        </record>
+        
+        <!-- Exonérations -->
+        <record id="urssaf_code_101" model="construction.urssaf.code">
+            <field name="code">101</field>
+            <field name="name">Exonération ZRR (Zone de Revitalisation Rurale)</field>
+            <field name="description">Exonération de cotisations patronales pour les embauches en Zone de Revitalisation Rurale</field>
+            <field name="category">exoneration</field>
+            <field name="legal_reference">Article L131-4-2 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_102" model="construction.urssaf.code">
+            <field name="code">102</field>
+            <field name="name">Exonération ZFU (Zone Franche Urbaine)</field>
+            <field name="description">Exonération de cotisations patronales pour les entreprises implantées en Zone Franche Urbaine</field>
+            <field name="category">exoneration</field>
+            <field name="legal_reference">Article L131-4-3 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_103" model="construction.urssaf.code">
+            <field name="code">103</field>
+            <field name="name">Exonération apprentis</field>
+            <field name="description">Exonération de cotisations pour les contrats d'apprentissage</field>
+            <field name="category">exoneration</field>
+            <field name="legal_reference">Article L6243-2 du Code du travail</field>
+        </record>
+        
+        <record id="urssaf_code_104" model="construction.urssaf.code">
+            <field name="code">104</field>
+            <field name="name">Exonération contrat de professionnalisation</field>
+            <field name="description">Exonération de cotisations pour les contrats de professionnalisation</field>
+            <field name="category">exoneration</field>
+            <field name="legal_reference">Article L6325-16 du Code du travail</field>
+        </record>
+        
+        <record id="urssaf_code_105" model="construction.urssaf.code">
+            <field name="code">105</field>
+            <field name="name">Exonération jeune entreprise innovante (JEI)</field>
+            <field name="description">Exonération de cotisations patronales pour les jeunes entreprises innovantes</field>
+            <field name="category">exoneration</field>
+            <field name="legal_reference">Article L131-4-1 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_106" model="construction.urssaf.code">
+            <field name="code">106</field>
+            <field name="name">Exonération heures supplémentaires</field>
+            <field name="description">Exonération de cotisations salariales sur les heures supplémentaires</field>
+            <field name="category">exoneration</field>
+            <field name="legal_reference">Article L241-17 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_107" model="construction.urssaf.code">
+            <field name="code">107</field>
+            <field name="name">Exonération DOM (Départements d'Outre-Mer)</field>
+            <field name="description">Exonération de cotisations patronales pour les entreprises situées dans les DOM</field>
+            <field name="category">exoneration</field>
+            <field name="legal_reference">Article L752-3-1 du Code de la sécurité sociale</field>
+        </record>
+        
+        <!-- Réductions -->
+        <record id="urssaf_code_201" model="construction.urssaf.code">
+            <field name="code">201</field>
+            <field name="name">Réduction générale (ex-réduction Fillon)</field>
+            <field name="description">Réduction générale des cotisations patronales sur les bas salaires</field>
+            <field name="category">reduction</field>
+            <field name="legal_reference">Article L241-13 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_202" model="construction.urssaf.code">
+            <field name="code">202</field>
+            <field name="name">Réduction TEPA (Travail, Emploi, Pouvoir d'Achat)</field>
+            <field name="description">Réduction de cotisations sur les heures supplémentaires et complémentaires</field>
+            <field name="category">reduction</field>
+            <field name="legal_reference">Loi n°2007-1223 du 21 août 2007</field>
+        </record>
+        
+        <record id="urssaf_code_203" model="construction.urssaf.code">
+            <field name="code">203</field>
+            <field name="name">Réduction allocations familiales</field>
+            <field name="description">Réduction du taux de cotisation d'allocations familiales pour les salaires inférieurs à 3,5 SMIC</field>
+            <field name="category">reduction</field>
+            <field name="rate">1.80</field>
+            <field name="legal_reference">Article L241-6-1 du Code de la sécurité sociale</field>
+        </record>
+        
+        <record id="urssaf_code_204" model="construction.urssaf.code">
+            <field name="code">204</field>
+            <field name="name">Réduction maladie</field>
+            <field name="description">Réduction du taux de cotisation maladie pour les salaires inférieurs à 2,5 SMIC</field>
+            <field name="category">reduction</field>
+            <field name="rate">6.00</field>
+            <field name="legal_reference">Article L241-2 du Code de la sécurité sociale</field>
+        </record>
+        
+        <!-- Autres contributions -->
+        <record id="urssaf_code_301" model="construction.urssaf.code">
+            <field name="code">301</field>
+            <field name="name">Contribution formation professionnelle</field>
+            <field name="description">Contribution à la formation professionnelle continue</field>
+            <field name="category">autre</field>
+            <field name="rate">1.00</field>
+            <field name="legal_reference">Article L6331-2 du Code du travail</field>
+        </record>
+        
+        <record id="urssaf_code_302" model="construction.urssaf.code">
+            <field name="code">302</field>
+            <field name="name">Taxe d'apprentissage</field>
+            <field name="description">Taxe destinée au financement de l'apprentissage</field>
+            <field name="category">autre</field>
+            <field name="rate">0.68</field>
+            <field name="legal_reference">Article L6241-1 du Code du travail</field>
+        </record>
+        
+        <record id="urssaf_code_303" model="construction.urssaf.code">
+            <field name="code">303</field>
+            <field name="name">Contribution CPF-CDD</field>
+            <field name="description">Contribution au Compte Personnel de Formation pour les CDD</field>
+            <field name="category">autre</field>
+            <field name="rate">1.00</field>
+            <field name="legal_reference">Article L6331-10 du Code du travail</field>
+        </record>
+        
+        <record id="urssaf_code_304" model="construction.urssaf.code">
+            <field name="code">304</field>
+            <field name="name">Contribution dialogue social</field>
+            <field name="description">Contribution au financement des organisations syndicales et patronales</field>
+            <field name="category">autre</field>
+            <field name="rate">0.016</field>
+            <field name="legal_reference">Article L2135-9 du Code du travail</field>
+        </record>
+        
+        <record id="urssaf_code_305" model="construction.urssaf.code">
+            <field name="code">305</field>
+            <field name="name">Versement mobilité</field>
+            <field name="description">Contribution au financement des transports en commun</field>
+            <field name="category">autre</field>
+            <field name="rate">1.60</field>
+            <field name="legal_reference">Article L2333-64 du Code général des collectivités territoriales</field>
+        </record>
+        
+        <record id="urssaf_code_306" model="construction.urssaf.code">
+            <field name="code">306</field>
+            <field name="name">Contribution effort construction</field>
+            <field name="description">Participation des employeurs à l'effort de construction (PEEC)</field>
+            <field name="category">autre</field>
+            <field name="rate">0.45</field>
+            <field name="legal_reference">Article L313-1 du Code de la construction et de l'habitation</field>
+        </record>
+        
+        <record id="urssaf_code_307" model="construction.urssaf.code">
+            <field name="code">307</field>
+            <field name="name">Forfait social</field>
+            <field name="description">Contribution sur les avantages de retraite supplémentaire et de prévoyance</field>
+            <field name="category">autre</field>
+            <field name="rate">20.00</field>
+            <field name="legal_reference">Article L137-15 du Code de la sécurité sociale</field>
+        </record>
+        
+        <!-- Codes spécifiques BTP -->
+        <record id="urssaf_code_401" model="construction.urssaf.code">
+            <field name="code">401</field>
+            <field name="name">Cotisation BTP - Congés payés</field>
+            <field name="description">Cotisation spécifique BTP pour les congés payés (caisse de congés payés)</field>
+            <field name="category">cotisation</field>
+            <field name="rate">16.44</field>
+            <field name="legal_reference">Convention collective nationale du BTP</field>
+        </record>
+        
+        <record id="urssaf_code_402" model="construction.urssaf.code">
+            <field name="code">402</field>
+            <field name="name">Cotisation BTP - Intempéries</field>
+            <field name="description">Cotisation pour indemnisation des intempéries dans le BTP</field>
+            <field name="category">cotisation</field>
+            <field name="rate">0.74</field>
+            <field name="legal_reference">Convention collective nationale du BTP</field>
+        </record>
+        
+        <record id="urssaf_code_403" model="construction.urssaf.code">
+            <field name="code">403</field>
+            <field name="name">Cotisation BTP - Prévoyance</field>
+            <field name="description">Cotisation de prévoyance obligatoire pour les cadres et ETAM du BTP</field>
+            <field name="category">cotisation</field>
+            <field name="rate">1.72</field>
+            <field name="legal_reference">Convention collective nationale du BTP</field>
+        </record>
+        
+        <record id="urssaf_code_404" model="construction.urssaf.code">
+            <field name="code">404</field>
+            <field name="name">Cotisation BTP - Médecine du travail</field>
+            <field name="description">Cotisation pour la médecine du travail dans le BTP</field>
+            <field name="category">cotisation</field>
+            <field name="rate">0.13</field>
+            <field name="legal_reference">Convention collective nationale du BTP</field>
+        </record>
+        
+        <record id="urssaf_code_405" model="construction.urssaf.code">
+            <field name="code">405</field>
+            <field name="name">Cotisation BTP - OPPBTP</field>
+            <field name="description">Cotisation à l'Organisme Professionnel de Prévention du Bâtiment et des Travaux Publics</field>
+            <field name="category">cotisation</field>
+            <field name="rate">0.11</field>
+            <field name="legal_reference">Article L4643-1 du Code du travail</field>
+        </record>
+        
+    </data>
+</odoo>

@@ -1,0 +1,745 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- MAIN SIGNATURE PORTAL TEMPLATE                             -->
+    <!-- ========================================================== -->
+
+    <template id="signature_portal_template" name="Contract Signature Portal">
+        <t t-call="portal.portal_layout">
+            <!-- Load PDF.js directly from CDN -->
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+            
+            <!-- Load our custom scripts directly (not via Odoo assets to avoid AMD issues) -->
+            <script type="text/javascript" t-att-src="'/construction_contract/static/src/js/pdf_viewer.js'"></script>
+            <script type="text/javascript" t-att-src="'/construction_contract/static/src/js/page_validator.js'"></script>
+            <script type="text/javascript" t-att-src="'/construction_contract/static/src/js/signature_pad.js'"></script>
+            
+            <!-- Load CSS via assets -->
+            <t t-call-assets="construction_contract.assets_signature_portal"/>
+            <t t-set="additional_title">Signature de Contrat</t>
+
+            <div class="signature-portal-wrapper"
+                 t-att-data-contract-id="contract.id"
+                 t-att-data-access-token="access_token">
+                
+                <!-- Professional Header with BLG Logo and Progress -->
+                <div class="portal-header">
+                    <div class="container">
+                        <div class="row align-items-center">
+                            <div class="col-md-4">
+                                <div class="portal-brand">
+                                    <!-- BLG Groupe Logo -->
+                                    <t t-if="request.env.company.logo">
+                                        <img t-att-src="'/web/image/res.company/%s/logo' % request.env.company.id" 
+                                             alt="BLG Groupe" 
+                                             class="portal-logo"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="portal-brand-text">BLG Groupe</span>
+                                    </t>
+                                </div>
+                                <h1 class="portal-title">
+                                    <i class="fa fa-file-signature"/> Signature de Contrat
+                                </h1>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="progress-steps">
+                                    <div t-attf-class="progress-step #{validation_status.get('completion_rate', 0) > 0 and 'active' or ''}">
+                                        <div class="step-number">1</div>
+                                        <div class="step-label">Lecture</div>
+                                    </div>
+                                    <div t-attf-class="progress-step #{validation_status.get('completion_rate', 0) > 0 and validation_status.get('completion_rate', 0) &lt; 100 and 'active' or validation_status.get('completion_rate', 0) == 100 and 'completed' or ''}">
+                                        <div class="step-number">2</div>
+                                        <div class="step-label">Validation</div>
+                                    </div>
+                                    <div t-attf-class="progress-step #{can_sign and 'active' or ''}">
+                                        <div class="step-number">3</div>
+                                        <div class="step-label">Signature</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container portal-content">
+                    <div class="row">
+                        <div class="col-12">
+
+                            <!-- Contract Info Card -->
+                            <div class="card contract-info-card mb-4">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h4 class="contract-name">
+                                                <i class="fa fa-file-text-o"/> <t t-esc="contract.name"/>
+                                            </h4>
+                                            <div class="contract-details">
+                                                <div class="detail-item">
+                                                    <i class="fa fa-building-o"/> 
+                                                    <strong>Chantier :</strong>
+                                                    <span><t t-esc="contract.chantier_id.name"/></span>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <i class="fa fa-user"/> 
+                                                    <strong>Sous-traitant :</strong>
+                                                    <span><t t-esc="contract.subcontractor_id.name"/></span>
+                                                </div>
+                                                <div class="detail-item">
+                                                    <i class="fa fa-calendar"/> 
+                                                    <strong>Période :</strong>
+                                                    <span>
+                                                        <t t-esc="contract.start_date.strftime('%d/%m/%Y')"/> - 
+                                                        <t t-esc="contract.end_date.strftime('%d/%m/%Y')"/>
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4 text-right">
+                                            <div class="contract-amount">
+                                                <div class="amount-label">Montant TTC</div>
+                                                <div class="amount-value">
+                                                    <t t-esc="'{:,.2f}'.format(contract.total_amount_ttc)"/>
+                                                    <t t-esc="contract.currency_id.symbol"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Progress Card -->
+                            <div class="card progress-card mb-4">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <h5 class="mb-0">
+                                            <i class="fa fa-tasks"/> Progression de la lecture
+                                        </h5>
+                                        <span class="badge badge-primary badge-lg">
+                                            <t t-esc="len(validation_status.get('validated_pages', []))"/> / 
+                                            <t t-esc="validation_status.get('total_pages', 0)"/> pages
+                                        </span>
+                                    </div>
+                                    <div class="progress progress-modern">
+                                        <div class="progress-bar"
+                                             role="progressbar"
+                                             t-att-style="'width: ' + str(validation_status.get('completion_rate', 0)) + '%'"
+                                             t-att-aria-valuenow="validation_status.get('completion_rate', 0)"
+                                             aria-valuemin="0"
+                                             aria-valuemax="100">
+                                            <span class="progress-text">
+                                                <t t-esc="'{:.0f}'.format(validation_status.get('completion_rate', 0))"/>%
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <p class="progress-info mt-2 mb-0">
+                                        <t t-if="validation_status.get('remaining_pages', 0) > 0">
+                                            <i class="fa fa-info-circle"/> 
+                                            Il reste <strong><t t-esc="validation_status.get('remaining_pages', 0)"/> page<t t-if="validation_status.get('remaining_pages', 0) > 1">s</t></strong> à valider
+                                        </t>
+                                        <t t-else="">
+                                            <i class="fa fa-check-circle text-success"/> 
+                                            Toutes les pages ont été validées !
+                                        </t>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- PDF Viewer Card -->
+                            <div class="card pdf-viewer-card mb-4">
+                                <div class="card-header">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">
+                                            <i class="fa fa-file-pdf-o"/> Document du contrat
+                                        </h5>
+                                        <div class="pdf-controls">
+                                            <button id="btn-zoom-out" class="btn btn-sm btn-outline-secondary" title="Zoom arrière">
+                                                <i class="fa fa-search-minus"/>
+                                            </button>
+                                            <button id="btn-zoom-reset" class="btn btn-sm btn-outline-secondary" title="Réinitialiser le zoom">
+                                                <i class="fa fa-search"/>
+                                            </button>
+                                            <button id="btn-zoom-in" class="btn btn-sm btn-outline-secondary" title="Zoom avant">
+                                                <i class="fa fa-search-plus"/>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body pdf-viewer-body">
+                                    <div id="pdf-canvas-container" class="pdf-canvas-wrapper">
+                                        <!-- Canvas will be inserted here by PDF.js -->
+                                        <div class="pdf-loading">
+                                            <i class="fa fa-spinner fa-spin fa-3x"></i>
+                                            <p class="mt-3">Chargement du PDF...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer pdf-footer">
+                                    <div class="row align-items-center">
+                                        <div class="col-md-6 col-12 mb-2 mb-md-0">
+                                            <div class="pdf-navigation">
+                                                <button id="btn-prev-page" class="btn btn-secondary">
+                                                    <i class="fa fa-chevron-left"/> <span class="d-none d-sm-inline">Précédent</span>
+                                                </button>
+                                                <span class="page-indicator">
+                                                    Page <span id="current-page">1</span> / <span id="total-pages"><t t-esc="contract.pdf_page_count"/></span>
+                                                </span>
+                                                <button id="btn-next-page" class="btn btn-secondary">
+                                                    <span class="d-none d-sm-inline">Suivant</span> <i class="fa fa-chevron-right"/>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6 col-12 text-md-right">
+                                            <button id="btn-validate-page" class="btn btn-success btn-validate">
+                                                <i class="fa fa-check"/> Valider cette page
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Signature Section -->
+                            <div class="card signature-card mb-4">
+                                <div class="card-header"
+                                     t-attf-class="card-header #{can_sign and 'signature-ready' or ''}">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-pencil"/> Signature électronique
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <t t-if="can_sign">
+                                        <div class="alert alert-success signature-ready-alert">
+                                            <i class="fa fa-check-circle fa-2x"/>
+                                            <div>
+                                                <strong>Félicitations !</strong>
+                                                <p class="mb-0">Toutes les pages ont été validées. Vous pouvez maintenant signer le contrat.</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="signature-instructions">
+                                            <h6><i class="fa fa-info-circle"/> Instructions</h6>
+                                            <p>Dessinez votre signature dans le cadre ci-dessous en utilisant votre souris ou votre doigt (sur mobile).</p>
+                                        </div>
+
+                                        <div class="signature-pad-wrapper">
+                                            <canvas id="signature-pad"></canvas>
+                                            <div class="signature-pad-overlay">
+                                                <span>Signez ici</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="signature-actions">
+                                            <button id="btn-clear-signature" class="btn btn-outline-secondary">
+                                                <i class="fa fa-eraser"/> Effacer
+                                            </button>
+                                            <button id="btn-sign-contract" class="btn btn-success btn-lg btn-sign">
+                                                <i class="fa fa-check-circle"/> Signer le contrat
+                                            </button>
+                                        </div>
+                                    </t>
+                                    <t t-else="">
+                                        <div class="alert alert-warning signature-locked-alert">
+                                            <i class="fa fa-lock fa-2x"/>
+                                            <div>
+                                                <strong>Signature verrouillée</strong>
+                                                <p class="mb-0">
+                                                    Vous devez valider toutes les <strong><t t-esc="validation_status.get('total_pages', 0)"/> pages</strong>
+                                                    du contrat avant de pouvoir le signer.
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div class="signature-help">
+                                            <p>
+                                                <i class="fa fa-lightbulb-o"/> 
+                                                Lisez attentivement chaque page et cliquez sur 
+                                                <strong>"Valider cette page"</strong> pour continuer.
+                                            </p>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="portal-footer">
+                    <div class="container">
+                        <p class="mb-0">
+                            <i class="fa fa-question-circle"/> Besoin d'aide ? 
+                            <a href="mailto:support@blggroupe.com">Contactez-nous</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- JavaScript Data -->
+            <script type="text/javascript">
+                var contractId = <t t-esc="contract.id"/>;
+                var accessToken = '<t t-esc="access_token"/>';
+                var totalPages = <t t-esc="contract.pdf_page_count"/>;
+                var validatedPages = <t t-raw="json.dumps(validation_status.get('validated_pages', []))"/>;
+                var canSign = <t t-esc="'true' if can_sign else 'false'"/>;
+                var pdfUrl = '<t t-esc="pdf_url"/>';
+            </script>
+
+            <!-- Initialize PDF Viewer after scripts are loaded -->
+            <script type="text/javascript">
+                <![CDATA[
+                // Configure PDF.js worker when PDF.js is loaded
+                if (typeof pdfjsLib !== 'undefined') {
+                    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+                    console.log('PDF.js worker configured');
+                }
+                
+                // Wait for all scripts to be loaded
+                function initPDFViewer() {
+                    console.log('=== PDF Portal Initialization ===');
+                    console.log('PDF.js loaded:', typeof pdfjsLib !== 'undefined');
+                    console.log('PDFPageViewer loaded:', typeof window.PDFPageViewer !== 'undefined');
+                    console.log('PageValidator loaded:', typeof window.PageValidator !== 'undefined');
+                    
+                    if (typeof pdfjsLib === 'undefined') {
+                        console.error('PDF.js not loaded!');
+                        setTimeout(initPDFViewer, 100);
+                        return;
+                    }
+                    
+                    if (typeof window.PDFPageViewer === 'undefined') {
+                        console.error('PDFPageViewer not loaded!');
+                        setTimeout(initPDFViewer, 100);
+                        return;
+                    }
+                    
+                    console.log('Contract ID:', contractId);
+                    console.log('PDF URL:', pdfUrl);
+                    console.log('Total pages:', totalPages);
+                    console.log('Validated pages:', validatedPages);
+                    console.log('Initializing PDF Page Viewer...');
+                    
+                    try {
+                        window.pdfViewer = new window.PDFPageViewer('pdf-canvas-container', pdfUrl);
+                        console.log('PDF Viewer initialized successfully');
+                    } catch (error) {
+                        console.error('Error initializing PDF Viewer:', error);
+                        const container = document.getElementById('pdf-canvas-container');
+                        if (container) {
+                            container.innerHTML = 
+                                '<div class="alert alert-danger m-3">Error initializing PDF Viewer: ' + error.message + '</div>';
+                        }
+                    }
+                }
+                
+                // Start initialization when all scripts are loaded
+                window.addEventListener('load', function() {
+                    setTimeout(initPDFViewer, 100);
+                });
+                
+                // Also try immediately if scripts are already loaded
+                if (document.readyState === 'complete') {
+                    setTimeout(initPDFViewer, 500);
+                }
+                ]]>
+            </script>
+
+            </t>
+    </template>
+
+    <!-- ========================================================== -->
+    <!-- CONFIRMATION TEMPLATE (After Signature)                   -->
+    <!-- ========================================================== -->
+
+    <template id="signature_confirmation_template" name="Signature Confirmation">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title">Contrat Signé</t>
+            <!-- Load CSS via assets for confirmation page -->
+            <t t-call-assets="construction_contract.assets_signature_portal"/>
+
+            <div class="signature-portal-wrapper">
+                <!-- BLG Branded Header for Confirmation -->
+                <div class="portal-header confirmation-page-header">
+                    <div class="container">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-auto text-center">
+                                <t t-if="request.env.company.logo">
+                                    <img t-att-src="'/web/image/res.company/%s/logo' % request.env.company.id" 
+                                         alt="BLG Groupe" 
+                                         class="portal-logo mb-2"/>
+                                </t>
+                                <t t-else="">
+                                    <span class="portal-brand-text">BLG Groupe</span>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container mt-4">
+                    <div class="row justify-content-center">
+                        <div class="col-md-8">
+
+                            <!-- Success Message -->
+                            <div class="card confirmation-card">
+                                <div class="card-header confirmation-header">
+                                    <div class="success-icon">
+                                        <i class="fa fa-check-circle"/>
+                                    </div>
+                                    <h2 class="confirmation-title">
+                                        Contrat signé avec succès !
+                                    </h2>
+                                </div>
+                                <div class="card-body">
+                                    <div class="text-center mb-4">
+                                        <h4 class="contract-name-confirm">
+                                            <i class="fa fa-file-text-o"/> <t t-esc="contract.name"/>
+                                        </h4>
+                                        <p class="signature-date">
+                                            <i class="fa fa-calendar"/> Signé le 
+                                            <strong><t t-esc="contract.signature_date.strftime('%d/%m/%Y à %H:%M')"/></strong>
+                                        </p>
+                                    </div>
+
+                                    <div class="alert alert-info next-steps-alert">
+                                        <h5><i class="fa fa-info-circle"/> Prochaines étapes</h5>
+                                        <ul class="mb-0">
+                                            <li>Vous recevrez un email de confirmation avec le contrat signé en PDF</li>
+                                            <li>Un certificat d'achèvement a été généré comme preuve légale</li>
+                                            <li>Notre équipe vous contactera pour coordonner la date de début des travaux</li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Download Buttons -->
+                                    <div class="row mt-4">
+                                        <div class="col-md-6 mb-3">
+                                            <a t-attf-href="/my/contract/#{contract.id}/download_signed?access_token=#{access_token}"
+                                               class="btn btn-primary btn-block btn-lg download-btn">
+                                                <i class="fa fa-download"/> Télécharger le contrat signé
+                                            </a>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <a t-attf-href="/my/contract/#{contract.id}/download_certificate?access_token=#{access_token}"
+                                               class="btn btn-secondary btn-block btn-lg download-btn">
+                                                <i class="fa fa-certificate"/> Télécharger le certificat
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <!-- Signature Details -->
+                                    <t t-if="signature">
+                                        <hr class="my-4"/>
+                                        <h5 class="mb-3">
+                                            <i class="fa fa-info-circle"/> Détails de la signature
+                                        </h5>
+                                        <div class="signature-details-table">
+                                            <div class="detail-row">
+                                                <div class="detail-label">
+                                                    <i class="fa fa-user"/> Signataire
+                                                </div>
+                                                <div class="detail-value">
+                                                    <t t-esc="signature.signer_name"/>
+                                                </div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">
+                                                    <i class="fa fa-calendar"/> Date et heure
+                                                </div>
+                                                <div class="detail-value">
+                                                    <t t-esc="signature.signature_date.strftime('%d/%m/%Y à %H:%M:%S')"/>
+                                                </div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">
+                                                    <i class="fa fa-globe"/> Adresse IP
+                                                </div>
+                                                <div class="detail-value">
+                                                    <t t-esc="signature.ip_address"/>
+                                                </div>
+                                            </div>
+                                            <div class="detail-row">
+                                                <div class="detail-label">
+                                                    <i class="fa fa-mobile"/> Appareil
+                                                </div>
+                                                <div class="detail-value">
+                                                    <t t-esc="dict(signature._fields['device_type'].selection).get(signature.device_type, 'Inconnu')"/>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLG Branded Footer -->
+                <div class="portal-footer">
+                    <div class="container">
+                        <p class="mb-0">
+                            <i class="fa fa-question-circle"/> Besoin d'aide ? 
+                            <a href="mailto:support@blggroupe.com">Contactez-nous</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            </t>
+    </template>
+
+    <!-- ========================================================== -->
+    <!-- ERROR TEMPLATES                                            -->
+    <!-- ========================================================== -->
+
+    <!-- Contract Not Found -->
+    <template id="contract_not_found" name="Contract Not Found">
+        <t t-call="portal.portal_layout">
+            <!-- Load CSS via assets -->
+            <t t-call-assets="construction_contract.assets_signature_portal"/>
+            
+            <div class="signature-portal-wrapper">
+                <!-- BLG Branded Header -->
+                <div class="portal-header error-page-header">
+                    <div class="container">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-auto text-center">
+                                <t t-if="request.env.company.logo">
+                                    <img t-att-src="'/web/image/res.company/%s/logo' % request.env.company.id" 
+                                         alt="BLG Groupe" 
+                                         class="portal-logo"/>
+                                </t>
+                                <t t-else="">
+                                    <span class="portal-brand-text">BLG Groupe</span>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container mt-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card error-card">
+                                <div class="card-body text-center">
+                                    <div class="error-icon error-danger">
+                                        <i class="fa fa-exclamation-triangle"/>
+                                    </div>
+                                    <h3 class="error-title">Contrat introuvable</h3>
+                                    <p class="error-message">
+                                        Le contrat que vous recherchez n'existe pas ou a été supprimé.
+                                    </p>
+                                    <a href="/" class="btn btn-primary mt-3">
+                                        <i class="fa fa-home"/> Retour à l'accueil
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLG Branded Footer -->
+                <div class="portal-footer">
+                    <div class="container">
+                        <p class="mb-0">
+                            <i class="fa fa-question-circle"/> Besoin d'aide ? 
+                            <a href="mailto:support@blggroupe.com">Contactez-nous</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            </t>
+    </template>
+
+    <!-- Token Expired -->
+    <template id="token_expired" name="Access Token Expired">
+        <t t-call="portal.portal_layout">
+            <!-- Load CSS via assets -->
+            <t t-call-assets="construction_contract.assets_signature_portal"/>
+            
+            <div class="signature-portal-wrapper">
+                <!-- BLG Branded Header -->
+                <div class="portal-header error-page-header">
+                    <div class="container">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-auto text-center">
+                                <t t-if="request.env.company.logo">
+                                    <img t-att-src="'/web/image/res.company/%s/logo' % request.env.company.id" 
+                                         alt="BLG Groupe" 
+                                         class="portal-logo"/>
+                                </t>
+                                <t t-else="">
+                                    <span class="portal-brand-text">BLG Groupe</span>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container mt-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card error-card">
+                                <div class="card-body text-center">
+                                    <div class="error-icon error-warning">
+                                        <i class="fa fa-clock-o"/>
+                                    </div>
+                                    <h3 class="error-title">Lien d'accès expiré</h3>
+                                    <p class="error-message">
+                                        Le lien d'accès pour le contrat <strong><t t-esc="contract.name"/></strong>
+                                        a expiré le <strong><t t-esc="contract.token_expiry_date.strftime('%d/%m/%Y')"/></strong>.
+                                    </p>
+                                    <p class="error-help">
+                                        <i class="fa fa-info-circle"/> 
+                                        Veuillez nous contacter pour demander un nouveau lien.
+                                    </p>
+                                    <a href="mailto:support@blggroupe.com" class="btn btn-primary mt-3">
+                                        <i class="fa fa-envelope"/> Nous contacter
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLG Branded Footer -->
+                <div class="portal-footer">
+                    <div class="container">
+                        <p class="mb-0">
+                            <i class="fa fa-question-circle"/> Besoin d'aide ? 
+                            <a href="mailto:support@blggroupe.com">Contactez-nous</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            </t>
+    </template>
+
+    <!-- Already Signed -->
+    <template id="already_signed" name="Contract Already Signed">
+        <t t-call="portal.portal_layout">
+            <!-- Load CSS via assets -->
+            <t t-call-assets="construction_contract.assets_signature_portal"/>
+            
+            <div class="signature-portal-wrapper">
+                <!-- BLG Branded Header -->
+                <div class="portal-header success-page-header">
+                    <div class="container">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-auto text-center">
+                                <t t-if="request.env.company.logo">
+                                    <img t-att-src="'/web/image/res.company/%s/logo' % request.env.company.id" 
+                                         alt="BLG Groupe" 
+                                         class="portal-logo"/>
+                                </t>
+                                <t t-else="">
+                                    <span class="portal-brand-text">BLG Groupe</span>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container mt-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card error-card">
+                                <div class="card-body text-center">
+                                    <div class="error-icon error-info">
+                                        <i class="fa fa-check-circle"/>
+                                    </div>
+                                    <h3 class="error-title">Contrat déjà signé</h3>
+                                    <p class="error-message">
+                                        Le contrat <strong><t t-esc="contract.name"/></strong>
+                                        a déjà été signé le <strong><t t-esc="contract.signature_date.strftime('%d/%m/%Y')"/></strong>.
+                                    </p>
+                                    <div class="mt-4">
+                                        <a t-attf-href="/my/contract/#{contract.id}/download_signed?access_token=#{request.params.get('access_token')}"
+                                           class="btn btn-primary btn-lg">
+                                            <i class="fa fa-download"/> Télécharger le contrat signé
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLG Branded Footer -->
+                <div class="portal-footer">
+                    <div class="container">
+                        <p class="mb-0">
+                            <i class="fa fa-question-circle"/> Besoin d'aide ? 
+                            <a href="mailto:support@blggroupe.com">Contactez-nous</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            </t>
+    </template>
+
+    <!-- Contract Unavailable -->
+    <template id="contract_unavailable" name="Contract Unavailable">
+        <t t-call="portal.portal_layout">
+            <!-- Load CSS via assets -->
+            <t t-call-assets="construction_contract.assets_signature_portal"/>
+            
+            <div class="signature-portal-wrapper">
+                <!-- BLG Branded Header -->
+                <div class="portal-header error-page-header">
+                    <div class="container">
+                        <div class="row align-items-center justify-content-center">
+                            <div class="col-auto text-center">
+                                <t t-if="request.env.company.logo">
+                                    <img t-att-src="'/web/image/res.company/%s/logo' % request.env.company.id" 
+                                         alt="BLG Groupe" 
+                                         class="portal-logo"/>
+                                </t>
+                                <t t-else="">
+                                    <span class="portal-brand-text">BLG Groupe</span>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="container mt-5">
+                    <div class="row justify-content-center">
+                        <div class="col-md-6">
+                            <div class="card error-card">
+                                <div class="card-body text-center">
+                                    <div class="error-icon error-danger">
+                                        <i class="fa fa-ban"/>
+                                    </div>
+                                    <h3 class="error-title">Contrat indisponible</h3>
+                                    <p class="error-message">
+                                        Le contrat <strong><t t-esc="contract.name"/></strong>
+                                        n'est actuellement pas disponible pour signature.
+                                    </p>
+                                    <p class="error-help">
+                                        Statut actuel : <strong><t t-esc="dict(contract._fields['state'].selection).get(contract.state)"/></strong>
+                                    </p>
+                                    <a href="mailto:support@blggroupe.com" class="btn btn-primary mt-3">
+                                        <i class="fa fa-envelope"/> Nous contacter
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BLG Branded Footer -->
+                <div class="portal-footer">
+                    <div class="container">
+                        <p class="mb-0">
+                            <i class="fa fa-question-circle"/> Besoin d'aide ? 
+                            <a href="mailto:support@blggroupe.com">Contactez-nous</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            </t>
+    </template>
+
+</odoo>

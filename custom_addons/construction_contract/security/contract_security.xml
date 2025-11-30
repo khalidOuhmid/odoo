@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="0">
+
+        <!-- ========================================================== -->
+        <!-- MODULE CATEGORY                                           -->
+        <!-- ========================================================== -->
+
+        <!-- Create Construction module category (required for Odoo 18) -->
+        <record id="module_category_construction" model="ir.module.category">
+            <field name="name">Construction</field>
+            <field name="description">Construction and BTP management</field>
+            <field name="sequence">50</field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- SECURITY GROUPS                                           -->
+        <!-- ========================================================== -->
+
+        <record id="group_construction_user" model="res.groups">
+            <field name="name">Construction User</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="comment">Basic construction user - NO ACCESS to contracts</field>
+        </record>
+
+        <record id="group_construction_pilote" model="res.groups">
+            <field name="name">Construction Site Manager (Pilote de Chantier)</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="comment">Site managers - Full access to create, edit and manage contracts for their sites. Users must also have Internal User access.</field>
+        </record>
+
+        <record id="group_construction_comptable" model="res.groups">
+            <field name="name">Accounting (Comptable)</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="comment">Accountants - Read-only access to contracts for financial review. Users must also have Internal User access.</field>
+        </record>
+
+        <record id="group_construction_admin" model="res.groups">
+            <field name="name">Construction Administrator</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="comment">Administrators - Full access including templates and system configuration. Users must also have Internal User access.</field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- RECORD RULES - CONTRACTS                                  -->
+        <!-- ========================================================== -->
+
+        <!-- Rule 1: Pilote de Chantier - Full CRUD (create, read, update) -->
+        <record id="contract_rule_pilote" model="ir.rule">
+            <field name="name">Contract: Pilote - Full Access</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_pilote'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Rule 2: Comptable - Read Only -->
+        <record id="contract_rule_comptable" model="ir.rule">
+            <field name="name">Contract: Comptable - Read Only</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_comptable'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Rule 3: Admin - Full Access including Delete -->
+        <record id="contract_rule_admin" model="ir.rule">
+            <field name="name">Contract: Admin - Full Access</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_admin'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- RECORD RULES - TEMPLATES                                  -->
+        <!-- ========================================================== -->
+
+        <!-- Pilote can READ templates (to select for contracts) -->
+        <record id="template_rule_pilote" model="ir.rule">
+            <field name="name">Template: Pilote - Read Only</field>
+            <field name="model_id" ref="model_construction_contract_template"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_pilote'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Comptable can READ templates (for reference) -->
+        <record id="template_rule_comptable" model="ir.rule">
+            <field name="name">Template: Comptable - Read Only</field>
+            <field name="model_id" ref="model_construction_contract_template"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_comptable'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Admin can edit templates -->
+        <record id="template_rule_admin" model="ir.rule">
+            <field name="name">Template: Admin - Full Access</field>
+            <field name="model_id" ref="model_construction_contract_template"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_admin'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- RECORD RULES - SIGNATURES                                 -->
+        <!-- ========================================================== -->
+
+        <!-- Pilote can READ signatures -->
+        <record id="signature_rule_pilote" model="ir.rule">
+            <field name="name">Signature: Pilote - Read Only</field>
+            <field name="model_id" ref="model_construction_contract_signature"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_pilote'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Comptable can READ signatures -->
+        <record id="signature_rule_comptable" model="ir.rule">
+            <field name="name">Signature: Comptable - Read Only</field>
+            <field name="model_id" ref="model_construction_contract_signature"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_comptable'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Admin full access -->
+        <record id="signature_rule_admin" model="ir.rule">
+            <field name="name">Signature: Admin - Full Access</field>
+            <field name="model_id" ref="model_construction_contract_signature"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_admin'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- RECORD RULES - DELIVERABLES                               -->
+        <!-- ========================================================== -->
+
+        <!-- Pilote can manage deliverables -->
+        <record id="deliverable_rule_pilote" model="ir.rule">
+            <field name="name">Deliverable: Pilote - Full Access</field>
+            <field name="model_id" ref="model_construction_contract_deliverable"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_pilote'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- Comptable can READ deliverables -->
+        <record id="deliverable_rule_comptable" model="ir.rule">
+            <field name="name">Deliverable: Comptable - Read Only</field>
+            <field name="model_id" ref="model_construction_contract_deliverable"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_comptable'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+        <!-- Admin full access -->
+        <record id="deliverable_rule_admin" model="ir.rule">
+            <field name="name">Deliverable: Admin - Full Access</field>
+            <field name="model_id" ref="model_construction_contract_deliverable"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_admin'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="True"/>
+            <field name="perm_create" eval="True"/>
+            <field name="perm_unlink" eval="True"/>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- RECORD RULES - PAGE VALIDATIONS                           -->
+        <!-- ========================================================== -->
+
+        <!-- NOTE: Public access for portal signature is handled via token-based
+             authentication in the controller (signature_portal_controller.py).
+             No group-based rule needed for public users to avoid user type conflicts. -->
+
+        <!-- Internal users can read -->
+        <record id="page_validation_rule_pilote" model="ir.rule">
+            <field name="name">Page Validation: Pilote - Read Only</field>
+            <field name="model_id" ref="model_construction_contract_page_validation"/>
+            <field name="domain_force">[(1, '=', 1)]</field>
+            <field name="groups" eval="[(4, ref('group_construction_pilote'))]"/>
+            <field name="perm_read" eval="True"/>
+            <field name="perm_write" eval="False"/>
+            <field name="perm_create" eval="False"/>
+            <field name="perm_unlink" eval="False"/>
+        </record>
+
+    </data>
+</odoo>

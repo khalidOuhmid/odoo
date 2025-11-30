@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Root Menu (inherits from construction_base) -->
+    <menuitem id="menu_construction_contract_root"
+              name="Contracts"
+              parent="construction_base.menu_construction_root"
+              sequence="40"
+              groups="group_construction_pilote,group_construction_comptable,group_construction_admin"/>
+
+    <!-- Contracts Submenu -->
+    <menuitem id="menu_construction_contract"
+              name="Subcontractor Contracts"
+              parent="menu_construction_contract_root"
+              action="action_construction_contract"
+              sequence="10"
+              groups="group_construction_pilote,group_construction_comptable,group_construction_admin"/>
+
+    <!-- Templates Submenu -->
+    <menuitem id="menu_construction_contract_template"
+              name="Modèles de Contrat"
+              parent="menu_construction_contract_root"
+              action="action_construction_contract_template"
+              sequence="20"
+              groups="group_construction_pilote,group_construction_comptable,group_construction_admin"/>
+
+    <!-- URSSAF Codes Submenu -->
+    <menuitem id="menu_construction_urssaf_code"
+              name="Codes URSSAF"
+              parent="menu_construction_contract_root"
+              action="action_urssaf_code"
+              sequence="30"
+              groups="group_construction_pilote,group_construction_comptable,group_construction_admin"/>
+
+    <!-- Configuration Submenu -->
+    <menuitem id="menu_construction_contract_config"
+              name="Configuration"
+              parent="menu_construction_contract_root"
+              sequence="100"
+              groups="group_construction_admin"/>
+
+    <!-- Signatures (for audit) -->
+    <menuitem id="menu_construction_contract_signature"
+              name="Electronic Signatures"
+              parent="menu_construction_contract_config"
+              action="action_construction_contract_signature"
+              sequence="10"
+              groups="group_construction_admin"/>
+
+</odoo>

@@ -1,0 +1,227 @@
+/* URSSAF Code Selector Styles */
+
+.urssaf_code_selector {
+    position: relative;
+    display: inline-block;
+}
+
+/* Dropdown Panel */
+.urssaf_dropdown_panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 1050;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.urssaf_dropdown_overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+.urssaf_dropdown_content {
+    position: relative;
+    z-index: 2;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    width: 90%;
+    max-width: 800px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+.urssaf_dropdown_header {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid #dee2e6;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.urssaf_dropdown_header h5 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #212529;
+}
+
+.urssaf_dropdown_header .btn-close {
+    padding: 0.5rem;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.5;
+}
+
+.urssaf_dropdown_header .btn-close:hover {
+    opacity: 1;
+}
+
+/* Filters */
+.urssaf_dropdown_filters {
+    padding: 1rem 1.5rem;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Loading State */
+.urssaf_dropdown_loading {
+    padding: 3rem;
+    text-align: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.urssaf_dropdown_loading i {
+    margin-right: 0.5rem;
+}
+
+/* Codes List */
+.urssaf_dropdown_list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.5rem;
+}
+
+.urssaf_no_results {
+    padding: 3rem;
+    text-align: center;
+    color: #6c757d;
+    font-size: 1.1rem;
+}
+
+.urssaf_no_results i {
+    margin-right: 0.5rem;
+}
+
+/* Code Item */
+.urssaf_code_item {
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background-color: white;
+}
+
+.urssaf_code_item:hover {
+    border-color: #0d6efd;
+    background-color: #f8f9ff;
+    box-shadow: 0 2px 8px rgba(13, 110, 253, 0.15);
+    transform: translateY(-1px);
+}
+
+.urssaf_code_header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.urssaf_code_number {
+    font-size: 1rem;
+    color: #0d6efd;
+    font-family: 'Courier New', monospace;
+}
+
+.urssaf_code_category .badge {
+    font-size: 0.75rem;
+    font-weight: 500;
+    padding: 0.25rem 0.5rem;
+}
+
+.urssaf_code_rate {
+    font-size: 0.875rem;
+    color: #198754;
+    font-weight: 500;
+}
+
+.urssaf_code_rate i {
+    margin-right: 0.25rem;
+}
+
+.urssaf_code_name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #212529;
+    margin-bottom: 0.5rem;
+}
+
+.urssaf_code_description {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+    line-height: 1.5;
+}
+
+.urssaf_code_reference {
+    font-size: 0.8rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.urssaf_code_reference i {
+    margin-right: 0.25rem;
+}
+
+/* Footer */
+.urssaf_dropdown_footer {
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid #dee2e6;
+    background-color: #f8f9fa;
+    text-align: center;
+}
+
+/* Badge Colors */
+.badge-primary {
+    background-color: #0d6efd;
+    color: white;
+}
+
+.badge-success {
+    background-color: #198754;
+    color: white;
+}
+
+.badge-info {
+    background-color: #0dcaf0;
+    color: #000;
+}
+
+.badge-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .urssaf_dropdown_content {
+        width: 95%;
+        max-height: 90vh;
+    }
+    
+    .urssaf_dropdown_header,
+    .urssaf_dropdown_filters,
+    .urssaf_dropdown_footer {
+        padding: 0.75rem 1rem;
+    }
+    
+    .urssaf_code_item {
+        padding: 0.75rem;
+    }
+}

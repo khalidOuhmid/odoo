@@ -139,7 +139,6 @@
             <field name="is_finished" eval="False"/>
             <field name="quote_state">draft</field>
             <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_1')])]"/>
-            <field name="urssaf_code">43.2A - Travaux d'installation électrique</field>
         </record>
 
         <record id="test_lot_2" model="construction.lot">
@@ -151,7 +150,6 @@
             <field name="is_finished" eval="False"/>
             <field name="quote_state">draft</field>
             <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_2')])]"/>
-            <field name="urssaf_code">43.2B - Travaux de plomberie et chauffage</field>
         </record>
 
         <record id="test_lot_3" model="construction.lot">
@@ -163,7 +161,6 @@
             <field name="is_finished" eval="False"/>
             <field name="quote_state">draft</field>
             <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_4')])]"/>
-            <field name="urssaf_code">43.3A - Travaux de peinture</field>
         </record>
 
         <record id="test_lot_4" model="construction.lot">
@@ -175,7 +172,6 @@
             <field name="is_finished" eval="False"/>
             <field name="quote_state">draft</field>
             <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_3')])]"/>
-            <field name="urssaf_code">41.1 - Travaux de gros œuvre</field>
         </record>
 
         <record id="test_lot_5" model="construction.lot">
@@ -187,7 +183,6 @@
             <field name="is_finished" eval="False"/>
             <field name="quote_state">draft</field>
             <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_1')])]"/>
-            <field name="urssaf_code">43.2A - Travaux d'installation électrique</field>
         </record>
 
         <record id="test_lot_6" model="construction.lot">
@@ -199,7 +194,6 @@
             <field name="is_finished" eval="False"/>
             <field name="quote_state">draft</field>
             <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_2')])]"/>
-            <field name="urssaf_code">43.2B - Travaux de plomberie et chauffage</field>
         </record>
 
         <record id="test_lot_7" model="construction.lot">
@@ -211,7 +205,6 @@
             <field name="is_finished" eval="False"/>
             <field name="quote_state">draft</field>
             <field name="subcontractor_ids" eval="[(6, 0, [ref('test_subcontractor_4')])]"/>
-            <field name="urssaf_code">43.3A - Travaux de peinture</field>
         </record>
 
         <!-- =================== DEVIS PRINCIPAUX =================== -->
@@ -331,50 +324,6 @@
             <field name="state">draft</field>
             <field name="date_order" eval="DateTime.now().strftime('%Y-%m-%d')"/>
             <field name="validity_date" eval="(DateTime.now() + timedelta(days=15)).strftime('%Y-%m-%d')"/>
-        </record>
-
-        <!-- =================== CONTRATS SOUS-TRAITANCE =================== -->
-        
-        <record id="test_contract_1" model="construction.subcontractor.contract">
-            <field name="name">Contrat Électricité - Appartement Paris</field>
-            <field name="chantier_id" ref="test_chantier_1"/>
-            <field name="subcontractor_id" ref="test_subcontractor_1"/>
-            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_1')])]"/>
-            <field name="start_date" eval="(DateTime.now() + timedelta(days=30)).strftime('%Y-%m-%d')"/>
-            <field name="end_date" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
-            <field name="total_amount" eval="8500.0"/>
-            <field name="payment_terms">30_days</field>
-            <field name="warranty_period" eval="24"/>
-            <field name="state">draft</field>
-            <field name="signature_state">pending</field>
-        </record>
-
-        <record id="test_contract_2" model="construction.subcontractor.contract">
-            <field name="name">Contrat Plomberie - Appartement Paris</field>
-            <field name="chantier_id" ref="test_chantier_1"/>
-            <field name="subcontractor_id" ref="test_subcontractor_2"/>
-            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_2')])]"/>
-            <field name="start_date" eval="(DateTime.now() + timedelta(days=45)).strftime('%Y-%m-%d')"/>
-            <field name="end_date" eval="(DateTime.now() + timedelta(days=75)).strftime('%Y-%m-%d')"/>
-            <field name="total_amount" eval="12000.0"/>
-            <field name="payment_terms">30_days</field>
-            <field name="warranty_period" eval="24"/>
-            <field name="state">draft</field>
-            <field name="signature_state">pending</field>
-        </record>
-
-        <record id="test_contract_3" model="construction.subcontractor.contract">
-            <field name="name">Contrat Peinture - Appartement Paris</field>
-            <field name="chantier_id" ref="test_chantier_1"/>
-            <field name="subcontractor_id" ref="test_subcontractor_4"/>
-            <field name="lot_ids" eval="[(6, 0, [ref('test_lot_3')])]"/>
-            <field name="start_date" eval="(DateTime.now() + timedelta(days=60)).strftime('%Y-%m-%d')"/>
-            <field name="end_date" eval="(DateTime.now() + timedelta(days=90)).strftime('%Y-%m-%d')"/>
-            <field name="total_amount" eval="3500.0"/>
-            <field name="payment_terms">30_days</field>
-            <field name="warranty_period" eval="12"/>
-            <field name="state">draft</field>
-            <field name="signature_state">pending</field>
         </record>
 
         <!-- =================== VISITES TECHNIQUES =================== -->

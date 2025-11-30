@@ -1,4 +1,4 @@
-services:
+﻿services:
   db:
     image: postgres:16
     ports:
@@ -10,7 +10,7 @@ services:
     volumes:
       - odoo-db-data:/var/lib/postgresql/data
   odoo_web:
-    image: odoo:18.0
+    build: .
     depends_on:
       - db
     ports:

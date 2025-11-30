@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- This file can be used to predefine standard variables -->
+        <!-- Variables are auto-created when templates are created -->
+        <!-- See config/template_variables.py for the full list -->
+
+        <!-- Example: Custom variables specific to your business -->
+        <!-- Uncomment if needed -->
+
+        <!--
+        <record id="var_company_name" model="construction.contract.template.variable">
+            <field name="name">Company Name</field>
+            <field name="code">{{ company.name }}</field>
+            <field name="category">company</field>
+            <field name="variable_type">text</field>
+            <field name="description">Name of the main contractor company</field>
+        </record>
+        -->
+
+    </data>
+</odoo>

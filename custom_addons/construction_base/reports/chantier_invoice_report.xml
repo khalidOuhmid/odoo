@@ -20,7 +20,7 @@
                                 <p style="margin:2px 0 0 0;">Étape: <strong><t t-esc="o.ref or ''"/></strong></p>
                             </td>
                             <td style="width:40%; vertical-align:top; text-align:right;">
-                                <t t-set="blg_logo" t-value="env['construction.contract.service']._get_blg_images_base64().get('logo')"/>
+                                <t t-set="blg_logo" t-value="image_data_uri(company.logo) if company.logo else False"/>
                                 <t t-if="blg_logo">
                                     <img t-att-src="blg_logo" alt="BLG" style="height:50px; margin-bottom:6px;"/>
                                 </t>

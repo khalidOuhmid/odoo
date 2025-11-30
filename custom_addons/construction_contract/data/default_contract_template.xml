@@ -1,0 +1,406 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- Default Contract Template -->
+        <record id="default_contract_template" model="construction.contract.template">
+            <field name="name">Standard Subcontractor Contract (French Construction Law)</field>
+            <field name="description">Standard template compliant with French construction law (Code Civil articles 1710-1779)</field>
+            <field name="sequence">1</field>
+            <field name="is_default" eval="True"/>
+            <field name="active" eval="True"/>
+
+            <!-- GrapesJS HTML -->
+            <field name="grapesjs_html"><![CDATA[
+<div class="contract-container">
+    <div class="contract-header">
+        <h1>CONTRAT DE SOUS-TRAITANCE</h1>
+        <h2>{{ contract.name }}</h2>
+    </div>
+
+    <div class="contract-section">
+        <h3>ENTRE LES SOUSSIGNÉS :</h3>
+        <p><strong>L'Entreprise Principale :</strong><br/>
+        {{ company.name }}<br/>
+        SIRET: {{ company.siret }}<br/>
+        Adresse: {{ company.address }}</p>
+
+        <p>Ci-après dénommée "l'Entrepreneur Principal"</p>
+
+        <p><strong>D'UNE PART,</strong></p>
+
+        <p><strong>Et le Sous-Traitant :</strong><br/>
+        {{ subcontractor.name }}<br/>
+        SIRET: {{ subcontractor.siret }}<br/>
+        Adresse: {{ subcontractor.address }}</p>
+
+        <p>Ci-après dénommé "le Sous-Traitant"</p>
+
+        <p><strong>D'AUTRE PART,</strong></p>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 1 - OBJET DU CONTRAT</h3>
+        <p>Le présent contrat a pour objet la réalisation des travaux suivants dans le cadre du chantier :</p>
+        <p><strong>Chantier :</strong> {{ chantier.name }}<br/>
+        <strong>Référence :</strong> {{ chantier.reference }}<br/>
+        <strong>Adresse :</strong> {{ chantier.address }}, {{ chantier.postal_code }} {{ chantier.city }}</p>
+
+        <h4>Lots concernés :</h4>
+        <table class="contract-table">
+            <thead>
+                <tr>
+                    <th>Lot</th>
+                    <th>Description</th>
+                    <th>Montant HT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lot in lots %}
+                <tr>
+                    <td>{{ lot.name }}</td>
+                    <td>{{ lot.description }}</td>
+                    <td>{{ lot.amount }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 2 - DURÉE ET DÉLAIS</h3>
+        <p><strong>Date de début des travaux :</strong> {{ contract.start_date }}<br/>
+        <strong>Date de fin prévue :</strong> {{ contract.end_date }}</p>
+
+        <p>Le Sous-Traitant s'engage à respecter ces délais. En cas de retard non justifié, des pénalités pourront être appliquées conformément à l'article 9 du présent contrat.</p>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 3 - PRIX ET MODALITÉS DE PAIEMENT</h3>
+        <p><strong>Montant total HT :</strong> {{ contract.total_amount_ht }}<br/>
+        <strong>TVA :</strong> {{ contract.total_amount_tva }}<br/>
+        <strong>Montant total TTC :</strong> <span class="highlight">{{ contract.total_amount_ttc }}</span></p>
+
+        <p><strong>Retenue de garantie :</strong> {{ contract.retention_rate }}% soit {{ contract.retention_amount }}</p>
+
+        <p>Le paiement sera effectué selon les modalités suivantes, sur présentation de factures conformes et après réception des travaux :</p>
+        <ul>
+            <li>Acompte de 30% au démarrage des travaux</li>
+            <li>Acompte de 40% à mi-parcours</li>
+            <li>Solde de 30% à la réception des travaux, déduction faite de la retenue de garantie</li>
+        </ul>
+
+        <p>La retenue de garantie sera libérée à l'expiration du délai de garantie d'un an.</p>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 4 - OBLIGATIONS DE L'ENTREPRENEUR PRINCIPAL</h3>
+        <p>L'Entrepreneur Principal s'engage à :</p>
+        <ul>
+            <li>Mettre à disposition du Sous-Traitant les moyens d'accès au chantier</li>
+            <li>Coordonner les différents corps d'état</li>
+            <li>Fournir les plans et documents techniques nécessaires</li>
+            <li>Effectuer les paiements dans les délais convenus</li>
+        </ul>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 5 - OBLIGATIONS DU SOUS-TRAITANT</h3>
+        <p>Le Sous-Traitant s'engage à :</p>
+        <ul>
+            <li>Réaliser les travaux conformément aux règles de l'art et aux normes en vigueur</li>
+            <li>Respecter le planning établi et les délais convenus</li>
+            <li>Disposer de toutes les assurances obligatoires (responsabilité civile, décennale)</li>
+            <li>Respecter les règles de sécurité sur le chantier</li>
+            <li>Fournir le personnel qualifié et l'outillage nécessaire</li>
+            <li>Assurer le nettoyage de son poste de travail</li>
+        </ul>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 6 - ASSURANCES ET GARANTIES</h3>
+        <p>Le Sous-Traitant atteste disposer des assurances suivantes :</p>
+        <ul>
+            <li><strong>Assurance Responsabilité Civile Professionnelle</strong></li>
+            <li><strong>Assurance Décennale</strong> (si applicable)</li>
+        </ul>
+
+        <p>Le Sous-Traitant garantit l'Entrepreneur Principal contre tous recours de tiers relatifs aux travaux exécutés.</p>
+
+        <p><strong>Code URSSAF :</strong> {{ subcontractor.urssaf_code }}</p>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 7 - RÉSILIATION</h3>
+        <p>Le présent contrat pourra être résilié de plein droit en cas de :</p>
+        <ul>
+            <li>Manquement grave aux obligations contractuelles</li>
+            <li>Retard important dans l'exécution des travaux</li>
+            <li>Non-respect des normes de sécurité</li>
+            <li>Défaut d'assurance</li>
+        </ul>
+
+        <p>La résiliation sera notifiée par lettre recommandée avec accusé de réception, avec un préavis de 15 jours.</p>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 8 - RÈGLEMENT DES LITIGES</h3>
+        <p>En cas de litige relatif à l'interprétation ou à l'exécution du présent contrat, les parties s'engagent à rechercher une solution amiable.</p>
+
+        <p>À défaut d'accord amiable dans un délai de 30 jours, le litige sera porté devant le Tribunal Judiciaire compétent.</p>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 9 - PÉNALITÉS DE RETARD</h3>
+        <p>En cas de retard dans l'exécution des travaux non justifié par un cas de force majeure, des pénalités seront appliquées à hauteur de <strong>1/1000 du montant total TTC par jour de retard</strong>.</p>
+    </div>
+
+    <div class="contract-section">
+        <h3>ARTICLE 10 - PLAN DE PRÉVENTION</h3>
+        <p>Le Sous-Traitant s'engage à respecter le Plan Particulier de Sécurité et de Protection de la Santé (PPSPS) du chantier.</p>
+
+        <p>Un plan de prévention sera établi conjointement avant le démarrage des travaux si le chantier représente plus de 400 heures de travail.</p>
+    </div>
+
+    <div class="contract-footer">
+        <p>Fait en deux exemplaires originaux,</p>
+        <p>À {% if subcontractor_signature and subcontractor_signature.signature_date and subcontractor.city %}{{ subcontractor.city }}{% elif company.city %}{{ company.city }}{% else %}_____________{% endif %}, le {% if subcontractor_signature and subcontractor_signature.signature_date %}{{ subcontractor_signature.signature_date }}{% else %}{{ contract.date }}{% endif %}</p>
+
+        <!-- Configurable Signature Zones -->
+        <div class="signature-zones" style="display: flex; justify-content: space-between; margin-top: 40px; page-break-inside: avoid;">
+            {% set company_first = (template.company_signature_position|default('left') == 'left') %}
+            
+            {% if company_first %}
+            <!-- Company Signature Zone (Left) -->
+            <div class="signature-zone company-signature" style="width: 45%; text-align: center;">
+                <p style="font-weight: bold; margin-bottom: 10px;">{{ template.company_signature_label|default('Pour BLG Groupe') }}</p>
+                <p style="margin-bottom: 5px;">{{ company.name }}</p>
+                <div class="signature-box" style="border: 1px solid #ccc; min-height: 100px; margin: 10px 0; padding: 10px; display: flex; align-items: center; justify-content: center;">
+                    {% if company_signature and company_signature.image_data %}
+                    <img src="{{ company_signature.image_data }}" alt="Signature de l'entreprise" style="max-width: 200px; max-height: 80px;"/>
+                    {% else %}
+                    <span style="color: #999; font-style: italic;">Signature</span>
+                    {% endif %}
+                </div>
+                <p style="font-style: italic; font-size: 11px; color: #666;">{{ template.company_signature_sublabel|default('Lu et approuvé') }}</p>
+            </div>
+            
+            <!-- Subcontractor Signature Zone (Right) -->
+            <div class="signature-zone subcontractor-signature" style="width: 45%; text-align: center;">
+                <p style="font-weight: bold; margin-bottom: 10px;">{{ template.subcontractor_signature_label|default('Le Sous-Traitant') }}</p>
+                <p style="margin-bottom: 5px;">{{ subcontractor.name }}</p>
+                <div class="signature-box" style="border: 1px solid #ccc; min-height: 100px; margin: 10px 0; padding: 10px; display: flex; align-items: center; justify-content: center;">
+                    {% if subcontractor_signature and subcontractor_signature.image_data %}
+                    <img src="{{ subcontractor_signature.image_data }}" alt="Signature du sous-traitant" style="max-width: 200px; max-height: 80px;"/>
+                    {% else %}
+                    <span style="color: #999; font-style: italic;">Signature</span>
+                    {% endif %}
+                </div>
+                <p style="font-style: italic; font-size: 11px; color: #666;">{{ template.subcontractor_signature_sublabel|default('Lu et approuvé, bon pour accord') }}</p>
+                {% if subcontractor_signature and subcontractor_signature.signature_date %}
+                <p style="font-size: 10px; color: #888; margin-top: 5px;">Signé le {{ subcontractor_signature.signature_date }}</p>
+                {% endif %}
+            </div>
+            
+            {% else %}
+            <!-- Subcontractor Signature Zone (Left) -->
+            <div class="signature-zone subcontractor-signature" style="width: 45%; text-align: center;">
+                <p style="font-weight: bold; margin-bottom: 10px;">{{ template.subcontractor_signature_label|default('Le Sous-Traitant') }}</p>
+                <p style="margin-bottom: 5px;">{{ subcontractor.name }}</p>
+                <div class="signature-box" style="border: 1px solid #ccc; min-height: 100px; margin: 10px 0; padding: 10px; display: flex; align-items: center; justify-content: center;">
+                    {% if subcontractor_signature and subcontractor_signature.image_data %}
+                    <img src="{{ subcontractor_signature.image_data }}" alt="Signature du sous-traitant" style="max-width: 200px; max-height: 80px;"/>
+                    {% else %}
+                    <span style="color: #999; font-style: italic;">Signature</span>
+                    {% endif %}
+                </div>
+                <p style="font-style: italic; font-size: 11px; color: #666;">{{ template.subcontractor_signature_sublabel|default('Lu et approuvé, bon pour accord') }}</p>
+                {% if subcontractor_signature and subcontractor_signature.signature_date %}
+                <p style="font-size: 10px; color: #888; margin-top: 5px;">Signé le {{ subcontractor_signature.signature_date }}</p>
+                {% endif %}
+            </div>
+            
+            <!-- Company Signature Zone (Right) -->
+            <div class="signature-zone company-signature" style="width: 45%; text-align: center;">
+                <p style="font-weight: bold; margin-bottom: 10px;">{{ template.company_signature_label|default('Pour BLG Groupe') }}</p>
+                <p style="margin-bottom: 5px;">{{ company.name }}</p>
+                <div class="signature-box" style="border: 1px solid #ccc; min-height: 100px; margin: 10px 0; padding: 10px; display: flex; align-items: center; justify-content: center;">
+                    {% if company_signature and company_signature.image_data %}
+                    <img src="{{ company_signature.image_data }}" alt="Signature de l'entreprise" style="max-width: 200px; max-height: 80px;"/>
+                    {% else %}
+                    <span style="color: #999; font-style: italic;">Signature</span>
+                    {% endif %}
+                </div>
+                <p style="font-style: italic; font-size: 11px; color: #666;">{{ template.company_signature_sublabel|default('Lu et approuvé') }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+            ]]></field>
+
+            <!-- GrapesJS CSS -->
+            <field name="grapesjs_css"><![CDATA[
+.contract-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 40px;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    line-height: 1.8;
+    color: #333;
+}
+
+.contract-header {
+    text-align: center;
+    margin-bottom: 40px;
+    border-bottom: 3px solid #0056b3;
+    padding-bottom: 20px;
+}
+
+.contract-header h1 {
+    font-size: 28px;
+    margin: 0;
+    color: #0056b3;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.contract-header h2 {
+    font-size: 18px;
+    margin: 10px 0 0 0;
+    color: #666;
+    font-weight: normal;
+}
+
+.contract-section {
+    margin-bottom: 30px;
+}
+
+.contract-section h3 {
+    font-size: 16px;
+    color: #0056b3;
+    text-transform: uppercase;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
+    margin-bottom: 15px;
+}
+
+.contract-section h4 {
+    font-size: 14px;
+    color: #333;
+    margin: 15px 0 10px 0;
+}
+
+.contract-section p {
+    margin: 10px 0;
+    text-align: justify;
+}
+
+.contract-section ul {
+    margin: 10px 0 10px 30px;
+}
+
+.contract-section li {
+    margin: 5px 0;
+}
+
+.contract-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.contract-table th,
+.contract-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+
+.contract-table th {
+    background-color: #0056b3;
+    color: white;
+    font-weight: bold;
+}
+
+.contract-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+}
+
+.highlight {
+    color: #0056b3;
+    font-weight: bold;
+    font-size: 18px;
+}
+
+.contract-footer {
+    margin-top: 50px;
+    border-top: 2px solid #0056b3;
+    padding-top: 30px;
+}
+
+/* Legacy signature block styles (for backward compatibility) */
+.signature-block {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+}
+
+.signature-left,
+.signature-right {
+    width: 45%;
+}
+
+.signature-left p,
+.signature-right p {
+    margin: 5px 0;
+}
+
+/* New configurable signature zones styles */
+.signature-zones {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 40px;
+    page-break-inside: avoid;
+}
+
+.signature-zone {
+    width: 45%;
+    text-align: center;
+}
+
+.signature-zone p {
+    margin: 5px 0;
+}
+
+.signature-box {
+    border: 1px solid #ccc;
+    min-height: 100px;
+    margin: 10px 0;
+    padding: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #fafafa;
+}
+
+.signature-box img {
+    max-width: 200px;
+    max-height: 80px;
+}
+
+@media print {
+    .contract-container {
+        padding: 20px;
+    }
+
+    .contract-section {
+        page-break-inside: avoid;
+    }
+}
+            ]]></field>
+
+        </record>
+
+    </data>
+</odoo>

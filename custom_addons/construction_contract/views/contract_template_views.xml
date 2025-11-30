@@ -1,0 +1,249 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- TREE VIEW - Enhanced with actions                         -->
+    <!-- ========================================================== -->
+
+    <record id="view_construction_contract_template_tree" model="ir.ui.view">
+        <field name="name">construction.contract.template.tree</field>
+        <field name="model">construction.contract.template</field>
+        <field name="arch" type="xml">
+            <list decoration-bf="is_default" decoration-muted="not active">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="contract_count" string="Contrats"/>
+                <field name="last_used_date" string="Dernière utilisation"/>
+                <field name="is_default" widget="boolean_toggle" string="Par défaut"/>
+                <field name="active" widget="boolean_toggle" string="Actif"/>
+                
+                <!-- Quick action buttons -->
+                <button name="action_open_editor" string="Éditer" 
+                        type="object" icon="fa-edit" 
+                        class="btn-primary"
+                        title="Ouvrir l'éditeur visuel"/>
+                <button name="action_duplicate" string="Dupliquer"
+                        type="object" icon="fa-copy"
+                        title="Créer une copie de ce modèle"/>
+                <button name="action_set_as_default" string="Définir par défaut"
+                        type="object" icon="fa-star"
+                        invisible="is_default"
+                        confirm="Cela désactivera le modèle par défaut actuel. Continuer ?"
+                        title="Définir comme modèle par défaut"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- FORM VIEW - Enhanced with preview and quick actions       -->
+    <!-- ========================================================== -->
+
+    <record id="view_construction_contract_template_form" model="ir.ui.view">
+        <field name="name">construction.contract.template.form</field>
+        <field name="model">construction.contract.template</field>
+        <field name="type">form</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_open_editor" string="Ouvrir l'éditeur visuel"
+                            type="object" class="btn-primary" icon="fa-edit"
+                            help="Ouvrir l'éditeur GrapesJS pour modifier le modèle"/>
+                    <button name="action_preview_pdf" string="Aperçu PDF"
+                            type="object" icon="fa-file-pdf-o"
+                            help="Générer un aperçu PDF avec des données d'exemple"/>
+                    <button name="action_duplicate" string="Dupliquer"
+                            type="object" icon="fa-copy"
+                            help="Créer une copie de ce modèle"/>
+                    <button name="action_set_as_default" string="Définir par défaut"
+                            type="object" invisible="is_default"
+                            confirm="Cela désactivera le modèle par défaut actuel. Continuer ?"
+                            help="Définir ce modèle comme modèle par défaut pour les nouveaux contrats"/>
+                    <button name="action_view_contracts" string="Voir les contrats"
+                            type="object" invisible="contract_count == 0"
+                            help="Afficher tous les contrats utilisant ce modèle"/>
+                </header>
+
+                <sheet>
+                    <!-- Status banner for default template -->
+                    <div class="alert alert-success" role="alert" invisible="not is_default">
+                        <i class="fa fa-star"/> 
+                        <strong>Modèle par défaut</strong> - Ce modèle est utilisé par défaut pour les nouveaux contrats
+                    </div>
+                    
+                    <!-- Status banner for inactive template -->
+                    <div class="alert alert-warning" role="alert" invisible="active">
+                        <i class="fa fa-exclamation-triangle"/> 
+                        <strong>Modèle inactif</strong> - Ce modèle est archivé et n'apparaît pas dans les sélections
+                    </div>
+
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_contracts" type="object"
+                                class="oe_stat_button" icon="fa-file-text">
+                            <field name="contract_count" widget="statinfo" string="Contrats"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <label for="name" class="oe_edit_only" string="Nom du modèle"/>
+                        <h1>
+                            <field name="name" placeholder="ex: Contrat Standard Sous-Traitant"/>
+                        </h1>
+                    </div>
+
+                    <group>
+                        <group string="📋 Paramètres">
+                            <field name="sequence" string="Ordre d'affichage"/>
+                            <field name="is_default" string="Modèle par défaut"/>
+                            <field name="active" string="Actif"/>
+                        </group>
+                        <group string="📊 Statistiques d'utilisation">
+                            <field name="last_used_date" readonly="1" string="Dernière utilisation"/>
+                            <label for="contract_count" string="Nombre de contrats"/>
+                            <div>
+                                <field name="contract_count" readonly="1" class="oe_inline"/>
+                                <button name="action_view_contracts" string="Voir" 
+                                        type="object" class="btn-link oe_inline"
+                                        invisible="contract_count == 0"/>
+                            </div>
+                        </group>
+                    </group>
+
+                    <group>
+                        <field name="description" string="Description" 
+                               placeholder="Description interne de l'objectif de ce modèle..."/>
+                    </group>
+
+                    <separator string="✍️ Zones de signature"/>
+                    <group>
+                        <group string="Signature Entreprise">
+                            <field name="company_signature_label" string="Libellé"/>
+                            <field name="company_signature_sublabel" string="Sous-libellé"/>
+                            <field name="company_signature_position" string="Position"/>
+                        </group>
+                        <group string="Signature Sous-Traitant">
+                            <field name="subcontractor_signature_label" string="Libellé"/>
+                            <field name="subcontractor_signature_sublabel" string="Sous-libellé"/>
+                            <field name="subcontractor_signature_position" string="Position"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <!-- Tab: Variables -->
+                        <page string="Available Variables" name="variables">
+                            <group>
+                                <group string="Codes URSSAF">
+                                    <div class="alert alert-info" role="alert">
+                                        <i class="fa fa-info-circle"/> 
+                                        Utilisez le bouton ci-dessous pour insérer des codes URSSAF dans votre template lors de l'édition visuelle.
+                                    </div>
+                                    <field name="urssaf_code_helper" widget="urssaf_code_selector" nolabel="1"/>
+                                </group>
+                            </group>
+                            <separator string="Variables disponibles"/>
+                            <field name="variable_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="code" placeholder="{{ contract.name }}"/>
+                                    <field name="category"/>
+                                    <field name="variable_type"/>
+                                    <field name="description"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Tab: HTML Preview -->
+                        <page string="HTML Content" name="html">
+                            <group>
+                                <field name="grapesjs_html" widget="ace"
+                                       options="{'mode': 'html'}" nolabel="1"/>
+                            </group>
+                        </page>
+
+                        <!-- Tab: CSS Preview -->
+                        <page string="CSS Styles" name="css">
+                            <group>
+                                <field name="grapesjs_css" widget="ace"
+                                       options="{'mode': 'css'}" nolabel="1"/>
+                            </group>
+                        </page>
+
+                        <!-- Tab: GrapesJS Data (technical) -->
+                        <page string="GrapesJS Data" name="grapesjs_data" groups="base.group_no_one">
+                            <group>
+                                <field name="grapesjs_components" widget="ace"
+                                       options="{'mode': 'json'}" nolabel="1"/>
+                            </group>
+                            <group>
+                                <field name="grapesjs_styles" widget="ace"
+                                       options="{'mode': 'json'}" nolabel="1"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- SEARCH VIEW                                                -->
+    <!-- ========================================================== -->
+
+    <record id="view_construction_contract_template_search" model="ir.ui.view">
+        <field name="name">construction.contract.template.search</field>
+        <field name="model">construction.contract.template</field>
+        <field name="type">search</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Nom" filter_domain="[('name', 'ilike', self)]"/>
+                <field name="description" string="Description"/>
+                
+                <filter string="Modèle par défaut" name="filter_default" 
+                        domain="[('is_default', '=', True)]"/>
+                <filter string="Actifs" name="filter_active" 
+                        domain="[('active', '=', True)]"/>
+                <filter string="Inactifs" name="filter_inactive" 
+                        domain="[('active', '=', False)]"/>
+                
+                <separator/>
+                <filter string="Utilisés récemment" name="filter_recently_used"
+                        domain="[('last_used_date', '!=', False)]"/>
+                <filter string="Jamais utilisés" name="filter_never_used"
+                        domain="[('contract_count', '=', 0)]"/>
+                
+                <group expand="0" string="Grouper par">
+                    <filter string="Statut" name="group_active" 
+                            context="{'group_by': 'active'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- ACTION - Enhanced with French labels                       -->
+    <!-- ========================================================== -->
+
+    <record id="action_construction_contract_template" model="ir.actions.act_window">
+        <field name="name">Modèles de Contrat</field>
+        <field name="res_model">construction.contract.template</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre premier modèle de contrat
+            </p>
+            <p>
+                Les modèles vous permettent de créer des formats de contrats réutilisables<br/>
+                qui peuvent être personnalisés avec un éditeur visuel.
+            </p>
+            <p>
+                <strong>Actions rapides :</strong><br/>
+                • Cliquez sur "Nouveau" pour créer un modèle<br/>
+                • Utilisez "Éditer" pour ouvrir l'éditeur visuel<br/>
+                • Dupliquez un modèle existant pour gagner du temps
+            </p>
+        </field>
+    </record>
+
+</odoo>

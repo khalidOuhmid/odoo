@@ -1,0 +1,95 @@
+{#
+    Signature Zones Component for Contract Templates
+    
+    This is a reusable Jinja2 component for rendering configurable signature zones.
+    It supports left/right positioning based on template configuration.
+    
+    Required context variables:
+    - template: Template configuration with signature zone settings
+    - company_signature: Company signature data (optional)
+    - subcontractor_signature: Subcontractor signature data (optional)
+    - company: Company data
+    - subcontractor: Subcontractor data
+    
+    Usage in templates:
+    {% include 'signature_zones.html' %}
+    
+    Or use the inline version below directly in your template.
+#}
+
+{# 
+    INLINE SIGNATURE ZONES COMPONENT
+    Copy this block into your contract template where you want signatures to appear.
+    The positioning is controlled by template.company_signature_position and 
+    template.subcontractor_signature_position fields.
+#}
+
+<div class="signature-zones" style="display: flex; justify-content: space-between; margin-top: 50px; page-break-inside: avoid;">
+    {# Determine order based on positions - company left means company first #}
+    {% set company_first = (template.company_signature_position|default('left') == 'left') %}
+    
+    {% if company_first %}
+    {# Company Signature Zone (Left) #}
+    <div class="signature-zone company-signature" style="width: 45%; text-align: center;">
+        <p style="font-weight: bold; margin-bottom: 10px;">{{ template.company_signature_label|default('Pour BLG Groupe') }}</p>
+        <p style="margin-bottom: 5px;">{{ company.name }}</p>
+        <div class="signature-box" style="border: 1px solid #ccc; min-height: 100px; margin: 10px 0; padding: 10px; display: flex; align-items: center; justify-content: center;">
+            {% if company_signature and company_signature.image_data %}
+            <img src="{{ company_signature.image_data }}" alt="Signature de l'entreprise" style="max-width: 200px; max-height: 80px;"/>
+            {% else %}
+            <span style="color: #999; font-style: italic;">Signature</span>
+            {% endif %}
+        </div>
+        <p style="font-style: italic; font-size: 11px; color: #666;">{{ template.company_signature_sublabel|default('Lu et approuvé') }}</p>
+    </div>
+    
+    {# Subcontractor Signature Zone (Right) #}
+    <div class="signature-zone subcontractor-signature" style="width: 45%; text-align: center;">
+        <p style="font-weight: bold; margin-bottom: 10px;">{{ template.subcontractor_signature_label|default('Le Sous-Traitant') }}</p>
+        <p style="margin-bottom: 5px;">{{ subcontractor.name }}</p>
+        <div class="signature-box" style="border: 1px solid #ccc; min-height: 100px; margin: 10px 0; padding: 10px; display: flex; align-items: center; justify-content: center;">
+            {% if subcontractor_signature and subcontractor_signature.image_data %}
+            <img src="{{ subcontractor_signature.image_data }}" alt="Signature du sous-traitant" style="max-width: 200px; max-height: 80px;"/>
+            {% else %}
+            <span style="color: #999; font-style: italic;">Signature</span>
+            {% endif %}
+        </div>
+        <p style="font-style: italic; font-size: 11px; color: #666;">{{ template.subcontractor_signature_sublabel|default('Lu et approuvé, bon pour accord') }}</p>
+        {% if subcontractor_signature and subcontractor_signature.signature_date %}
+        <p style="font-size: 10px; color: #888; margin-top: 5px;">Signé le {{ subcontractor_signature.signature_date }}</p>
+        {% endif %}
+    </div>
+    
+    {% else %}
+    {# Subcontractor Signature Zone (Left) #}
+    <div class="signature-zone subcontractor-signature" style="width: 45%; text-align: center;">
+        <p style="font-weight: bold; margin-bottom: 10px;">{{ template.subcontractor_signature_label|default('Le Sous-Traitant') }}</p>
+        <p style="margin-bottom: 5px;">{{ subcontractor.name }}</p>
+        <div class="signature-box" style="border: 1px solid #ccc; min-height: 100px; margin: 10px 0; padding: 10px; display: flex; align-items: center; justify-content: center;">
+            {% if subcontractor_signature and subcontractor_signature.image_data %}
+            <img src="{{ subcontractor_signature.image_data }}" alt="Signature du sous-traitant" style="max-width: 200px; max-height: 80px;"/>
+            {% else %}
+            <span style="color: #999; font-style: italic;">Signature</span>
+            {% endif %}
+        </div>
+        <p style="font-style: italic; font-size: 11px; color: #666;">{{ template.subcontractor_signature_sublabel|default('Lu et approuvé, bon pour accord') }}</p>
+        {% if subcontractor_signature and subcontractor_signature.signature_date %}
+        <p style="font-size: 10px; color: #888; margin-top: 5px;">Signé le {{ subcontractor_signature.signature_date }}</p>
+        {% endif %}
+    </div>
+    
+    {# Company Signature Zone (Right) #}
+    <div class="signature-zone company-signature" style="width: 45%; text-align: center;">
+        <p style="font-weight: bold; margin-bottom: 10px;">{{ template.company_signature_label|default('Pour BLG Groupe') }}</p>
+        <p style="margin-bottom: 5px;">{{ company.name }}</p>
+        <div class="signature-box" style="border: 1px solid #ccc; min-height: 100px; margin: 10px 0; padding: 10px; display: flex; align-items: center; justify-content: center;">
+            {% if company_signature and company_signature.image_data %}
+            <img src="{{ company_signature.image_data }}" alt="Signature de l'entreprise" style="max-width: 200px; max-height: 80px;"/>
+            {% else %}
+            <span style="color: #999; font-style: italic;">Signature</span>
+            {% endif %}
+        </div>
+        <p style="font-style: italic; font-size: 11px; color: #666;">{{ template.company_signature_sublabel|default('Lu et approuvé') }}</p>
+    </div>
+    {% endif %}
+</div>

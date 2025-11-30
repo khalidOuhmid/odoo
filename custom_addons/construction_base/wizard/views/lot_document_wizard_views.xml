@@ -12,16 +12,6 @@
             <field name="arch" type="xml">
                 <form string="Gérer les documents du lot" class="o_lot_document_wizard">
                     <header>
-                        <button name="action_generate_contract_wizard"
-                                string="📋 Créer un nouveau contrat"
-                                type="object"
-                                class="btn-primary"
-                                data-hotkey="c"/>
-                        <button name="action_view_latest_contract"
-                                string="👁️ Voir le dernier contrat"
-                                type="object"
-                                class="btn-secondary"
-                                invisible="not latest_contract_id"/>
                         <button special="cancel"
                                 string="Fermer"
                                 class="btn-secondary"/>
@@ -34,7 +24,7 @@
                                 <span class="fa fa-folder-open fa-3x text-primary me-3"></span>
                                 <div>
                                     <h1 class="mb-0">📁 Documents du lot</h1>
-                                    <p class="text-muted mb-0">Gestion des documents et contrats de sous-traitance</p>
+                                    <p class="text-muted mb-0">Gestion centralisée des documents liés au lot</p>
                                 </div>
                             </div>
                         </div>
@@ -62,104 +52,8 @@
                             </div>
                         </div>
 
-                        <!-- État des contrats -->
-                        <div class="row mb-4">
-                            <div class="col-md-12">
-                                <div class="alert alert-success" invisible="not has_active_contract">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-check-circle fa-2x me-3"></i>
-                                        <div>
-                                            <h5 class="mb-1">✅ Contrat actif disponible</h5>
-                                            <p class="mb-0">
-                                                Ce lot dispose d'un contrat signé et actif.
-                                                <span invisible="contract_count &lt;= 1">
-                                                    (<field name="contract_count" readonly="1"/> contrats au total)
-                                                </span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="alert alert-warning" invisible="has_active_contract or contract_count == 0">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-exclamation-triangle fa-2x me-3"></i>
-                                        <div>
-                                            <h5 class="mb-1">⚠️ Contrat non actif</h5>
-                                            <p class="mb-0">
-                                                <field name="contract_count" readonly="1"/> contrat(s) trouvé(s) mais aucun n'est actif.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="alert alert-info" invisible="contract_count > 0">
-                                    <div class="d-flex align-items-center">
-                                        <i class="fa fa-info-circle fa-2x me-3"></i>
-                                        <div>
-                                            <h5 class="mb-1">ℹ️ Aucun contrat</h5>
-                                            <p class="mb-0">Aucun contrat n'a encore été créé pour ce lot.</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Documents -->
                         <notebook class="o_notebook">
-                            <!-- Contrats -->
-                            <page string="📄 Contrats" name="contracts">
-                                <div class="card">
-                                    <div class="card-header bg-primary text-white">
-                                        <h5 class="mb-0">
-                                            <i class="fa fa-file-text me-2"></i>
-                                            Gestion des contrats de sous-traitance
-                                        </h5>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <h6>📋 Création de contrat</h6>
-                                                <p class="text-muted">Créez un nouveau contrat avec preview et signature électronique</p>
-                                                <button name="action_generate_contract_wizard"
-                                                        string="📋 Nouveau contrat complet"
-                                                        type="object"
-                                                        class="btn btn-primary btn-block mb-2"/>
-                                                <small class="text-muted">
-                                                    Wizard complet avec preview, modification et signature
-                                                </small>
-                                            </div>
-
-                                            <div class="col-md-6">
-                                                <h6>📊 Contrats existants</h6>
-                                                <p class="text-muted">Gérez les contrats déjà créés pour ce lot</p>
-
-                                                <button name="action_view_contracts"
-                                                        string="📋 Voir tous les contrats"
-                                                        type="object"
-                                                        class="btn btn-outline-primary btn-block mb-2"
-                                                        invisible="contract_count == 0"/>
-
-                                                <button name="action_view_latest_contract"
-                                                        string="👁️ Voir le dernier contrat"
-                                                        type="object"
-                                                        class="btn btn-info btn-block mb-2"
-                                                        invisible="not latest_contract_id"/>
-
-                                                <button name="action_send_latest_contract_email"
-                                                        string="📧 Renvoyer par email"
-                                                        type="object"
-                                                        class="btn btn-success btn-block mb-2"
-                                                        invisible="not latest_contract_id"/>
-
-                                                <div class="text-muted" invisible="contract_count > 0">
-                                                    <small>Aucun contrat disponible</small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </page>
-
                             <!-- CCTP -->
                             <page string="📋 CCTP" name="cctp">
                                 <div class="card">
@@ -235,34 +129,7 @@
                             <!-- Actions utiles -->
                             <page string="🔧 Actions" name="actions">
                                 <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="card">
-                                            <div class="card-header bg-primary text-white">
-                                                <h5 class="mb-0">📋 Contrats</h5>
-                                            </div>
-                                            <div class="card-body">
-                                                <button name="action_generate_contract_wizard"
-                                                        string="📋 Créer nouveau contrat"
-                                                        type="object"
-                                                        class="btn btn-primary btn-block mb-3"/>
-
-                                                <button name="action_view_contracts"
-                                                        string="📊 Voir tous les contrats"
-                                                        type="object"
-                                                        class="btn btn-outline-primary btn-block mb-2"
-                                                        invisible="contract_count == 0"/>
-
-                                                <div class="alert alert-light" invisible="contract_count > 0">
-                                                    <small class="text-muted">
-                                                        <i class="fa fa-info-circle"></i>
-                                                        Aucun contrat existant
-                                                    </small>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <div class="col-md-6">
+                                    <div class="col-md-12">
                                         <div class="card">
                                             <div class="card-header bg-success text-white">
                                                 <h5 class="mb-0">🔗 Liens rapides</h5>
@@ -296,10 +163,6 @@
                                 string="💾 Enregistrer les documents"
                                 type="object"
                                 class="btn-primary"/>
-                        <button name="action_generate_contract_wizard"
-                                string="📋 Nouveau contrat"
-                                type="object"
-                                class="btn-success"/>
                         <button string="Fermer"
                                 class="btn-secondary"
                                 special="cancel"/>
@@ -367,7 +230,7 @@
                             Gérez tous les documents liés à vos lots
                         </p>
                         <p class="text-muted">
-                            CCTP, plannings et contrats de sous-traitance centralisés
+                            CCTP, plannings et documents centralisés
                         </p>
                     </div>
                 </div>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Contract Creation Wizard Form -->
+    <record id="view_contract_creation_wizard_form" model="ir.ui.view">
+        <field name="name">contract.creation.wizard.form</field>
+        <field name="model">contract.creation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Create Contract">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Generate Subcontractor Contract</h1>
+                    </div>
+
+                    <group>
+                        <group string="Construction Site &amp; Subcontractor">
+                            <field name="chantier_id" options="{'no_create': True}"/>
+                            <field name="subcontractor_id" options="{'no_create': True}"/>
+                            <field name="subcontractor_documents_valid" invisible="1"/>
+                            <field name="subcontractor_warning"
+                                   widget="text"
+                                   invisible="not subcontractor_warning"
+                                   class="text-warning"/>
+                        </group>
+
+                        <group string="Lots">
+                            <field name="available_lot_ids" invisible="1"/>
+                            <field name="lot_ids" widget="many2many_tags"
+                                   options="{'no_create': True}"
+                                   required="chantier_id != False"/>
+                        </group>
+
+                        <group string="Schedule &amp; Amounts">
+                            <field name="contract_date"/>
+                            <field name="start_date"/>
+                            <field name="end_date"/>
+                            <field name="retention_rate"/>
+                        </group>
+
+                        <group string="Template &amp; Options">
+                            <field name="template_id"/>
+                            <field name="generate_deliverables"/>
+                            <field name="send_immediately"
+                                   invisible="template_id == False"/>
+                        </group>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button string="Generate Contract"
+                            name="action_create_contract"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_contract_creation_wizard" model="ir.actions.act_window">
+        <field name="name">Create Contract</field>
+        <field name="res_model">contract.creation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

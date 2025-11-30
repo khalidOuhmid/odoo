@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- CONTRACT SUMMARY VIEW - POST-CREATION RECAP                -->
+    <!-- ========================================================== -->
+
+    <record id="view_contract_summary_form" model="ir.ui.view">
+        <field name="name">construction.contract.summary.form</field>
+        <field name="model">construction.contract</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <form string="Contrat Créé">
+                <sheet>
+                    <!-- ============================================== -->
+                    <!-- SUCCESS BANNER                                 -->
+                    <!-- ============================================== -->
+                    <div class="alert alert-success" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-check-circle fa-3x me-4" style="color: #28a745;"/>
+                            <div>
+                                <h3 class="mb-1">
+                                    <strong>✅ Contrat créé avec succès !</strong>
+                                </h3>
+                                <p class="mb-0 fs-5">
+                                    Référence : <field name="name" readonly="1" class="fw-bold oe_inline"/>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================== -->
+                    <!-- CONTRACT INFORMATION                           -->
+                    <!-- ============================================== -->
+                    <group>
+                        <group string="📋 Informations du contrat">
+                            <field name="chantier_id" string="Chantier" readonly="1"/>
+                            <field name="subcontractor_id" string="Sous-Traitant" readonly="1"/>
+                            <field name="date" string="Date du contrat" readonly="1"/>
+                            <field name="start_date" string="Début des travaux" readonly="1"/>
+                            <field name="end_date" string="Fin des travaux" readonly="1"/>
+                            <field name="state" string="État" widget="badge" readonly="1"
+                                   decoration-info="state=='draft'"
+                                   decoration-success="state=='generated'"
+                                   decoration-warning="state=='sent'"
+                                   decoration-primary="state=='signed'"/>
+                        </group>
+
+                        <group string="📝 Prochaines étapes">
+                            <div class="o_field_widget">
+                                <div class="alert alert-info mb-0" role="alert">
+                                    <ol class="mb-0 ps-3">
+                                        <li class="mb-2">
+                                            <strong>Vérifier le PDF généré</strong><br/>
+                                            <small class="text-muted">Le document PDF a été automatiquement créé</small>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Envoyer au sous-traitant</strong><br/>
+                                            <small class="text-muted">Par e-mail, SMS ou les deux</small>
+                                        </li>
+                                        <li class="mb-2">
+                                            <strong>Suivre la signature</strong><br/>
+                                            <small class="text-muted">Le sous-traitant validera chaque page puis signera</small>
+                                        </li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </group>
+                    </group>
+
+                    <!-- Hidden fields for context -->
+                    <field name="currency_id" invisible="1"/>
+                    <field name="total_amount_ttc" invisible="1"/>
+                    <field name="pdf_document" invisible="1"/>
+
+                    <!-- ============================================== -->
+                    <!-- FINANCIAL SUMMARY                              -->
+                    <!-- ============================================== -->
+                    <group string="💰 Montant du contrat" invisible="total_amount_ttc == 0">
+                        <group>
+                            <field name="total_amount_ttc" string="Montant Total TTC" 
+                                   widget="monetary" readonly="1"
+                                   class="oe_subtotal_footer_separator"
+                                   style="font-size: 1.3em; font-weight: bold;"/>
+                        </group>
+                    </group>
+
+                    <!-- ============================================== -->
+                    <!-- ACTION BUTTONS                                 -->
+                    <!-- ============================================== -->
+                    <div class="mt-4">
+                        <h4 class="mb-3">🚀 Actions rapides</h4>
+                        <div class="d-flex flex-wrap gap-2">
+                            <!-- Email button -->
+                            <button name="action_send_portal_email" 
+                                    type="object"
+                                    string="📧 Envoyer par e-mail" 
+                                    class="btn btn-success"
+                                    icon="fa-envelope"
+                                    help="Envoyer le lien de signature par e-mail uniquement"/>
+                            
+                            <!-- SMS button -->
+                            <button name="action_send_portal_sms" 
+                                    type="object"
+                                    string="📱 Envoyer par SMS" 
+                                    class="btn btn-info"
+                                    icon="fa-mobile"
+                                    help="Envoyer le lien de signature par SMS uniquement"/>
+                            
+                            <!-- Email + SMS button -->
+                            <button name="action_send_portal_email_sms" 
+                                    type="object"
+                                    string="📧📱 Envoyer par e-mail et SMS" 
+                                    class="btn btn-warning"
+                                    icon="fa-paper-plane"
+                                    help="Envoyer le lien de signature par e-mail ET SMS"/>
+                        </div>
+                    </div>
+
+                    <!-- ============================================== -->
+                    <!-- LINK TO FULL FORM                              -->
+                    <!-- ============================================== -->
+                    <div class="mt-4 pt-3 border-top">
+                        <button name="action_view_full_form" 
+                                type="object"
+                                string="📄 Voir le contrat complet" 
+                                class="btn btn-link ps-0"
+                                icon="fa-external-link"
+                                help="Ouvrir la fiche complète du contrat"/>
+                    </div>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- ACTION TO OPEN SUMMARY VIEW                                -->
+    <!-- ========================================================== -->
+
+    <record id="action_contract_summary" model="ir.actions.act_window">
+        <field name="name">Contrat Créé</field>
+        <field name="res_model">construction.contract</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_contract_summary_form"/>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

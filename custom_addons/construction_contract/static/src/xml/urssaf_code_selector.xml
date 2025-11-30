@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    
+    <t t-name="construction_contract.URSSAFCodeSelector" owl="1">
+        <div class="urssaf_code_selector">
+            <!-- Selector Button -->
+            <button type="button" 
+                    class="btn btn-primary btn-sm"
+                    t-on-click="toggleDropdown"
+                    title="Insérer un code URSSAF">
+                <i class="fa fa-plus-circle"/> Insérer code URSSAF
+            </button>
+            
+            <!-- Dropdown Panel -->
+            <div t-if="state.isOpen" class="urssaf_dropdown_panel">
+                <div class="urssaf_dropdown_overlay" t-on-click="closeDropdown"/>
+                
+                <div class="urssaf_dropdown_content">
+                    <!-- Header -->
+                    <div class="urssaf_dropdown_header">
+                        <h5>Sélectionner un code URSSAF</h5>
+                        <button type="button" 
+                                class="btn-close" 
+                                t-on-click="closeDropdown"
+                                aria-label="Fermer"/>
+                    </div>
+                    
+                    <!-- Filters -->
+                    <div class="urssaf_dropdown_filters">
+                        <div class="row g-2">
+                            <div class="col-md-8">
+                                <input type="text" 
+                                       class="form-control form-control-sm"
+                                       placeholder="Rechercher par code, libellé ou description..."
+                                       t-model="state.searchTerm"
+                                       t-on-input="onSearchChange"/>
+                            </div>
+                            <div class="col-md-4">
+                                <select class="form-select form-select-sm"
+                                        t-model="state.selectedCategory"
+                                        t-on-change="onCategoryChange">
+                                    <option value="all">Toutes catégories</option>
+                                    <option value="cotisation">Cotisations</option>
+                                    <option value="exoneration">Exonérations</option>
+                                    <option value="reduction">Réductions</option>
+                                    <option value="autre">Autres</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading State -->
+                    <div t-if="state.loading" class="urssaf_dropdown_loading">
+                        <i class="fa fa-spinner fa-spin"/> Chargement des codes URSSAF...
+                    </div>
+                    
+                    <!-- Codes List -->
+                    <div t-else="" class="urssaf_dropdown_list">
+                        <t t-if="state.filteredCodes.length === 0">
+                            <div class="urssaf_no_results">
+                                <i class="fa fa-search"/> Aucun code trouvé
+                            </div>
+                        </t>
+                        
+                        <t t-else="">
+                            <div t-foreach="state.filteredCodes" 
+                                 t-as="code" 
+                                 t-key="code.id"
+                                 class="urssaf_code_item"
+                                 t-on-click="() => this.selectCode(code)">
+                                <div class="urssaf_code_header">
+                                    <span class="urssaf_code_number">
+                                        <strong t-esc="code.code"/>
+                                    </span>
+                                    <span class="urssaf_code_category">
+                                        <span t-attf-class="badge {{getCategoryBadgeClass(code.category)}}"
+                                              t-esc="getCategoryLabel(code.category)"/>
+                                    </span>
+                                    <t t-if="code.rate">
+                                        <span class="urssaf_code_rate">
+                                            <i class="fa fa-percent"/> <t t-esc="code.rate"/>%
+                                        </span>
+                                    </t>
+                                </div>
+                                <div class="urssaf_code_name" t-esc="code.name"/>
+                                <t t-if="code.description">
+                                    <div class="urssaf_code_description" t-esc="code.description"/>
+                                </t>
+                                <t t-if="code.legal_reference">
+                                    <div class="urssaf_code_reference">
+                                        <i class="fa fa-book"/> <t t-esc="code.legal_reference"/>
+                                    </div>
+                                </t>
+                            </div>
+                        </t>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="urssaf_dropdown_footer">
+                        <small class="text-muted">
+                            <t t-esc="state.filteredCodes.length"/> code(s) affiché(s)
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+    
+</templates>

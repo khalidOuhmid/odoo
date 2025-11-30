@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Deliverable Selector Wizard Form -->
+    <record id="view_deliverable_selector_wizard_form" model="ir.ui.view">
+        <field name="name">deliverable.selector.wizard.form</field>
+        <field name="model">deliverable.selector.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Select Deliverables">
+                <sheet>
+                    <div class="oe_title">
+                        <h1>Generate Contract Deliverables</h1>
+                        <field name="contract_id" invisible="1"/>
+                    </div>
+
+                    <group>
+                        <group string="Subcontractor Documents">
+                            <field name="urssaf_available" invisible="1"/>
+                            <field name="kbis_available" invisible="1"/>
+                            <field name="insurance_available" invisible="1"/>
+                            <field name="rib_available" invisible="1"/>
+
+                            <field name="include_urssaf"
+                                   readonly="not urssaf_available"/>
+                            <label for="include_urssaf" invisible="urssaf_available">
+                                <span class="text-muted">(Not available)</span>
+                            </label>
+
+                            <field name="include_kbis"
+                                   readonly="not kbis_available"/>
+                            <label for="include_kbis" invisible="kbis_available">
+                                <span class="text-muted">(Not available)</span>
+                            </label>
+
+                            <field name="include_insurance"
+                                   readonly="not insurance_available"/>
+                            <label for="include_insurance" invisible="insurance_available">
+                                <span class="text-muted">(Not available)</span>
+                            </label>
+
+                            <field name="include_rib"
+                                   readonly="not rib_available"/>
+                            <label for="include_rib" invisible="rib_available">
+                                <span class="text-muted">(Not available)</span>
+                            </label>
+                        </group>
+
+                        <group string="Planning Documents">
+                            <field name="planning_tasks_count" invisible="1"/>
+
+                            <field name="include_planning"
+                                   readonly="planning_tasks_count == 0"/>
+                            <label for="include_planning">
+                                <span invisible="planning_tasks_count == 0">
+                                    (<field name="planning_tasks_count"/> tasks)
+                                </span>
+                                <span class="text-muted" invisible="planning_tasks_count != 0">
+                                    (No tasks available)
+                                </span>
+                            </label>
+
+                            <field name="include_general_planning"/>
+                        </group>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button string="Generate Deliverables"
+                            name="action_generate_deliverables"
+                            type="object"
+                            class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
