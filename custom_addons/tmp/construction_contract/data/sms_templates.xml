@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- SMS: Contract Invitation -->
+        <record id="sms_template_contract_invitation" model="sms.template">
+            <field name="name">Contract: SMS Invitation</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="body">New contract ${object.name} for ${object.chantier_id.name}. Sign here: ${ctx.get('portal_url', 'N/A')}</field>
+        </record>
+
+        <!-- SMS: Reminder (Generic) -->
+        <record id="sms_template_contract_reminder" model="sms.template">
+            <field name="name">Contract: SMS Reminder</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="body">Rappel: Contrat ${object.name} en attente de signature. Expire le ${format_date(object.token_expiry_date)}. Signez: ${ctx.get('portal_url', 'N/A')}</field>
+        </record>
+
+        <!-- SMS: Reminder J+7 -->
+        <record id="sms_template_contract_reminder_j7" model="sms.template">
+            <field name="name">Contract: SMS Reminder J+7</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="body">Rappel J+7: Contrat ${object.name} (${object.chantier_id.name}) en attente. Signez avant le ${format_date(object.token_expiry_date)}: ${ctx.get('portal_url', 'N/A')}</field>
+        </record>
+
+        <!-- SMS: Reminder J+14 -->
+        <record id="sms_template_contract_reminder_j14" model="sms.template">
+            <field name="name">Contract: SMS Reminder J+14</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="body">URGENT - Rappel J+14: Contrat ${object.name} toujours en attente. Action requise. Signez maintenant: ${ctx.get('portal_url', 'N/A')}</field>
+        </record>
+
+        <!-- SMS: Reminder J+21 -->
+        <record id="sms_template_contract_reminder_j21" model="sms.template">
+            <field name="name">Contract: SMS Reminder J+21</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="body">DERNIER RAPPEL J+21: Contrat ${object.name} expire bientôt. Signez immédiatement ou il sera annulé: ${ctx.get('portal_url', 'N/A')}</field>
+        </record>
+
+        <!-- SMS: Contract Signed Confirmation -->
+        <record id="sms_template_contract_signed" model="sms.template">
+            <field name="name">Contract: SMS Signed Confirmation</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="body">Contrat ${object.name} signé avec succès le ${format_datetime(object.signature_date)}. Vous recevrez le PDF par email. Merci !</field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- TREE VIEW -->
+    <record id="view_construction_chantier_tree" model="ir.ui.view">
+        <field name="name">construction.chantier.tree</field>
+        <field name="model">construction.chantier</field>
+        <field name="arch" type="xml">
+            <list string="Chantiers" sample="1">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="partner_id"/>
+                <field name="user_id" widget="many2one_avatar_user"/>
+                <field name="state" 
+                       decoration-info="state == 'draft'"
+                       decoration-warning="state == 'prep'"
+                       decoration-success="state == 'execution'"
+                       widget="badge"/>
+                <field name="progress_technical" widget="progressbar"/>
+                <field name="activity_ids" widget="list_activity"/>
+                <field name="budget_total" sum="Total Budget"/>
+                <field name="company_id" groups="base.group_multi_company" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_construction_chantier_form" model="ir.ui.view">
+        <field name="name">construction.chantier.form</field>
+        <field name="model">construction.chantier</field>
+        <field name="arch" type="xml">
+            <form string="Chantier">
+                <header>
+                    <button name="action_confirm_study" string="Démarrer Étude" type="object" class="oe_highlight"
+                            invisible="state != 'draft'"/>
+                    <button name="action_start_prep" string="Valider &amp; Préparer" type="object" class="oe_highlight"
+                            invisible="state != 'study'"/>
+                    <button name="action_start_execution" string="Démarrer Travaux" type="object" class="oe_highlight"
+                            invisible="state != 'prep'"/>
+                    <button name="action_close" string="Clôturer" type="object"
+                            invisible="state != 'acceptance'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,study,prep,execution,acceptance,done"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="code"/>
+                        </h1>
+                        <label for="name" string="Nom du Projet"/>
+                        <h2>
+                            <field name="name" placeholder="Ex: Résidence Les Mimosas"/>
+                        </h2>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="partner_id" widget="res_partner_many2one" context="{'show_address': 1}"/>
+                            <field name="address_id" context="{'show_address': 1}"/>
+                        </group>
+                        <group>
+                            <field name="user_id" widget="many2one_avatar_user"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active" invisible="1"/>
+                        </group>
+                    </group>
+                    <group string="Planning Global">
+                         <group>
+                             <field name="date_start"/>
+                             <field name="date_end"/>
+                         </group>
+                         <group>
+                             <field name="duration"/>
+                             <field name="days_remaining"/>
+                              <field name="is_late" invisible="1"/>
+                         </group>
+                    </group>
+                    <notebook>
+                        <page string="Lots &amp; Budget" name="lots">
+                            <field name="lot_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="code"/>
+                                    <field name="name"/>
+                                    <field name="product_category_id"/>
+                                    <field name="subcontractor_id"/>
+                                    <field name="budget_amount" sum="Total"/>
+                                    <field name="cost_committed" sum="Total"/>
+                                    <field name="cost_actual" sum="Total"/>
+                                </list>
+                            </field>
+                            <group name="financial_summary" class="oe_subtotal_footer oe_right">
+                                <field name="budget_total" widget="monetary"/>
+                                <field name="cost_committed" widget="monetary"/>
+                                <field name="cost_actual" widget="monetary"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_construction_chantier" model="ir.actions.act_window">
+        <field name="name">Chantiers</field>
+        <field name="res_model">construction.chantier</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+          <p class="o_view_nocontent_smiling_face">
+            Créer un nouveau chantier
+          </p>
+        </field>
+    </record>
+
+    <!-- MENU -->
+    <menuitem id="menu_action_chantier"
+              name="Chantiers"
+              parent="menu_construction_operations"
+              action="action_construction_chantier"
+              sequence="1"/>
+</odoo>

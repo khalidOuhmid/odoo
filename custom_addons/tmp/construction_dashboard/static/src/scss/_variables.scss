@@ -1,0 +1,170 @@
+// =============================================================================
+// BLG Groupe - Design System Variables
+// =============================================================================
+// Charte graphique officielle BLG Groupe pour BTPVision ERP
+// =============================================================================
+
+// -----------------------------------------------------------------------------
+// Brand Colors - Couleurs principales BLG Groupe
+// -----------------------------------------------------------------------------
+
+// Primary - Terre cuite (couleur signature)
+$blg-terre-cuite: #A0604F;
+$blg-terre-cuite-light: lighten($blg-terre-cuite, 15%);
+$blg-terre-cuite-dark: darken($blg-terre-cuite, 10%);
+
+// Secondary - Beige clair (fond et zones de contenu)
+$blg-beige-clair: #F5E6D8;
+$blg-beige-light: lighten($blg-beige-clair, 5%);
+$blg-beige-dark: darken($blg-beige-clair, 10%);
+
+// Neutral colors
+$blg-noir: #000000;
+$blg-blanc: #FFFFFF;
+$blg-gris-clair: #F5F5F5;
+$blg-gris-moyen: #E0E0E0;
+$blg-gris-fonce: #6C757D;
+
+// -----------------------------------------------------------------------------
+// Semantic Colors - Couleurs de statut
+// -----------------------------------------------------------------------------
+
+$color-success: #28A745;      // Validé, signé, conforme
+$color-warning: #FFC107;      // En attente, attention
+$color-danger: #DC3545;       // Erreur, expiré, alerte
+$color-info: #17A2B8;         // Information, en cours
+
+// Lighter variants for backgrounds
+$color-success-light: lighten($color-success, 40%);
+$color-warning-light: lighten($color-warning, 35%);
+$color-danger-light: lighten($color-danger, 35%);
+$color-info-light: lighten($color-info, 40%);
+
+// -----------------------------------------------------------------------------
+// Signature Portal Colors
+// -----------------------------------------------------------------------------
+
+$signature-zone-border: #FF6600;  // Orange vif pour zones de signature
+$signature-zone-bg: rgba(255, 102, 0, 0.1);
+$signature-zone-hover: rgba(255, 102, 0, 0.2);
+
+// -----------------------------------------------------------------------------
+// Typography
+// -----------------------------------------------------------------------------
+
+$font-family-base: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+$font-family-heading: 'Roboto', sans-serif;
+$font-family-monospace: 'Roboto Mono', monospace;
+
+// Font sizes
+$font-size-base: 14px;
+$font-size-sm: 12px;
+$font-size-lg: 16px;
+$font-size-xl: 18px;
+
+// Font weights
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+// Line heights
+$line-height-base: 1.5;
+$line-height-sm: 1.25;
+$line-height-lg: 1.75;
+
+// -----------------------------------------------------------------------------
+// Spacing
+// -----------------------------------------------------------------------------
+
+$spacing-unit: 8px;
+$spacing-xs: $spacing-unit * 0.5;   // 4px
+$spacing-sm: $spacing-unit;          // 8px
+$spacing-md: $spacing-unit * 2;      // 16px
+$spacing-lg: $spacing-unit * 3;      // 24px
+$spacing-xl: $spacing-unit * 4;      // 32px
+$spacing-xxl: $spacing-unit * 6;     // 48px
+
+// -----------------------------------------------------------------------------
+// Border Radius
+// -----------------------------------------------------------------------------
+
+$border-radius-sm: 2px;
+$border-radius: 4px;
+$border-radius-md: 6px;
+$border-radius-lg: 8px;
+$border-radius-xl: 12px;
+$border-radius-pill: 50px;
+$border-radius-circle: 50%;
+
+// -----------------------------------------------------------------------------
+// Shadows
+// -----------------------------------------------------------------------------
+
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+$shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+$shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12);
+$shadow-lg: 0 8px 16px rgba(0, 0, 0, 0.15);
+$shadow-xl: 0 12px 24px rgba(0, 0, 0, 0.2);
+
+// -----------------------------------------------------------------------------
+// Breakpoints (responsive design)
+// -----------------------------------------------------------------------------
+
+$breakpoint-mobile: 375px;
+$breakpoint-tablet: 768px;
+$breakpoint-desktop: 1024px;
+$breakpoint-wide: 1440px;
+$breakpoint-ultrawide: 1920px;
+
+// -----------------------------------------------------------------------------
+// Z-Index Scale
+// -----------------------------------------------------------------------------
+
+$z-index-dropdown: 1000;
+$z-index-sticky: 1020;
+$z-index-fixed: 1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal: 1050;
+$z-index-popover: 1060;
+$z-index-tooltip: 1070;
+
+// -----------------------------------------------------------------------------
+// Transitions
+// -----------------------------------------------------------------------------
+
+$transition-fast: 0.15s ease;
+$transition-base: 0.2s ease;
+$transition-slow: 0.3s ease;
+
+// -----------------------------------------------------------------------------
+// Component-specific variables
+// -----------------------------------------------------------------------------
+
+// Buttons
+$btn-padding-y: $spacing-sm;
+$btn-padding-x: $spacing-md;
+$btn-border-radius: $border-radius;
+
+// Cards
+$card-padding: $spacing-md;
+$card-border-radius: $border-radius-lg;
+$card-shadow: $shadow;
+
+// Forms
+$input-padding-y: $spacing-sm;
+$input-padding-x: $spacing-md;
+$input-border-radius: $border-radius;
+$input-border-color: $blg-gris-moyen;
+$input-focus-border-color: $blg-terre-cuite;
+
+// Tables
+$table-header-bg: $blg-terre-cuite;
+$table-header-color: $blg-blanc;
+$table-stripe-bg: $blg-gris-clair;
+$table-border-color: $blg-gris-moyen;
+
+// Dashboard
+$dashboard-grid-gap: $spacing-md;
+$dashboard-widget-padding: $spacing-md;
+$dashboard-widget-radius: $border-radius-lg;

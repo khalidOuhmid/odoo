@@ -1,0 +1,7 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_document_template_user,construction.document.template.user,model_construction_document_template,group_template_user,1,0,0,0
+access_document_template_manager,construction.document.template.manager,model_construction_document_template,group_template_manager,1,1,1,1
+access_signature_zone_user,construction.signature.zone.user,model_construction_signature_zone,group_template_user,1,0,0,0
+access_signature_zone_manager,construction.signature.zone.manager,model_construction_signature_zone,group_template_manager,1,1,1,1
+access_template_version_user,construction.template.version.user,model_construction_template_version,group_template_user,1,0,0,0
+access_template_version_manager,construction.template.version.manager,model_construction_template_version,group_template_manager,1,1,1,0

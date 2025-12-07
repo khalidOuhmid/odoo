@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================================================== -->
+    <!-- MAIN MENU: Templates under Construction                    -->
+    <!-- ========================================================== -->
+    <menuitem id="menu_construction_templates_root"
+              name="Templates"
+              parent="construction_base.menu_construction_root"
+              sequence="50"
+              groups="group_template_user"
+              web_icon="construction_templates,static/description/icon.png"/>
+
+    <!-- ========================================================== -->
+    <!-- SUBMENU: All Templates                                     -->
+    <!-- ========================================================== -->
+    <menuitem id="menu_document_templates"
+              name="Tous les templates"
+              parent="menu_construction_templates_root"
+              action="action_document_templates"
+              sequence="10"/>
+
+    <!-- ========================================================== -->
+    <!-- SUBMENU: Templates by Type                                 -->
+    <!-- ========================================================== -->
+    <menuitem id="menu_templates_by_type"
+              name="Par type"
+              parent="menu_construction_templates_root"
+              sequence="20"/>
+
+    <menuitem id="menu_templates_contracts"
+              name="Contrats"
+              parent="menu_templates_by_type"
+              action="action_document_templates_contracts"
+              sequence="10"/>
+
+    <menuitem id="menu_templates_invoices"
+              name="Factures"
+              parent="menu_templates_by_type"
+              action="action_document_templates_invoices"
+              sequence="20"/>
+
+    <menuitem id="menu_templates_quotes"
+              name="Devis"
+              parent="menu_templates_by_type"
+              action="action_document_templates_quotes"
+              sequence="30"/>
+
+    <menuitem id="menu_templates_purchases"
+              name="Bons de commande"
+              parent="menu_templates_by_type"
+              action="action_document_templates_purchases"
+              sequence="40"/>
+
+    <!-- ========================================================== -->
+    <!-- SUBMENU: Configuration (Manager only)                      -->
+    <!-- ========================================================== -->
+    <menuitem id="menu_templates_config"
+              name="Configuration"
+              parent="menu_construction_templates_root"
+              sequence="90"
+              groups="group_template_manager"/>
+
+    <menuitem id="menu_templates_signature_zones"
+              name="Zones de signature"
+              parent="menu_templates_config"
+              action="action_signature_zones"
+              sequence="10"/>
+
+    <!-- ========================================================== -->
+    <!-- ACTION: Signature Zones                                    -->
+    <!-- ========================================================== -->
+    <record id="action_signature_zones" model="ir.actions.act_window">
+        <field name="name">Zones de signature</field>
+        <field name="res_model">construction.signature.zone</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configurer les zones de signature
+            </p>
+            <p>
+                Les zones de signature définissent où les signatures seront 
+                apposées sur les documents générés.
+            </p>
+        </field>
+    </record>
+</odoo>

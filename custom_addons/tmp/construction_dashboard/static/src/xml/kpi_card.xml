@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="construction_dashboard.KPICard">
+        <div t-attf-class="widget-kpi card h-100 {{colorClass}}">
+            <div class="card-body d-flex align-items-center">
+                <div class="widget-icon me-3">
+                    <i t-attf-class="{{iconClass}} fa-3x"/>
+                </div>
+                <div class="widget-content flex-grow-1">
+                    <div class="widget-value display-4 fw-bold">
+                        <t t-esc="value"/>
+                    </div>
+                    <div class="widget-title h5 mb-0">
+                        <t t-esc="title"/>
+                    </div>
+                    <div t-if="trend" class="widget-trend mt-1">
+                        <i t-attf-class="fa {{trend.direction === 'up' ? 'fa-arrow-up' : 'fa-arrow-down'}}"/>
+                        <span t-esc="trend.value"/>
+                    </div>
+                </div>
+            </div>
+            <div t-if="props.onRefresh" class="card-footer bg-transparent border-0">
+                <button class="btn btn-sm btn-link text-white p-0" t-on-click="onRefresh">
+                    <i class="fa fa-refresh"/> Actualiser
+                </button>
+            </div>
+        </div>
+    </t>
+</templates>

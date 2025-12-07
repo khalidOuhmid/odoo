@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- BLG QUOTATION REPORT - Inherits from sale module           -->
+    <!-- ========================================================== -->
+
+    <template id="report_quote_blg_document" inherit_id="sale.report_saleorder_document" primary="True">
+        
+        <!-- Add BLG Custom CSS -->
+        <xpath expr="//div[hasclass('page')]" position="before">
+            <style>
+                /* BLG Branding for Quotation */
+                .page {
+                    font-family: 'Roboto', 'Arial', sans-serif;
+                }
+                
+                /* Header customization */
+                h2, h3 {
+                    color: #A0604F !important;
+                }
+                
+                .bg-primary {
+                    background-color: #A0604F !important;
+                }
+                
+                /* Address blocks */
+                .address {
+                    background-color: #F5E6D8;
+                    padding: 15px;
+                    border-left: 4px solid #A0604F;
+                    margin: 10px 0;
+                }
+                
+                /* Quote table header */
+                table thead {
+                    background-color: #A0604F !important;
+                    color: white !important;
+                }
+                
+                table thead th {
+                    color: white !important;
+                    font-weight: bold;
+                    padding: 12px 8px;
+                }
+                
+                /* Table rows */
+                table tbody tr:nth-child(even) {
+                    background-color: #F5F5F5;
+                }
+                
+                table tbody tr:hover {
+                    background-color: #F5E6D8;
+                }
+                
+                /* Total section */
+                #total {
+                    background-color: #F5E6D8;
+                    border: 2px solid #A0604F;
+                    padding: 15px;
+                }
+                
+                #total .row {
+                    margin: 5px 0;
+                }
+                
+                #total strong {
+                    color: #A0604F;
+                }
+                
+                /* Info boxes */
+                .info-box {
+                    background-color: #F5E6D8;
+                    border-left: 4px solid #A0604F;
+                    padding: 12px;
+                    margin: 15px 0;
+                }
+                
+                /* Footer */
+                .blg-footer {
+                    background-color: #F5E6D8;
+                    border-top: 3px solid #A0604F;
+                    padding: 15px;
+                    margin-top: 30px;
+                    font-size: 9pt;
+                    text-align: center;
+                }
+            </style>
+        </xpath>
+        
+        <!-- Customize quotation title -->
+        <xpath expr="//h2" position="replace">
+            <h2 style="color: #A0604F; text-transform: uppercase; border-bottom: 3px solid #A0604F; padding-bottom: 10px;">
+                <span t-if="not (env.context.get('proforma', False) or is_pro_forma)">
+                    <span t-if="doc.state in ['draft', 'sent']">Devis</span>
+                    <span t-if="doc.state in ['sale', 'done']">Bon de Commande</span>
+                    <span t-if="doc.state == 'cancel'">Devis Annulé</span>
+                </span>
+                <span t-if="env.context.get('proforma', False) or is_pro_forma">Pro-Forma</span>
+                <span t-field="doc.name"/>
+            </h2>
+        </xpath>
+        
+        <!-- Add validity info box -->
+        <xpath expr="//div[@id='informations']" position="after">
+            <t t-if="doc.validity_date and doc.state in ['draft', 'sent']">
+                <div class="info-box">
+                    <strong style="color: #A0604F;">Validité du devis :</strong>
+                    Ce devis est valable jusqu'au <span t-field="doc.validity_date" t-options='{"widget": "date"}'/>
+                </div>
+            </t>
+        </xpath>
+        
+        <!-- Add BLG footer -->
+        <xpath expr="//div[hasclass('page')]" position="after">
+            <div class="blg-footer">
+                <div>
+                    <strong><span t-field="doc.company_id.name"/></strong> | 
+                    <span t-field="doc.company_id.street"/>, 
+                    <span t-field="doc.company_id.zip"/> <span t-field="doc.company_id.city"/>
+                </div>
+                <div style="margin-top: 5px;">
+                    SIRET : <span t-field="doc.company_id.company_registry"/>
+                    <t t-if="doc.company_id.vat">
+                        | TVA : <span t-field="doc.company_id.vat"/>
+                    </t>
+                </div>
+                <div style="margin-top: 10px; font-size: 8pt; color: #666;">
+                    Devis généré le <span t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                </div>
+            </div>
+        </xpath>
+        
+    </template>
+
+    <!-- Report Action for BLG Quotation -->
+    <record id="action_report_quote_blg" model="ir.actions.report">
+        <field name="name">Devis BLG Groupe</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_templates.report_quote_blg_document</field>
+        <field name="report_file">construction_templates.report_quote_blg_document</field>
+        <field name="print_report_name">'Devis_BLG_%s' % object.name</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

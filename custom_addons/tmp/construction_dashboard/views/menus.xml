@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Main Dashboard Menu -->
+    <menuitem id="menu_btpvision_dashboard"
+              name="Dashboard"
+              parent="construction_base.menu_construction_root"
+              action="action_btpvision_dashboard"
+              sequence="1"
+              groups="group_btpvision_gestionnaire"/>
+
+    <!-- Configuration Menu -->
+    <menuitem id="menu_dashboard_config"
+              name="Configuration Dashboards"
+              parent="construction_base.menu_construction_config"
+              action="action_dashboards"
+              sequence="90"
+              groups="group_dashboard_manager"/>
+</odoo>

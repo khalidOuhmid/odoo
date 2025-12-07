@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <!-- Contract Timeline Widget Template -->
+    <t t-name="construction_contract.ContractTimelineWidget">
+        <div class="contract-timeline-widget">
+            <!-- Loading State -->
+            <div t-if="state.loading" class="timeline-loading text-center py-4">
+                <i class="fa fa-spinner fa-spin fa-2x text-muted"/>
+                <p class="text-muted mt-2">Chargement de l'historique...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div t-elif="state.activities.length === 0" class="timeline-empty text-center py-4">
+                <i class="fa fa-history fa-3x text-muted mb-3"/>
+                <p class="text-muted">Aucune activité enregistrée</p>
+            </div>
+
+            <!-- Timeline Content -->
+            <div t-else="" class="timeline-container">
+                <!-- Timeline Header -->
+                <div class="timeline-header d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">
+                        <i class="fa fa-history me-2"/>
+                        Historique des activités
+                        <span class="badge bg-secondary ms-2" t-esc="state.activities.length"/>
+                    </h5>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" 
+                            t-on-click="refresh" title="Actualiser">
+                        <i class="fa fa-refresh"/>
+                    </button>
+                </div>
+
+                <!-- Timeline Items -->
+                <div class="timeline">
+                    <t t-foreach="visibleActivities" t-as="activity" t-key="activity.id">
+                        <div t-attf-class="timeline-item {{ activity.colorClass }}">
+                            <!-- Timeline Icon -->
+                            <div class="timeline-icon">
+                                <i t-attf-class="fa {{ activity.iconClass }}"/>
+                            </div>
+
+                            <!-- Timeline Content -->
+                            <div class="timeline-content">
+                                <div class="timeline-header-row">
+                                    <span class="timeline-type" t-esc="activity.typeLabel"/>
+                                    <span class="timeline-date">
+                                        <i class="fa fa-calendar-o me-1"/>
+                                        <t t-esc="activity.formattedDate"/>
+                                        <span class="timeline-time ms-2">
+                                            <i class="fa fa-clock-o me-1"/>
+                                            <t t-esc="activity.formattedTime"/>
+                                        </span>
+                                    </span>
+                                </div>
+
+                                <div t-if="activity.description" class="timeline-description">
+                                    <t t-esc="activity.description"/>
+                                </div>
+
+                                <div class="timeline-meta">
+                                    <span t-if="activity.user_id" class="timeline-user">
+                                        <i class="fa fa-user me-1"/>
+                                        <t t-esc="activity.user_id[1]"/>
+                                    </span>
+                                    <span t-if="activity.ip_address" class="timeline-ip ms-3">
+                                        <i class="fa fa-globe me-1"/>
+                                        <t t-esc="activity.ip_address"/>
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+
+                <!-- Show More/Less Button -->
+                <div t-if="hasMore" class="timeline-toggle text-center mt-3">
+                    <button type="button" class="btn btn-sm btn-link" t-on-click="toggleExpanded">
+                        <t t-if="state.expanded">
+                            <i class="fa fa-chevron-up me-1"/>
+                            Voir moins
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-chevron-down me-1"/>
+                            Voir plus (<t t-esc="state.activities.length - state.maxVisible"/> autres)
+                        </t>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+</templates>

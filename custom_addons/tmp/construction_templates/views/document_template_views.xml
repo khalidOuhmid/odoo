@@ -1,0 +1,591 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================================================== -->
+    <!-- TREE VIEW                                                  -->
+    <!-- ========================================================== -->
+    <record id="view_document_template_tree" model="ir.ui.view">
+        <field name="name">construction.document.template.tree</field>
+        <field name="model">construction.document.template</field>
+        <field name="arch" type="xml">
+            <tree string="Templates de Documents"
+                  decoration-success="is_active"
+                  decoration-muted="not is_active">
+                <field name="code" string="Code"/>
+                <field name="name" string="Nom"/>
+                <field name="template_type" string="Type" widget="badge"
+                       decoration-info="template_type == 'contract'"
+                       decoration-success="template_type == 'invoice'"
+                       decoration-warning="template_type == 'quote'"
+                       decoration-danger="template_type == 'purchase'"/>
+                <field name="version" string="Version"/>
+                <field name="is_active" string="Actif" widget="boolean_toggle"/>
+                <field name="is_default" string="Par défaut" widget="boolean"/>
+                <field name="usage_count" string="Utilisations" optional="show"/>
+                <field name="company_id" string="Société" groups="base.group_multi_company" optional="hide"/>
+                <field name="create_date" string="Créé le" widget="date" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- KANBAN VIEW                                                -->
+    <!-- ========================================================== -->
+    <record id="view_document_template_kanban" model="ir.ui.view">
+        <field name="name">construction.document.template.kanban</field>
+        <field name="model">construction.document.template</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile" default_group_by="template_type">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="template_type"/>
+                <field name="is_active"/>
+                <field name="is_default"/>
+                <field name="version"/>
+                <field name="usage_count"/>
+                <field name="company_id"/>
+                <progressbar field="is_active" colors='{"True": "success", "False": "muted"}'/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click #{record.is_active.raw_value ? '' : 'o_kanban_record_muted'}">
+                            <div class="oe_kanban_content">
+                                <!-- Header with badges -->
+                                <div class="o_kanban_record_top mb-2">
+                                    <div class="o_kanban_record_headings">
+                                        <strong class="o_kanban_record_title">
+                                            <field name="name"/>
+                                        </strong>
+                                        <span class="o_kanban_record_subtitle text-muted">
+                                            <field name="code"/>
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Status badges -->
+                                <div class="o_kanban_record_badges mb-2">
+                                    <span t-if="record.is_active.raw_value" 
+                                          class="badge rounded-pill text-bg-success me-1">
+                                        <i class="fa fa-check me-1"/>Actif
+                                    </span>
+                                    <span t-if="!record.is_active.raw_value" 
+                                          class="badge rounded-pill text-bg-secondary me-1">
+                                        <i class="fa fa-archive me-1"/>Archivé
+                                    </span>
+                                    <span t-if="record.is_default.raw_value" 
+                                          class="badge rounded-pill text-bg-primary me-1">
+                                        <i class="fa fa-star me-1"/>Par défaut
+                                    </span>
+                                </div>
+                                
+                                <!-- Body info -->
+                                <div class="o_kanban_record_body">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="text-muted">
+                                            <i class="fa fa-code-fork me-1"/>v<field name="version"/>
+                                        </span>
+                                        <span class="text-muted" t-if="record.usage_count.raw_value > 0">
+                                            <i class="fa fa-file-text-o me-1"/><field name="usage_count"/> utilisations
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <!-- Footer with actions -->
+                                <div class="o_kanban_record_bottom mt-2 pt-2 border-top">
+                                    <div class="oe_kanban_bottom_left">
+                                        <field name="template_type" widget="badge"
+                                               decoration-info="template_type == 'contract'"
+                                               decoration-success="template_type == 'invoice'"
+                                               decoration-warning="template_type == 'quote'"
+                                               decoration-danger="template_type == 'purchase'"/>
+                                    </div>
+                                    <div class="oe_kanban_bottom_right">
+                                        <a name="action_open_editor" type="object" 
+                                           class="btn btn-sm btn-link" title="Ouvrir l'éditeur">
+                                            <i class="fa fa-edit"/>
+                                        </a>
+                                        <a name="action_duplicate" type="object" 
+                                           class="btn btn-sm btn-link" title="Dupliquer">
+                                            <i class="fa fa-copy"/>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- FORM VIEW                                                  -->
+    <!-- ========================================================== -->
+    <record id="view_document_template_form" model="ir.ui.view">
+        <field name="name">construction.document.template.form</field>
+        <field name="model">construction.document.template</field>
+        <field name="arch" type="xml">
+            <form string="Template de Document">
+                <header>
+                    <!-- Primary actions -->
+                    <button name="action_activate" type="object" string="Activer"
+                            class="btn-primary" icon="fa-check"
+                            invisible="is_active"
+                            help="Activer ce template et désactiver les autres du même type"/>
+                    <button name="action_deactivate" type="object" string="Désactiver"
+                            class="btn-secondary" icon="fa-times"
+                            invisible="not is_active"
+                            help="Désactiver ce template"/>
+                    <button name="action_open_editor" type="object" string="Ouvrir l'éditeur visuel"
+                            class="btn-success" icon="fa-edit"
+                            help="Ouvrir l'éditeur GrapesJS pour modifier le contenu"/>
+                    <button name="action_duplicate" type="object" string="Dupliquer"
+                            class="btn-secondary" icon="fa-copy"
+                            help="Créer une copie de ce template"/>
+                    <button name="action_preview_pdf" type="object" string="Aperçu PDF"
+                            class="btn-secondary" icon="fa-file-pdf-o"
+                            invisible="not html_content"
+                            help="Générer un aperçu PDF du template"/>
+                </header>
+                <sheet>
+                    <!-- Smart buttons -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="%(construction_templates.action_template_versions)d"
+                                type="action"
+                                class="oe_stat_button"
+                                icon="fa-history">
+                            <field name="version" widget="statinfo" string="Version"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-file-text-o"
+                                invisible="usage_count == 0">
+                            <field name="usage_count" widget="statinfo" string="Utilisations"/>
+                        </button>
+                        <button class="oe_stat_button" icon="fa-pencil-square-o"
+                                invisible="not signature_zone_ids">
+                            <field name="signature_zone_ids" widget="statinfo" string="Zones signature"/>
+                        </button>
+                    </div>
+                    
+                    <!-- Ribbons -->
+                    <widget name="web_ribbon" title="Actif" bg_color="text-bg-success"
+                            invisible="not is_active"/>
+                    <widget name="web_ribbon" title="Par défaut" bg_color="text-bg-primary"
+                            invisible="not is_default or is_active"/>
+                    
+                    <!-- Title -->
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Nom du template" class="text-break"/>
+                        </h1>
+                    </div>
+                    
+                    <!-- Main info groups -->
+                    <group>
+                        <group string="Identification">
+                            <field name="code" placeholder="CODE_UNIQUE"/>
+                            <field name="template_type"/>
+                            <field name="is_default" widget="boolean_toggle"/>
+                        </group>
+                        <group string="Configuration">
+                            <field name="company_id" groups="base.group_multi_company"
+                                   options="{'no_create': True}"/>
+                            <field name="is_active" readonly="1" widget="boolean"/>
+                            <field name="create_date" readonly="1" widget="date"/>
+                            <field name="write_date" readonly="1" widget="date" string="Modifié le"/>
+                        </group>
+                    </group>
+                    
+                    <!-- Notebook with tabs -->
+                    <notebook>
+                        <!-- Tab: Content -->
+                        <page string="📝 Contenu" name="content">
+                            <div class="alert alert-info mb-3" role="alert">
+                                <i class="fa fa-info-circle me-2"/>
+                                <strong>Conseil :</strong> Utilisez le bouton "Ouvrir l'éditeur visuel" pour modifier le contenu avec l'éditeur drag-and-drop GrapesJS.
+                            </div>
+                            <group string="Contenu HTML">
+                                <field name="html_content" widget="html" nolabel="1"
+                                       options="{'collaborative': false, 'resizable': true}"/>
+                            </group>
+                            <group string="Styles CSS" class="mt-3">
+                                <field name="css_content" widget="ace" nolabel="1"
+                                       options="{'mode': 'css'}" placeholder="/* Styles CSS personnalisés */"/>
+                            </group>
+                            <group string="Données GrapesJS" groups="base.group_no_one" class="mt-3">
+                                <field name="grapesjs_data" widget="ace" nolabel="1"
+                                       options="{'mode': 'json'}" readonly="1"/>
+                            </group>
+                        </page>
+                        
+                        <!-- Tab: Signature Zones -->
+                        <page string="✍️ Zones de signature" name="signatures">
+                            <div class="alert alert-info mb-3" role="alert">
+                                <i class="fa fa-info-circle me-2"/>
+                                Configurez les zones où les signatures seront apposées. Les positions sont en pourcentage (0-100%).
+                            </div>
+                            <field name="signature_zone_ids" nolabel="1">
+                                <tree editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="zone_type"/>
+                                    <field name="label" placeholder="Signature"/>
+                                    <field name="sublabel" placeholder="Date et lieu" optional="show"/>
+                                    <field name="position_x" string="X (%)"/>
+                                    <field name="position_y" string="Y (%)"/>
+                                    <field name="width" string="Largeur (px)"/>
+                                    <field name="height" string="Hauteur (px)"/>
+                                    <field name="page_number" string="Page" help="-1 = dernière page"/>
+                                </tree>
+                                <form string="Zone de signature">
+                                    <group>
+                                        <group string="Type et libellés">
+                                            <field name="zone_type"/>
+                                            <field name="label"/>
+                                            <field name="sublabel"/>
+                                        </group>
+                                        <group string="Position et dimensions">
+                                            <field name="position_x" string="Position X (%)"/>
+                                            <field name="position_y" string="Position Y (%)"/>
+                                            <field name="width" string="Largeur (px)"/>
+                                            <field name="height" string="Hauteur (px)"/>
+                                            <field name="page_number" string="Page"/>
+                                        </group>
+                                    </group>
+                                </form>
+                            </field>
+                        </page>
+                        
+                        <!-- Tab: Version History -->
+                        <page string="📜 Historique des versions" name="versions">
+                            <div class="alert alert-secondary mb-3" role="alert">
+                                <i class="fa fa-history me-2"/>
+                                Chaque modification du contenu crée automatiquement une nouvelle version. Vous pouvez restaurer une version précédente si nécessaire.
+                            </div>
+                            <field name="version_history_ids" readonly="1" nolabel="1">
+                                <tree decoration-info="version_number == parent.version">
+                                    <field name="version_number" string="Version"/>
+                                    <field name="description" string="Description"/>
+                                    <field name="created_by" string="Auteur"/>
+                                    <field name="create_date" string="Date" widget="datetime"/>
+                                    <button name="action_restore" type="object" 
+                                            string="Restaurer" icon="fa-undo"
+                                            class="btn-link"
+                                            confirm="Êtes-vous sûr de vouloir restaurer cette version ? Le contenu actuel sera remplacé."/>
+                                    <button name="action_preview" type="object"
+                                            string="Aperçu" icon="fa-eye"
+                                            class="btn-link"/>
+                                </tree>
+                            </field>
+                        </page>
+                        
+                        <!-- Tab: Statistics (optional) -->
+                        <page string="📊 Statistiques" name="statistics" groups="base.group_no_one">
+                            <group>
+                                <group string="Utilisation">
+                                    <field name="usage_count" readonly="1"/>
+                                </group>
+                                <group string="Métadonnées">
+                                    <field name="create_uid" readonly="1" string="Créé par"/>
+                                    <field name="create_date" readonly="1" string="Créé le"/>
+                                    <field name="write_uid" readonly="1" string="Modifié par"/>
+                                    <field name="write_date" readonly="1" string="Modifié le"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- SEARCH VIEW                                                -->
+    <!-- ========================================================== -->
+    <record id="view_document_template_search" model="ir.ui.view">
+        <field name="name">construction.document.template.search</field>
+        <field name="model">construction.document.template</field>
+        <field name="arch" type="xml">
+            <search string="Rechercher des Templates">
+                <field name="name" string="Nom" filter_domain="['|', ('name', 'ilike', self), ('code', 'ilike', self)]"/>
+                <field name="code" string="Code"/>
+                <field name="template_type" string="Type"/>
+                
+                <!-- Status filters -->
+                <separator/>
+                <filter name="filter_active" string="Actifs" 
+                        domain="[('is_active', '=', True)]"
+                        help="Templates actuellement actifs"/>
+                <filter name="filter_archived" string="Archivés" 
+                        domain="[('is_active', '=', False)]"
+                        help="Templates désactivés"/>
+                <filter name="filter_default" string="Par défaut" 
+                        domain="[('is_default', '=', True)]"
+                        help="Templates marqués comme par défaut"/>
+                
+                <!-- Type filters -->
+                <separator/>
+                <filter name="filter_contract" string="Contrats" 
+                        domain="[('template_type', '=', 'contract')]"
+                        icon="fa-file-text"/>
+                <filter name="filter_invoice" string="Factures" 
+                        domain="[('template_type', '=', 'invoice')]"
+                        icon="fa-file-invoice"/>
+                <filter name="filter_quote" string="Devis" 
+                        domain="[('template_type', '=', 'quote')]"
+                        icon="fa-file-alt"/>
+                <filter name="filter_purchase" string="Bons de commande" 
+                        domain="[('template_type', '=', 'purchase')]"
+                        icon="fa-shopping-cart"/>
+                
+                <!-- Group by -->
+                <group expand="0" string="Grouper par">
+                    <filter name="group_type" string="Type" 
+                            context="{'group_by': 'template_type'}"/>
+                    <filter name="group_company" string="Société" 
+                            context="{'group_by': 'company_id'}"
+                            groups="base.group_multi_company"/>
+                    <filter name="group_active" string="Statut" 
+                            context="{'group_by': 'is_active'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- ACTIONS                                                    -->
+    <!-- ========================================================== -->
+    
+    <!-- Main action: All templates -->
+    <record id="action_document_templates" model="ir.actions.act_window">
+        <field name="name">Templates de Documents</field>
+        <field name="res_model">construction.document.template</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_document_template_search"/>
+        <field name="context">{'search_default_filter_active': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créer un nouveau template de document
+            </p>
+            <p>
+                Les templates permettent de standardiser vos contrats, factures, 
+                devis et bons de commande avec la charte graphique BLG Groupe.
+            </p>
+            <p>
+                <strong>Types disponibles :</strong>
+            </p>
+            <ul>
+                <li><strong>Contrat</strong> - Templates pour les contrats de sous-traitance</li>
+                <li><strong>Facture</strong> - Templates pour les factures</li>
+                <li><strong>Devis</strong> - Templates pour les devis</li>
+                <li><strong>Bon de commande</strong> - Templates pour les bons de commande</li>
+            </ul>
+        </field>
+    </record>
+
+    <!-- Action: Contract templates only -->
+    <record id="action_document_templates_contracts" model="ir.actions.act_window">
+        <field name="name">Templates Contrats</field>
+        <field name="res_model">construction.document.template</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_document_template_search"/>
+        <field name="domain">[('template_type', '=', 'contract')]</field>
+        <field name="context">{'default_template_type': 'contract'}</field>
+    </record>
+
+    <!-- Action: Invoice templates only -->
+    <record id="action_document_templates_invoices" model="ir.actions.act_window">
+        <field name="name">Templates Factures</field>
+        <field name="res_model">construction.document.template</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_document_template_search"/>
+        <field name="domain">[('template_type', '=', 'invoice')]</field>
+        <field name="context">{'default_template_type': 'invoice'}</field>
+    </record>
+
+    <!-- Action: Quote templates only -->
+    <record id="action_document_templates_quotes" model="ir.actions.act_window">
+        <field name="name">Templates Devis</field>
+        <field name="res_model">construction.document.template</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_document_template_search"/>
+        <field name="domain">[('template_type', '=', 'quote')]</field>
+        <field name="context">{'default_template_type': 'quote'}</field>
+    </record>
+
+    <!-- Action: Purchase order templates only -->
+    <record id="action_document_templates_purchases" model="ir.actions.act_window">
+        <field name="name">Templates Bons de Commande</field>
+        <field name="res_model">construction.document.template</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="search_view_id" ref="view_document_template_search"/>
+        <field name="domain">[('template_type', '=', 'purchase')]</field>
+        <field name="context">{'default_template_type': 'purchase'}</field>
+    </record>
+
+    <!-- Action: Template versions -->
+    <record id="action_template_versions" model="ir.actions.act_window">
+        <field name="name">Historique des versions</field>
+        <field name="res_model">construction.template.version</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('template_id', '=', active_id)]</field>
+        <field name="context">{'default_template_id': active_id}</field>
+    </record>
+
+    <!-- Server action: Activate template -->
+    <record id="action_server_activate_template" model="ir.actions.server">
+        <field name="name">Activer le template</field>
+        <field name="model_id" ref="model_construction_document_template"/>
+        <field name="binding_model_id" ref="model_construction_document_template"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    records.action_activate()
+        </field>
+    </record>
+
+    <!-- Server action: Duplicate template -->
+    <record id="action_server_duplicate_template" model="ir.actions.server">
+        <field name="name">Dupliquer le template</field>
+        <field name="model_id" ref="model_construction_document_template"/>
+        <field name="binding_model_id" ref="model_construction_document_template"/>
+        <field name="binding_view_types">list,form</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    for record in records:
+        record.action_duplicate()
+        </field>
+    </record>
+
+    <!-- Server action: Open GrapesJS editor -->
+    <record id="action_server_open_editor" model="ir.actions.server">
+        <field name="name">Ouvrir l'éditeur GrapesJS</field>
+        <field name="model_id" ref="model_construction_document_template"/>
+        <field name="binding_model_id" ref="model_construction_document_template"/>
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">
+if records:
+    action = records[0].action_open_editor()
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- SIGNATURE ZONE VIEWS                                       -->
+    <!-- ========================================================== -->
+    
+    <record id="view_signature_zone_tree" model="ir.ui.view">
+        <field name="name">construction.signature.zone.tree</field>
+        <field name="model">construction.signature.zone</field>
+        <field name="arch" type="xml">
+            <tree string="Zones de signature" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="template_id" invisible="context.get('default_template_id')"/>
+                <field name="zone_type"/>
+                <field name="label"/>
+                <field name="sublabel" optional="show"/>
+                <field name="position_x" string="X (%)"/>
+                <field name="position_y" string="Y (%)"/>
+                <field name="width" string="Largeur"/>
+                <field name="height" string="Hauteur"/>
+                <field name="page_number" string="Page"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_signature_zone_form" model="ir.ui.view">
+        <field name="name">construction.signature.zone.form</field>
+        <field name="model">construction.signature.zone</field>
+        <field name="arch" type="xml">
+            <form string="Zone de signature">
+                <sheet>
+                    <group>
+                        <group string="Identification">
+                            <field name="template_id" invisible="context.get('default_template_id')"/>
+                            <field name="zone_type"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="Libellés">
+                            <field name="label"/>
+                            <field name="sublabel"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Position (en %)">
+                            <field name="position_x"/>
+                            <field name="position_y"/>
+                        </group>
+                        <group string="Dimensions (en pixels)">
+                            <field name="width"/>
+                            <field name="height"/>
+                            <field name="page_number"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- TEMPLATE VERSION VIEWS                                     -->
+    <!-- ========================================================== -->
+    
+    <record id="view_template_version_tree" model="ir.ui.view">
+        <field name="name">construction.template.version.tree</field>
+        <field name="model">construction.template.version</field>
+        <field name="arch" type="xml">
+            <tree string="Versions du template">
+                <field name="version_number" string="Version"/>
+                <field name="template_id" invisible="context.get('default_template_id')"/>
+                <field name="description"/>
+                <field name="created_by" string="Auteur"/>
+                <field name="create_date" string="Date" widget="datetime"/>
+                <button name="action_restore" type="object" 
+                        string="Restaurer" icon="fa-undo"
+                        confirm="Restaurer cette version ?"/>
+                <button name="action_preview" type="object"
+                        string="Aperçu" icon="fa-eye"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_template_version_form" model="ir.ui.view">
+        <field name="name">construction.template.version.form</field>
+        <field name="model">construction.template.version</field>
+        <field name="arch" type="xml">
+            <form string="Version du template">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="template_id" readonly="1"/>
+                            <field name="version_number" readonly="1"/>
+                            <field name="description" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="created_by" readonly="1"/>
+                            <field name="create_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Contenu HTML" name="html">
+                            <field name="html_snapshot" widget="html" readonly="1" nolabel="1"/>
+                        </page>
+                        <page string="Styles CSS" name="css">
+                            <field name="css_snapshot" widget="ace" readonly="1" nolabel="1"
+                                   options="{'mode': 'css'}"/>
+                        </page>
+                        <page string="Données GrapesJS" name="grapesjs" groups="base.group_no_one">
+                            <field name="grapesjs_snapshot" widget="ace" readonly="1" nolabel="1"
+                                   options="{'mode': 'json'}"/>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

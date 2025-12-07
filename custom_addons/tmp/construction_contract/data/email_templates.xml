@@ -1,0 +1,539 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ========================================================== -->
+        <!-- EMAIL: Contract Invitation                                 -->
+        <!-- ========================================================== -->
+
+        <record id="mail_template_contract_invitation" model="mail.template">
+            <field name="name">Contract: Invitation to Sign</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="subject">Contract to Sign - ${object.chantier_id.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.subcontractor_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #0056b3; padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">New Contract to Sign</h1>
+    </div>
+
+    <div style="padding: 30px; background-color: #f9f9f9;">
+        <p style="font-size: 16px;">Hello <strong>${object.subcontractor_id.name}</strong>,</p>
+
+        <p>We are pleased to send you a new subcontractor contract for the following construction site:</p>
+
+        <div style="background-color: white; padding: 20px; border-left: 4px solid #0056b3; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #0056b3;">Contract Details</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Contract Reference:</td>
+                    <td style="padding: 8px 0;">${object.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Construction Site:</td>
+                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Client:</td>
+                    <td style="padding: 8px 0;">${object.chantier_id.client.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Total Amount:</td>
+                    <td style="padding: 8px 0; color: #0056b3; font-weight: bold; font-size: 18px;">
+                        ${'{:,.2f}'.format(object.total_amount_ttc)} ${object.currency_id.symbol}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Work Period:</td>
+                    <td style="padding: 8px 0;">
+                        ${format_date(object.start_date)} - ${format_date(object.end_date)}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="font-size: 16px; margin: 30px 0;">
+            <strong>Please review and sign this contract before ${format_date(object.token_expiry_date)}.</strong>
+        </p>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${object.portal_url or '#'}"
+               style="display: inline-block; padding: 15px 40px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
+                📄 Review and Sign Contract
+            </a>
+        </div>
+
+        <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0; color: #856404;">
+                ⚠️ <strong>Important:</strong> You will need to validate each page of the contract before being able to sign it. This ensures you have read the entire document.
+            </p>
+        </div>
+
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            If you have any questions, please contact us.<br/>
+            Best regards,<br/>
+            <strong>${user.name}</strong>
+        </p>
+    </div>
+
+    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+        <p style="margin: 0;">This is an automated message. Please do not reply to this email.</p>
+        % if object.company_id.name:
+        <p style="margin: 5px 0 0 0;">${object.company_id.name}</p>
+        % endif
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- EMAIL: Reminder (Generic)                                  -->
+        <!-- ========================================================== -->
+
+        <record id="mail_template_contract_reminder" model="mail.template">
+            <field name="name">Contract: Signature Reminder</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="subject">Rappel: Contrat ${object.name} en attente de signature</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.subcontractor_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #ffc107; padding: 20px; text-align: center;">
+        <h1 style="color: #333; margin: 0;">⏰ Rappel de signature de contrat</h1>
+    </div>
+
+    <div style="padding: 30px; background-color: #f9f9f9;">
+        <p style="font-size: 16px;">Bonjour <strong>${object.subcontractor_id.name}</strong>,</p>
+
+        <p>Nous vous rappelons que le contrat suivant est toujours en attente de votre signature :</p>
+
+        <div style="background-color: white; padding: 20px; border-left: 4px solid #ffc107; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Référence contrat :</td>
+                    <td style="padding: 8px 0;">${object.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Chantier :</td>
+                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date d'expiration :</td>
+                    <td style="padding: 8px 0; color: #dc3545; font-weight: bold;">
+                        ${format_date(object.token_expiry_date)}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${ctx.get('portal_url', object.portal_url or '#')}"
+               style="display: inline-block; padding: 15px 40px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
+                📄 Signer maintenant
+            </a>
+        </div>
+
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Cordialement,<br/>
+            <strong>${user.name}</strong>
+        </p>
+    </div>
+
+    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+        <p style="margin: 0;">Ceci est un rappel automatique.</p>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- EMAIL: Reminder J+7 (First Reminder)                       -->
+        <!-- ========================================================== -->
+
+        <record id="mail_template_contract_reminder_j7" model="mail.template">
+            <field name="name">Contract: Reminder J+7</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="subject">Rappel J+7: Contrat ${object.name} en attente de signature</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.subcontractor_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #ffc107; padding: 20px; text-align: center;">
+        <h1 style="color: #333; margin: 0;">⏰ Premier rappel - Signature en attente</h1>
+    </div>
+
+    <div style="padding: 30px; background-color: #f9f9f9;">
+        <p style="font-size: 16px;">Bonjour <strong>${object.subcontractor_id.name}</strong>,</p>
+
+        <p>Il y a 7 jours, nous vous avons envoyé un contrat de sous-traitance qui n'a pas encore été signé.</p>
+
+        <div style="background-color: white; padding: 20px; border-left: 4px solid #ffc107; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Référence contrat :</td>
+                    <td style="padding: 8px 0;">${object.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Chantier :</td>
+                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Montant TTC :</td>
+                    <td style="padding: 8px 0; color: #0056b3; font-weight: bold;">
+                        ${'{:,.2f}'.format(object.total_amount_ttc)} ${object.currency_id.symbol}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date d'expiration :</td>
+                    <td style="padding: 8px 0; color: #dc3545; font-weight: bold;">
+                        ${format_date(object.token_expiry_date)}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0; color: #856404;">
+                ⚠️ <strong>Action requise :</strong> Merci de signer ce contrat dans les plus brefs délais pour éviter tout retard dans le démarrage des travaux.
+            </p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${ctx.get('portal_url', object.portal_url or '#')}"
+               style="display: inline-block; padding: 15px 40px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
+                📄 Signer maintenant
+            </a>
+        </div>
+
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Si vous rencontrez des difficultés, n'hésitez pas à nous contacter.<br/>
+            Cordialement,<br/>
+            <strong>${user.name}</strong>
+        </p>
+    </div>
+
+    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+        <p style="margin: 0;">Rappel automatique J+7</p>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- EMAIL: Reminder J+14 (Second Reminder)                     -->
+        <!-- ========================================================== -->
+
+        <record id="mail_template_contract_reminder_j14" model="mail.template">
+            <field name="name">Contract: Reminder J+14</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="subject">Rappel J+14: URGENT - Contrat ${object.name} en attente</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.subcontractor_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #ff9800; padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">⚠️ Deuxième rappel - Action urgente requise</h1>
+    </div>
+
+    <div style="padding: 30px; background-color: #f9f9f9;">
+        <p style="font-size: 16px;">Bonjour <strong>${object.subcontractor_id.name}</strong>,</p>
+
+        <p><strong>Ceci est notre deuxième rappel.</strong> Le contrat suivant est en attente de signature depuis 14 jours :</p>
+
+        <div style="background-color: white; padding: 20px; border-left: 4px solid #ff9800; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Référence contrat :</td>
+                    <td style="padding: 8px 0;">${object.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Chantier :</td>
+                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Montant TTC :</td>
+                    <td style="padding: 8px 0; color: #0056b3; font-weight: bold;">
+                        ${'{:,.2f}'.format(object.total_amount_ttc)} ${object.currency_id.symbol}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date d'expiration :</td>
+                    <td style="padding: 8px 0; color: #dc3545; font-weight: bold; font-size: 16px;">
+                        ${format_date(object.token_expiry_date)}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background-color: #ffe5e5; border: 2px solid #dc3545; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0; color: #721c24;">
+                🚨 <strong>URGENT :</strong> Sans signature rapide, nous devrons envisager d'autres options pour ce chantier. Merci de traiter ce contrat en priorité.
+            </p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${ctx.get('portal_url', object.portal_url or '#')}"
+               style="display: inline-block; padding: 15px 40px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
+                📄 SIGNER MAINTENANT
+            </a>
+        </div>
+
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Pour toute question ou difficulté, contactez-nous immédiatement.<br/>
+            Cordialement,<br/>
+            <strong>${user.name}</strong>
+        </p>
+    </div>
+
+    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+        <p style="margin: 0;">Rappel automatique J+14</p>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- EMAIL: Reminder J+21 (Final Reminder)                      -->
+        <!-- ========================================================== -->
+
+        <record id="mail_template_contract_reminder_j21" model="mail.template">
+            <field name="name">Contract: Reminder J+21</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="subject">Rappel J+21: DERNIER RAPPEL - Contrat ${object.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.subcontractor_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #dc3545; padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">🚨 DERNIER RAPPEL - Action immédiate requise</h1>
+    </div>
+
+    <div style="padding: 30px; background-color: #f9f9f9;">
+        <p style="font-size: 16px;">Bonjour <strong>${object.subcontractor_id.name}</strong>,</p>
+
+        <p><strong style="color: #dc3545;">Ceci est notre dernier rappel.</strong> Le contrat suivant est en attente de signature depuis 21 jours :</p>
+
+        <div style="background-color: white; padding: 20px; border-left: 4px solid #dc3545; margin: 20px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Référence contrat :</td>
+                    <td style="padding: 8px 0;">${object.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Chantier :</td>
+                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Montant TTC :</td>
+                    <td style="padding: 8px 0; color: #0056b3; font-weight: bold;">
+                        ${'{:,.2f}'.format(object.total_amount_ttc)} ${object.currency_id.symbol}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date d'expiration :</td>
+                    <td style="padding: 8px 0; color: #dc3545; font-weight: bold; font-size: 18px;">
+                        ${format_date(object.token_expiry_date)}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background-color: #f8d7da; border: 3px solid #dc3545; padding: 20px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0 0 10px 0; color: #721c24; font-size: 16px;">
+                <strong>🚨 DERNIER AVERTISSEMENT</strong>
+            </p>
+            <p style="margin: 0; color: #721c24;">
+                Sans signature dans les 48 heures, ce contrat sera annulé et nous devrons trouver un autre sous-traitant pour ce chantier.
+            </p>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${ctx.get('portal_url', object.portal_url or '#')}"
+               style="display: inline-block; padding: 18px 50px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 5px; font-size: 20px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">
+                📄 SIGNER IMMÉDIATEMENT
+            </a>
+        </div>
+
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Si vous ne souhaitez pas donner suite à ce contrat, merci de nous en informer rapidement.<br/>
+            Cordialement,<br/>
+            <strong>${user.name}</strong>
+        </p>
+    </div>
+
+    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+        <p style="margin: 0;">Rappel automatique J+21 - DERNIER RAPPEL</p>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- EMAIL: Contract Signed Confirmation (to Subcontractor)     -->
+        <!-- ========================================================== -->
+
+        <record id="mail_template_contract_signed" model="mail.template">
+            <field name="name">Contract: Signature Confirmation</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="subject">✅ Contrat ${object.name} signé avec succès</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${object.subcontractor_id.email|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #28a745; padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">✅ Contrat signé avec succès</h1>
+    </div>
+
+    <div style="padding: 30px; background-color: #f9f9f9;">
+        <p style="font-size: 16px;">Bonjour <strong>${object.subcontractor_id.name}</strong>,</p>
+
+        <p>Merci d'avoir signé le contrat. Votre signature électronique a été enregistrée avec succès.</p>
+
+        <div style="background-color: white; padding: 20px; border-left: 4px solid #28a745; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #28a745;">Détails du contrat signé</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Référence contrat :</td>
+                    <td style="padding: 8px 0;">${object.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Chantier :</td>
+                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date de signature :</td>
+                    <td style="padding: 8px 0;">${format_datetime(object.signature_date)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Signé par :</td>
+                    <td style="padding: 8px 0;">${object.signature_id.signer_name if object.signature_id else 'N/A'}</td>
+                </tr>
+            </table>
+        </div>
+
+        <p style="font-size: 16px; margin: 30px 0;">
+            <strong>Prochaines étapes :</strong>
+        </p>
+
+        <ul style="font-size: 14px; line-height: 1.8;">
+            <li>Vous recevrez le PDF du contrat signé par email</li>
+            <li>Un certificat d'achèvement a été généré comme preuve légale</li>
+            <li>Notre équipe vous contactera pour coordonner la date de début des travaux</li>
+        </ul>
+
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Si vous avez des questions, n'hésitez pas à nous contacter.<br/>
+            Cordialement,<br/>
+            <strong>${user.name}</strong>
+        </p>
+    </div>
+
+    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+        <p style="margin: 0;">${object.company_id.name if object.company_id else ''}</p>
+    </div>
+</div>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- EMAIL: Contract Signed Notification (to Gestionnaire)     -->
+        <!-- ========================================================== -->
+
+        <record id="mail_template_contract_signed_gestionnaire" model="mail.template">
+            <field name="name">Contract: Signed Notification for Gestionnaire</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="subject">✅ Contrat ${object.name} signé par ${object.subcontractor_id.name}</field>
+            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
+            <field name="email_to">${ctx.get('email_to', object.chantier_id.user_id.email if object.chantier_id and object.chantier_id.user_id else user.email)|safe}</field>
+            <field name="body_html" type="html">
+<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
+    <div style="background-color: #28a745; padding: 20px; text-align: center;">
+        <h1 style="color: white; margin: 0;">✅ Contrat sous-traitant signé</h1>
+    </div>
+
+    <div style="padding: 30px; background-color: #f9f9f9;">
+        <p style="font-size: 16px;">Bonjour <strong>${object.chantier_id.user_id.name if object.chantier_id and object.chantier_id.user_id else user.name}</strong>,</p>
+
+        <p>Bonne nouvelle ! Le contrat de sous-traitance suivant vient d'être signé électroniquement :</p>
+
+        <div style="background-color: white; padding: 20px; border-left: 4px solid #28a745; margin: 20px 0;">
+            <h3 style="margin-top: 0; color: #28a745;">Détails du contrat</h3>
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Référence contrat :</td>
+                    <td style="padding: 8px 0;">${object.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Chantier :</td>
+                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Sous-traitant :</td>
+                    <td style="padding: 8px 0;">${object.subcontractor_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Montant TTC :</td>
+                    <td style="padding: 8px 0; color: #28a745; font-weight: bold; font-size: 18px;">
+                        ${'{:,.2f}'.format(object.total_amount_ttc)} ${object.currency_id.symbol}
+                    </td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Date de signature :</td>
+                    <td style="padding: 8px 0;">${format_datetime(object.signature_date)}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Signé par :</td>
+                    <td style="padding: 8px 0;">${object.signature_id.signer_name if object.signature_id else object.subcontractor_id.name}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px 0; font-weight: bold;">Méthode de signature :</td>
+                    <td style="padding: 8px 0;">
+                        % if object.signature_id and object.signature_id.signature_method == 'draw':
+                            Dessinée à la main
+                        % elif object.signature_id and object.signature_id.signature_method == 'upload':
+                            Image uploadée
+                        % elif object.signature_id and object.signature_id.signature_method == 'type':
+                            Signature typographique
+                        % else:
+                            N/A
+                        % endif
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <div style="background-color: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 20px 0;">
+            <p style="margin: 0; color: #155724;">
+                ✅ <strong>Actions à prévoir :</strong>
+            </p>
+            <ul style="margin: 10px 0 0 20px; color: #155724;">
+                <li>Coordonner la date de début des travaux avec le sous-traitant</li>
+                <li>Vérifier que tous les documents administratifs sont à jour</li>
+                <li>Planifier la réunion de démarrage du chantier</li>
+            </ul>
+        </div>
+
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="${object.get_base_url()}/web#id=${object.id}&amp;model=construction.contract&amp;view_type=form"
+               style="display: inline-block; padding: 12px 30px; background-color: #0056b3; color: white; text-decoration: none; border-radius: 5px; font-size: 16px; font-weight: bold;">
+                📄 Voir le contrat dans Odoo
+            </a>
+        </div>
+
+        <p style="font-size: 14px; color: #666; margin-top: 30px;">
+            Le PDF signé et le certificat d'achèvement sont disponibles dans le contrat.<br/>
+            Cordialement,<br/>
+            <strong>Système BTPVision</strong>
+        </p>
+    </div>
+
+    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
+        <p style="margin: 0;">Notification automatique - ${object.company_id.name if object.company_id else ''}</p>
+    </div>
+</div>
+            </field>
+        </record>
+
+    </data>
+</odoo>

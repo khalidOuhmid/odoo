@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- ========================================================== -->
+        <!-- Compliance Dashboard - Kanban View                         -->
+        <!-- ========================================================== -->
+
+        <record id="view_subcontractor_compliance_kanban" model="ir.ui.view">
+            <field name="name">subcontractor.compliance.kanban</field>
+            <field name="model">res.partner</field>
+            <field name="arch" type="xml">
+                <kanban class="o_kanban_mobile o_subcontractor_compliance_kanban">
+                    <field name="id"/>
+                    <field name="name"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="contact_type"/>
+                    <field name="document_URSSAF_status"/>
+                    <field name="document_KBIS_status"/>
+                    <field name="document_insurance_status"/>
+                    <field name="document_URSSAF_expiry"/>
+                    <field name="document_KBIS_expiry"/>
+                    <field name="document_insurance_expiry"/>
+                    <field name="has_expired_documents"/>
+                    <field name="has_expiring_documents"/>
+                    
+                    <templates>
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_global_click o_kanban_record_has_image_fill">
+                                <div class="o_kanban_image">
+                                    <img t-att-src="kanban_image('res.partner', 'image_128', record.id.raw_value)" 
+                                         alt="Partner" class="o_image_64_cover"/>
+                                </div>
+                                
+                                <div class="oe_kanban_details">
+                                    <div class="o_kanban_record_top">
+                                        <div class="o_kanban_record_headings">
+                                            <strong class="o_kanban_record_title">
+                                                <field name="name"/>
+                                            </strong>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="o_kanban_record_body">
+                                        <!-- Contact Info -->
+                                        <div t-if="record.email.raw_value">
+                                            <i class="fa fa-envelope"/> <field name="email"/>
+                                        </div>
+                                        <div t-if="record.phone.raw_value">
+                                            <i class="fa fa-phone"/> <field name="phone"/>
+                                        </div>
+                                        
+                                        <!-- Document Status Badges -->
+                                        <div class="mt-2">
+                                            <span class="badge" 
+                                                  t-att-class="record.document_URSSAF_status.raw_value === 'valid' ? 'badge-success' : 
+                                                               record.document_URSSAF_status.raw_value === 'expiring' ? 'badge-warning' : 
+                                                               record.document_URSSAF_status.raw_value === 'expired' ? 'badge-danger' : 
+                                                               'badge-secondary'">
+                                                URSSAF: <t t-esc="record.document_URSSAF_status.value"/>
+                                            </span>
+                                            <t t-if="record.document_URSSAF_expiry.raw_value">
+                                                <small class="text-muted ml-1">
+                                                    (<t t-esc="record.document_URSSAF_expiry.value"/>)
+                                                </small>
+                                            </t>
+                                        </div>
+                                        
+                                        <div class="mt-1">
+                                            <span class="badge" 
+                                                  t-att-class="record.document_KBIS_status.raw_value === 'valid' ? 'badge-success' : 
+                                                               record.document_KBIS_status.raw_value === 'expiring' ? 'badge-warning' : 
+                                                               record.document_KBIS_status.raw_value === 'expired' ? 'badge-danger' : 
+                                                               'badge-secondary'">
+                                                KBIS: <t t-esc="record.document_KBIS_status.value"/>
+                                            </span>
+                                            <t t-if="record.document_KBIS_expiry.raw_value">
+                                                <small class="text-muted ml-1">
+                                                    (<t t-esc="record.document_KBIS_expiry.value"/>)
+                                                </small>
+                                            </t>
+                                        </div>
+                                        
+                                        <div class="mt-1">
+                                            <span class="badge" 
+                                                  t-att-class="record.document_insurance_status.raw_value === 'valid' ? 'badge-success' : 
+                                                               record.document_insurance_status.raw_value === 'expiring' ? 'badge-warning' : 
+                                                               record.document_insurance_status.raw_value === 'expired' ? 'badge-danger' : 
+                                                               'badge-secondary'">
+                                                Assurance: <t t-esc="record.document_insurance_status.value"/>
+                                            </span>
+                                            <t t-if="record.document_insurance_expiry.raw_value">
+                                                <small class="text-muted ml-1">
+                                                    (<t t-esc="record.document_insurance_expiry.value"/>)
+                                                </small>
+                                            </t>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="o_kanban_record_bottom mt-2">
+                                        <div class="oe_kanban_bottom_left">
+                                            <!-- Quick Actions -->
+                                            <button type="object" 
+                                                    name="action_send_all_missing_documents_email" 
+                                                    class="btn btn-sm btn-primary"
+                                                    t-if="record.has_expired_documents.raw_value or record.has_expiring_documents.raw_value">
+                                                <i class="fa fa-envelope"/> Demander MAJ
+                                            </button>
+                                        </div>
+                                        <div class="oe_kanban_bottom_right">
+                                            <!-- Overall Status Indicator -->
+                                            <span t-if="record.has_expired_documents.raw_value" 
+                                                  class="badge badge-danger">
+                                                <i class="fa fa-exclamation-triangle"/> Expiré
+                                            </span>
+                                            <span t-elif="record.has_expiring_documents.raw_value" 
+                                                  class="badge badge-warning">
+                                                <i class="fa fa-clock-o"/> Expire bientôt
+                                            </span>
+                                            <span t-else="" class="badge badge-success">
+                                                <i class="fa fa-check"/> Conforme
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- Compliance Dashboard - List View                           -->
+        <!-- ========================================================== -->
+
+        <record id="view_subcontractor_compliance_tree" model="ir.ui.view">
+            <field name="name">subcontractor.compliance.tree</field>
+            <field name="model">res.partner</field>
+            <field name="arch" type="xml">
+                <tree string="Conformité Sous-Traitants" 
+                      decoration-danger="has_expired_documents" 
+                      decoration-warning="has_expiring_documents"
+                      decoration-success="not has_expired_documents and not has_expiring_documents">
+                    <field name="name"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    <field name="document_URSSAF_status" 
+                           decoration-success="document_URSSAF_status == 'valid'"
+                           decoration-warning="document_URSSAF_status == 'expiring'"
+                           decoration-danger="document_URSSAF_status == 'expired'"
+                           widget="badge"/>
+                    <field name="document_URSSAF_expiry"/>
+                    <field name="document_KBIS_status" 
+                           decoration-success="document_KBIS_status == 'valid'"
+                           decoration-warning="document_KBIS_status == 'expiring'"
+                           decoration-danger="document_KBIS_status == 'expired'"
+                           widget="badge"/>
+                    <field name="document_KBIS_expiry"/>
+                    <field name="document_insurance_status" 
+                           decoration-success="document_insurance_status == 'valid'"
+                           decoration-warning="document_insurance_status == 'expiring'"
+                           decoration-danger="document_insurance_status == 'expired'"
+                           widget="badge"/>
+                    <field name="document_insurance_expiry"/>
+                    <field name="has_expired_documents" invisible="1"/>
+                    <field name="has_expiring_documents" invisible="1"/>
+                </tree>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- Compliance Dashboard - Search View                         -->
+        <!-- ========================================================== -->
+
+        <record id="view_subcontractor_compliance_search" model="ir.ui.view">
+            <field name="name">subcontractor.compliance.search</field>
+            <field name="model">res.partner</field>
+            <field name="arch" type="xml">
+                <search string="Rechercher Sous-Traitants">
+                    <field name="name" string="Nom" filter_domain="[('name', 'ilike', self)]"/>
+                    <field name="email"/>
+                    <field name="phone"/>
+                    
+                    <separator/>
+                    
+                    <!-- Filters by compliance status -->
+                    <filter string="Documents Expirés" 
+                            name="filter_expired" 
+                            domain="[('has_expired_documents', '=', True)]"/>
+                    <filter string="Expire Bientôt (30j)" 
+                            name="filter_expiring" 
+                            domain="[('has_expiring_documents', '=', True)]"/>
+                    <filter string="Conformes" 
+                            name="filter_compliant" 
+                            domain="[('has_expired_documents', '=', False), ('has_expiring_documents', '=', False)]"/>
+                    
+                    <separator/>
+                    
+                    <!-- Filters by document type -->
+                    <filter string="URSSAF Expiré" 
+                            name="filter_urssaf_expired" 
+                            domain="[('document_URSSAF_status', '=', 'expired')]"/>
+                    <filter string="URSSAF Expire Bientôt" 
+                            name="filter_urssaf_expiring" 
+                            domain="[('document_URSSAF_status', '=', 'expiring')]"/>
+                    <filter string="KBIS Expiré" 
+                            name="filter_kbis_expired" 
+                            domain="[('document_KBIS_status', '=', 'expired')]"/>
+                    <filter string="KBIS Expire Bientôt" 
+                            name="filter_kbis_expiring" 
+                            domain="[('document_KBIS_status', '=', 'expiring')]"/>
+                    <filter string="Assurance Expirée" 
+                            name="filter_insurance_expired" 
+                            domain="[('document_insurance_status', '=', 'expired')]"/>
+                    <filter string="Assurance Expire Bientôt" 
+                            name="filter_insurance_expiring" 
+                            domain="[('document_insurance_status', '=', 'expiring')]"/>
+                    
+                    <separator/>
+                    
+                    <!-- Group by -->
+                    <group expand="0" string="Grouper par">
+                        <filter string="Statut URSSAF" 
+                                name="group_urssaf_status" 
+                                context="{'group_by': 'document_URSSAF_status'}"/>
+                        <filter string="Statut KBIS" 
+                                name="group_kbis_status" 
+                                context="{'group_by': 'document_KBIS_status'}"/>
+                        <filter string="Statut Assurance" 
+                                name="group_insurance_status" 
+                                context="{'group_by': 'document_insurance_status'}"/>
+                    </group>
+                </search>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- Compliance Dashboard - Action                              -->
+        <!-- ========================================================== -->
+
+        <record id="action_subcontractor_compliance_dashboard" model="ir.actions.act_window">
+            <field name="name">Conformité Sous-Traitants</field>
+            <field name="res_model">res.partner</field>
+            <field name="view_mode">kanban,tree,form</field>
+            <field name="domain">[('contact_type', '=', 'sous_traitant')]</field>
+            <field name="context">{
+                'search_default_filter_expired': 1,
+                'search_default_filter_expiring': 1,
+            }</field>
+            <field name="view_ids" eval="[(5, 0, 0),
+                (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_subcontractor_compliance_kanban')}),
+                (0, 0, {'view_mode': 'tree', 'view_id': ref('view_subcontractor_compliance_tree')}),
+            ]"/>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Aucun sous-traitant avec documents expirants
+                </p>
+                <p>
+                    Ce tableau de bord affiche les sous-traitants avec des documents
+                    expirés ou expirant dans les 30 prochains jours.
+                </p>
+            </field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- Menu Item                                                  -->
+        <!-- ========================================================== -->
+
+        <menuitem id="menu_subcontractor_compliance_dashboard"
+                  name="Conformité Documents"
+                  parent="construction_contract.menu_construction_contract_root"
+                  action="action_subcontractor_compliance_dashboard"
+                  sequence="50"/>
+
+    </data>
+</odoo>

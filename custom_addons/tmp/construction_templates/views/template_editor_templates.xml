@@ -1,0 +1,303 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========================================================== -->
+    <!-- TEMPLATE EDITOR PAGE (GrapesJS)                            -->
+    <!-- ========================================================== -->
+    
+    <template id="template_editor_page" name="Template Editor - Construction Templates">
+        <t t-call="portal.layout">
+            <t t-set="head">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+                <!-- GrapesJS CSS -->
+                <link rel="stylesheet" href="/construction_contract/static/src/lib/grapesjs/grapes.min.css"/>
+                <style>
+                    html, body {
+                        height: 100%;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
+                    .template-editor-container {
+                        display: flex;
+                        flex-direction: column;
+                        height: calc(100vh - 60px);
+                    }
+                    
+                    .template-editor-header {
+                        background: #A0604F;
+                        color: white;
+                        padding: 10px 20px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                    }
+                    
+                    .template-editor-header h4 {
+                        margin: 0;
+                        font-weight: 600;
+                    }
+                    
+                    .template-editor-header .badge {
+                        background: rgba(255,255,255,0.2);
+                        padding: 5px 10px;
+                        border-radius: 4px;
+                        margin-left: 10px;
+                    }
+                    
+                    .template-editor-actions button {
+                        margin-left: 10px;
+                    }
+                    
+                    #grapesjs-editor {
+                        flex: 1;
+                        min-height: 0;
+                    }
+                    
+                    /* GrapesJS customization for BLG theme */
+                    .gjs-one-bg {
+                        background-color: #2d2d2d;
+                    }
+                    
+                    .gjs-two-color {
+                        color: #A0604F;
+                    }
+                    
+                    .gjs-four-color,
+                    .gjs-four-color-h:hover {
+                        color: #A0604F;
+                    }
+                    
+                    .gjs-pn-btn.gjs-pn-active {
+                        background-color: #A0604F;
+                        color: white;
+                    }
+                    
+                    /* Block categories */
+                    .gjs-block-category .gjs-title {
+                        background-color: #F5E6D8;
+                        color: #A0604F;
+                        font-weight: 600;
+                    }
+                    
+                    /* Save notification */
+                    .save-notification {
+                        position: fixed;
+                        top: 70px;
+                        right: 20px;
+                        padding: 10px 20px;
+                        border-radius: 4px;
+                        z-index: 9999;
+                        display: none;
+                    }
+                    
+                    .save-notification.success {
+                        background: #28A745;
+                        color: white;
+                    }
+                    
+                    .save-notification.error {
+                        background: #DC3545;
+                        color: white;
+                    }
+                </style>
+            </t>
+            
+            <section class="template-editor-container">
+                <!-- Header -->
+                <div class="template-editor-header">
+                    <div class="d-flex align-items-center">
+                        <h4>
+                            <i class="fa fa-edit me-2"/>
+                            <t t-esc="template.name"/>
+                        </h4>
+                        <span class="badge">
+                            <t t-esc="template_type_label"/>
+                        </span>
+                        <span class="badge">
+                            v<t t-esc="template.version"/>
+                        </span>
+                    </div>
+                    <div class="template-editor-actions">
+                        <button type="button" class="btn btn-light btn-sm" onclick="previewTemplate()">
+                            <i class="fa fa-eye me-1"/> Aperçu
+                        </button>
+                        <button type="button" class="btn btn-success btn-sm" onclick="saveTemplate()">
+                            <i class="fa fa-save me-1"/> Enregistrer
+                        </button>
+                        <a t-attf-href="/web#id=#{template.id}&amp;model=construction.document.template&amp;view_type=form" 
+                           class="btn btn-secondary btn-sm">
+                            <i class="fa fa-arrow-left me-1"/> Retour
+                        </a>
+                    </div>
+                </div>
+                
+                <!-- GrapesJS Editor -->
+                <div id="grapesjs-editor"></div>
+                
+                <!-- Save notification -->
+                <div id="save-notification" class="save-notification"></div>
+            </section>
+            
+            <!-- GrapesJS Scripts -->
+            <script src="/construction_contract/static/src/lib/grapesjs/grapes.min.js"></script>
+            <script src="/construction_contract/static/src/lib/grapesjs/grapesjs-preset-webpage.min.js"></script>
+            
+            <script type="text/javascript">
+                // Template data
+                var templateId = <t t-esc="template.id"/>;
+                var variableBlocks = <t t-raw="variable_blocks"/>;
+                
+                // Initialize GrapesJS
+                var editor = grapesjs.init({
+                    container: '#grapesjs-editor',
+                    height: '100%',
+                    width: 'auto',
+                    storageManager: false,
+                    plugins: ['gjs-preset-webpage'],
+                    pluginsOpts: {
+                        'gjs-preset-webpage': {
+                            blocksBasicOpts: {
+                                blocks: ['column1', 'column2', 'column3', 'column3-7', 'text', 'link', 'image', 'video'],
+                                flexGrid: true,
+                            },
+                            navbarOpts: false,
+                            countdownOpts: false,
+                            formsOpts: false,
+                        }
+                    },
+                    canvas: {
+                        styles: [
+                            'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
+                        ],
+                    },
+                    styleManager: {
+                        sectors: [{
+                            name: 'Général',
+                            open: true,
+                            buildProps: ['float', 'display', 'position', 'top', 'right', 'left', 'bottom'],
+                        }, {
+                            name: 'Dimensions',
+                            open: false,
+                            buildProps: ['width', 'height', 'max-width', 'min-height', 'margin', 'padding'],
+                        }, {
+                            name: 'Typographie',
+                            open: false,
+                            buildProps: ['font-family', 'font-size', 'font-weight', 'letter-spacing', 'color', 'line-height', 'text-align', 'text-decoration', 'text-shadow'],
+                        }, {
+                            name: 'Décoration',
+                            open: false,
+                            buildProps: ['background-color', 'border', 'border-radius', 'box-shadow'],
+                        }],
+                    },
+                });
+                
+                // Add BLG and variable blocks
+                var blockManager = editor.BlockManager;
+                
+                variableBlocks.forEach(function(block) {
+                    blockManager.add(block.id, {
+                        label: block.label,
+                        category: block.category,
+                        content: block.content,
+                        attributes: block.attributes || {},
+                    });
+                });
+                
+                // Load existing template content
+                loadTemplate();
+                
+                function loadTemplate() {
+                    fetch('/construction/template/load/' + templateId, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            method: 'call',
+                            params: {},
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.result &amp;&amp; data.result.status === 'success') {
+                            var templateData = data.result.data;
+                            if (templateData.components &amp;&amp; templateData.components.length > 0) {
+                                editor.setComponents(templateData.components);
+                                editor.setStyle(templateData.styles || []);
+                            } else if (templateData.html) {
+                                editor.setComponents(templateData.html);
+                                if (templateData.css) {
+                                    editor.setStyle(templateData.css);
+                                }
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading template:', error);
+                    });
+                }
+                
+                function saveTemplate() {
+                    var html = editor.getHtml();
+                    var css = editor.getCss();
+                    var components = JSON.stringify(editor.getComponents());
+                    var styles = JSON.stringify(editor.getStyle());
+                    
+                    fetch('/construction/template/save', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            jsonrpc: '2.0',
+                            method: 'call',
+                            params: {
+                                template_id: templateId,
+                                html: html,
+                                css: css,
+                                components: components,
+                                styles: styles,
+                            },
+                        }),
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.result &amp;&amp; data.result.status === 'success') {
+                            showNotification('Template enregistré avec succès!', 'success');
+                        } else {
+                            showNotification(data.result.message || 'Erreur lors de l\'enregistrement', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error saving template:', error);
+                        showNotification('Erreur lors de l\'enregistrement', 'error');
+                    });
+                }
+                
+                function previewTemplate() {
+                    window.open('/construction/template/preview/' + templateId, '_blank');
+                }
+                
+                function showNotification(message, type) {
+                    var notification = document.getElementById('save-notification');
+                    notification.textContent = message;
+                    notification.className = 'save-notification ' + type;
+                    notification.style.display = 'block';
+                    
+                    setTimeout(function() {
+                        notification.style.display = 'none';
+                    }, 3000);
+                }
+                
+                // Keyboard shortcut for save (Ctrl+S)
+                document.addEventListener('keydown', function(e) {
+                    if ((e.ctrlKey || e.metaKey) &amp;&amp; e.key === 's') {
+                        e.preventDefault();
+                        saveTemplate();
+                    }
+                });
+            </script>
+        </t>
+    </template>
+</odoo>

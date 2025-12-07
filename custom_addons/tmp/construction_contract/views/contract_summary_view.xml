@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- CONTRACT SUMMARY VIEW - POST-CREATION RECAP (ENHANCED)     -->
+    <!-- Panel Post-Génération avec informations clés, lots,        -->
+    <!-- documents et onglets de communication multi-canal          -->
+    <!-- ========================================================== -->
+
+    <record id="view_contract_summary_form" model="ir.ui.view">
+        <field name="name">construction.contract.summary.form</field>
+        <field name="model">construction.contract</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <form string="Contrat Créé">
+                <sheet>
+                    <!-- ============================================== -->
+                    <!-- SUCCESS BANNER                                 -->
+                    <!-- ============================================== -->
+                    <div class="alert alert-success" role="alert" style="background-color: #d4edda; border-color: #c3e6cb;">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-check-circle fa-3x me-4" style="color: #28a745;"/>
+                            <div>
+                                <h3 class="mb-1">
+                                    <strong>✅ Contrat créé avec succès !</strong>
+                                </h3>
+                                <p class="mb-0 fs-5">
+                                    Référence : <field name="name" readonly="1" class="fw-bold oe_inline"/>
+                                    <span class="ms-3">
+                                        <field name="state" widget="badge" readonly="1"
+                                               decoration-info="state=='draft'"
+                                               decoration-success="state in ('generated', 'signed')"
+                                               decoration-warning="state in ('sent', 'in_progress')"
+                                               decoration-danger="state=='cancelled'"/>
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hidden fields for context -->
+                    <field name="currency_id" invisible="1"/>
+                    <field name="total_amount_ttc" invisible="1"/>
+                    <field name="total_amount_ht" invisible="1"/>
+                    <field name="total_amount_tva" invisible="1"/>
+                    <field name="pdf_document" invisible="1"/>
+                    <field name="pdf_page_count" invisible="1"/>
+                    <field name="retention_amount" invisible="1"/>
+                    <field name="retention_rate" invisible="1"/>
+
+                    <!-- ============================================== -->
+                    <!-- SECTION 1: INFORMATIONS CLÉS                   -->
+                    <!-- ============================================== -->
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <group string="📋 Informations du contrat">
+                                <group>
+                                    <field name="chantier_id" string="Chantier" readonly="1"/>
+                                    <field name="subcontractor_id" string="Sous-Traitant" readonly="1"/>
+                                    <field name="date" string="Date du contrat" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="start_date" string="Début des travaux" readonly="1"/>
+                                    <field name="end_date" string="Fin des travaux" readonly="1"/>
+                                    <field name="pdf_page_count" string="Pages du PDF" readonly="1" invisible="pdf_page_count == 0"/>
+                                </group>
+                            </group>
+                        </div>
+                        <div class="col-lg-4">
+                            <!-- Financial Summary Card -->
+                            <div class="card" style="border: 2px solid #A0604F; border-radius: 8px;">
+                                <div class="card-header" style="background-color: #A0604F; color: white;">
+                                    <h5 class="mb-0"><i class="fa fa-euro"/> Montants</h5>
+                                </div>
+                                <div class="card-body" style="background-color: #F5E6D8;">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Montant HT :</span>
+                                        <strong><field name="total_amount_ht" widget="monetary" readonly="1" class="oe_inline"/></strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>TVA :</span>
+                                        <strong><field name="total_amount_tva" widget="monetary" readonly="1" class="oe_inline"/></strong>
+                                    </div>
+                                    <hr style="border-color: #A0604F;"/>
+                                    <div class="d-flex justify-content-between">
+                                        <span class="fs-5">Total TTC :</span>
+                                        <strong class="fs-4" style="color: #A0604F;">
+                                            <field name="total_amount_ttc" widget="monetary" readonly="1" class="oe_inline"/>
+                                        </strong>
+                                    </div>
+                                    <div class="d-flex justify-content-between mt-2 text-muted" invisible="retention_amount == 0">
+                                        <small>Retenue garantie (<field name="retention_rate" readonly="1" class="oe_inline"/>%) :</small>
+                                        <small><field name="retention_amount" widget="monetary" readonly="1" class="oe_inline"/></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ============================================== -->
+                    <!-- SECTION 2: RÉSUMÉ DES LOTS                     -->
+                    <!-- ============================================== -->
+                    <group string="🏗️ Lots concernés" invisible="not lot_ids">
+                        <field name="lot_ids" readonly="1" nolabel="1">
+                            <list create="0" delete="0" edit="0">
+                                <field name="code" string="Code"/>
+                                <field name="name" string="Désignation"/>
+                                <field name="price" string="Montant" widget="monetary" sum="Total"/>
+                                <field name="lot_date_start" string="Début" optional="show"/>
+                                <field name="lot_date_end" string="Fin" optional="show"/>
+                            </list>
+                        </field>
+                    </group>
+
+                    <!-- ============================================== -->
+                    <!-- SECTION 3: DOCUMENTS JOINTS                    -->
+                    <!-- ============================================== -->
+                    <group string="📎 Documents joints" invisible="not deliverable_ids">
+                        <field name="deliverable_ids" readonly="1" nolabel="1">
+                            <list create="0" delete="0" edit="0">
+                                <field name="name" string="Document"/>
+                                <field name="deliverable_type" string="Type" widget="badge"/>
+                                <field name="merge_in_contract" string="Fusionné" widget="boolean"/>
+                                <field name="file_size_readable" string="Taille"/>
+                            </list>
+                        </field>
+                        <div class="mt-2">
+                            <button name="action_download_all_documents" 
+                                    type="object"
+                                    string="📥 Télécharger tous les documents (ZIP)" 
+                                    class="btn btn-secondary"
+                                    icon="fa-download"
+                                    help="Télécharger le contrat et toutes les pièces jointes dans une archive ZIP"/>
+                        </div>
+                    </group>
+
+                    <!-- ============================================== -->
+                    <!-- ONGLETS DE COMMUNICATION                       -->
+                    <!-- ============================================== -->
+                    <notebook>
+                        <!-- Onglet Email -->
+                        <page string="📧 Email" name="email_tab">
+                            <group>
+                                <group string="Destinataire">
+                                    <field name="subcontractor_id" string="Sous-traitant" readonly="1" 
+                                           widget="many2one_avatar"/>
+                                    <div class="o_field_widget">
+                                        <span class="text-muted">Email : </span>
+                                        <span t-if="record.subcontractor_id.raw_value">
+                                            <field name="subcontractor_id" readonly="1" invisible="1"/>
+                                        </span>
+                                    </div>
+                                </group>
+                                <group string="Aperçu du message">
+                                    <div class="alert alert-light border" role="alert">
+                                        <p class="mb-2"><strong>Objet :</strong> Contrat à signer - <field name="chantier_id" readonly="1" class="oe_inline"/></p>
+                                        <hr/>
+                                        <p class="mb-1">Bonjour <field name="subcontractor_id" readonly="1" class="oe_inline"/>,</p>
+                                        <p class="mb-1">Nous vous envoyons un nouveau contrat de sous-traitance pour le chantier <strong><field name="chantier_id" readonly="1" class="oe_inline"/></strong>.</p>
+                                        <p class="mb-1">Montant total : <strong><field name="total_amount_ttc" widget="monetary" readonly="1" class="oe_inline"/></strong></p>
+                                        <p class="mb-0 text-muted"><em>Un lien sécurisé sera inclus pour consulter et signer le contrat.</em></p>
+                                    </div>
+                                </group>
+                            </group>
+                            <div class="mt-3">
+                                <button name="action_send_email" 
+                                        type="object"
+                                        string="📧 Envoyer par Email" 
+                                        class="btn btn-success btn-lg"
+                                        icon="fa-envelope"
+                                        help="Envoyer le lien de signature par email uniquement"/>
+                            </div>
+                        </page>
+
+                        <!-- Onglet SMS -->
+                        <page string="📱 SMS" name="sms_tab">
+                            <group>
+                                <group string="Destinataire">
+                                    <field name="subcontractor_id" string="Sous-traitant" readonly="1" 
+                                           widget="many2one_avatar"/>
+                                    <div class="o_field_widget">
+                                        <span class="text-muted">Mobile : </span>
+                                        <span class="fw-bold" t-if="record.subcontractor_id.raw_value">
+                                            <!-- Mobile number will be shown from partner -->
+                                        </span>
+                                    </div>
+                                </group>
+                                <group string="Aperçu du message (160 car. max)">
+                                    <div class="alert alert-light border" role="alert">
+                                        <p class="mb-0" style="font-family: monospace;">
+                                            Nouveau contrat <field name="name" readonly="1" class="oe_inline"/> 
+                                            pour <field name="chantier_id" readonly="1" class="oe_inline"/>. 
+                                            Signez ici : [lien portail]
+                                        </p>
+                                        <hr/>
+                                        <small class="text-muted">
+                                            <i class="fa fa-info-circle"/> Le lien sera automatiquement raccourci pour respecter la limite SMS.
+                                        </small>
+                                    </div>
+                                </group>
+                            </group>
+                            <div class="mt-3">
+                                <button name="action_send_sms" 
+                                        type="object"
+                                        string="📱 Envoyer par SMS" 
+                                        class="btn btn-info btn-lg"
+                                        icon="fa-mobile"
+                                        help="Envoyer le lien de signature par SMS uniquement"/>
+                            </div>
+                        </page>
+
+                        <!-- Onglet Email + SMS -->
+                        <page string="📧📱 Email + SMS" name="both_tab">
+                            <group>
+                                <div class="col-12">
+                                    <div class="alert alert-info" role="alert">
+                                        <h5 class="alert-heading"><i class="fa fa-paper-plane"/> Envoi combiné</h5>
+                                        <p class="mb-0">
+                                            Cette option envoie simultanément un email détaillé et un SMS de rappel au sous-traitant.
+                                            C'est la méthode recommandée pour maximiser les chances de réponse rapide.
+                                        </p>
+                                    </div>
+                                </div>
+                            </group>
+                            <group>
+                                <group string="Récapitulatif">
+                                    <field name="subcontractor_id" string="Destinataire" readonly="1"/>
+                                    <field name="chantier_id" string="Chantier" readonly="1"/>
+                                    <field name="total_amount_ttc" string="Montant TTC" widget="monetary" readonly="1"/>
+                                </group>
+                                <group string="Canaux d'envoi">
+                                    <div class="o_field_widget">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="fa fa-envelope fa-lg text-success me-2"/>
+                                            <span>Email avec détails complets et lien de signature</span>
+                                        </div>
+                                        <div class="d-flex align-items-center">
+                                            <i class="fa fa-mobile fa-lg text-info me-2"/>
+                                            <span>SMS court avec lien direct</span>
+                                        </div>
+                                    </div>
+                                </group>
+                            </group>
+                            <div class="mt-3 text-center">
+                                <button name="action_send_both" 
+                                        type="object"
+                                        string="📧📱 Envoyer par Email ET SMS" 
+                                        class="btn btn-warning btn-lg"
+                                        icon="fa-paper-plane"
+                                        style="min-width: 300px;"
+                                        help="Envoyer le lien de signature par email ET SMS simultanément"/>
+                            </div>
+                        </page>
+
+                        <!-- Onglet Prochaines étapes -->
+                        <page string="📝 Prochaines étapes" name="next_steps_tab">
+                            <group>
+                                <div class="col-12">
+                                    <div class="alert alert-light border" role="alert">
+                                        <h5 class="alert-heading mb-3"><i class="fa fa-list-ol"/> Workflow de signature</h5>
+                                        <ol class="mb-0 ps-3">
+                                            <li class="mb-3">
+                                                <strong>Vérifier le PDF généré</strong><br/>
+                                                <small class="text-muted">Le document PDF a été automatiquement créé avec <field name="pdf_page_count" readonly="1" class="oe_inline"/> pages</small>
+                                            </li>
+                                            <li class="mb-3">
+                                                <strong>Envoyer au sous-traitant</strong><br/>
+                                                <small class="text-muted">Choisissez le canal d'envoi : Email, SMS ou les deux</small>
+                                            </li>
+                                            <li class="mb-3">
+                                                <strong>Suivi de la consultation</strong><br/>
+                                                <small class="text-muted">Le sous-traitant devra valider chaque page avant de signer</small>
+                                            </li>
+                                            <li class="mb-0">
+                                                <strong>Signature électronique</strong><br/>
+                                                <small class="text-muted">Une fois toutes les pages validées, le sous-traitant pourra signer</small>
+                                            </li>
+                                        </ol>
+                                    </div>
+                                </div>
+                            </group>
+                        </page>
+                    </notebook>
+
+                    <!-- ============================================== -->
+                    <!-- ACTIONS RAPIDES                                -->
+                    <!-- ============================================== -->
+                    <div class="mt-4 pt-3 border-top">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button name="action_view_full_form" 
+                                    type="object"
+                                    string="📄 Voir le contrat complet" 
+                                    class="btn btn-link ps-0"
+                                    icon="fa-external-link"
+                                    help="Ouvrir la fiche complète du contrat"/>
+                            
+                            <div class="d-flex gap-2">
+                                <button name="action_download_pdf" 
+                                        type="object"
+                                        string="Télécharger PDF" 
+                                        class="btn btn-outline-secondary"
+                                        icon="fa-download"
+                                        invisible="not pdf_document"
+                                        help="Télécharger le contrat en PDF"/>
+                                
+                                <button name="action_view_portal" 
+                                        type="object"
+                                        string="Aperçu Portail" 
+                                        class="btn btn-outline-primary"
+                                        icon="fa-eye"
+                                        invisible="state not in ('generated', 'sent', 'in_progress')"
+                                        help="Voir le portail de signature"/>
+                            </div>
+                        </div>
+                    </div>
+
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- ACTION TO OPEN SUMMARY VIEW                                -->
+    <!-- ========================================================== -->
+
+    <record id="action_contract_summary" model="ir.actions.act_window">
+        <field name="name">Contrat Créé</field>
+        <field name="res_model">construction.contract</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_contract_summary_form"/>
+        <field name="target">current</field>
+    </record>
+
+</odoo>

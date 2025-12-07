@@ -1,0 +1,501 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- BLG CONTRACT REPORT ACTION                                 -->
+    <!-- ========================================================== -->
+
+    <record id="action_report_contract_blg" model="ir.actions.report">
+        <field name="name">Contrat BLG Groupe</field>
+        <field name="model">construction.contract</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_templates.report_contract_blg_document</field>
+        <field name="report_file">construction_templates.report_contract_blg_document</field>
+        <field name="print_report_name">'Contrat_BLG_%s' % object.name</field>
+        <field name="binding_model_id" ref="construction_contract.model_construction_contract"/>
+        <field name="binding_type">report</field>
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
+    </record>
+
+    <!-- ========================================================== -->
+    <!-- BLG CONTRACT TEMPLATE WITH BRANDING                        -->
+    <!-- ========================================================== -->
+
+    <template id="report_contract_blg_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="contract">
+                <t t-call="web.basic_layout">
+                    <div class="page blg-contract-document">
+                        
+                        <!-- Custom CSS for BLG Branding -->
+                        <style>
+                            @page {
+                                margin: 0mm;
+                            }
+                            
+                            .blg-contract-document {
+                                font-family: 'Roboto', 'Arial', sans-serif;
+                                font-size: 11pt;
+                                line-height: 1.6;
+                                color: #000000;
+                            }
+                            
+                            /* BLG Header */
+                            .blg-header {
+                                background-color: #A0604F;
+                                color: white;
+                                padding: 25px 40px;
+                                margin: 0;
+                            }
+                            
+                            .blg-header h1 {
+                                margin: 0 0 10px 0;
+                                font-size: 28pt;
+                                font-weight: bold;
+                                letter-spacing: 1px;
+                                text-transform: uppercase;
+                            }
+                            
+                            .blg-header .contract-ref {
+                                font-size: 14pt;
+                                margin: 5px 0;
+                                opacity: 0.95;
+                            }
+                            
+                            .blg-header .company-info {
+                                font-size: 10pt;
+                                margin-top: 15px;
+                                opacity: 0.9;
+                            }
+                            
+                            /* Content Area */
+                            .blg-content {
+                                padding: 30px 40px;
+                                background-color: white;
+                            }
+                            
+                            .blg-section {
+                                margin-bottom: 25px;
+                            }
+                            
+                            .blg-section-title {
+                                color: #A0604F;
+                                font-size: 14pt;
+                                font-weight: bold;
+                                border-bottom: 2px solid #A0604F;
+                                padding-bottom: 8px;
+                                margin-bottom: 15px;
+                                text-transform: uppercase;
+                            }
+                            
+                            .blg-subsection-title {
+                                color: #A0604F;
+                                font-size: 12pt;
+                                font-weight: bold;
+                                margin: 15px 0 10px 0;
+                            }
+                            
+                            /* Party Information */
+                            .party-info {
+                                background-color: #F5E6D8;
+                                padding: 15px 20px;
+                                margin: 10px 0;
+                                border-left: 4px solid #A0604F;
+                            }
+                            
+                            .party-info strong {
+                                color: #A0604F;
+                                font-size: 12pt;
+                            }
+                            
+                            .party-designation {
+                                font-style: italic;
+                                color: #666;
+                                margin-top: 8px;
+                            }
+                            
+                            /* Lots Table */
+                            .lots-table {
+                                width: 100%;
+                                border-collapse: collapse;
+                                margin: 15px 0;
+                            }
+                            
+                            .lots-table thead {
+                                background-color: #A0604F;
+                                color: white;
+                            }
+                            
+                            .lots-table th {
+                                padding: 12px 10px;
+                                text-align: left;
+                                font-weight: bold;
+                                font-size: 11pt;
+                            }
+                            
+                            .lots-table td {
+                                padding: 10px;
+                                border: 1px solid #ddd;
+                            }
+                            
+                            .lots-table tbody tr:nth-child(even) {
+                                background-color: #F5F5F5;
+                            }
+                            
+                            .lots-table tbody tr:hover {
+                                background-color: #F5E6D8;
+                            }
+                            
+                            .lots-table .text-right {
+                                text-align: right;
+                            }
+                            
+                            /* Financial Summary */
+                            .financial-summary {
+                                margin: 20px 0;
+                                border: 2px solid #A0604F;
+                                padding: 15px;
+                                background-color: #F5E6D8;
+                            }
+                            
+                            .financial-summary table {
+                                width: 100%;
+                            }
+                            
+                            .financial-summary td {
+                                padding: 8px 10px;
+                            }
+                            
+                            .financial-summary .total-row {
+                                border-top: 3px solid #A0604F;
+                                font-size: 14pt;
+                                font-weight: bold;
+                                color: #A0604F;
+                            }
+                            
+                            /* Signature Zones */
+                            .signature-section {
+                                margin-top: 50px;
+                                page-break-inside: avoid;
+                            }
+                            
+                            .signature-zone {
+                                border: 3px dashed #A0604F;
+                                padding: 20px;
+                                margin: 15px 0;
+                                min-height: 100px;
+                                background-color: rgba(160, 96, 79, 0.05);
+                            }
+                            
+                            .signature-zone .zone-label {
+                                color: #A0604F;
+                                font-weight: bold;
+                                font-size: 12pt;
+                                margin-bottom: 10px;
+                            }
+                            
+                            .signature-zone .zone-sublabel {
+                                color: #666;
+                                font-size: 10pt;
+                                font-style: italic;
+                            }
+                            
+                            .signature-zone .signature-image {
+                                margin: 15px 0;
+                                max-height: 80px;
+                            }
+                            
+                            /* Footer */
+                            .blg-footer {
+                                background-color: #F5E6D8;
+                                padding: 15px 40px;
+                                font-size: 9pt;
+                                color: #666;
+                                border-top: 3px solid #A0604F;
+                                margin-top: 30px;
+                            }
+                            
+                            .blg-footer .legal-mentions {
+                                margin-top: 10px;
+                                font-size: 8pt;
+                                line-height: 1.4;
+                            }
+                            
+                            /* Info Box */
+                            .info-box {
+                                background-color: #F5E6D8;
+                                border-left: 4px solid #A0604F;
+                                padding: 12px 15px;
+                                margin: 10px 0;
+                            }
+                            
+                            .info-box strong {
+                                color: #A0604F;
+                            }
+                        </style>
+
+                        <!-- BLG HEADER -->
+                        <div class="blg-header">
+                            <h1>Contrat de Sous-Traitance</h1>
+                            <div class="contract-ref">
+                                Référence : <t t-esc="contract.name"/>
+                            </div>
+                            <div class="company-info">
+                                <t t-esc="contract.company_id.name"/> | 
+                                <t t-esc="contract.company_id.street"/>, 
+                                <t t-esc="contract.company_id.zip"/> <t t-esc="contract.company_id.city"/>
+                            </div>
+                        </div>
+
+                        <!-- CONTENT -->
+                        <div class="blg-content">
+                            
+                            <!-- PARTIES -->
+                            <div class="blg-section">
+                                <div class="blg-section-title">Entre les Soussignés</div>
+                                
+                                <div class="party-info">
+                                    <strong><t t-esc="contract.company_id.name"/></strong><br/>
+                                    SIRET : <t t-esc="contract.company_id.company_registry or 'N/A'"/><br/>
+                                    Adresse : <t t-esc="contract.company_id.street"/>, 
+                                    <t t-esc="contract.company_id.zip"/> <t t-esc="contract.company_id.city"/><br/>
+                                    <t t-if="contract.company_id.vat">
+                                        TVA : <t t-esc="contract.company_id.vat"/><br/>
+                                    </t>
+                                    <div class="party-designation">
+                                        Ci-après dénommée "l'Entrepreneur Principal"
+                                    </div>
+                                </div>
+                                
+                                <p style="text-align: center; font-weight: bold; margin: 15px 0;">D'UNE PART,</p>
+                                
+                                <div class="party-info">
+                                    <strong><t t-esc="contract.subcontractor_id.name"/></strong><br/>
+                                    SIRET : <t t-esc="contract.subcontractor_id.company_registry or 'N/A'"/><br/>
+                                    Adresse : <t t-esc="contract.subcontractor_id.street"/>, 
+                                    <t t-esc="contract.subcontractor_id.zip"/> <t t-esc="contract.subcontractor_id.city"/><br/>
+                                    <t t-if="contract.subcontractor_id.vat">
+                                        TVA : <t t-esc="contract.subcontractor_id.vat"/><br/>
+                                    </t>
+                                    <t t-if="contract.subcontractor_id.email">
+                                        Email : <t t-esc="contract.subcontractor_id.email"/><br/>
+                                    </t>
+                                    <t t-if="contract.subcontractor_id.phone">
+                                        Téléphone : <t t-esc="contract.subcontractor_id.phone"/><br/>
+                                    </t>
+                                    <div class="party-designation">
+                                        Ci-après dénommé "le Sous-Traitant"
+                                    </div>
+                                </div>
+                                
+                                <p style="text-align: center; font-weight: bold; margin: 15px 0;">D'AUTRE PART,</p>
+                            </div>
+
+                            <!-- ARTICLE 1: OBJET -->
+                            <div class="blg-section">
+                                <div class="blg-section-title">Article 1 - Objet du Contrat</div>
+                                
+                                <p>
+                                    Le présent contrat a pour objet la réalisation des travaux de sous-traitance 
+                                    dans le cadre du chantier suivant :
+                                </p>
+                                
+                                <div class="info-box">
+                                    <strong>Chantier :</strong> <t t-esc="contract.chantier_id.name"/><br/>
+                                    <strong>Référence :</strong> <t t-esc="contract.chantier_id.reference"/><br/>
+                                    <strong>Adresse :</strong> <t t-esc="contract.chantier_id.address"/>
+                                </div>
+
+                                <div class="blg-subsection-title">Lots concernés :</div>
+                                
+                                <table class="lots-table">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%;">Code Lot</th>
+                                            <th style="width: 50%;">Description</th>
+                                            <th style="width: 20%;">Dates</th>
+                                            <th style="width: 15%;" class="text-right">Montant HT</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="contract.lot_ids" t-as="lot">
+                                            <tr>
+                                                <td><strong><t t-esc="lot.code or lot.name"/></strong></td>
+                                                <td><t t-esc="lot.description or lot.name"/></td>
+                                                <td>
+                                                    <t t-if="lot.lot_date_start">
+                                                        <t t-esc="lot.lot_date_start.strftime('%d/%m/%Y')"/>
+                                                    </t>
+                                                    <t t-if="lot.lot_date_end">
+                                                        - <t t-esc="lot.lot_date_end.strftime('%d/%m/%Y')"/>
+                                                    </t>
+                                                </td>
+                                                <td class="text-right">
+                                                    <t t-set="lot_amount" t-value="sum(lot.purchase_order_ids.filtered(lambda po: po.partner_id == contract.subcontractor_id).mapped('amount_untaxed'))"/>
+                                                    <t t-esc="'{:,.2f}'.format(lot_amount)"/> €
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <!-- ARTICLE 2: DURÉE -->
+                            <div class="blg-section">
+                                <div class="blg-section-title">Article 2 - Durée et Délais d'Exécution</div>
+                                
+                                <div class="info-box">
+                                    <strong>Date de début des travaux :</strong> 
+                                    <t t-esc="contract.start_date.strftime('%d/%m/%Y')"/><br/>
+                                    <strong>Date de fin prévue :</strong> 
+                                    <t t-esc="contract.end_date.strftime('%d/%m/%Y')"/><br/>
+                                    <strong>Durée estimée :</strong> 
+                                    <t t-esc="(contract.end_date - contract.start_date).days"/> jours
+                                </div>
+                                
+                                <p>
+                                    Le Sous-Traitant s'engage à respecter les délais convenus. 
+                                    Tout retard devra être signalé immédiatement à l'Entrepreneur Principal.
+                                </p>
+                            </div>
+
+                            <!-- ARTICLE 3: PRIX -->
+                            <div class="blg-section">
+                                <div class="blg-section-title">Article 3 - Prix et Modalités de Paiement</div>
+                                
+                                <div class="financial-summary">
+                                    <table>
+                                        <tr>
+                                            <td style="width: 70%;"><strong>Montant total HT :</strong></td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:,.2f}'.format(contract.total_amount_ht)"/> €
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>TVA :</strong></td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:,.2f}'.format(contract.total_amount_tva)"/> €
+                                            </td>
+                                        </tr>
+                                        <tr class="total-row">
+                                            <td><strong>Montant total TTC :</strong></td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:,.2f}'.format(contract.total_amount_ttc)"/> €
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                <strong>Retenue de garantie 
+                                                (<t t-esc="contract.retention_rate"/>%) :</strong>
+                                            </td>
+                                            <td class="text-right">
+                                                <t t-esc="'{:,.2f}'.format(contract.retention_amount)"/> €
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                
+                                <p>
+                                    Le paiement sera effectué selon les modalités définies dans les conditions 
+                                    générales de sous-traitance, après réception des travaux et présentation 
+                                    des factures conformes.
+                                </p>
+                            </div>
+
+                            <!-- ARTICLE 4: OBLIGATIONS -->
+                            <div class="blg-section">
+                                <div class="blg-section-title">Article 4 - Obligations du Sous-Traitant</div>
+                                
+                                <p>Le Sous-Traitant s'engage à :</p>
+                                <ul>
+                                    <li>Réaliser les travaux conformément aux règles de l'art et aux normes en vigueur</li>
+                                    <li>Respecter les consignes de sécurité sur le chantier</li>
+                                    <li>Fournir l'ensemble des documents administratifs requis (URSSAF, KBIS, assurances)</li>
+                                    <li>Informer l'Entrepreneur Principal de toute difficulté d'exécution</li>
+                                    <li>Garantir la qualité et la conformité des travaux réalisés</li>
+                                </ul>
+                            </div>
+
+                            <!-- ARTICLE 5: ASSURANCES -->
+                            <div class="blg-section">
+                                <div class="blg-section-title">Article 5 - Assurances</div>
+                                
+                                <p>
+                                    Le Sous-Traitant atteste être titulaire d'une assurance responsabilité civile 
+                                    professionnelle et décennale couvrant les travaux objets du présent contrat. 
+                                    Les attestations d'assurance à jour devront être fournies avant le début des travaux.
+                                </p>
+                            </div>
+
+                            <!-- SIGNATURES -->
+                            <div class="signature-section">
+                                <p style="margin-bottom: 20px;">
+                                    <strong>Fait en deux exemplaires originaux,</strong><br/>
+                                    À <t t-esc="contract.company_id.city"/>, 
+                                    le <t t-esc="contract.date.strftime('%d/%m/%Y')"/>
+                                </p>
+
+                                <table style="width: 100%;">
+                                    <tr>
+                                        <td style="width: 48%; vertical-align: top;">
+                                            <div class="signature-zone">
+                                                <div class="zone-label">Pour l'Entrepreneur Principal</div>
+                                                <div class="zone-sublabel">
+                                                    <t t-esc="contract.company_id.name"/><br/>
+                                                    Nom et signature
+                                                </div>
+                                                <div style="height: 60px;"></div>
+                                            </div>
+                                        </td>
+                                        <td style="width: 4%;"></td>
+                                        <td style="width: 48%; vertical-align: top;">
+                                            <div class="signature-zone">
+                                                <div class="zone-label">Pour le Sous-Traitant</div>
+                                                <div class="zone-sublabel">
+                                                    <t t-esc="contract.subcontractor_id.name"/><br/>
+                                                    Signature électronique
+                                                </div>
+                                                <t t-if="contract.signature_id and contract.signature_date">
+                                                    <div style="margin-top: 10px; font-size: 10pt; color: #28A745;">
+                                                        ✓ Signé électroniquement le 
+                                                        <t t-esc="contract.signature_date.strftime('%d/%m/%Y à %H:%M')"/>
+                                                    </div>
+                                                </t>
+                                                <t t-else="">
+                                                    <div style="height: 60px;"></div>
+                                                </t>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                        </div>
+
+                        <!-- BLG FOOTER -->
+                        <div class="blg-footer">
+                            <div>
+                                <strong><t t-esc="contract.company_id.name"/></strong> | 
+                                <t t-esc="contract.company_id.street"/>, 
+                                <t t-esc="contract.company_id.zip"/> <t t-esc="contract.company_id.city"/>
+                            </div>
+                            <div>
+                                SIRET : <t t-esc="contract.company_id.company_registry or 'N/A'"/>
+                                <t t-if="contract.company_id.vat">
+                                    | TVA : <t t-esc="contract.company_id.vat"/>
+                                </t>
+                            </div>
+                            <div class="legal-mentions">
+                                Ce document est un contrat de sous-traitance conforme aux dispositions de la loi n°75-1334 
+                                du 31 décembre 1975 relative à la sous-traitance. La signature électronique a la même 
+                                valeur juridique qu'une signature manuscrite conformément au règlement eIDAS (UE n°910/2014).
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

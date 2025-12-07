@@ -1,0 +1,437 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- ========================================================== -->
+        <!-- DEFAULT CONTRACT TEMPLATE                                  -->
+        <!-- ========================================================== -->
+        
+        <record id="default_contract_template" model="construction.document.template">
+            <field name="name">Contrat de sous-traitance BLG</field>
+            <field name="code">BLG_CONTRACT_DEFAULT</field>
+            <field name="template_type">contract</field>
+            <field name="is_active">True</field>
+            <field name="is_default">True</field>
+            <field name="html_content"><![CDATA[
+<div class="contract-document">
+    <div class="header" style="background-color: #A0604F; color: white; padding: 25px 40px;">
+        <h1 style="margin: 0; font-size: 28pt; text-transform: uppercase;">Contrat de Sous-Traitance</h1>
+        <p style="margin: 10px 0 0 0; font-size: 14pt;">Référence: {{ contract.name }}</p>
+    </div>
+    
+    <div class="content" style="padding: 30px 40px;">
+        <h2 style="color: #A0604F; border-bottom: 2px solid #A0604F; padding-bottom: 8px;">ENTRE LES SOUSSIGNÉS</h2>
+        
+        <div style="background-color: #F5E6D8; padding: 15px; margin: 10px 0; border-left: 4px solid #A0604F;">
+            <p><strong style="color: #A0604F; font-size: 12pt;">{{ company.name }}</strong></p>
+            <p style="margin: 5px 0;">{{ company.street }}, {{ company.zip }} {{ company.city }}</p>
+            <p style="font-style: italic; color: #666;">Ci-après dénommée "l'Entrepreneur Principal"</p>
+        </div>
+        
+        <p style="text-align: center; font-weight: bold; margin: 15px 0;">D'UNE PART,</p>
+        
+        <div style="background-color: #F5E6D8; padding: 15px; margin: 10px 0; border-left: 4px solid #A0604F;">
+            <p><strong style="color: #A0604F; font-size: 12pt;">{{ subcontractor.name }}</strong></p>
+            <p style="margin: 5px 0;">{{ subcontractor.street }}, {{ subcontractor.zip }} {{ subcontractor.city }}</p>
+            <p style="font-style: italic; color: #666;">Ci-après dénommé "le Sous-Traitant"</p>
+        </div>
+        
+        <p style="text-align: center; font-weight: bold; margin: 15px 0;">D'AUTRE PART,</p>
+        
+        <h2 style="color: #A0604F; border-bottom: 2px solid #A0604F; padding-bottom: 8px; margin-top: 30px;">OBJET DU CONTRAT</h2>
+        <p>Chantier: <strong>{{ chantier.name }}</strong></p>
+        <p>Référence: {{ chantier.reference }}</p>
+        
+        <h3 style="color: #A0604F; margin-top: 20px;">LOTS CONCERNÉS</h3>
+        <table class="lots-table" style="width: 100%; border-collapse: collapse; margin: 15px 0;">
+            <thead style="background-color: #A0604F; color: white;">
+                <tr>
+                    <th style="padding: 12px 10px; text-align: left;">Code Lot</th>
+                    <th style="padding: 12px 10px; text-align: left;">Description</th>
+                    <th style="padding: 12px 10px; text-align: right;">Montant HT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lot in lots %}
+                <tr style="{% if loop.index % 2 == 0 %}background-color: #F5F5F5;{% endif %}">
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ lot.code }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ lot.name }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ lot.price }} €</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="background-color: #F5E6D8; border: 2px solid #A0604F; padding: 15px; margin: 20px 0;">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="width: 70%; padding: 8px;"><strong>Montant total HT:</strong></td>
+                    <td style="text-align: right; padding: 8px;">{{ total_ht }} €</td>
+                </tr>
+                <tr>
+                    <td style="padding: 8px;"><strong>TVA:</strong></td>
+                    <td style="text-align: right; padding: 8px;">{{ total_tva }} €</td>
+                </tr>
+                <tr style="border-top: 3px solid #A0604F; font-size: 14pt; font-weight: bold; color: #A0604F;">
+                    <td style="padding: 8px;"><strong>Montant total TTC:</strong></td>
+                    <td style="text-align: right; padding: 8px;"><strong>{{ total_ttc }} €</strong></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="signature-section" style="margin-top: 50px;">
+            <p style="margin-bottom: 20px;"><strong>Fait en deux exemplaires originaux,</strong><br/>
+            À {{ company.city }}, le {{ date }}</p>
+            
+            <table style="width: 100%;">
+                <tr>
+                    <td style="width: 48%; vertical-align: top;">
+                        <div class="signature-zone company" style="border: 3px dashed #A0604F; padding: 20px; min-height: 100px; background-color: rgba(160, 96, 79, 0.05);">
+                            <p style="color: #A0604F; font-weight: bold; font-size: 12pt;">Pour l'Entrepreneur Principal</p>
+                            <p style="color: #666; font-size: 10pt; font-style: italic;">Nom et signature</p>
+                        </div>
+                    </td>
+                    <td style="width: 4%;"></td>
+                    <td style="width: 48%; vertical-align: top;">
+                        <div class="signature-zone subcontractor" style="border: 3px dashed #A0604F; padding: 20px; min-height: 100px; background-color: rgba(160, 96, 79, 0.05);">
+                            <p style="color: #A0604F; font-weight: bold; font-size: 12pt;">Pour le Sous-Traitant</p>
+                            <p style="color: #666; font-size: 10pt; font-style: italic;">Signature électronique</p>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="footer" style="background-color: #F5E6D8; padding: 15px 40px; font-size: 9pt; color: #666; border-top: 3px solid #A0604F; margin-top: 30px;">
+        <p style="text-align: center; margin: 5px 0;"><strong>{{ company.name }}</strong> | {{ company.street }}, {{ company.zip }} {{ company.city }}</p>
+        <p style="text-align: center; margin: 5px 0;">SIRET: {{ company.siret }} | TVA: {{ company.vat }}</p>
+    </div>
+</div>
+            ]]></field>
+            <field name="css_content"><![CDATA[
+.contract-document {
+    font-family: 'Roboto', 'Arial', sans-serif;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000000;
+}
+
+.header h1 {
+    margin: 0;
+    font-size: 28pt;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.lots-table tr:nth-child(even) {
+    background-color: #F5F5F5;
+}
+
+.lots-table tr:hover {
+    background-color: #F5E6D8;
+}
+
+.signature-zone {
+    min-height: 100px;
+}
+            ]]></field>
+        </record>
+
+        <!-- Contract signature zones -->
+        <record id="default_contract_signature_company" model="construction.signature.zone">
+            <field name="template_id" ref="default_contract_template"/>
+            <field name="zone_type">company</field>
+            <field name="label">Pour l'Entrepreneur Principal</field>
+            <field name="sublabel">Nom et signature</field>
+            <field name="position_x">10</field>
+            <field name="position_y">75</field>
+            <field name="width">200</field>
+            <field name="height">100</field>
+            <field name="page_number">-1</field>
+        </record>
+
+        <record id="default_contract_signature_subcontractor" model="construction.signature.zone">
+            <field name="template_id" ref="default_contract_template"/>
+            <field name="zone_type">subcontractor</field>
+            <field name="label">Pour le Sous-Traitant</field>
+            <field name="sublabel">Signature électronique</field>
+            <field name="position_x">55</field>
+            <field name="position_y">75</field>
+            <field name="width">200</field>
+            <field name="height">100</field>
+            <field name="page_number">-1</field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- DEFAULT INVOICE TEMPLATE                                   -->
+        <!-- ========================================================== -->
+        
+        <record id="default_invoice_template" model="construction.document.template">
+            <field name="name">Facture BLG</field>
+            <field name="code">BLG_INVOICE_DEFAULT</field>
+            <field name="template_type">invoice</field>
+            <field name="is_active">True</field>
+            <field name="is_default">True</field>
+            <field name="html_content"><![CDATA[
+<div class="invoice-document">
+    <div class="header" style="background-color: #A0604F; color: white; padding: 25px 40px;">
+        <h1 style="margin: 0; font-size: 28pt; text-transform: uppercase;">Facture</h1>
+        <p style="margin: 10px 0 0 0; font-size: 14pt;">N° {{ invoice.name }}</p>
+    </div>
+    
+    <div class="content" style="padding: 30px 40px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+            <div style="background-color: #F5E6D8; padding: 15px; border-left: 4px solid #A0604F; width: 45%;">
+                <p style="color: #A0604F; font-weight: bold; margin-bottom: 10px;">Émetteur:</p>
+                <p><strong>{{ company.name }}</strong></p>
+                <p>{{ company.street }}<br/>{{ company.zip }} {{ company.city }}</p>
+            </div>
+            <div style="background-color: #F5E6D8; padding: 15px; border-left: 4px solid #A0604F; width: 45%;">
+                <p style="color: #A0604F; font-weight: bold; margin-bottom: 10px;">Client:</p>
+                <p><strong>{{ partner.name }}</strong></p>
+                <p>{{ partner.street }}<br/>{{ partner.zip }} {{ partner.city }}</p>
+            </div>
+        </div>
+        
+        <div style="background-color: #F5E6D8; padding: 12px; border-left: 4px solid #A0604F; margin: 15px 0;">
+            <p><strong style="color: #A0604F;">Date de facture:</strong> {{ invoice.date }}</p>
+            <p><strong style="color: #A0604F;">Date d'échéance:</strong> {{ invoice.date_due }}</p>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead style="background-color: #A0604F; color: white;">
+                <tr>
+                    <th style="padding: 12px 10px; text-align: left;">Description</th>
+                    <th style="padding: 12px 10px; text-align: center;">Quantité</th>
+                    <th style="padding: 12px 10px; text-align: right;">Prix unitaire</th>
+                    <th style="padding: 12px 10px; text-align: right;">Montant HT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                <tr style="{% if loop.index % 2 == 0 %}background-color: #F5F5F5;{% endif %}">
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ line.name }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ line.quantity }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ line.price_unit }} €</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ line.price_subtotal }} €</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="background-color: #F5E6D8; border: 2px solid #A0604F; padding: 15px; margin: 20px 0; width: 50%; margin-left: auto;">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="padding: 5px;"><strong>Total HT:</strong></td>
+                    <td style="text-align: right; padding: 5px;">{{ amount_untaxed }} €</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px;"><strong>TVA:</strong></td>
+                    <td style="text-align: right; padding: 5px;">{{ amount_tax }} €</td>
+                </tr>
+                <tr style="border-top: 3px solid #A0604F; font-size: 14pt; font-weight: bold; color: #A0604F;">
+                    <td style="padding: 8px;"><strong>Total TTC:</strong></td>
+                    <td style="text-align: right; padding: 8px;"><strong>{{ amount_total }} €</strong></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="footer" style="background-color: #F5E6D8; padding: 15px 40px; font-size: 9pt; color: #666; border-top: 3px solid #A0604F;">
+        <p style="text-align: center; margin: 5px 0;"><strong>{{ company.name }}</strong> | {{ company.street }}, {{ company.zip }} {{ company.city }}</p>
+        <p style="text-align: center; margin: 5px 0;">SIRET: {{ company.siret }} | TVA: {{ company.vat }}</p>
+    </div>
+</div>
+            ]]></field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- DEFAULT QUOTE TEMPLATE                                     -->
+        <!-- ========================================================== -->
+        
+        <record id="default_quote_template" model="construction.document.template">
+            <field name="name">Devis BLG</field>
+            <field name="code">BLG_QUOTE_DEFAULT</field>
+            <field name="template_type">quote</field>
+            <field name="is_active">True</field>
+            <field name="is_default">True</field>
+            <field name="html_content"><![CDATA[
+<div class="quote-document">
+    <div class="header" style="background-color: #A0604F; color: white; padding: 25px 40px;">
+        <h1 style="margin: 0; font-size: 28pt; text-transform: uppercase;">Devis</h1>
+        <p style="margin: 10px 0 0 0; font-size: 14pt;">N° {{ quote.name }}</p>
+    </div>
+    
+    <div class="content" style="padding: 30px 40px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+            <div style="background-color: #F5E6D8; padding: 15px; border-left: 4px solid #A0604F; width: 45%;">
+                <p style="color: #A0604F; font-weight: bold; margin-bottom: 10px;">De:</p>
+                <p><strong>{{ company.name }}</strong></p>
+                <p>{{ company.street }}<br/>{{ company.zip }} {{ company.city }}</p>
+            </div>
+            <div style="background-color: #F5E6D8; padding: 15px; border-left: 4px solid #A0604F; width: 45%;">
+                <p style="color: #A0604F; font-weight: bold; margin-bottom: 10px;">Pour:</p>
+                <p><strong>{{ partner.name }}</strong></p>
+                <p>{{ partner.street }}<br/>{{ partner.zip }} {{ partner.city }}</p>
+            </div>
+        </div>
+        
+        <div style="background-color: #F5E6D8; padding: 12px; border-left: 4px solid #A0604F; margin: 15px 0;">
+            <p><strong style="color: #A0604F;">Date du devis:</strong> {{ quote.date }}</p>
+            <p><strong style="color: #A0604F;">Validité:</strong> {{ quote.validity_date }}</p>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead style="background-color: #A0604F; color: white;">
+                <tr>
+                    <th style="padding: 12px 10px; text-align: left;">Description</th>
+                    <th style="padding: 12px 10px; text-align: center;">Quantité</th>
+                    <th style="padding: 12px 10px; text-align: right;">Prix unitaire</th>
+                    <th style="padding: 12px 10px; text-align: right;">Montant HT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                <tr style="{% if loop.index % 2 == 0 %}background-color: #F5F5F5;{% endif %}">
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ line.name }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ line.quantity }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ line.price_unit }} €</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ line.price_subtotal }} €</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="background-color: #F5E6D8; border: 2px solid #A0604F; padding: 15px; margin: 20px 0; width: 50%; margin-left: auto;">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="padding: 5px;"><strong>Total HT:</strong></td>
+                    <td style="text-align: right; padding: 5px;">{{ amount_untaxed }} €</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px;"><strong>TVA:</strong></td>
+                    <td style="text-align: right; padding: 5px;">{{ amount_tax }} €</td>
+                </tr>
+                <tr style="border-top: 3px solid #A0604F; font-size: 14pt; font-weight: bold; color: #A0604F;">
+                    <td style="padding: 8px;"><strong>Total TTC:</strong></td>
+                    <td style="text-align: right; padding: 8px;"><strong>{{ amount_total }} €</strong></td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="signature-section" style="margin-top: 50px;">
+            <p style="margin-bottom: 20px;"><strong>Pour acceptation du devis</strong></p>
+            <div class="signature-zone" style="border: 3px dashed #A0604F; padding: 20px; min-height: 100px; background-color: rgba(160, 96, 79, 0.05);">
+                <p style="color: #A0604F; font-weight: bold;">Signature du client</p>
+                <p style="color: #666; font-size: 10pt; font-style: italic;">Date et signature</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="footer" style="background-color: #F5E6D8; padding: 15px 40px; font-size: 9pt; color: #666; border-top: 3px solid #A0604F;">
+        <p style="text-align: center; margin: 5px 0;"><strong>{{ company.name }}</strong> | {{ company.street }}, {{ company.zip }} {{ company.city }}</p>
+        <p style="text-align: center; margin: 5px 0;">SIRET: {{ company.siret }} | TVA: {{ company.vat }}</p>
+    </div>
+</div>
+            ]]></field>
+        </record>
+
+        <!-- Quote signature zone -->
+        <record id="default_quote_signature_client" model="construction.signature.zone">
+            <field name="template_id" ref="default_quote_template"/>
+            <field name="zone_type">subcontractor</field>
+            <field name="label">Signature du client</field>
+            <field name="sublabel">Date et signature</field>
+            <field name="position_x">30</field>
+            <field name="position_y">80</field>
+            <field name="width">250</field>
+            <field name="height">100</field>
+            <field name="page_number">-1</field>
+        </record>
+
+        <!-- ========================================================== -->
+        <!-- DEFAULT PURCHASE ORDER TEMPLATE                            -->
+        <!-- ========================================================== -->
+        
+        <record id="default_purchase_template" model="construction.document.template">
+            <field name="name">Bon de Commande BLG</field>
+            <field name="code">BLG_PURCHASE_DEFAULT</field>
+            <field name="template_type">purchase</field>
+            <field name="is_active">True</field>
+            <field name="is_default">True</field>
+            <field name="html_content"><![CDATA[
+<div class="purchase-document">
+    <div class="header" style="background-color: #A0604F; color: white; padding: 25px 40px;">
+        <h1 style="margin: 0; font-size: 28pt; text-transform: uppercase;">Bon de Commande</h1>
+        <p style="margin: 10px 0 0 0; font-size: 14pt;">N° {{ purchase.name }}</p>
+    </div>
+    
+    <div class="content" style="padding: 30px 40px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 30px;">
+            <div style="background-color: #F5E6D8; padding: 15px; border-left: 4px solid #A0604F; width: 45%;">
+                <p style="color: #A0604F; font-weight: bold; margin-bottom: 10px;">Acheteur:</p>
+                <p><strong>{{ company.name }}</strong></p>
+                <p>{{ company.street }}<br/>{{ company.zip }} {{ company.city }}</p>
+            </div>
+            <div style="background-color: #F5E6D8; padding: 15px; border-left: 4px solid #A0604F; width: 45%;">
+                <p style="color: #A0604F; font-weight: bold; margin-bottom: 10px;">Fournisseur:</p>
+                <p><strong>{{ partner.name }}</strong></p>
+                <p>{{ partner.street }}<br/>{{ partner.zip }} {{ partner.city }}</p>
+            </div>
+        </div>
+        
+        <div style="background-color: #F5E6D8; padding: 12px; border-left: 4px solid #A0604F; margin: 15px 0;">
+            <p><strong style="color: #A0604F;">Date de commande:</strong> {{ purchase.date_order }}</p>
+            <p><strong style="color: #A0604F;">Date de livraison prévue:</strong> {{ purchase.date_planned }}</p>
+        </div>
+        
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead style="background-color: #A0604F; color: white;">
+                <tr>
+                    <th style="padding: 12px 10px; text-align: left;">Description</th>
+                    <th style="padding: 12px 10px; text-align: center;">Quantité</th>
+                    <th style="padding: 12px 10px; text-align: right;">Prix unitaire</th>
+                    <th style="padding: 12px 10px; text-align: right;">Montant HT</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for line in lines %}
+                <tr style="{% if loop.index % 2 == 0 %}background-color: #F5F5F5;{% endif %}">
+                    <td style="padding: 10px; border: 1px solid #ddd;">{{ line.name }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">{{ line.quantity }}</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ line.price_unit }} €</td>
+                    <td style="padding: 10px; border: 1px solid #ddd; text-align: right;">{{ line.price_subtotal }} €</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div style="background-color: #F5E6D8; border: 2px solid #A0604F; padding: 15px; margin: 20px 0; width: 50%; margin-left: auto;">
+            <table style="width: 100%;">
+                <tr>
+                    <td style="padding: 5px;"><strong>Total HT:</strong></td>
+                    <td style="text-align: right; padding: 5px;">{{ amount_untaxed }} €</td>
+                </tr>
+                <tr>
+                    <td style="padding: 5px;"><strong>TVA:</strong></td>
+                    <td style="text-align: right; padding: 5px;">{{ amount_tax }} €</td>
+                </tr>
+                <tr style="border-top: 3px solid #A0604F; font-size: 14pt; font-weight: bold; color: #A0604F;">
+                    <td style="padding: 8px;"><strong>Total TTC:</strong></td>
+                    <td style="text-align: right; padding: 8px;"><strong>{{ amount_total }} €</strong></td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    
+    <div class="footer" style="background-color: #F5E6D8; padding: 15px 40px; font-size: 9pt; color: #666; border-top: 3px solid #A0604F;">
+        <p style="text-align: center; margin: 5px 0;"><strong>{{ company.name }}</strong> | {{ company.street }}, {{ company.zip }} {{ company.city }}</p>
+        <p style="text-align: center; margin: 5px 0;">SIRET: {{ company.siret }} | TVA: {{ company.vat }}</p>
+    </div>
+</div>
+            ]]></field>
+        </record>
+
+    </data>
+</odoo>

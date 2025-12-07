@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+
+        <!-- ========================================================== -->
+        <!-- CRON: Expiring Documents Alert                             -->
+        <!-- ========================================================== -->
+
+        <record id="ir_cron_expiring_documents_alert" model="ir.cron">
+            <field name="name">Construction Contract: Alert Expiring Subcontractor Documents</field>
+            <field name="model_id" ref="model_construction_contract"/>
+            <field name="state">code</field>
+            <field name="code">model._cron_alert_expiring_documents()</field>
+            <field name="interval_number">1</field>
+            <field name="interval_type">weeks</field>
+            <field name="numbercall">-1</field>
+            <field name="active" eval="True"/>
+            <field name="doall" eval="False"/>
+            <field name="priority">10</field>
+        </record>
+
+    </data>
+</odoo>

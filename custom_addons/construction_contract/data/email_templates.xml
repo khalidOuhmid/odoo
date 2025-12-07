@@ -1,218 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data noupdate="1">
-
-        <!-- ========================================================== -->
-        <!-- EMAIL: Contract Invitation                                 -->
-        <!-- ========================================================== -->
-
-        <record id="mail_template_contract_invitation" model="mail.template">
-            <field name="name">Contract: Invitation to Sign</field>
+        <record id="email_template_contract_signature" model="mail.template">
+            <field name="name">Contrat : Demande de Signature</field>
             <field name="model_id" ref="model_construction_contract"/>
-            <field name="subject">Contract to Sign - ${object.chantier_id.name}</field>
-            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
-            <field name="email_to">${object.subcontractor_id.email|safe}</field>
+            <field name="subject">Signature de votre contrat - {{ object.chantier_id.name }}</field>
+            <field name="email_from">{{ (object.create_uid.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
             <field name="body_html" type="html">
-<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background-color: #0056b3; padding: 20px; text-align: center;">
-        <h1 style="color: white; margin: 0;">New Contract to Sign</h1>
-    </div>
-
-    <div style="padding: 30px; background-color: #f9f9f9;">
-        <p style="font-size: 16px;">Hello <strong>${object.subcontractor_id.name}</strong>,</p>
-
-        <p>We are pleased to send you a new subcontractor contract for the following construction site:</p>
-
-        <div style="background-color: white; padding: 20px; border-left: 4px solid #0056b3; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #0056b3;">Contract Details</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Contract Reference:</td>
-                    <td style="padding: 8px 0;">${object.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Construction Site:</td>
-                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Client:</td>
-                    <td style="padding: 8px 0;">${object.chantier_id.client.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Total Amount:</td>
-                    <td style="padding: 8px 0; color: #0056b3; font-weight: bold; font-size: 18px;">
-                        ${'{:,.2f}'.format(object.total_amount_ttc)} ${object.currency_id.symbol}
-                    </td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Work Period:</td>
-                    <td style="padding: 8px 0;">
-                        ${format_date(object.start_date)} - ${format_date(object.end_date)}
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <p style="font-size: 16px; margin: 30px 0;">
-            <strong>Please review and sign this contract before ${format_date(object.token_expiry_date)}.</strong>
-        </p>
-
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="${object.portal_url or '#'}"
-               style="display: inline-block; padding: 15px 40px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
-                📄 Review and Sign Contract
-            </a>
-        </div>
-
-        <div style="background-color: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0;">
-            <p style="margin: 0; color: #856404;">
-                ⚠️ <strong>Important:</strong> You will need to validate each page of the contract before being able to sign it. This ensures you have read the entire document.
-            </p>
-        </div>
-
-        <p style="font-size: 14px; color: #666; margin-top: 30px;">
-            If you have any questions, please contact us.<br/>
-            Best regards,<br/>
-            <strong>${user.name}</strong>
-        </p>
-    </div>
-
-    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
-        <p style="margin: 0;">This is an automated message. Please do not reply to this email.</p>
-        % if object.company_id.name:
-        <p style="margin: 5px 0 0 0;">${object.company_id.name}</p>
-        % endif
-    </div>
-</div>
+                <div style="margin: 0px; padding: 0px;">
+                    <p style="margin: 0px; padding: 0px; font-size: 13px;">
+                        Bonjour <t t-out="object.partner_id.name"/>,
+                        <br/><br/>
+                        Veuillez trouver ci-joint votre contrat de sous-traitance pour le chantier <strong><t t-out="object.chantier_id.name"/></strong>.
+                        <br/><br/>
+                        Merci de bien vouloir le signer électroniquement via notre portail en cliquant sur le bouton ci-dessous :
+                        <br/><br/>
+                        <div style="text-align: center;">
+                            <a t-att-href="object.get_base_url() + '/my/contracts/' + str(object.id) + '/sign'" 
+                               style="background-color: #875A7B; padding: 10px 20px; text-decoration: none; color: #fff; border-radius: 5px; font-size: 16px;">
+                                Signer le Contrat
+                            </a>
+                        </div>
+                        <br/><br/>
+                        Cordialement,
+                        <br/>
+                        L'équipe Travaux.
+                    </p>
+                </div>
             </field>
         </record>
-
-        <!-- ========================================================== -->
-        <!-- EMAIL: Reminder                                            -->
-        <!-- ========================================================== -->
-
-        <record id="mail_template_contract_reminder" model="mail.template">
-            <field name="name">Contract: Signature Reminder</field>
-            <field name="model_id" ref="model_construction_contract"/>
-            <field name="subject">Reminder: Contract ${object.name} Awaiting Signature</field>
-            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
-            <field name="email_to">${object.subcontractor_id.email|safe}</field>
-            <field name="body_html" type="html">
-<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background-color: #ffc107; padding: 20px; text-align: center;">
-        <h1 style="color: #333; margin: 0;">⏰ Contract Signature Reminder</h1>
-    </div>
-
-    <div style="padding: 30px; background-color: #f9f9f9;">
-        <p style="font-size: 16px;">Hello <strong>${object.subcontractor_id.name}</strong>,</p>
-
-        <p>This is a friendly reminder that the following contract is still awaiting your signature:</p>
-
-        <div style="background-color: white; padding: 20px; border-left: 4px solid #ffc107; margin: 20px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Contract Reference:</td>
-                    <td style="padding: 8px 0;">${object.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Construction Site:</td>
-                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Expiry Date:</td>
-                    <td style="padding: 8px 0; color: #dc3545; font-weight: bold;">
-                        ${format_date(object.token_expiry_date)}
-                    </td>
-                </tr>
-            </table>
-        </div>
-
-        <div style="text-align: center; margin: 30px 0;">
-            <a href="${object.portal_url or '#'}"
-               style="display: inline-block; padding: 15px 40px; background-color: #28a745; color: white; text-decoration: none; border-radius: 5px; font-size: 18px; font-weight: bold;">
-                📄 Sign Now
-            </a>
-        </div>
-
-        <p style="font-size: 14px; color: #666; margin-top: 30px;">
-            Best regards,<br/>
-            <strong>${user.name}</strong>
-        </p>
-    </div>
-
-    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
-        <p style="margin: 0;">This is an automated reminder.</p>
-    </div>
-</div>
-            </field>
-        </record>
-
-        <!-- ========================================================== -->
-        <!-- EMAIL: Contract Signed Confirmation                        -->
-        <!-- ========================================================== -->
-
-        <record id="mail_template_contract_signed" model="mail.template">
-            <field name="name">Contract: Signature Confirmation</field>
-            <field name="model_id" ref="model_construction_contract"/>
-            <field name="subject">✅ Contract ${object.name} Successfully Signed</field>
-            <field name="email_from">${(object.company_id.email or user.email)|safe}</field>
-            <field name="email_to">${object.subcontractor_id.email|safe}</field>
-            <field name="body_html" type="html">
-<div style="font-family: 'Arial', sans-serif; max-width: 600px; margin: 0 auto;">
-    <div style="background-color: #28a745; padding: 20px; text-align: center;">
-        <h1 style="color: white; margin: 0;">✅ Contract Successfully Signed</h1>
-    </div>
-
-    <div style="padding: 30px; background-color: #f9f9f9;">
-        <p style="font-size: 16px;">Hello <strong>${object.subcontractor_id.name}</strong>,</p>
-
-        <p>Thank you for signing the contract. Your electronic signature has been successfully recorded.</p>
-
-        <div style="background-color: white; padding: 20px; border-left: 4px solid #28a745; margin: 20px 0;">
-            <h3 style="margin-top: 0; color: #28a745;">Signed Contract Details</h3>
-            <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold; width: 40%;">Contract Reference:</td>
-                    <td style="padding: 8px 0;">${object.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Construction Site:</td>
-                    <td style="padding: 8px 0;">${object.chantier_id.name}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Signature Date:</td>
-                    <td style="padding: 8px 0;">${format_datetime(object.signature_date)}</td>
-                </tr>
-                <tr>
-                    <td style="padding: 8px 0; font-weight: bold;">Signed By:</td>
-                    <td style="padding: 8px 0;">${object.signature_id.signer_name if object.signature_id else 'N/A'}</td>
-                </tr>
-            </table>
-        </div>
-
-        <p style="font-size: 16px; margin: 30px 0;">
-            <strong>What happens next?</strong>
-        </p>
-
-        <ul style="font-size: 14px; line-height: 1.8;">
-            <li>You will receive the signed contract PDF by email</li>
-            <li>A certificate of completion has been generated for legal proof</li>
-            <li>Our team will contact you to coordinate the work start date</li>
-        </ul>
-
-        <p style="font-size: 14px; color: #666; margin-top: 30px;">
-            If you have any questions, please don't hesitate to contact us.<br/>
-            Best regards,<br/>
-            <strong>${user.name}</strong>
-        </p>
-    </div>
-
-    <div style="background-color: #333; color: white; padding: 15px; text-align: center; font-size: 12px;">
-        <p style="margin: 0;">${object.company_id.name if object.company_id else ''}</p>
-    </div>
-</div>
-            </field>
-        </record>
-
     </data>
 </odoo>

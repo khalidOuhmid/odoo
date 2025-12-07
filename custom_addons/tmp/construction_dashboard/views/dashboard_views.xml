@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Dashboard Tree View -->
+    <record id="view_dashboard_tree" model="ir.ui.view">
+        <field name="name">construction.dashboard.tree</field>
+        <field name="model">construction.dashboard</field>
+        <field name="arch" type="xml">
+            <tree string="Dashboards">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="role"/>
+                <field name="is_default"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Dashboard Form View -->
+    <record id="view_dashboard_form" model="ir.ui.view">
+        <field name="name">construction.dashboard.form</field>
+        <field name="model">construction.dashboard</field>
+        <field name="arch" type="xml">
+            <form string="Dashboard">
+                <sheet>
+                    <widget name="web_ribbon" title="Par défaut" bg_color="text-bg-primary"
+                            invisible="not is_default"/>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Nom du dashboard"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="role"/>
+                            <field name="is_default"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                    <group string="Utilisateurs assignés">
+                        <field name="user_ids" widget="many2many_tags" nolabel="1"/>
+                    </group>
+                    <notebook>
+                        <page string="Widgets" name="widgets">
+                            <field name="widget_ids">
+                                <tree editable="bottom">
+                                    <field name="name"/>
+                                    <field name="widget_type"/>
+                                    <field name="title"/>
+                                    <field name="model_name"/>
+                                    <field name="color"/>
+                                    <field name="position_x"/>
+                                    <field name="position_y"/>
+                                    <field name="width"/>
+                                    <field name="height"/>
+                                    <field name="refresh_interval"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Dashboard Widget Form View -->
+    <record id="view_dashboard_widget_form" model="ir.ui.view">
+        <field name="name">construction.dashboard.widget.form</field>
+        <field name="model">construction.dashboard.widget</field>
+        <field name="arch" type="xml">
+            <form string="Widget">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="widget_type"/>
+                            <field name="title"/>
+                            <field name="icon"/>
+                            <field name="color"/>
+                        </group>
+                        <group>
+                            <field name="model_name"/>
+                            <field name="domain"/>
+                            <field name="measure_field"/>
+                            <field name="group_by"/>
+                        </group>
+                    </group>
+                    <group string="Position dans la grille">
+                        <group>
+                            <field name="position_x"/>
+                            <field name="position_y"/>
+                        </group>
+                        <group>
+                            <field name="width"/>
+                            <field name="height"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="refresh_interval"/>
+                        <field name="action_config" widget="ace" options="{'mode': 'json'}"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_dashboard_search" model="ir.ui.view">
+        <field name="name">construction.dashboard.search</field>
+        <field name="model">construction.dashboard</field>
+        <field name="arch" type="xml">
+            <search string="Dashboards">
+                <field name="name"/>
+                <filter name="filter_default" string="Par défaut" domain="[('is_default', '=', True)]"/>
+                <separator/>
+                <filter name="filter_gestionnaire" string="Gestionnaire" 
+                        domain="[('role', '=', 'gestionnaire')]"/>
+                <filter name="filter_administratif" string="Administratif" 
+                        domain="[('role', '=', 'administratif')]"/>
+                <filter name="filter_directeur" string="Directeur" 
+                        domain="[('role', '=', 'directeur')]"/>
+                <group expand="0" string="Grouper par">
+                    <filter name="group_role" string="Rôle" context="{'group_by': 'role'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Actions -->
+    <record id="action_dashboards" model="ir.actions.act_window">
+        <field name="name">Configuration Dashboards</field>
+        <field name="res_model">construction.dashboard</field>
+        <field name="view_mode">tree,form</field>
+        <field name="search_view_id" ref="view_dashboard_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configurer les dashboards par rôle
+            </p>
+            <p>
+                Créez des dashboards personnalisés pour chaque rôle utilisateur
+                avec des KPIs, alertes et actions rapides adaptés.
+            </p>
+        </field>
+    </record>
+
+    <!-- Client Action for Dashboard Display -->
+    <record id="action_btpvision_dashboard" model="ir.actions.client">
+        <field name="name">BTPVision Dashboard</field>
+        <field name="tag">construction_dashboard</field>
+    </record>
+</odoo>

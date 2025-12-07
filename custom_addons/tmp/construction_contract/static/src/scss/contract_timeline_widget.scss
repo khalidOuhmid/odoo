@@ -1,0 +1,253 @@
+/**
+ * Contract Timeline Widget Styles
+ * Visual timeline for contract activities with BLG Groupe branding
+ */
+
+// BLG Groupe Colors
+$blg-terre-cuite: #A0604F;
+$blg-beige-clair: #F5E6D8;
+
+// Status Colors
+$color-primary: #007bff;
+$color-success: #28A745;
+$color-warning: #FFC107;
+$color-danger: #DC3545;
+$color-info: #17A2B8;
+$color-muted: #6c757d;
+
+.contract-timeline-widget {
+    padding: 1rem;
+    background: #fff;
+    border-radius: 8px;
+
+    .timeline-loading,
+    .timeline-empty {
+        padding: 2rem;
+        
+        i {
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+    }
+
+    .timeline-header {
+        border-bottom: 1px solid #e9ecef;
+        padding-bottom: 0.75rem;
+        margin-bottom: 1rem;
+
+        h5 {
+            color: $blg-terre-cuite;
+            font-weight: 600;
+        }
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 2rem;
+
+        // Vertical line
+        &::before {
+            content: '';
+            position: absolute;
+            left: 0.75rem;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(to bottom, $blg-terre-cuite, $blg-beige-clair);
+        }
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+        padding-left: 1rem;
+
+        &:last-child {
+            padding-bottom: 0;
+        }
+
+        .timeline-icon {
+            position: absolute;
+            left: -1.75rem;
+            top: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #fff;
+            border: 2px solid $color-muted;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+
+            i {
+                font-size: 12px;
+                color: $color-muted;
+            }
+        }
+
+        .timeline-content {
+            background: #f8f9fa;
+            border-radius: 6px;
+            padding: 0.75rem 1rem;
+            border-left: 3px solid $color-muted;
+            transition: all 0.2s ease;
+
+            &:hover {
+                background: #fff;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+        }
+
+        .timeline-header-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .timeline-type {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .timeline-date {
+            font-size: 0.8rem;
+            color: $color-muted;
+        }
+
+        .timeline-time {
+            color: lighten($color-muted, 10%);
+        }
+
+        .timeline-description {
+            font-size: 0.85rem;
+            color: #495057;
+            margin: 0.5rem 0;
+            line-height: 1.4;
+        }
+
+        .timeline-meta {
+            font-size: 0.75rem;
+            color: $color-muted;
+            margin-top: 0.5rem;
+
+            .timeline-user,
+            .timeline-ip {
+                display: inline-flex;
+                align-items: center;
+            }
+        }
+
+        // Color variants
+        &.timeline-primary {
+            .timeline-icon {
+                border-color: $color-primary;
+                i { color: $color-primary; }
+            }
+            .timeline-content {
+                border-left-color: $color-primary;
+            }
+            .timeline-type {
+                color: $color-primary;
+            }
+        }
+
+        &.timeline-success {
+            .timeline-icon {
+                border-color: $color-success;
+                background: lighten($color-success, 45%);
+                i { color: $color-success; }
+            }
+            .timeline-content {
+                border-left-color: $color-success;
+                background: lighten($color-success, 48%);
+            }
+            .timeline-type {
+                color: $color-success;
+            }
+        }
+
+        &.timeline-warning {
+            .timeline-icon {
+                border-color: $color-warning;
+                i { color: darken($color-warning, 15%); }
+            }
+            .timeline-content {
+                border-left-color: $color-warning;
+            }
+            .timeline-type {
+                color: darken($color-warning, 15%);
+            }
+        }
+
+        &.timeline-danger {
+            .timeline-icon {
+                border-color: $color-danger;
+                i { color: $color-danger; }
+            }
+            .timeline-content {
+                border-left-color: $color-danger;
+            }
+            .timeline-type {
+                color: $color-danger;
+            }
+        }
+
+        &.timeline-info {
+            .timeline-icon {
+                border-color: $color-info;
+                i { color: $color-info; }
+            }
+            .timeline-content {
+                border-left-color: $color-info;
+            }
+            .timeline-type {
+                color: $color-info;
+            }
+        }
+
+        &.timeline-muted {
+            .timeline-icon {
+                border-color: lighten($color-muted, 20%);
+                i { color: $color-muted; }
+            }
+            .timeline-content {
+                border-left-color: lighten($color-muted, 20%);
+            }
+            .timeline-type {
+                color: $color-muted;
+            }
+        }
+    }
+
+    .timeline-toggle {
+        .btn-link {
+            color: $blg-terre-cuite;
+            text-decoration: none;
+
+            &:hover {
+                color: darken($blg-terre-cuite, 10%);
+                text-decoration: underline;
+            }
+        }
+    }
+}
+
+// Responsive adjustments
+@media (max-width: 576px) {
+    .contract-timeline-widget {
+        .timeline-item {
+            .timeline-header-row {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .timeline-date {
+                margin-top: 0.25rem;
+            }
+        }
+    }
+}

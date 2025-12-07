@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="construction_dashboard.QuickActions">
+        <div class="widget-quick-actions card h-100">
+            <div class="card-header bg-blg-terre-cuite text-white">
+                <i t-attf-class="{{iconClass}} me-2"/>
+                <span t-esc="title"/>
+            </div>
+            <div class="card-body">
+                <div t-if="actions.length === 0" class="text-center text-muted">
+                    <p>Aucune action configurée</p>
+                </div>
+                <div t-else="" class="d-grid gap-2">
+                    <t t-foreach="actions" t-as="action" t-key="action_index">
+                        <button t-attf-class="btn {{getActionClass(action)}} d-flex align-items-center justify-content-start"
+                                t-on-click="() => this.onActionClick(action)">
+                            <i t-attf-class="{{getActionIcon(action)}} me-2"/>
+                            <span t-esc="action.label"/>
+                        </button>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

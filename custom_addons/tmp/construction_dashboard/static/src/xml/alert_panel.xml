@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="construction_dashboard.AlertPanel">
+        <div class="widget-alert card h-100">
+            <div class="card-header bg-blg-terre-cuite text-white">
+                <i t-attf-class="{{iconClass}} me-2"/>
+                <span t-esc="title"/>
+                <button t-if="props.onRefresh" 
+                        class="btn btn-sm btn-link text-white float-end p-0" 
+                        t-on-click="onRefresh">
+                    <i class="fa fa-refresh"/>
+                </button>
+            </div>
+            <div class="card-body p-0">
+                <div t-if="alerts.length === 0" class="text-center text-muted p-4">
+                    <i class="fa fa-check-circle fa-3x mb-2"/>
+                    <p class="mb-0">Aucune alerte</p>
+                </div>
+                <div t-else="" class="list-group list-group-flush">
+                    <t t-foreach="alerts" t-as="alert" t-key="alert_index">
+                        <div t-attf-class="list-group-item {{getPriorityClass(alert.priority)}}">
+                            <div class="d-flex align-items-start">
+                                <i t-attf-class="fa {{getPriorityIcon(alert.priority)}} me-2 mt-1"/>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold" t-if="alert.title" t-esc="alert.title"/>
+                                    <div t-esc="alert.message"/>
+                                    <small t-if="alert.date" class="text-muted">
+                                        <t t-esc="alert.date"/>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

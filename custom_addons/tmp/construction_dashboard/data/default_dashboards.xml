@@ -1,0 +1,312 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Dashboard Gestionnaire de Chantier -->
+        <record id="dashboard_gestionnaire" model="construction.dashboard">
+            <field name="name">Dashboard Gestionnaire</field>
+            <field name="role">gestionnaire</field>
+            <field name="is_default">True</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- Widgets for Gestionnaire -->
+        <record id="widget_gestionnaire_chantiers_actifs" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_gestionnaire"/>
+            <field name="name">Chantiers actifs</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Chantiers actifs</field>
+            <field name="icon">fa-building</field>
+            <field name="color">primary</field>
+            <field name="model_name">construction.chantier</field>
+            <field name="domain">[('state', '=', 'in_progress')]</field>
+            <field name="position_x">0</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+        </record>
+
+        <record id="widget_gestionnaire_contrats_attente" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_gestionnaire"/>
+            <field name="name">Contrats en attente</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Contrats en attente</field>
+            <field name="icon">fa-file-signature</field>
+            <field name="color">warning</field>
+            <field name="model_name">construction.contract</field>
+            <field name="domain">[('state', '=', 'sent')]</field>
+            <field name="position_x">3</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+        </record>
+
+        <record id="widget_gestionnaire_alertes" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_gestionnaire"/>
+            <field name="name">Alertes</field>
+            <field name="widget_type">alert</field>
+            <field name="title">Alertes critiques</field>
+            <field name="icon">fa-exclamation-triangle</field>
+            <field name="color">danger</field>
+            <field name="position_x">6</field>
+            <field name="position_y">0</field>
+            <field name="width">6</field>
+            <field name="height">4</field>
+        </record>
+
+        <record id="widget_gestionnaire_actions" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_gestionnaire"/>
+            <field name="name">Actions rapides</field>
+            <field name="widget_type">quick_action</field>
+            <field name="title">Actions rapides</field>
+            <field name="icon">fa-bolt</field>
+            <field name="position_x">0</field>
+            <field name="position_y">2</field>
+            <field name="width">6</field>
+            <field name="height">2</field>
+            <field name="action_config">[
+                {"label": "Nouveau contrat", "icon": "fa-plus", "color": "primary"},
+                {"label": "Mes chantiers", "icon": "fa-building", "color": "info"},
+                {"label": "Planning", "icon": "fa-calendar", "color": "success"},
+                {"label": "Visites", "icon": "fa-car", "color": "warning"}
+            ]</field>
+            <field name="refresh_interval">0</field>
+        </record>
+
+        <record id="widget_gestionnaire_lots_attente" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_gestionnaire"/>
+            <field name="name">Lots en attente</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Lots en attente</field>
+            <field name="icon">fa-tasks</field>
+            <field name="color">info</field>
+            <field name="model_name">construction.lot</field>
+            <field name="domain">[('state', '=', 'pending')]</field>
+            <field name="position_x">0</field>
+            <field name="position_y">4</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+            <field name="refresh_interval">120</field>
+        </record>
+
+        <!-- Dashboard Responsable Administratif -->
+        <record id="dashboard_administratif" model="construction.dashboard">
+            <field name="name">Dashboard Administratif</field>
+            <field name="role">administratif</field>
+            <field name="is_default">True</field>
+            <field name="sequence">20</field>
+        </record>
+
+        <!-- Widgets for Administratif -->
+        <record id="widget_admin_contrats_attente" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_administratif"/>
+            <field name="name">Contrats en attente signature</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">En attente signature</field>
+            <field name="icon">fa-hourglass-half</field>
+            <field name="color">warning</field>
+            <field name="model_name">construction.contract</field>
+            <field name="domain">[('state', 'in', ['sent', 'in_progress'])]</field>
+            <field name="position_x">0</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+        </record>
+
+        <record id="widget_admin_contrats_signes" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_administratif"/>
+            <field name="name">Contrats signés ce mois</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Signés ce mois</field>
+            <field name="icon">fa-check-circle</field>
+            <field name="color">success</field>
+            <field name="model_name">construction.contract</field>
+            <field name="domain">[('state', '=', 'signed')]</field>
+            <field name="position_x">3</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+        </record>
+
+        <record id="widget_admin_documents_expirants" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_administratif"/>
+            <field name="name">Documents expirants</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Documents expirants (30j)</field>
+            <field name="icon">fa-exclamation-circle</field>
+            <field name="color">danger</field>
+            <field name="position_x">6</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+        </record>
+
+        <record id="widget_admin_templates" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_administratif"/>
+            <field name="name">Templates actifs</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Templates actifs</field>
+            <field name="icon">fa-file-alt</field>
+            <field name="color">info</field>
+            <field name="model_name">construction.document.template</field>
+            <field name="domain">[('is_active', '=', True)]</field>
+            <field name="position_x">9</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+            <field name="refresh_interval">0</field>
+        </record>
+
+        <record id="widget_admin_actions" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_administratif"/>
+            <field name="name">Actions rapides</field>
+            <field name="widget_type">quick_action</field>
+            <field name="title">Actions administratives</field>
+            <field name="icon">fa-cogs</field>
+            <field name="position_x">0</field>
+            <field name="position_y">2</field>
+            <field name="width">6</field>
+            <field name="height">2</field>
+            <field name="action_config">[
+                {"label": "Gérer templates", "icon": "fa-file-alt", "color": "primary"},
+                {"label": "Conformité", "icon": "fa-shield-alt", "color": "success"},
+                {"label": "Contrats", "icon": "fa-file-contract", "color": "info"},
+                {"label": "Sous-traitants", "icon": "fa-users", "color": "warning"}
+            ]</field>
+            <field name="refresh_interval">0</field>
+        </record>
+
+        <record id="widget_admin_conformite" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_administratif"/>
+            <field name="name">Conformité sous-traitants</field>
+            <field name="widget_type">alert</field>
+            <field name="title">Alertes conformité</field>
+            <field name="icon">fa-shield-alt</field>
+            <field name="color">warning</field>
+            <field name="position_x">6</field>
+            <field name="position_y">2</field>
+            <field name="width">6</field>
+            <field name="height">4</field>
+            <field name="refresh_interval">300</field>
+        </record>
+
+        <!-- Dashboard Directeur de Travaux -->
+        <record id="dashboard_directeur" model="construction.dashboard">
+            <field name="name">Dashboard Directeur</field>
+            <field name="role">directeur</field>
+            <field name="is_default">True</field>
+            <field name="sequence">30</field>
+        </record>
+
+        <!-- Widgets for Directeur -->
+        <record id="widget_directeur_chantiers_total" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_directeur"/>
+            <field name="name">Total chantiers</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Total chantiers</field>
+            <field name="icon">fa-city</field>
+            <field name="color">primary</field>
+            <field name="model_name">construction.chantier</field>
+            <field name="domain">[]</field>
+            <field name="position_x">0</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+        </record>
+
+        <record id="widget_directeur_chantiers_actifs" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_directeur"/>
+            <field name="name">Chantiers en cours</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">En cours</field>
+            <field name="icon">fa-hard-hat</field>
+            <field name="color">success</field>
+            <field name="model_name">construction.chantier</field>
+            <field name="domain">[('state', '=', 'in_progress')]</field>
+            <field name="position_x">3</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+        </record>
+
+        <record id="widget_directeur_contrats_total" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_directeur"/>
+            <field name="name">Contrats actifs</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Contrats actifs</field>
+            <field name="icon">fa-file-contract</field>
+            <field name="color">info</field>
+            <field name="model_name">construction.contract</field>
+            <field name="domain">[('state', 'not in', ['cancelled', 'draft'])]</field>
+            <field name="position_x">6</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+        </record>
+
+        <record id="widget_directeur_alertes" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_directeur"/>
+            <field name="name">Alertes globales</field>
+            <field name="widget_type">alert</field>
+            <field name="title">Alertes globales</field>
+            <field name="icon">fa-bell</field>
+            <field name="color">warning</field>
+            <field name="position_x">9</field>
+            <field name="position_y">0</field>
+            <field name="width">3</field>
+            <field name="height">4</field>
+            <field name="refresh_interval">180</field>
+        </record>
+
+        <record id="widget_directeur_budget" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_directeur"/>
+            <field name="name">Budget global</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Budget total engagé</field>
+            <field name="icon">fa-euro-sign</field>
+            <field name="color">success</field>
+            <field name="model_name">construction.contract</field>
+            <field name="domain">[('state', 'in', ['signed', 'in_progress'])]</field>
+            <field name="measure_field">total_amount</field>
+            <field name="position_x">0</field>
+            <field name="position_y">2</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+            <field name="refresh_interval">300</field>
+        </record>
+
+        <record id="widget_directeur_actions" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_directeur"/>
+            <field name="name">Actions rapides</field>
+            <field name="widget_type">quick_action</field>
+            <field name="title">Actions direction</field>
+            <field name="icon">fa-briefcase</field>
+            <field name="position_x">3</field>
+            <field name="position_y">2</field>
+            <field name="width">6</field>
+            <field name="height">2</field>
+            <field name="action_config">[
+                {"label": "Vue d'ensemble", "icon": "fa-chart-line", "color": "primary"},
+                {"label": "Rentabilité", "icon": "fa-chart-pie", "color": "success"},
+                {"label": "Ressources", "icon": "fa-users-cog", "color": "info"},
+                {"label": "Planning global", "icon": "fa-calendar-alt", "color": "warning"}
+            ]</field>
+            <field name="refresh_interval">0</field>
+        </record>
+
+        <record id="widget_directeur_sous_traitants" model="construction.dashboard.widget">
+            <field name="dashboard_id" ref="dashboard_directeur"/>
+            <field name="name">Sous-traitants actifs</field>
+            <field name="widget_type">kpi</field>
+            <field name="title">Sous-traitants actifs</field>
+            <field name="icon">fa-handshake</field>
+            <field name="color">info</field>
+            <field name="model_name">res.partner</field>
+            <field name="domain">[('is_subcontractor', '=', True), ('active', '=', True)]</field>
+            <field name="position_x">9</field>
+            <field name="position_y">4</field>
+            <field name="width">3</field>
+            <field name="height">2</field>
+            <field name="refresh_interval">0</field>
+        </record>
+    </data>
+</odoo>

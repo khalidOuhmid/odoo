@@ -1,0 +1,380 @@
+// =============================================================================
+// BTPVision Theme - Global Styles
+// =============================================================================
+// Styles globaux appliquant la charte graphique BLG Groupe
+// =============================================================================
+
+@import 'variables';
+
+// -----------------------------------------------------------------------------
+// Responsive Mixins
+// -----------------------------------------------------------------------------
+
+@mixin mobile {
+    @media (max-width: #{$breakpoint-tablet - 1px}) {
+        @content;
+    }
+}
+
+@mixin tablet {
+    @media (min-width: $breakpoint-tablet) and (max-width: #{$breakpoint-desktop - 1px}) {
+        @content;
+    }
+}
+
+@mixin desktop {
+    @media (min-width: $breakpoint-desktop) {
+        @content;
+    }
+}
+
+@mixin wide {
+    @media (min-width: $breakpoint-wide) {
+        @content;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Base Styles
+// -----------------------------------------------------------------------------
+
+.o_web_client {
+    font-family: $font-family-base;
+    font-size: $font-size-base;
+    line-height: $line-height-base;
+}
+
+// -----------------------------------------------------------------------------
+// BLG Color Utilities
+// -----------------------------------------------------------------------------
+
+// Background colors
+.bg-blg-terre-cuite {
+    background-color: $blg-terre-cuite !important;
+}
+
+.bg-blg-beige {
+    background-color: $blg-beige-clair !important;
+}
+
+.bg-blg-gris {
+    background-color: $blg-gris-clair !important;
+}
+
+// Text colors
+.text-blg-terre-cuite {
+    color: $blg-terre-cuite !important;
+}
+
+.text-blg-beige {
+    color: $blg-beige-clair !important;
+}
+
+// Border colors
+.border-blg-terre-cuite {
+    border-color: $blg-terre-cuite !important;
+}
+
+// -----------------------------------------------------------------------------
+// Button Overrides - BLG Style
+// -----------------------------------------------------------------------------
+
+.btn-blg-primary {
+    background-color: $blg-terre-cuite;
+    border-color: $blg-terre-cuite;
+    color: $blg-blanc;
+    
+    &:hover,
+    &:focus {
+        background-color: $blg-terre-cuite-dark;
+        border-color: $blg-terre-cuite-dark;
+        color: $blg-blanc;
+    }
+    
+    &:active {
+        background-color: darken($blg-terre-cuite, 15%);
+    }
+}
+
+.btn-blg-secondary {
+    background-color: $blg-beige-clair;
+    border-color: $blg-beige-dark;
+    color: $blg-terre-cuite;
+    
+    &:hover,
+    &:focus {
+        background-color: $blg-beige-dark;
+        color: $blg-terre-cuite-dark;
+    }
+}
+
+.btn-outline-blg {
+    background-color: transparent;
+    border-color: $blg-terre-cuite;
+    color: $blg-terre-cuite;
+    
+    &:hover,
+    &:focus {
+        background-color: $blg-terre-cuite;
+        color: $blg-blanc;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Card Styles - BLG Theme
+// -----------------------------------------------------------------------------
+
+.card-blg {
+    border: none;
+    border-radius: $card-border-radius;
+    box-shadow: $card-shadow;
+    overflow: hidden;
+    
+    .card-header {
+        background-color: $blg-terre-cuite;
+        color: $blg-blanc;
+        border-bottom: none;
+        padding: $spacing-md;
+        font-weight: $font-weight-semibold;
+    }
+    
+    .card-body {
+        padding: $card-padding;
+    }
+    
+    .card-footer {
+        background-color: $blg-beige-clair;
+        border-top: 1px solid $blg-beige-dark;
+        padding: $spacing-md;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Table Styles - BLG Theme
+// -----------------------------------------------------------------------------
+
+.table-blg {
+    width: 100%;
+    border-collapse: collapse;
+    
+    thead {
+        th {
+            background-color: $table-header-bg;
+            color: $table-header-color;
+            padding: $spacing-sm $spacing-md;
+            font-weight: $font-weight-semibold;
+            text-align: left;
+            border: 1px solid $table-border-color;
+        }
+    }
+    
+    tbody {
+        tr {
+            &:nth-child(even) {
+                background-color: $table-stripe-bg;
+            }
+            
+            &:hover {
+                background-color: $blg-beige-clair;
+            }
+        }
+        
+        td {
+            padding: $spacing-sm $spacing-md;
+            border: 1px solid $table-border-color;
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Status Badges - BLG Theme
+// -----------------------------------------------------------------------------
+
+.badge-blg {
+    display: inline-flex;
+    align-items: center;
+    padding: $spacing-xs $spacing-sm;
+    border-radius: $border-radius-pill;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    
+    &.badge-success {
+        background-color: $color-success-light;
+        color: darken($color-success, 10%);
+    }
+    
+    &.badge-warning {
+        background-color: $color-warning-light;
+        color: darken($color-warning, 20%);
+    }
+    
+    &.badge-danger {
+        background-color: $color-danger-light;
+        color: darken($color-danger, 10%);
+    }
+    
+    &.badge-info {
+        background-color: $color-info-light;
+        color: darken($color-info, 10%);
+    }
+    
+    &.badge-primary {
+        background-color: $blg-beige-clair;
+        color: $blg-terre-cuite;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Form Styles - BLG Theme
+// -----------------------------------------------------------------------------
+
+.form-control-blg {
+    padding: $input-padding-y $input-padding-x;
+    border: 1px solid $input-border-color;
+    border-radius: $input-border-radius;
+    transition: border-color $transition-base, box-shadow $transition-base;
+    
+    &:focus {
+        border-color: $input-focus-border-color;
+        box-shadow: 0 0 0 3px rgba($blg-terre-cuite, 0.15);
+        outline: none;
+    }
+    
+    &::placeholder {
+        color: $blg-gris-fonce;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Signature Zone Styles
+// -----------------------------------------------------------------------------
+
+.signature-zone {
+    border: 2px dashed $signature-zone-border;
+    background-color: $signature-zone-bg;
+    border-radius: $border-radius;
+    padding: $spacing-md;
+    min-height: 80px;
+    transition: all $transition-base;
+    
+    &:hover {
+        background-color: $signature-zone-hover;
+        border-style: solid;
+    }
+    
+    &.signature-zone-active {
+        border-color: $blg-terre-cuite;
+        border-style: solid;
+        animation: pulse-border 1.5s infinite;
+    }
+    
+    .signature-label {
+        font-weight: $font-weight-semibold;
+        color: $blg-terre-cuite;
+        margin-bottom: $spacing-xs;
+    }
+    
+    .signature-sublabel {
+        font-size: $font-size-sm;
+        color: $blg-gris-fonce;
+    }
+}
+
+@keyframes pulse-border {
+    0%, 100% {
+        border-color: $blg-terre-cuite;
+    }
+    50% {
+        border-color: $signature-zone-border;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Alert Styles - BLG Theme
+// -----------------------------------------------------------------------------
+
+.alert-blg {
+    padding: $spacing-md;
+    border-radius: $border-radius;
+    border-left: 4px solid;
+    
+    &.alert-success {
+        background-color: $color-success-light;
+        border-left-color: $color-success;
+    }
+    
+    &.alert-warning {
+        background-color: $color-warning-light;
+        border-left-color: $color-warning;
+    }
+    
+    &.alert-danger {
+        background-color: $color-danger-light;
+        border-left-color: $color-danger;
+    }
+    
+    &.alert-info {
+        background-color: $color-info-light;
+        border-left-color: $color-info;
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Responsive Grid Layout
+// -----------------------------------------------------------------------------
+
+.blg-grid {
+    display: grid;
+    gap: $dashboard-grid-gap;
+    
+    @include mobile {
+        grid-template-columns: 1fr;
+    }
+    
+    @include tablet {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    @include desktop {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Navigation Overrides
+// -----------------------------------------------------------------------------
+
+.o_main_navbar {
+    .o_menu_brand {
+        color: $blg-terre-cuite !important;
+        font-weight: $font-weight-semibold;
+    }
+}
+
+// Hamburger menu on mobile
+@include mobile {
+    .o_main_navbar {
+        .o_menu_toggle {
+            display: block !important;
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// Print Styles
+// -----------------------------------------------------------------------------
+
+@media print {
+    .bg-blg-terre-cuite {
+        background-color: $blg-terre-cuite !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+    
+    .table-blg thead th {
+        background-color: $blg-terre-cuite !important;
+        color: $blg-blanc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+}

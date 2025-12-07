@@ -1,0 +1,33 @@
+// Construction Templates - Backend Styles
+
+// BLG Groupe Colors
+$blg-terre-cuite: #A0604F;
+$blg-beige-clair: #F5E6D8;
+
+// Template kanban badges
+.o_kanban_record .badge {
+    &.text-bg-success {
+        background-color: #28A745 !important;
+    }
+    &.text-bg-primary {
+        background-color: $blg-terre-cuite !important;
+    }
+}
+
+// Template form styling
+.o_form_view {
+    .oe_title h1 input {
+        font-size: 1.5rem;
+        font-weight: 600;
+    }
+}
+
+// Version history styling
+.o_list_view .o_data_row {
+    .fa-undo {
+        color: $blg-terre-cuite;
+        &:hover {
+            color: darken($blg-terre-cuite, 10%);
+        }
+    }
+}

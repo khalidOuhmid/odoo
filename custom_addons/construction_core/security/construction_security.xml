@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- CATEGORY -->
+        <record id="module_category_construction" model="ir.module.category">
+            <field name="name">Construction &amp; BTP</field>
+            <field name="description">Gestion des Chantiers, Contrats et Planning.</field>
+            <field name="sequence">10</field>
+        </record>
+
+        <!-- GROUP: SITE MANAGER (Pilote) -->
+        <record id="group_construction_user" model="res.groups">
+            <field name="name">Pilote de Chantier</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Peut gérer le planning, les visites, et initier les demandes d'achat. Ne peut pas valider les contrats ou payer.</field>
+        </record>
+
+        <!-- GROUP: DIRECTOR (Directeur) -->
+        <record id="group_construction_manager" model="res.groups">
+            <field name="name">Directeur de Travaux</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="implied_ids" eval="[(4, ref('group_construction_user'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+            <field name="comment">Accès complet. Validation financière, signature contrats, configuration.</field>
+        </record>
+    </data>
+</odoo>

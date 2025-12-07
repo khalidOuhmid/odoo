@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="construction_planning.GanttController" owl="1">
+        <Layout display="props.display" className="'o_construction_gantt_view'">
+            <t t-set-slot="control-panel-bottom-left">
+                <div class="o_gantt_controls d-flex gap-2">
+                    <div class="btn-group">
+                        <button class="btn btn-outline-primary" t-on-click="() => this.rendererRef.comp.onScaleChange('week')">Semaine</button>
+                        <button class="btn btn-outline-primary active" t-on-click="() => this.rendererRef.comp.onScaleChange('month')">Mois</button>
+                    </div>
+                    <div class="o_gantt_legend d-flex align-items-center gap-3 ms-4">
+                        <span class="badge bg-primary">Normal</span>
+                        <span class="badge bg-danger">Conflit Ressource</span>
+                        <span class="badge bg-success">Terminé</span>
+                    </div>
+                </div>
+            </t>
+            <t t-component="props.Renderer" model="props.model" t-ref="renderer"/>
+        </Layout>
+    </t>
+
+    <t t-name="construction_planning.GanttRenderer" owl="1">
+        <div class="o_gantt_renderer" t-ref="ganttContainer">
+            <!-- HEADER (Timeline) -->
+            <div class="o_gantt_header_wrapper">
+                <div class="o_gantt_header_sidebar">Projets / Lots</div>
+                <div class="o_gantt_header_timeline">
+                    <!-- Dynamic timeline rendering -->
+                    <div class="o_time_cell">Janvier 2024</div>
+                    <div class="o_time_cell">Février 2024</div>
+                    <div class="o_time_cell">Mars 2024</div>
+                </div>
+            </div>
+
+            <!-- BODY (Grid + Tasks) -->
+            <div class="o_gantt_body_wrapper">
+                <!-- Data Model Loop -->
+                <t t-foreach="props.model.rows" t-as="row" t-key="row.id">
+                    <div class="o_gantt_row">
+                        <div class="o_gantt_row_sidebar">
+                            <span t-esc="row.name" class="fw-bold"/>
+                        </div>
+                        <div class="o_gantt_row_content">
+                            <!-- Tasks in this row -->
+                            <t t-foreach="row.tasks" t-as="task" t-key="task.id">
+                                <div class="o_gantt_task_bar" 
+                                     t-att-style="getTaskStyle(task)"
+                                     t-attr-title="task.name"
+                                     t-on-click="() => this.onTaskClick(task.id)">
+                                    <div class="o_task_label"><t t-esc="task.name"/></div>
+                                    <div t-if="task.has_conflict" class="o_task_conflict_icon">
+                                        <i class="fa fa-exclamation-triangle"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </t>
+            </div>
+            
+            <style>
+                .o_construction_gantt_view { height: 100%; display: flex; flex-direction: column; }
+                .o_gantt_renderer { display: flex; flex-direction: column; flex: 1; overflow: hidden; background: white; }
+                
+                .o_gantt_header_wrapper { display: flex; height: 50px; border-bottom: 1px solid #ddd; background: #f8f9fa; }
+                .o_gantt_header_sidebar { width: 250px; padding: 10px; border-right: 1px solid #ddd; font-weight: bold; }
+                .o_gantt_header_timeline { flex: 1; display: flex; overflow: hidden; }
+                .o_time_cell { min-width: 100px; border-right: 1px solid #eee; padding: 10px; text-align: center; }
+                
+                .o_gantt_body_wrapper { flex: 1; overflow: auto; position: relative; }
+                .o_gantt_row { display: flex; height: 40px; border-bottom: 1px solid #eee; }
+                .o_gantt_row_sidebar { width: 250px; padding: 8px 10px; border-right: 1px solid #ddd; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; background: #fff; position: sticky; left: 0; z-index: 10; }
+                .o_gantt_row_content { flex: 1; position: relative; }
+                
+                .o_gantt_task_bar {
+                    position: absolute;
+                    height: 24px;
+                    border-radius: 4px;
+                    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                    cursor: pointer;
+                    display: flex;
+                    align-items: center;
+                    padding: 0 8px;
+                    font-size: 11px;
+                    color: white;
+                    overflow: hidden;
+                    white-space: nowrap;
+                    transition: all 0.2s;
+                }
+                .o_gantt_task_bar:hover { filter: brightness(110%); transform: scaleY(1.1); z-index: 5; }
+                .o_task_conflict_icon { margin-left: auto; color: #ffeb3b; animation: flash 1s infinite; }
+                
+                @keyframes flash { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+            </style>
+        </div>
+    </t>
+
+</templates>

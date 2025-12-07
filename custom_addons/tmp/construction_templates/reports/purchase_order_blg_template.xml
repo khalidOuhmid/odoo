@@ -1,0 +1,216 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- BLG PURCHASE ORDER REPORT - Inherits from purchase module  -->
+    <!-- ========================================================== -->
+
+    <template id="report_purchase_order_blg_document" inherit_id="purchase.report_purchaseorder_document" primary="True">
+        
+        <!-- Add BLG Custom CSS -->
+        <xpath expr="//div[hasclass('page')]" position="before">
+            <style>
+                /* BLG Branding for Purchase Order */
+                .page {
+                    font-family: 'Roboto', 'Arial', sans-serif;
+                }
+                
+                /* Header customization */
+                h2 {
+                    color: #A0604F !important;
+                    border-bottom: 3px solid #A0604F;
+                    padding-bottom: 10px;
+                    text-transform: uppercase;
+                }
+                
+                /* Address blocks */
+                .address {
+                    background-color: #F5E6D8;
+                    padding: 15px;
+                    border-left: 4px solid #A0604F;
+                    margin: 10px 0;
+                }
+                
+                /* PO table header */
+                table thead {
+                    background-color: #A0604F !important;
+                    color: white !important;
+                }
+                
+                table thead th {
+                    color: white !important;
+                    font-weight: bold;
+                    padding: 12px 8px;
+                }
+                
+                /* Table rows */
+                table tbody tr:nth-child(even) {
+                    background-color: #F5F5F5;
+                }
+                
+                table tbody tr:hover {
+                    background-color: #F5E6D8;
+                }
+                
+                /* Total section */
+                #total {
+                    background-color: #F5E6D8;
+                    border: 2px solid #A0604F;
+                    padding: 15px;
+                    margin-top: 20px;
+                }
+                
+                #total strong {
+                    color: #A0604F;
+                }
+                
+                /* Info boxes */
+                .info-box {
+                    background-color: #F5E6D8;
+                    border-left: 4px solid #A0604F;
+                    padding: 12px;
+                    margin: 15px 0;
+                }
+                
+                .info-box strong {
+                    color: #A0604F;
+                }
+                
+                /* Status badge */
+                .badge {
+                    padding: 5px 10px;
+                    border-radius: 3px;
+                    font-weight: bold;
+                }
+                
+                .badge-draft {
+                    background-color: #FFC107;
+                    color: #000;
+                }
+                
+                .badge-sent {
+                    background-color: #17A2B8;
+                    color: white;
+                }
+                
+                .badge-purchase {
+                    background-color: #28A745;
+                    color: white;
+                }
+                
+                .badge-cancel {
+                    background-color: #DC3545;
+                    color: white;
+                }
+                
+                /* Footer */
+                .blg-footer {
+                    background-color: #F5E6D8;
+                    border-top: 3px solid #A0604F;
+                    padding: 15px;
+                    margin-top: 30px;
+                    font-size: 9pt;
+                    text-align: center;
+                }
+            </style>
+        </xpath>
+        
+        <!-- Customize PO title with status -->
+        <xpath expr="//h2" position="replace">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="color: #A0604F; margin: 0; border: none;">
+                    <span t-if="o.state == 'draft'">Demande de Devis</span>
+                    <span t-if="o.state in ['sent', 'to approve']">Demande de Devis Envoyée</span>
+                    <span t-if="o.state == 'purchase'">Bon de Commande</span>
+                    <span t-if="o.state == 'done'">Bon de Commande Terminé</span>
+                    <span t-if="o.state == 'cancel'">Bon de Commande Annulé</span>
+                    <br/>
+                    <span t-field="o.name"/>
+                </h2>
+                <div>
+                    <span t-if="o.state == 'draft'" class="badge badge-draft">BROUILLON</span>
+                    <span t-if="o.state == 'sent'" class="badge badge-sent">ENVOYÉ</span>
+                    <span t-if="o.state == 'purchase'" class="badge badge-purchase">CONFIRMÉ</span>
+                    <span t-if="o.state == 'cancel'" class="badge badge-cancel">ANNULÉ</span>
+                </div>
+            </div>
+        </xpath>
+        
+        <!-- Add order information box -->
+        <xpath expr="//div[@id='informations']" position="after">
+            <div class="info-box">
+                <div class="row">
+                    <div class="col-6">
+                        <strong>Date de commande :</strong>
+                        <span t-field="o.date_order" t-options='{"widget": "date"}'/>
+                    </div>
+                    <div class="col-6">
+                        <t t-if="o.date_planned">
+                            <strong>Date de livraison prévue :</strong>
+                            <span t-field="o.date_planned" t-options='{"widget": "date"}'/>
+                        </t>
+                    </div>
+                </div>
+                <t t-if="o.partner_ref">
+                    <div style="margin-top: 10px;">
+                        <strong>Référence fournisseur :</strong>
+                        <span t-field="o.partner_ref"/>
+                    </div>
+                </t>
+            </div>
+        </xpath>
+        
+        <!-- Add delivery address if different -->
+        <xpath expr="//div[@name='partner_id']" position="after">
+            <t t-if="o.dest_address_id and o.dest_address_id != o.partner_id">
+                <div class="col-6" style="margin-top: 10px;">
+                    <div class="address">
+                        <strong style="color: #A0604F;">Adresse de livraison :</strong><br/>
+                        <div t-field="o.dest_address_id" 
+                             t-options='{"widget": "contact", "fields": ["address", "name", "phone"], "no_marker": True}'/>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+        
+        <!-- Add BLG footer -->
+        <xpath expr="//div[hasclass('page')]" position="after">
+            <div class="blg-footer">
+                <div>
+                    <strong><span t-field="o.company_id.name"/></strong> | 
+                    <span t-field="o.company_id.street"/>, 
+                    <span t-field="o.company_id.zip"/> <span t-field="o.company_id.city"/>
+                </div>
+                <div style="margin-top: 5px;">
+                    SIRET : <span t-field="o.company_id.company_registry"/>
+                    <t t-if="o.company_id.vat">
+                        | TVA : <span t-field="o.company_id.vat"/>
+                    </t>
+                </div>
+                <div style="margin-top: 10px; font-size: 8pt; color: #666;">
+                    <t t-if="o.user_id">
+                        Contact : <span t-field="o.user_id.name"/>
+                        <t t-if="o.user_id.phone"> | Tél : <span t-field="o.user_id.phone"/></t>
+                        <t t-if="o.user_id.email"> | Email : <span t-field="o.user_id.email"/></t>
+                    </t>
+                </div>
+            </div>
+        </xpath>
+        
+    </template>
+
+    <!-- Report Action for BLG Purchase Order -->
+    <record id="action_report_purchase_order_blg" model="ir.actions.report">
+        <field name="name">Bon de Commande BLG Groupe</field>
+        <field name="model">purchase.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_templates.report_purchase_order_blg_document</field>
+        <field name="report_file">construction_templates.report_purchase_order_blg_document</field>
+        <field name="print_report_name">
+            ('BDC_BLG_%s' % object.name) if object.state in ['purchase', 'done'] else ('RFQ_BLG_%s' % object.name)
+        </field>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

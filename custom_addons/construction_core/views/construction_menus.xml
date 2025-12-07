@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Top Level Menu -->
+    <menuitem id="menu_construction_root"
+              name="Travaux"
+              web_icon="project,static/description/icon.png"
+              sequence="10"/>
+
+    <!-- Sub Menus -->
+    <menuitem id="menu_construction_operations"
+              name="Opérations"
+              parent="menu_construction_root"
+              sequence="10"/>
+
+    <menuitem id="menu_construction_configuration"
+              name="Configuration"
+              parent="menu_construction_root"
+              sequence="100"/>
+</odoo>

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ========================================================== -->
+    <!-- BLG INVOICE REPORT - Inherits from account module          -->
+    <!-- ========================================================== -->
+
+    <template id="report_invoice_blg_document" inherit_id="account.report_invoice_document" primary="True">
+        
+        <!-- Add BLG Custom CSS -->
+        <xpath expr="//div[hasclass('page')]" position="before">
+            <style>
+                /* BLG Branding for Invoice */
+                .page {
+                    font-family: 'Roboto', 'Arial', sans-serif;
+                }
+                
+                /* Header customization */
+                h2 {
+                    color: #A0604F !important;
+                    border-bottom: 3px solid #A0604F;
+                    padding-bottom: 10px;
+                }
+                
+                /* Address blocks */
+                .address {
+                    background-color: #F5E6D8;
+                    padding: 15px;
+                    border-left: 4px solid #A0604F;
+                }
+                
+                /* Invoice table header */
+                table thead {
+                    background-color: #A0604F !important;
+                    color: white !important;
+                }
+                
+                table thead th {
+                    color: white !important;
+                    font-weight: bold;
+                }
+                
+                /* Table rows */
+                table tbody tr:nth-child(even) {
+                    background-color: #F5F5F5;
+                }
+                
+                table tbody tr:hover {
+                    background-color: #F5E6D8;
+                }
+                
+                /* Total section */
+                #total {
+                    background-color: #F5E6D8;
+                    border: 2px solid #A0604F;
+                    padding: 10px;
+                }
+                
+                #total .text-right strong {
+                    color: #A0604F;
+                }
+                
+                /* Payment terms */
+                .payment_term {
+                    background-color: #F5E6D8;
+                    border-left: 4px solid #A0604F;
+                    padding: 10px;
+                    margin-top: 20px;
+                }
+                
+                /* Footer */
+                .footer {
+                    background-color: #F5E6D8;
+                    border-top: 3px solid #A0604F;
+                    padding: 10px;
+                    font-size: 9pt;
+                }
+            </style>
+        </xpath>
+        
+        <!-- Customize invoice title -->
+        <xpath expr="//h2" position="replace">
+            <h2 style="color: #A0604F; text-transform: uppercase; border-bottom: 3px solid #A0604F; padding-bottom: 10px;">
+                <span t-if="o.move_type == 'out_invoice' and o.state == 'posted'">Facture</span>
+                <span t-if="o.move_type == 'out_invoice' and o.state == 'draft'">Brouillon de Facture</span>
+                <span t-if="o.move_type == 'out_invoice' and o.state == 'cancel'">Facture Annulée</span>
+                <span t-if="o.move_type == 'out_refund'">Avoir</span>
+                <span t-if="o.move_type == 'in_refund'">Avoir Fournisseur</span>
+                <span t-if="o.move_type == 'in_invoice'">Facture Fournisseur</span>
+                <span t-field="o.name"/>
+            </h2>
+        </xpath>
+        
+        <!-- Add BLG footer -->
+        <xpath expr="//div[hasclass('page')]" position="after">
+            <div class="footer" style="background-color: #F5E6D8; border-top: 3px solid #A0604F; padding: 15px; margin-top: 30px; font-size: 9pt;">
+                <div style="text-align: center;">
+                    <strong><span t-field="o.company_id.name"/></strong> | 
+                    <span t-field="o.company_id.street"/>, 
+                    <span t-field="o.company_id.zip"/> <span t-field="o.company_id.city"/>
+                </div>
+                <div style="text-align: center; margin-top: 5px;">
+                    SIRET : <span t-field="o.company_id.company_registry"/>
+                    <t t-if="o.company_id.vat">
+                        | TVA : <span t-field="o.company_id.vat"/>
+                    </t>
+                </div>
+            </div>
+        </xpath>
+        
+    </template>
+
+    <!-- Report Action for BLG Invoice -->
+    <record id="action_report_invoice_blg" model="ir.actions.report">
+        <field name="name">Facture BLG Groupe</field>
+        <field name="model">account.move</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_templates.report_invoice_blg_document</field>
+        <field name="report_file">construction_templates.report_invoice_blg_document</field>
+        <field name="print_report_name">'Facture_BLG_%s' % object.name</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>
