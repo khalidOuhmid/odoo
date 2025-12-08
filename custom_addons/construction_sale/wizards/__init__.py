@@ -1,1 +1,1 @@
-from . import quote_wizard
+from . import construction_quote_wizard

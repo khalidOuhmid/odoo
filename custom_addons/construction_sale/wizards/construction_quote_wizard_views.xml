@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_quote_wizard_form" model="ir.ui.view">
+        <field name="name">construction.quote.wizard.form</field>
+        <field name="model">construction.quote.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Add Construction Items">
+                <group>
+                    <group>
+                        <field name="chantier_id" invisible="1"/>
+                        <field name="target_lot_id" options="{'no_create': True}"/>
+                    </group>
+                    <group>
+                        <div class="alert alert-info" role="alert">
+                            Select a Lot, then add items. They will be automatically grouped under the Lot section in the Estimate.
+                        </div>
+                    </group>
+                </group>
+                
+                <field name="line_ids">
+                    <list editable="bottom">
+                        <field name="product_id"/>
+                        <field name="description"/>
+                        <field name="length"/>
+                        <field name="width"/>
+                        <field name="quantity"/>
+                    </list>
+                </field>
+                
+                <footer>
+                    <button string="Add &amp; Continue" type="object" name="action_add_and_keep_open" class="btn-primary" 
+                            help="Adds items to the quote but keeps this window open for more entries." data-hotkey="s"/>
+                    <button string="Add &amp; Close" type="object" name="action_add_lines" class="btn-secondary" data-hotkey="q"/>
+                    <button string="Close" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

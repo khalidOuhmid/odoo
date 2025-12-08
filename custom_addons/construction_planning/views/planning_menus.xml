@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Root Menu defined in Core -->
+    
+    <menuitem id="menu_construction_planning_root" 
+              name="Planning" 
+              parent="construction_core.menu_construction_root"
+              sequence="40"/>
+
+    <menuitem id="menu_construction_planning_global"
+              name="Planning Global"
+              parent="menu_construction_planning_root"
+              action="action_construction_planning"
+              sequence="10"/>
+
+    <menuitem id="menu_construction_planning_resource"
+              name="Planning Ressources"
+              parent="menu_construction_planning_root"
+              action="action_construction_planning_resource"
+              sequence="20"/>
+</odoo>

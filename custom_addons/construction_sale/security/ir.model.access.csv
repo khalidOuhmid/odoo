@@ -1,7 +1,3 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_construction_quote_wizard_user,construction.quote.wizard.user,model_construction_quote_wizard,base.group_user,1,1,1,1
-access_construction_quote_line_user,construction.quote.line.user,model_construction_quote_line,base.group_user,1,1,1,1
-access_construction_product_dialog_user,construction.product.dialog.user,model_construction_product_dialog,base.group_user,1,1,1,1
-access_construction_product_creator_user,construction.product.creator.user,model_construction_product_creator,base.group_user,1,1,1,1
-access_construction_line_editor_user,construction.line.editor.user,model_construction_line_editor,base.group_user,1,1,1,1
-access_construction_wizard_cancel_confirm_user,construction.wizard.cancel.confirm.user,model_construction_wizard_cancel_confirm,base.group_user,1,1,1,1
+access_construction_quote_wizard,construction.quote.wizard,model_construction_quote_wizard,base.group_user,1,1,1,1
+access_construction_quote_wizard_line,construction.quote.wizard.line,model_construction_quote_wizard_line,base.group_user,1,1,1,1

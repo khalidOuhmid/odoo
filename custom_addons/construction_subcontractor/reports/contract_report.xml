@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- REPORT ACTION -->
+    <record id="action_report_construction_contract" model="ir.actions.report">
+        <field name="name">Contrat de Sous-traitance</field>
+        <field name="model">construction.contract</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_subcontractor.report_contract_document</field>
+        <field name="report_file">construction_subcontractor.report_contract_document</field>
+        <field name="print_report_name">'Contrat - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_construction_contract"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- REPORT TEMPLATE -->
+    <template id="report_contract_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- HEADER / TITLE -->
+                        <div class="text-center mb-4">
+                            <h2>Contrat de Sous-traitance</h2>
+                            <h4><span t-field="doc.name"/></h4>
+                        </div>
+
+                        <!-- BASIC INFO -->
+                        <div class="row mb-4">
+                            <div class="col-6">
+                                <strong>Client / Entreprise Générale:</strong><br/>
+                                <span t-field="doc.company_id.name"/><br/>
+                                <span t-field="doc.company_id.street"/><br/>
+                                <span t-field="doc.company_id.city"/>
+                            </div>
+                            <div class="col-6 text-end">
+                                <strong>Sous-traitant:</strong><br/>
+                                <span t-field="doc.partner_id.name"/><br/>
+                                <span t-field="doc.partner_id.street"/><br/>
+                                <span t-field="doc.partner_id.city"/>
+                            </div>
+                        </div>
+
+                        <!-- CONTRACT BODY (Template or Manual) -->
+                        <div class="contract-body mb-5">
+                            <t t-if="doc.custom_html_override">
+                                <div t-field="doc.custom_html_override"/>
+                            </t>
+                            <t t-elif="doc.template_id">
+                                <div t-field="doc.template_id.body_html"/>
+                            </t>
+                            <t t-else="">
+                                <p><em>Aucun contenu défini pour ce contrat.</em></p>
+                            </t>
+                        </div>
+
+                        <!-- SIGNATURES -->
+                        <div class="row mt-5" style="page-break-inside: avoid;">
+                            <div class="col-6">
+                                <p><strong>Pour l'Entreprise:</strong></p>
+                                <br/><br/>
+                                <div style="border-bottom: 1px solid #000; width: 80%;"></div>
+                            </div>
+                            <div class="col-6">
+                                <p><strong>Pour le Sous-traitant:</strong></p>
+                                <t t-if="doc.signature_image">
+                                    <img t-att-src="image_data_uri(doc.signature_image)" style="max-height: 100px;"/>
+                                    <br/>
+                                </t>
+                                <t t-if="doc.date_signed">
+                                    <small>Signé le <span t-field="doc.date_signed"/></small>
+                                </t>
+                                <div style="border-bottom: 1px solid #000; width: 80%;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- SUCCESS / ERROR PAGE -->
+    <template id="portal_success">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <div class="alert alert-success text-center" role="alert">
+                    <h3 t-esc="title"/>
+                    <p t-esc="message"/>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <template id="portal_error">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <div class="alert alert-danger text-center" role="alert">
+                    <h3>Error</h3>
+                    <p t-esc="error"/>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- CONTRACT SIGNATURE PAGE -->
+    <template id="contract_sign_template">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <div class="row">
+                    <div class="col-lg-12 text-center mb-4">
+                        <h2>Signature de Contrat</h2>
+                        <h4 class="text-muted"><t t-esc="contract.name"/></h4>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <!-- Contract Preview (Simplified) -->
+                    <div class="col-lg-8">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+                                <t t-if="contract.template_id">
+                                    <div t-field="contract.template_id.body_html"/>
+                                </t>
+                                <t t-else="">
+                                    <p>No template content.</p>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Signature Pad -->
+                    <div class="col-lg-4">
+                        <div class="card shadow-sm">
+                            <div class="card-header bg-primary text-white">
+                                Signature
+                            </div>
+                            <div class="card-body">
+                                <p>Veuillez signer ci-dessous pour valider le contrat.</p>
+                                <form t-attf-action="/my/contract/#{contract.id}/submit_sign" method="post">
+                                    <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                                    <input type="hidden" name="access_token" t-att-value="token"/>
+                                    
+                                    <!-- Signature Pad Placeholder -->
+                                    <div style="border: 2px dashed #ccc; height: 150px; background: #f9f9f9;" class="mb-3 d-flex align-items-center justify-content-center">
+                                        <small class="text-muted">[Signature Pad JS Hook]</small>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-success w-100 btn-lg">Signer le Contrat</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- DOCUMENT UPLOAD PAGE -->
+    <template id="document_upload_template">
+        <t t-call="website.layout">
+            <div class="container py-5">
+                <div class="row mb-4">
+                    <div class="col-12 text-center">
+                        <h2>Portail Documents</h2>
+                        <h4 class="text-muted"><t t-esc="partner.name"/></h4>
+                    </div>
+                </div>
+                
+                <div class="card shadow">
+                    <div class="card-body">
+                        <form action="/documents/upload/submit" method="post" enctype="multipart/form-data">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            <input type="hidden" name="token" t-att-value="token"/>
+                            
+                            <t t-foreach="doc_types" t-as="doc">
+                                <div class="mb-3 row border-bottom pb-3">
+                                    <label class="col-sm-4 col-form-label fw-bold"><t t-esc="doc[1]"/></label>
+                                    <div class="col-sm-8">
+                                        <input type="file" class="form-control" t-att-name="'file_' + doc[0]" accept="application/pdf,image/*"/>
+                                        <small class="text-muted">Formats acceptés: PDF, JPG, PNG</small>
+                                    </div>
+                                </div>
+                            </t>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg mt-3">Envoyer les documents</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>
