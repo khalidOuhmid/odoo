@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_lot_subcontractor_assign_wizard_form" model="ir.ui.view">
+        <field name="name">construction.lot.subcontractor.assign.wizard.form</field>
+        <field name="model">construction.lot.subcontractor.assign.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assigner Sous-traitant">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="chantier_id" readonly="1"/>
+                            <field name="selection_mode" widget="radio"/>
+                        </group>
+                        <group>
+                            <field name="subcontractor_id" options="{'no_create': True}"/>
+                            <field name="assignment_date"/>
+                        </group>
+                    </group>
+
+                    <group string="Sélection des Lots">
+                        <field name="lot_id" invisible="selection_mode != 'single'" 
+                               domain="[('chantier_id', '=', chantier_id)]"/>
+                        <field name="lot_ids" widget="many2many_tags" 
+                               invisible="selection_mode != 'multiple'"
+                               domain="[('chantier_id', '=', chantier_id)]"/>
+                        <field name="category_id" invisible="selection_mode != 'category'"/>
+                    </group>
+
+                    <group string="Récapitulatif">
+                        <field name="affected_lot_count" readonly="1"/>
+                        <field name="affected_lot_ids" widget="many2many_tags" readonly="1"/>
+                    </group>
+
+                    <group string="Avertissements" invisible="not has_warnings">
+                        <field name="has_warnings" invisible="1"/>
+                        <field name="warning_message" nolabel="1" widget="html"/>
+                    </group>
+
+                    <group>
+                        <field name="notes" placeholder="Notes internes (optionnel)..."/>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button name="action_assign" string="Assigner" type="object" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_lot_subcontractor_assign_wizard" model="ir.actions.act_window">
+        <field name="name">Assigner Sous-traitant</field>
+        <field name="res_model">construction.lot.subcontractor.assign.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

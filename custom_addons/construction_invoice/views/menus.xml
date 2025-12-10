@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <menuitem 
+        id="menu_construction_invoice_root"
+        name="Facturation"
+        parent="construction_core.menu_construction_root"
+        sequence="40"/>
+    
+    <menuitem
+        id="menu_invoice_schedule"
+        name="Planning facturation"
+        parent="menu_construction_invoice_root"
+        action="action_invoice_schedule"
+        sequence="10"/>
+    
+    <menuitem
+        id="menu_invoice_type"
+        name="Cycles de facturation"
+        parent="menu_construction_invoice_root"
+        action="action_invoice_type"
+        sequence="20"
+        groups="construction_core.group_construction_manager"/>
+
+</odoo>

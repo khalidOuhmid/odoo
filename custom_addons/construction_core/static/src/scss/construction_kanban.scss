@@ -1,0 +1,73 @@
+/**
+ * Construction Core - Kanban Premium Styling
+ * SAP/Salesforce inspired UX - SCOPED TO CONSTRUCTION MODULE ONLY
+ */
+
+/* =========================================
+   KANBAN BOARD - CONSTRUCTION CHANTIERS
+   Scoped with .o_construction_kanban class
+   ========================================= */
+
+/* Kanban Cards - Premium Style - SCOPED */
+.o_construction_kanban .o_kanban_record,
+.o_construction_card {
+    border-radius: 12px !important;
+    border: none !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    margin: 8px 4px !important;
+    overflow: hidden;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+    }
+}
+
+/* Chapter Badge - Construction specific */
+.construction_chapter_badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 8px;
+    background: #ebf8ff;
+    color: #2b6cb0;
+}
+
+/* Client Info - Construction specific */
+.construction_client_info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid #e2e8f0;
+
+    .client_avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: #667eea;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 600;
+    }
+
+    .client_name {
+        font-size: 13px;
+        color: #4a5568;
+    }
+}
+
+/* Progress in card - Construction specific */
+.construction_progress {
+    margin-top: 8px;
+}

@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Vue Kanban Avancée pour Tableau de Bord (Migrated from construction_base) -->
+        <record id="view_construction_chantier_management_kanban" model="ir.ui.view">
+            <field name="name">construction.chantier.management.kanban</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <kanban default_group_by="stage_id"
+                        quick_create="false"
+                        group_expand="_read_group_stage_id"
+                        group_create="false" group_delete="false" group_edit="false"
+                        class="o_kanban_mobile"
+                        create="1">
+
+                    <!-- Champs essentiels -->
+                    <field name="id"/>
+                    <field name="stage_id"/>
+                    <field name="chapter_name"/>
+                    <field name="name"/>
+                    <field name="address"/>
+                    <field name="client"/>
+                    <field name="user_ids"/>
+                    <field name="date_end_contract"/>
+                    <field name="date_start_contract"/>
+                    <field name="progress"/>
+                    <field name="days_remaining"/>
+                    <field name="total_cost"/>
+                    <field name="activity_ids"/>
+                    <field name="activity_state"/>
+                    <field name="state"/>
+                    <field name="create_date"/>
+                    <field name="currency_id"/>
+                    <field name="deadline_status"/>
+                    <field name="deadline_color"/>
+
+                    <progressbar field="activity_state"
+                                 colors='{"planned": "success", "today": "warning", "overdue": "danger"}'/>
+
+                    <templates>
+                        <!-- Carte Moderne et Interactive -->
+                        <t t-name="kanban-box">
+                            <div class="oe_kanban_global_click"
+                                 t-attf-class="oe_kanban_color_#{record.deadline_color.raw_value}">
+
+                                <!-- En-tête -->
+                                <div class="oe_kanban_details">
+                                    <div class="o_kanban_record_top">
+                                        <div class="o_kanban_record_headings">
+                                            <strong class="o_kanban_record_title">
+                                                <field name="name"/>
+                                            </strong>
+                                            <div class="text-muted" t-if="record.client.raw_value">
+                                                <field name="client"/>
+                                            </div>
+                                            <div class="badge badge-pill" t-if="record.chapter_name.raw_value">
+                                                <field name="chapter_name"/>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Corps -->
+                                    <div class="o_kanban_record_body">
+                                        <!-- Adresse -->
+                                        <div t-if="record.address.raw_value">
+                                            <i class="fa fa-map-marker"/>
+                                            <span><t t-esc="record.address.value"/></span>
+                                        </div>
+
+                                        <!-- Métriques -->
+                                        <div>
+                                            <span t-if="record.total_cost.raw_value">
+                                                <i class="fa fa-euro"/>
+                                                <field name="total_cost" widget="monetary"/>
+                                            </span>
+                                            <span t-attf-class="#{record.days_remaining.raw_value &lt; 0 ? 'text-danger' : record.days_remaining.raw_value &lt; 7 ? 'text-warning' : ''}">
+                                                <i class="fa fa-clock-o"/>
+                                                <t t-if="record.days_remaining.raw_value &lt; 0">
+                                                    <t t-esc="Math.abs(record.days_remaining.raw_value)"/>j retard
+                                                </t>
+                                                <t t-else="">
+                                                    <t t-esc="record.days_remaining.raw_value"/>j restants
+                                                </t>
+                                            </span>
+                                        </div>
+
+                                        <!-- Barre de progression -->
+                                        <div class="o_kanban_record_bottom" style="margin-top: 10px;">
+                                            <field name="progress" widget="progressbar"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pied de carte -->
+                                    <div class="o_kanban_record_bottom">
+                                        <div class="oe_kanban_bottom_left">
+                                            <field name="activity_ids" widget="kanban_activity"/>
+                                        </div>
+                                        <div class="oe_kanban_bottom_right">
+                                            <field name="user_ids" widget="many2many_avatar_user"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </t>
+                    </templates>
+                </kanban>
+            </field>
+        </record>
+
+        <!-- Vue Liste Avancée pour Gestion Professionnelle -->
+        <record id="view_construction_chantier_management_list" model="ir.ui.view">
+            <field name="name">construction.chantier.management.list</field>
+            <field name="model">construction.chantier</field>
+            <field name="arch" type="xml">
+                <list string="Gestion des Chantiers"
+                      multi_edit="1" export_xlsx="1" editable="bottom"
+                      decoration-danger="days_remaining &lt; 0 and date_end_contract"
+                      decoration-warning="days_remaining &lt; 7 and days_remaining &gt;= 0"
+                      decoration-success="progress == 100"
+                      decoration-muted="state in ['completed', 'abandoned']"
+                      decoration-bf="days_remaining &lt; 0">
+
+                    <!-- Colonnes principales optimisées -->
+                    <field name="name" string="Projet" required="1"/>
+                    <field name="address" string="Chantier" required="1"/>
+                    <field name="chapter_name" string="Phase" readonly="1"/>
+                    <field name="stage_id" string="Étape" widget="badge" readonly="1"/>
+
+                    <!-- Métriques financières -->
+                    <field name="total_cost" widget="monetary" string="Budget" sum="Budget Total"/>
+                    <field name="progress" widget="progressbar" string="Avancement %" readonly="1"/>
+
+                    <!-- Planning -->
+                    <field name="date_start_contract" string="Début" optional="show"/>
+                    <field name="date_end_contract" string="Échéance" required="1"/>
+                    <field name="days_remaining" string="J. restants" readonly="1"
+                           decoration-danger="days_remaining &lt; 0"
+                           decoration-warning="days_remaining &lt; 7"/>
+
+                    <!-- Équipe et responsabilité -->
+                    <field name="user_ids" widget="many2many_avatar_user" string="Équipe"/>
+                    <field name="state" string="État" widget="badge"/>
+
+                    <!-- Dates étendues (masquées par défaut) -->
+                    <field name="date_start_internal" string="Début interne" optional="hide"/>
+                    <field name="date_end_internal" string="Fin interne" optional="hide"/>
+                    <field name="create_date" string="Créé le" readonly="1" optional="hide"/>
+                </list>
+            </field>
+        </record>
+
+    </data>
+</odoo>

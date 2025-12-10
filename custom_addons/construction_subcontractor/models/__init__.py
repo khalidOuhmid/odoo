@@ -1,6 +1,4 @@
-from . import compliance_document
+# -*- coding: utf-8 -*-
+
 from . import res_partner
 from . import construction_contract
-from . import project_lot
-from . import purchase_order
-from . import sale_order_extension

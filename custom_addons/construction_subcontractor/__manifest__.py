@@ -1,41 +1,59 @@
 # -*- coding: utf-8 -*-
 {
-    'name': 'Construction Subcontractor',
+    'name': 'Construction Subcontractor Management',
     'version': '18.0.1.0.0',
     'category': 'Construction/Subcontracting',
-    'summary': 'Partner Compliance, Contracts & Documents',
+    'summary': 'Sous-traitants: conformité documentaire, contrats, portail',
     'description': """
-        Construction Subcontractor Management
-        =====================================
-        
-        Consolidates logic from 'blg_contacts_extension' and 'construction_contract'.
-        
-        Features:
-        * Subcontractor Profile & Qualification
-        * Compliance Documents (KBIS, URSSAF, Insurance) with Expiry Tracking
-        * Contract Management (Digital Signature, Provisions)
-        
-        Depends on `construction_core` for foundational mixins.
-    """,
+Construction Subcontractor Management
+=====================================
+
+Gestion complète des sous-traitants pour les chantiers de construction.
+
+**Fonctionnalités:**
+* Profil sous-traitant et qualification
+* Documents de conformité (KBIS, URSSAF, Assurances) avec suivi d'expiration
+* Gestion des contrats (signature numérique, avenants)
+* Portail d'upload sécurisé pour les sous-traitants
+* Notifications automatiques (chatter, activités)
+* Rapport de conformité
+
+**Philosophie PLM:**
+Les actions sont liées aux étapes du chantier:
+- Stage DA: Contrats signés requis
+- Stage FD: Tous documents valides requis
+""",
     'author': 'BLG Groupe',
     'website': 'https://www.blggroupe.com',
     'license': 'LGPL-3',
     'depends': [
         'construction_core',
         'contacts',
-        'portal', # For contract signature
         'mail',
-        'purchase',
-        'sale',
+        'portal',
     ],
     'data': [
+        # Security
         'security/ir.model.access.csv',
-        'data/mail_template_data.xml',
+        
+        # Data
+        'data/mail_templates.xml',
+        'data/cron_jobs.xml',
+        
+        # Views
         'views/res_partner_views.xml',
         'views/construction_contract_views.xml',
-        'reports/contract_report.xml',
+        'views/menus.xml',
+        
+        # Portal
+        'views/portal/document_upload.xml',
     ],
-    'application': False,
+    'assets': {
+        'web.assets_backend': [
+            'construction_subcontractor/static/src/scss/subcontractor.scss',
+        ],
+    },
     'installable': True,
+    'application': False,
     'auto_install': False,
 }

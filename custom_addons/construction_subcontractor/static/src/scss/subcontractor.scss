@@ -1,0 +1,25 @@
+/* Subcontractor Module Styles */
+
+.o_subcontractor_compliance {
+    &.compliant {
+        color: #28a745;
+    }
+
+    &.incomplete {
+        color: #ffc107;
+    }
+
+    &.expired {
+        color: #dc3545;
+    }
+}
+
+.o_document_status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .badge {
+        font-size: 0.75rem;
+    }
+}

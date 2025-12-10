@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="portal_document_upload" name="Portal Document Upload">
+        <t t-call="portal.portal_layout">
+            <div class="container mt-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h4 class="mb-0">
+                            <i class="fa fa-upload"/> Dépôt de documents
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        <p class="lead">
+                            Bonjour <strong t-out="partner.name">Partenaire</strong>,
+                        </p>
+                        <p>Veuillez déposer vos documents administratifs ci-dessous.</p>
+                        
+                        <form method="post" enctype="multipart/form-data" class="s_website_form">
+                            <input type="hidden" name="csrf_token" t-att-value="request.csrf_token()"/>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">KBIS (moins de 3 mois)</label>
+                                    <input type="file" name="doc_kbis" class="form-control" accept=".pdf"/>
+                                    <input type="date" name="doc_kbis_expiry" class="form-control mt-2" placeholder="Date d'expiration"/>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Attestation URSSAF</label>
+                                    <input type="file" name="doc_urssaf" class="form-control" accept=".pdf"/>
+                                    <input type="date" name="doc_urssaf_expiry" class="form-control mt-2" placeholder="Date d'expiration"/>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Assurance Décennale</label>
+                                    <input type="file" name="doc_insurance_dec" class="form-control" accept=".pdf"/>
+                                    <input type="date" name="doc_insurance_dec_expiry" class="form-control mt-2" placeholder="Date d'expiration"/>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Assurance RC Pro</label>
+                                    <input type="file" name="doc_insurance_pro" class="form-control" accept=".pdf"/>
+                                    <input type="date" name="doc_insurance_pro_expiry" class="form-control mt-2" placeholder="Date d'expiration"/>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">RIB</label>
+                                    <input type="file" name="doc_rib" class="form-control" accept=".pdf"/>
+                                </div>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fa fa-check"/> Envoyer mes documents
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

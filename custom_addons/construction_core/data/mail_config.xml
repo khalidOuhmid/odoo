@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Configuration Parameters for Mail Automation -->
+        
+        <!-- Email address for construction project creation -->
+        <record id="config_construction_project_email" model="ir.config_parameter">
+            <field name="key">construction_core.construction_project_email</field>
+            <field name="value">appel-doffre@blggroupe.com</field>
+        </record>
+
+        <!-- Auto-send confirmation email (default: False) -->
+        <record id="config_auto_send_confirmation_email" model="ir.config_parameter">
+            <field name="key">construction_core.auto_send_confirmation_email</field>
+            <field name="value">True</field>
+        </record>
+
+    </data>
+</odoo>

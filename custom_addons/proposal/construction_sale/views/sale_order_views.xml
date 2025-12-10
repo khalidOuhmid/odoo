@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- EXTEND SALE ORDER FORM -->
+    <record id="view_order_form_construction" model="ir.ui.view">
+        <field name="name">sale.order.form.construction</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            
+            <!-- HEADER BUTTON FOR WIZARD -->
+            <xpath expr="//header" position="inside">
+                <button name="action_open_construction_wizard" 
+                        string="Add Items by Lot" 
+                        type="object" 
+                        class="btn-primary"
+                        icon="fa-cubes"
+                        invisible="state != 'draft'"/>
+            </xpath>
+            
+            <!-- CHANTIER FIELD -->
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="chantier_id" />
+                <field name="lot_ids" widget="many2many_tags" placeholder="Select associated Lots..."/>
+            </xpath>
+
+            <!-- LINE TREE VIEW UPDATES -->
+            <xpath expr="//field[@name='order_line']/list//field[@name='name']" position="after">
+                <field name="construction_lot_id" optional="show"/>
+                <field name="dimension_length" optional="hide"/>
+                <field name="dimension_width" optional="hide"/>
+                <field name="is_dimensional" optional="hide"/>
+            </xpath>
+            
+        </field>
+    </record>
+</odoo>

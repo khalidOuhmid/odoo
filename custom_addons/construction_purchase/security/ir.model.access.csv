@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_purchase_wizard,access.construction.purchase.wizard,model_construction_purchase_wizard,base.group_user,1,1,1,1
+access_purchase_line,access.construction.purchase.line,model_construction_purchase_line,base.group_user,1,1,1,1
+access_purchase_grouped_wizard,access.construction.purchase.grouped.wizard,model_construction_purchase_grouped_wizard,base.group_user,1,1,1,1

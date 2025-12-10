@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_purchase_create_wizard_form" model="ir.ui.view">
+        <field name="name">construction.purchase.create.wizard.form</field>
+        <field name="model">construction.purchase.create.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Commander Lots">
+                <group>
+                    <field name="chantier_id" invisible="1"/>
+                    <field name="lot_ids" domain="[('chantier_id', '=', chantier_id)]" widget="many2many_checkboxes">
+                         <list>
+                            <field name="name"/>
+                            <field name="subcontractor_ids" widget="many2many_tags"/>
+                            <field name="price" widget="monetary"/>
+                        </list>
+                    </field>
+                </group>
+                <footer>
+                    <button name="action_create_purchase_orders" string="Générer Commandes" type="object" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_construction_purchase_create_wizard" model="ir.actions.act_window">
+        <field name="name">Commander Lots</field>
+        <field name="res_model">construction.purchase.create.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

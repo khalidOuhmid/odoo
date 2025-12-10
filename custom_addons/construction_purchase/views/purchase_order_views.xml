@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Purchase Order Form Extension -->
+    <record id="view_purchase_order_form_construction" model="ir.ui.view">
+        <field name="name">purchase.order.form.construction</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <!-- Smart Buttons -->
+            <div name="button_box" position="inside">
+                <button name="action_view_chantier" type="object"
+                        class="oe_stat_button" icon="fa-building"
+                        invisible="not chantier_id">
+                    <field name="chantier_id" widget="statinfo" string="Chantier"/>
+                </button>
+                <button name="action_view_lots" type="object"
+                        class="oe_stat_button" icon="fa-cubes"
+                        invisible="lots_count == 0">
+                    <field name="lots_count" widget="statinfo" string="Lots"/>
+                </button>
+            </div>
+            
+            <!-- Chantier and Lots fields after partner -->
+            <field name="partner_id" position="after">
+                <field name="chantier_id" options="{'no_create': True}"/>
+                <field name="lot_ids" widget="many2many_tags" 
+                       options="{'color_field': 'color'}"
+                       domain="[('chantier_id', '=', chantier_id)]"/>
+            </field>
+            
+            <!-- Wizard buttons in sheet header (using xpath to header) -->
+            <xpath expr="//header" position="inside">
+                <button name="action_add_product_wizard" type="object"
+                        string="🧙 Assistant Produits"
+                        class="btn-secondary"
+                        invisible="state != 'draft'"/>
+                <button name="action_organize_by_lots" type="object"
+                        string="📦 Organiser par Lots"
+                        class="btn-secondary"
+                        invisible="state != 'draft'"/>
+            </xpath>
+            
+            <!-- Margin info after amount_total -->
+            <field name="amount_total" position="after">
+                <field name="margin_amount" invisible="margin_amount == 0"/>
+                <field name="margin_percent" invisible="margin_percent == 0" widget="percentage"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Purchase Order Line Extension -->
+    <record id="view_purchase_order_line_list_construction" model="ir.ui.view">
+        <field name="name">purchase.order.line.list.construction</field>
+        <field name="model">purchase.order.line</field>
+        <field name="inherit_id" ref="purchase.purchase_order_line_tree"/>
+        <field name="arch" type="xml">
+            <field name="product_id" position="after">
+                <field name="lot_id" optional="show"
+                       options="{'no_create': True}"/>
+            </field>
+        </field>
+    </record>
+
+    <!-- Purchase Order List Extension -->
+    <record id="view_purchase_order_list_construction" model="ir.ui.view">
+        <field name="name">purchase.order.list.construction</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_kpis_tree"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="chantier_id" optional="show"/>
+            </field>
+        </field>
+    </record>
+</odoo>

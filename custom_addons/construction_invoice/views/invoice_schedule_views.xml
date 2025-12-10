@@ -1,54 +1,101 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- LIST VIEW SCHEDULE -->
-    <record id="view_construction_invoice_schedule_list" model="ir.ui.view">
+
+    <!-- Invoice Schedule List -->
+    <record id="view_invoice_schedule_list" model="ir.ui.view">
         <field name="name">construction.invoice.schedule.list</field>
         <field name="model">construction.invoice.schedule</field>
         <field name="arch" type="xml">
-            <list string="Billing Schedule" decoration-muted="state == 'invoiced'" decoration-bf="state == 'ready'">
+            <list string="Planning facturation" decoration-info="state == 'draft'" decoration-warning="state == 'ready'" decoration-success="state == 'invoiced'" decoration-muted="state in ('paid', 'cancelled')">
                 <field name="chantier_id"/>
                 <field name="name"/>
-                <field name="trigger_percentage" widget="progressbar"/>
-                <field name="amount_to_bill"/>
-                <field name="state" widget="badge" decoration-info="state == 'draft'" decoration-success="state == 'invoiced'" decoration-danger="state == 'ready'"/>
-                <button name="action_create_invoice" type="object" string="Create Invoice" icon="fa-file-text-o" invisible="state != 'ready'"/>
+                <field name="trigger_percentage"/>
+                <field name="amount_percentage"/>
+                <field name="amount_fixed" sum="Total"/>
+                <field name="planned_date"/>
+                <field name="state" widget="badge"/>
             </list>
         </field>
     </record>
-    
-    <!-- SEARCH VIEW -->
-    <record id="view_construction_invoice_schedule_search" model="ir.ui.view">
+
+    <!-- Invoice Schedule Form -->
+    <record id="view_invoice_schedule_form" model="ir.ui.view">
+        <field name="name">construction.invoice.schedule.form</field>
+        <field name="model">construction.invoice.schedule</field>
+        <field name="arch" type="xml">
+            <form string="Échéance de facturation">
+                <header>
+                    <button name="action_mark_planned" string="Planifier" type="object" invisible="state != 'draft'"/>
+                    <button name="action_mark_ready" string="Prêt à facturer" type="object" class="btn-primary" invisible="state != 'planned'"/>
+                    <button name="action_create_invoice" string="Créer facture" type="object" class="btn-success" invisible="state != 'ready'"/>
+                    <button name="action_cancel" string="Annuler" type="object" invisible="state in ('invoiced', 'paid', 'cancelled')"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,planned,ready,invoiced,paid"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="Chantier">
+                            <field name="chantier_id"/>
+                            <field name="quote_id"/>
+                            <field name="lot_ids" widget="many2many_tags"/>
+                        </group>
+                        <group string="Déclenchement">
+                            <field name="name"/>
+                            <field name="trigger_percentage"/>
+                            <field name="trigger_stage_id"/>
+                            <field name="is_advance_payment"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group string="Montants">
+                            <field name="currency_id" invisible="1"/>
+                            <field name="amount_percentage"/>
+                            <field name="margin_percentage"/>
+                            <field name="amount_fixed"/>
+                        </group>
+                        <group string="Dates">
+                            <field name="planned_date"/>
+                            <field name="invoice_date" readonly="1"/>
+                            <field name="payment_date" readonly="1"/>
+                        </group>
+                    </group>
+                    <group invisible="not invoice_id">
+                        <field name="invoice_id"/>
+                    </group>
+                    <field name="notes" placeholder="Notes..."/>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search -->
+    <record id="view_invoice_schedule_search" model="ir.ui.view">
         <field name="name">construction.invoice.schedule.search</field>
         <field name="model">construction.invoice.schedule</field>
         <field name="arch" type="xml">
-            <search>
+            <search string="Échéances">
                 <field name="chantier_id"/>
-                <field name="state"/>
-                <filter string="Ready to Bill" name="ready" domain="[('state', '=', 'ready')]"/>
-                <group expand="0" string="Group By">
+                <field name="name"/>
+                <separator/>
+                <filter string="À planifier" name="draft" domain="[('state', '=', 'draft')]"/>
+                <filter string="Planifiées" name="planned" domain="[('state', '=', 'planned')]"/>
+                <filter string="Prêtes" name="ready" domain="[('state', '=', 'ready')]"/>
+                <filter string="Facturées" name="invoiced" domain="[('state', '=', 'invoiced')]"/>
+                <separator/>
+                <group expand="0" string="Grouper par">
                     <filter string="Chantier" name="group_chantier" context="{'group_by': 'chantier_id'}"/>
-                    <filter string="Status" name="group_state" context="{'group_by': 'state'}"/>
+                    <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
                 </group>
             </search>
         </field>
     </record>
 
-    <!-- ACTION -->
+    <!-- Action -->
     <record id="action_invoice_schedule" model="ir.actions.act_window">
-        <field name="name">Billing Schedules</field>
+        <field name="name">Planning facturation</field>
         <field name="res_model">construction.invoice.schedule</field>
         <field name="view_mode">list,form</field>
-        <field name="context">{'search_default_ready': 1}</field>
+        <field name="search_view_id" ref="view_invoice_schedule_search"/>
     </record>
 
-    <menuitem id="menu_construction_billing"
-              name="Billing"
-              parent="construction_core.menu_construction_root"
-              sequence="30"/>
-
-    <menuitem id="menu_invoice_schedule"
-              name="Schedules to Bill"
-              parent="menu_construction_billing"
-              action="action_invoice_schedule"
-              sequence="10"/>
 </odoo>

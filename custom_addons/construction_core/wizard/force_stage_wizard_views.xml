@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_force_stage_wizard_form" model="ir.ui.view">
+        <field name="name">construction.force.stage.wizard.form</field>
+        <field name="model">construction.force.stage.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Forcer le Changement d'Étape">
+                <group>
+                    <field name="chantier_id" invisible="1"/>
+                    <field name="current_stage_id" readonly="1"/>
+                    <field name="new_stage_id"/>
+                </group>
+                <group>
+                    <field name="reason" placeholder="Expliquez la raison de ce forçage (obligatoire pour l'audit)..."/>
+                </group>
+                <footer>
+                    <button name="action_force_stage" string="Forcer le Changement" type="object" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_force_stage_wizard" model="ir.actions.act_window">
+        <field name="name">Forcer Étape</field>
+        <field name="res_model">construction.force.stage.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

@@ -1,58 +1,25 @@
 # -*- coding: utf-8 -*-
+"""
+Visit Model - Migrated and Cleaned.
+"""
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 import base64
 
-class ConstructionVisit(models.Model):
+class Visit(models.Model):
     _name = 'construction.visit'
-    _description = 'Construction Visit'
+    _description = 'Visite de Chantier'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'date desc'
 
-    # ==========================
-    # IDENTIFICATION
-    # ==========================
-    name = fields.Char(string='Titre', required=True, translate=True, tracking=True)
-    chantier_id = fields.Many2one(
-        'construction.chantier', 
-        string='Chantier', 
-        required=True, 
-        ondelete='cascade',
-        tracking=True
-    )
-    
-    visit_type = fields.Selection([
-        ('initial', 'Visite initiale'),
-        ('progress', 'Suivi de chantier'),
-        ('quality', 'Contrôle qualité'),
-        ('final', 'Réception')
-    ], string='Type de visite', default='progress', required=True)
-
-    # ==========================
-    # PLANNING
-    # ==========================
-    date = fields.Datetime(string='Date et Heure', required=True, tracking=True, default=fields.Datetime.now)
+    name = fields.Char(string='Titre', required=True, translate=True)
+    chantier_id = fields.Many2one('construction.chantier', string='Chantier', required=True, ondelete='cascade')
+    date = fields.Datetime(string='Date et Heure', required=True, tracking=True)
     duration = fields.Float(string='Durée (h)', default=2.0)
     
-    user_ids = fields.Many2many(
-        'res.users', 
-        string='Intervenants (Interne)',
-        default=lambda self: self.env.user
-    )
-    partner_ids = fields.Many2many(
-        'res.partner', 
-        string='Participants (Externe)'
-    )
-
-    # ==========================
-    # CONTENT (Mobile Friendly)
-    # ==========================
-    notes = fields.Html(string='Observations', help="Notes prises durant la visite")
-    report = fields.Html(string='Compte-rendu', help="Rapport formel")
-
-    # ==========================
-    # STATUS
-    # ==========================
+    user_ids = fields.Many2many('res.users', string='Intervenants Internes')
+    partner_ids = fields.Many2many('res.partner', string='Participants Externes')
+    
     state = fields.Selection([
         ('draft', 'Brouillon'),
         ('planned', 'Planifiée'),
@@ -60,40 +27,55 @@ class ConstructionVisit(models.Model):
         ('in_progress', 'En cours'),
         ('completed', 'Terminée'),
         ('cancelled', 'Annulée')
-    ], string='Statut', default='draft', required=True, tracking=True, group_expand='_expand_states')
+    ], string='Statut', default='draft', required=True, tracking=True)
 
-    # ==========================
-    # UTILS
-    # ==========================
-    def _expand_states(self, states, domain, order):
-        return [key for key, val in type(self).state.selection]
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get('name') and vals.get('chantier_id'):
-                chantier = self.env['construction.chantier'].browse(vals['chantier_id'])
-                seq = self.search_count([('chantier_id', '=', chantier.id)]) + 1
-                vals['name'] = f"Visite #{seq} - {chantier.name}"
-        return super().create(vals_list)
+    visit_type = fields.Selection([
+        ('initial', 'Visite Initiale'),
+        ('progress', 'Suivi de Chantier'),
+        ('quality', 'Contrôle Qualité'),
+        ('final', 'Réception'),
+    ], string='Type de Visite', default='progress')
     
+    notes = fields.Html(string='Notes et Observations')
+    report = fields.Html(string='Compte Rendu')
+
+    # ============= Computes ============= #
+    @api.depends('name', 'chantier_id', 'date')
+    def _compute_display_name(self):
+        for record in self:
+            if record.chantier_id and record.date:
+                record.display_name = f"{record.name} - {record.chantier_id.name}"
+            else:
+                record.display_name = record.name
+
+    # ============= Actions ============= #
     def action_confirm(self):
         for rec in self:
+            if rec.state not in ['draft', 'planned']:
+                raise ValidationError(_("Seules les visites brouillon ou planifiées peuvent être confirmées."))
             rec.state = 'confirmed'
 
     def action_start(self):
         for rec in self:
-            rec.state = 'in_progress'
+             if rec.state != 'confirmed':
+                 raise ValidationError(_("Il faut confirmer la visite avant de la démarrer."))
+             rec.state = 'in_progress'
 
     def action_complete(self):
         for rec in self:
+            if rec.state != 'in_progress':
+                raise ValidationError(_("La visite doit être en cours pour être terminée."))
             rec.state = 'completed'
-            # TODO: Generate Report automatically if template exists
-
+    
     def action_cancel(self):
         for rec in self:
-            rec.state = 'cancelled'
+             if rec.state == 'completed':
+                 raise ValidationError(_("Impossible d'annuler une visite terminée."))
+             rec.state = 'cancelled'
 
-    def action_reset_draft(self):
+    def action_reset_to_planned(self):
         for rec in self:
-            rec.state = 'draft'
+            rec.state = 'planned'
+
+    # Note: Report generation methods (PDF) removed for now as we don't have report XMLs yet.
+    # They can be re-added once `report` module is migrated.

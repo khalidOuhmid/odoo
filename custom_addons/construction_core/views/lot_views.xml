@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- LOT CATEGORY -->
+    <record id="view_construction_lot_category_tree" model="ir.ui.view">
+        <field name="name">construction.lot.category.tree</field>
+        <field name="model">construction.lot.category</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="code"/>
+                <field name="name"/>
+                <field name="urssaf_code"/>
+                <field name="color" widget="color_picker"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_construction_lot_category" model="ir.actions.act_window">
+        <field name="name">Catégories de Lots</field>
+        <field name="res_model">construction.lot.category</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+
+    <!-- LOT FORM VIEW - Enhanced SAP/Salesforce Style -->
+    <record id="view_construction_lot_form" model="ir.ui.view">
+        <field name="name">construction.lot.form</field>
+        <field name="model">construction.lot</field>
+        <field name="arch" type="xml">
+            <form string="Lot de Chantier">
+                <header>
+                    <field name="is_finished" widget="boolean_toggle" nolabel="1" options="{'autosave': False}"/>
+                    <span class="text-muted ms-2" invisible="is_finished == False">✓ Terminé</span>
+                </header>
+                <sheet>
+                    <!-- Button Box - simplified without invalid actions -->
+                    <div class="oe_button_box" name="button_box">
+                    </div>
+                    
+                    <!-- Title Section -->
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Nom du Lot" class="text-break"/>
+                        </h1>
+                        <div class="o_row">
+                            <span class="construction_lot_code">
+                                <field name="code" placeholder="01" nolabel="1" class="oe_inline"/>
+                            </span>
+                            <field name="category_id" placeholder="Catégorie" class="oe_inline" 
+                                   options="{'no_create': True}"/>
+                        </div>
+                    </div>
+                    
+                    <group>
+                        <group string="📋 Informations">
+                            <field name="chantier_id" options="{'no_create': True}"/>
+                            <field name="sequence"/>
+                        </group>
+                        <group string="💰 Financier">
+                            <field name="price" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="👥 Sous-traitants" name="subcontractors">
+                            <group string="Sous-traitants affectés">
+                                <field name="subcontractor_ids" widget="many2many_tags"
+                                       options="{'color_field': 'color'}" nolabel="1"/>
+                            </group>
+                            <!-- Subcontractor Selection Widget -->
+                            <div class="alert alert-info" role="alert">
+                                <i class="fa fa-info-circle me-2"/>
+                                Utilisez le wizard "Assigner Sous-traitant" pour affecter rapidement des sous-traitants qualifiés.
+                            </div>
+                        </page>
+                        <page string="📝 Notes" name="notes">
+                            <field name="description" placeholder="Notes et informations complémentaires sur ce lot..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- LOT LIST VIEW - Enhanced -->
+    <record id="view_construction_lot_tree" model="ir.ui.view">
+        <field name="name">construction.lot.tree</field>
+        <field name="model">construction.lot</field>
+        <field name="arch" type="xml">
+            <list string="Lots" editable="bottom" 
+                  decoration-success="is_finished == True"
+                  decoration-muted="is_finished == True">
+                <field name="sequence" widget="handle"/>
+                <field name="code" string="N°"/>
+                <field name="name"/>
+                <field name="category_id" optional="show"/>
+                <field name="chantier_id"/>
+                <field name="price" widget="monetary" sum="Total"/>
+                <field name="subcontractor_ids" widget="many2many_tags" 
+                       options="{'color_field': 'color'}"/>
+                <field name="is_finished" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- LOT KANBAN VIEW -->
+    <record id="view_construction_lot_kanban" model="ir.ui.view">
+        <field name="name">construction.lot.kanban</field>
+        <field name="model">construction.lot</field>
+        <field name="arch" type="xml">
+            <kanban class="o_kanban_mobile">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="price"/>
+                <field name="is_finished"/>
+                <field name="category_id"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_global_click #{record.is_finished.raw_value ? 'o_kanban_record_muted' : ''}">
+                            <div class="oe_kanban_content">
+                                <div class="o_kanban_record_title">
+                                    <span class="badge bg-primary me-2"><field name="code"/></span>
+                                    <strong><field name="name"/></strong>
+                                </div>
+                                <div class="o_kanban_record_subtitle text-muted">
+                                    <field name="category_id"/>
+                                </div>
+                                <div class="mt-2">
+                                    <span class="fw-bold"><field name="price" widget="monetary"/></span>
+                                    <span t-if="record.is_finished.raw_value" class="badge bg-success float-end">
+                                        ✓ Terminé
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <record id="action_construction_lot" model="ir.actions.act_window">
+        <field name="name">Lots</field>
+        <field name="res_model">construction.lot</field>
+        <field name="view_mode">list,kanban,form</field>
+    </record>
+
+</odoo>

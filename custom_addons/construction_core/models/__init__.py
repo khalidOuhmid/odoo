@@ -1,7 +1,10 @@
-from . import abstract
-from . import mixins
-from . import business_provider
-from . import project_stage
-from . import project_chantier
-from . import project_lot
-from . import project_lot_template
+# -*- coding: utf-8 -*-
+
+from . import chantier
+from . import chantier_dashboard
+from . import lot
+from . import stage
+from . import chapter
+from . import sale_order
+from . import tag
+from . import mail_automation

@@ -1,2 +1,4 @@
+# -*- coding: utf-8 -*-
+
 from . import visit
-from . import visit_extension
+from . import chantier_extension

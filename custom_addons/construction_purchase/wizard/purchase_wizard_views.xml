@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Add Product Action - MUST be defined before the view that references it -->
+    <record id="action_add_product_wizard" model="ir.actions.act_window">
+        <field name="name">Ajouter Produit</field>
+        <field name="res_model">construction.purchase.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Purchase Wizard Form View -->
+    <record id="view_construction_purchase_wizard_form" model="ir.ui.view">
+        <field name="name">construction.purchase.wizard.form</field>
+        <field name="model">construction.purchase.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assistant de Commande">
+                <header>
+                    <button name="action_confirm_selection" type="object"
+                            string="✅ Ajouter à la Commande"
+                            class="btn-primary"
+                            invisible="line_count == 0"/>
+                    <button name="action_finalize_purchase" type="object"
+                            string="🏁 Finaliser"
+                            class="btn-success"/>
+                    <button string="❌ Annuler" class="btn-secondary" special="cancel"/>
+                </header>
+                <sheet>
+                    <group>
+                        <group string="📋 Sélection">
+                            <field name="chantier_id" readonly="1"/>
+                            <field name="partner_id"/>
+                            <field name="lot_ids" widget="many2many_tags"
+                                   options="{'color_field': 'color'}"/>
+                            <field name="available_lot_ids" invisible="1"/>
+                        </group>
+                        <group string="📊 Résumé">
+                            <field name="line_count"/>
+                            <field name="total_quantity"/>
+                            <field name="total_amount" widget="monetary"/>
+                            <field name="currency_id" invisible="1"/>
+                        </group>
+                    </group>
+                    
+                    <notebook>
+                        <page string="🔍 Rechercher Produits" name="search">
+                            <group>
+                                <group>
+                                    <field name="search_term" placeholder="Rechercher..."/>
+                                </group>
+                                <group>
+                                    <field name="category_filter_id"/>
+                                </group>
+                            </group>
+                            
+                            <field name="available_product_ids" readonly="1">
+                                <list create="0" delete="0">
+                                    <field name="default_code"/>
+                                    <field name="name"/>
+                                    <field name="categ_id"/>
+                                    <field name="standard_price" widget="monetary"/>
+                                    <field name="uom_po_id"/>
+                                    <button name="%(construction_purchase.action_add_product_wizard)d"
+                                            type="action" string="➕ Ajouter"
+                                            class="btn-sm btn-primary"
+                                            context="{'product_id': id}"/>
+                                </list>
+                            </field>
+                        </page>
+                        
+                        <page string="🛒 Ma Sélection" name="selection">
+                            <field name="selected_line_ids">
+                                <list editable="bottom">
+                                    <field name="product_id"/>
+                                    <field name="lot_id"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id"/>
+                                    <field name="price_unit"/>
+                                    <field name="subtotal" sum="Total"/>
+                                    <field name="room_location"/>
+                                </list>
+                            </field>
+                            
+                            <group>
+                                <button name="action_clear_selection" type="object"
+                                        string="🗑️ Vider la sélection"
+                                        class="btn-warning"
+                                        invisible="line_count == 0"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+                <field name="purchase_order_id" invisible="1"/>
+            </form>
+        </field>
+    </record>
+
+    <!-- Wizard Action -->
+    <record id="action_purchase_wizard" model="ir.actions.act_window">
+        <field name="name">Assistant de Commande</field>
+        <field name="res_model">construction.purchase.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <!-- Grouped Creation Wizard -->
+    <record id="view_construction_purchase_grouped_wizard_form" model="ir.ui.view">
+        <field name="name">construction.purchase.grouped.wizard.form</field>
+        <field name="model">construction.purchase.grouped.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Créer Commandes Groupées">
+                <group>
+                    <field name="chantier_id" readonly="1"/>
+                    <field name="create_one_per_subcontractor"/>
+                    <field name="lot_ids" widget="many2many_tags"
+                           options="{'color_field': 'color'}"/>
+                </group>
+                <footer>
+                    <button name="action_create_grouped_orders" type="object"
+                            string="🛒 Créer les Commandes"
+                            class="btn-primary"/>
+                    <button string="Annuler" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_purchase_grouped_wizard" model="ir.actions.act_window">
+        <field name="name">Créer Commandes Groupées</field>
+        <field name="res_model">construction.purchase.grouped.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

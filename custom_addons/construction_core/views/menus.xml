@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Top Menu -->
+    <menuitem id="menu_construction_root"
+              name="Construction"
+              web_icon="construction_core,static/description/icon.png"
+              sequence="10"/>
+
+    <!-- Parent Menus -->
+    <menuitem id="menu_construction_project"
+              name="Projets"
+              parent="menu_construction_root"
+              sequence="10"/>
+
+    <menuitem id="menu_construction_config"
+              name="Configuration"
+              parent="menu_construction_root"
+              sequence="100"/>
+
+    <!-- Actions -->
+    <menuitem id="menu_construction_chantier"
+              name="Chantiers"
+              parent="menu_construction_project"
+              action="action_construction_chantier"
+              sequence="10"/>
+              
+    <menuitem id="menu_construction_lot"
+              name="Lots"
+              parent="menu_construction_project"
+              action="action_construction_lot_category" 
+              sequence="20"/>
+
+    <menuitem id="menu_construction_lot_category"
+              name="Catégories de Lots"
+              parent="menu_construction_config"
+              action="action_construction_lot_category"
+              sequence="10"/>
+
+    <!-- Stages link (optional, good for config) -->
+     <!-- <menuitem id="menu_construction_stage"
+              name="Étapes"
+              parent="menu_construction_config"
+              action="base.action_ui_view" # Placeholder, would need action
+              sequence="20"/> -->
+
+</odoo>

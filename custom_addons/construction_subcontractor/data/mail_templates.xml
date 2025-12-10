@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        
+        <!-- Email Template: Upload Request -->
+        <record id="email_template_upload_request" model="mail.template">
+            <field name="name">Sous-traitant: Demande de documents</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">Documents requis - {{ object.company_id.name }}</field>
+            <field name="email_from">{{ object.company_id.email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.email }}</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Bonjour <t t-out="object.name or ''">Partenaire</t>,</p>
+    
+    <p>Dans le cadre de notre collaboration, nous vous prions de bien vouloir 
+    nous transmettre les documents suivants :</p>
+    
+    <ul>
+        <li>Extrait KBIS (moins de 3 mois)</li>
+        <li>Attestation URSSAF</li>
+        <li>Attestation d'assurance décennale</li>
+        <li>Attestation d'assurance RC Pro</li>
+        <li>RIB</li>
+    </ul>
+    
+    <p>Vous pouvez uploader ces documents directement via le lien sécurisé suivant :</p>
+    
+    <p style="margin: 20px 0;">
+        <a href="{{ object.upload_url }}" 
+           style="background-color: #875A7B; padding: 10px 20px; color: white; text-decoration: none; border-radius: 4px;">
+            Déposer mes documents
+        </a>
+    </p>
+    
+    <p><strong>Ce lien est valable 7 jours.</strong></p>
+    
+    <p>Cordialement,<br/>
+    L'équipe <t t-out="object.company_id.name or ''">BLG Groupe</t></p>
+</div>
+            </field>
+            <field name="lang">{{ object.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+        <!-- Email Template: Documents Expiring -->
+        <record id="email_template_documents_expiring" model="mail.template">
+            <field name="name">Sous-traitant: Documents bientôt expirés</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">Rappel: Documents à renouveler</field>
+            <field name="email_from">{{ object.company_id.email or user.email_formatted }}</field>
+            <field name="email_to">{{ object.email }}</field>
+            <field name="body_html" type="html">
+<div style="margin: 0px; padding: 0px; font-size: 13px;">
+    <p>Bonjour <t t-out="object.name or ''">Partenaire</t>,</p>
+    
+    <p>Certains de vos documents arrivent bientôt à expiration. 
+    Merci de les renouveler dans les meilleurs délais.</p>
+    
+    <p>Vous pouvez uploader les nouveaux documents via ce lien :</p>
+    
+    <p style="margin: 20px 0;">
+        <a href="{{ object.upload_url }}" 
+           style="background-color: #F0AD4E; padding: 10px 20px; color: white; text-decoration: none; border-radius: 4px;">
+            Mettre à jour mes documents
+        </a>
+    </p>
+    
+    <p>Cordialement,<br/>
+    L'équipe <t t-out="object.company_id.name or ''">BLG Groupe</t></p>
+</div>
+            </field>
+            <field name="lang">{{ object.lang }}</field>
+            <field name="auto_delete" eval="True"/>
+        </record>
+
+    </data>
+</odoo>

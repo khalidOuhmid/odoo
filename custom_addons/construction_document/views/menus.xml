@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="menu_construction_document"
+              name="Documents"
+              parent="construction_core.menu_construction_project"
+              action="action_construction_document"
+              sequence="40"/>
+</odoo>

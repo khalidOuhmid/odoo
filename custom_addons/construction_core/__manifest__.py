@@ -2,38 +2,55 @@
 {
     'name': 'Construction Core',
     'version': '18.0.1.0.0',
-    'category': 'Construction/Technical',
-    'summary': 'Core foundations and FinOps mixins for Construction modules',
+    'category': 'Construction/Project Management',
+    'summary': 'Core module for Construction Sites and Lots management',
     'description': """
-        Construction Core Module
-        ========================
-        
-        This module provides the technical foundations for the modular Construction architecture.
-        It contains:
-        * Abstract models for financial tracking (FinOps)
-        * Mixins for document management
-        * Base enums and utilities
-        
-        This module does NOT contain end-user views or actions.
+Construction Core Module
+========================
+The foundational module for the Construction Suite. 
+
+Features:
+- **Chantier (Site) Management**: Centralized project management.
+- **Lot Management**: Breakdown of works into specific lots.
+- **Chapter & Stage Workflow**: Strict state machine for project progress.
+
+Enterprise Standards:
+- Strict Typing
+- SOLID Principles
+- "Governor Limits" ready
     """,
-    'author': 'BLG Groupe',
+    'author': 'Antigravity (Google DeepMind) for BLG Groupe',
     'website': 'https://www.blggroupe.com',
     'license': 'LGPL-3',
     'depends': [
         'base',
+        'contacts',
+        'sale',
         'mail',
-        'analytic',  # Fundamental for FinOps
-        'uom',
+        # 'web_gantt', # Optional: Check if enterprise is available, otherwise remove
     ],
     'data': [
         'security/construction_security.xml',
         'security/ir.model.access.csv',
-        'data/construction_stage_data.xml',
-        'wizards/force_stage_wizard_views.xml',
-        'views/project_chantier_views.xml',
-        'views/project_lot_views.xml',
+        'data/core_data.xml',
+        'data/lot_data.xml',
+        'data/email_templates.xml',
+        'data/mail_config.xml',
+        'wizard/force_stage_wizard_views.xml',
+        'wizard/lot_subcontractor_assign_wizard_views.xml',
+        'views/main_views.xml',
+        'views/chantier_views.xml',
+        'views/lot_views.xml',
+        'views/menus.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'construction_core/static/src/scss/construction_kanban.scss',
+            'construction_core/static/src/scss/construction_lot.scss',
+            'construction_core/static/src/scss/construction_form.scss',
+        ],
+    },
     'installable': True,
-    'application': False,
+    'application': True,
     'auto_install': False,
 }

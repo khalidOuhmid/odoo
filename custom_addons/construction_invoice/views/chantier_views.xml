@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Extend Chantier Form to add Invoice fields -->
+    <record id="view_chantier_invoice_form" model="ir.ui.view">
+        <field name="name">construction.chantier.invoice.form</field>
+        <field name="model">construction.chantier</field>
+        <field name="inherit_id" ref="construction_core.view_chantier_form"/>
+        <field name="arch" type="xml">
+            <!-- Add stat button -->
+            <div name="button_box" position="inside">
+                <button name="action_view_invoice_schedules" type="object" class="oe_stat_button" icon="fa-calendar-check-o">
+                    <field name="invoice_schedule_count" widget="statinfo" string="Facturation"/>
+                </button>
+            </div>
+            
+            <!-- Add invoice fields in a new group -->
+            <group name="financial_info" position="after">
+                <group string="Facturation" name="invoice_config">
+                    <field name="invoice_type_id"/>
+                    <field name="main_quote_id" domain="[('chantier_id', '=', id)]"/>
+                    <button name="action_generate_invoice_schedule" string="Générer planning" type="object" class="btn-secondary" icon="fa-calendar"/>
+                </group>
+            </group>
+        </field>
+    </record>
+
+</odoo>

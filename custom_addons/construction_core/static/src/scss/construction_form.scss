@@ -1,0 +1,115 @@
+/**
+ * Construction Core - Form View Premium Styling
+ * SCOPED TO CONSTRUCTION MODULE ONLY using data-model selectors
+ */
+
+/* =========================================
+   CHANTIER FORM VIEW - SCOPED
+   ========================================= */
+
+/* Only target construction.chantier forms */
+.o_form_view[data-res-model="construction.chantier"] {
+    .o_form_sheet {
+        border-radius: 16px;
+        box-shadow: 0 4px 25px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+    }
+}
+
+/* KPI Dashboard Header - Construction specific class */
+.construction_kpi_header {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    margin: -16px -16px 24px -16px;
+    border-radius: 16px 16px 0 0;
+}
+
+.construction_kpi_card {
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(10px);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+
+    &:hover {
+        background: rgba(255, 255, 255, 0.25);
+        transform: translateY(-4px);
+    }
+
+    .kpi_value {
+        font-size: 28px;
+        font-weight: 700;
+        color: white;
+        line-height: 1;
+    }
+
+    .kpi_label {
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-top: 4px;
+    }
+}
+
+/* Action bar - Construction specific */
+.construction_action_bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+    padding: 12px;
+    background: #f7fafc;
+    border-radius: 12px;
+}
+
+/* Timeline - Construction specific */
+.construction_timeline {
+    position: relative;
+    padding-left: 30px;
+
+    &::before {
+        content: "";
+        position: absolute;
+        left: 10px;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #e2e8f0;
+    }
+
+    .timeline_item {
+        position: relative;
+        margin-bottom: 20px;
+
+        &::before {
+            content: "";
+            position: absolute;
+            left: -24px;
+            top: 4px;
+            width: 12px;
+            height: 12px;
+            background: #667eea;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+    }
+}
+
+/* Only apply enhanced stat buttons to construction.chantier and construction.lot */
+.o_form_view[data-res-model="construction.chantier"],
+.o_form_view[data-res-model="construction.lot"] {
+    .oe_stat_button {
+        border-radius: 10px !important;
+        transition: all 0.2s ease;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+    }
+}

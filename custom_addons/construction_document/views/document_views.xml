@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- KANBAN VIEW -->
+    <record id="view_construction_document_kanban" model="ir.ui.view">
+        <field name="name">construction.document.kanban</field>
+        <field name="model">construction.document</field>
+        <field name="arch" type="xml">
+            <kanban string="Documents">
+                <field name="id"/>
+                <field name="name"/>
+                <field name="category"/>
+                <field name="file_data"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div class="oe_kanban_global_click">
+                            <div class="oe_kanban_details">
+                                <strong><field name="name"/></strong>
+                                <div><field name="category"/></div>
+                                <div><a t-attf-href="/web/content/construction.document/#{record.id.raw_value}/file_data?download=true">Télécharger</a></div>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- FORM VIEW -->
+    <record id="view_construction_document_form" model="ir.ui.view">
+        <field name="name">construction.document.form</field>
+        <field name="model">construction.document</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1><field name="name" placeholder="Nom du document"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="chantier_id"/>
+                            <field name="lot_id"/>
+                            <field name="category"/>
+                        </group>
+                        <group>
+                            <field name="file_data"/>
+                        </group>
+                    </group>
+                    <field name="description" placeholder="Notes..."/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- LIST VIEW -->
+    <record id="view_construction_document_tree" model="ir.ui.view">
+        <field name="name">construction.document.tree</field>
+        <field name="model">construction.document</field>
+        <field name="arch" type="xml">
+            <list string="Documents">
+                <field name="create_date"/>
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="category" widget="badge"/>
+                <field name="create_uid"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_construction_document_search" model="ir.ui.view">
+        <field name="name">construction.document.search</field>
+        <field name="model">construction.document</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="category"/>
+                <filter string="Plans" name="plan" domain="[('category', '=', 'plan')]"/>
+                <filter string="Contrats" name="contract" domain="[('category', '=', 'contract')]"/>
+                <group expand="0" string="Group By">
+                    <filter string="Chantier" name="group_chantier" context="{'group_by': 'chantier_id'}"/>
+                    <filter string="Catégorie" name="group_category" context="{'group_by': 'category'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_construction_document" model="ir.actions.act_window">
+        <field name="name">Documents</field>
+        <field name="res_model">construction.document</field>
+        <field name="view_mode">kanban,list,form</field>
+    </record>
+</odoo>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Lot Form Extension for Purchase -->
+    <record id="view_construction_lot_form_purchase" model="ir.ui.view">
+        <field name="name">construction.lot.form.purchase</field>
+        <field name="model">construction.lot</field>
+        <field name="inherit_id" ref="construction_core.view_construction_lot_form"/>
+        <field name="arch" type="xml">
+            <!-- Smart Button for Purchase -->
+            <div name="button_box" position="inside">
+                <button name="action_view_purchase_orders" type="object"
+                        class="oe_stat_button" icon="fa-shopping-cart">
+                    <field name="purchase_count" widget="statinfo" string="Commandes"/>
+                </button>
+            </div>
+        </field>
+    </record>
+
+    <!-- Lot Tree Extension -->
+    <record id="view_construction_lot_tree_purchase" model="ir.ui.view">
+        <field name="name">construction.lot.tree.purchase</field>
+        <field name="model">construction.lot</field>
+        <field name="inherit_id" ref="construction_core.view_construction_lot_tree"/>
+        <field name="arch" type="xml">
+            <field name="price" position="after">
+                <field name="purchase_total" optional="show" sum="Total Achats"/>
+                <field name="purchase_margin" optional="show" sum="Marge"/>
+                <field name="purchase_margin_percent" optional="hide" widget="percentage"/>
+            </field>
+        </field>
+    </record>
+</odoo>

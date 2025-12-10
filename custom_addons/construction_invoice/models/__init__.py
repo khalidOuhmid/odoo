@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
+from . import invoice_type
 from . import invoice_schedule
-from . import invoice_service
-from . import account_move
+from . import chantier_extension

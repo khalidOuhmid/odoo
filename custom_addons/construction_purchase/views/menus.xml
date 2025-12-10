@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Construction Purchase Menu -->
+    <menuitem id="menu_construction_purchase_root"
+              name="Achats Chantier"
+              parent="purchase.menu_purchase_root"
+              sequence="50"/>
+    
+    <menuitem id="menu_construction_purchase_orders"
+              name="Commandes par Chantier"
+              parent="menu_construction_purchase_root"
+              action="purchase.purchase_rfq"
+              sequence="10"/>
+</odoo>

@@ -1,58 +1,135 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ACTION TO OPEN CONTRACTS FROM PARTNER -->
-    <record id="action_construction_contract_partner" model="ir.actions.act_window">
-        <field name="name">Contracts</field>
-        <field name="res_model">construction.contract</field>
-        <field name="view_mode">list,form</field>
-        <field name="domain">[('partner_id', '=', active_id)]</field>
-        <field name="context">{'default_partner_id': active_id}</field>
+
+    <!-- ========== RES.PARTNER TREE VIEW ========== -->
+    <record id="view_partner_subcontractor_tree" model="ir.ui.view">
+        <field name="name">res.partner.subcontractor.tree</field>
+        <field name="model">res.partner</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+            <tree string="Sous-traitants" decoration-danger="compliance_state == 'expired'" decoration-warning="compliance_state == 'incomplete'">
+                <field name="name"/>
+                <field name="phone"/>
+                <field name="email"/>
+                <field name="subcontractor_type"/>
+                <field name="compliance_state" widget="badge" decoration-success="compliance_state == 'compliant'" decoration-danger="compliance_state == 'expired'" decoration-warning="compliance_state == 'incomplete'"/>
+                <field name="contract_count"/>
+            </tree>
+        </field>
     </record>
 
-    <!-- PARTNER VIEW EXTENSION -->
-    <record id="view_partner_form_subcontractor" model="ir.ui.view">
-        <field name="name">res.partner.form.subcontractor</field>
+    <!-- ========== RES.PARTNER FORM VIEW EXTENSION ========== -->
+    <record id="view_partner_subcontractor_form" model="ir.ui.view">
+        <field name="name">res.partner.subcontractor.form</field>
         <field name="model">res.partner</field>
         <field name="inherit_id" ref="base.view_partner_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@name='button_box']" position="inside">
-                 <button class="oe_stat_button" type="action" 
-                        name="%(construction_subcontractor.action_construction_contract_partner)d" 
-                        icon="fa-pencil-square-o"
-                        invisible="not is_subcontractor">
-                    <div class="o_field_widget o_stat_info">
-                        <span class="o_stat_text">Contracts</span>
-                    </div>
-                </button>
-            </xpath>
+            <!-- Add subcontractor checkbox after company type -->
+            <field name="company_type" position="after">
+                <field name="is_subcontractor"/>
+                <field name="subcontractor_type" invisible="not is_subcontractor"/>
+            </field>
             
-            <xpath expr="//notebook" position="inside">
-                <page string="Subcontractor" name="subcontractor_tab" invisible="not is_subcontractor">
+            <!-- Add compliance badge in header -->
+            <div name="button_box" position="inside">
+                <button name="action_view_contracts" type="object" class="oe_stat_button" icon="fa-file-text-o" invisible="not is_subcontractor">
+                    <field name="contract_count" widget="statinfo" string="Contrats"/>
+                </button>
+            </div>
+            
+            <!-- Add Subcontractor tab -->
+            <page name="internal_notes" position="before">
+                <page string="Sous-traitant" name="subcontractor_page" invisible="not is_subcontractor">
                     <group>
-                        <group string="Status">
-                            <field name="is_subcontractor"/>
-                            <field name="compliance_state" widget="badge" 
-                                   decoration-success="compliance_state == 'compliant'"
-                                   decoration-warning="compliance_state == 'incomplete'"
-                                   decoration-danger="compliance_state == 'expired'"/>
+                        <group string="Conformité">
+                            <field name="compliance_state" widget="badge" readonly="1"/>
+                            <field name="missing_documents" readonly="1" invisible="compliance_state == 'compliant'"/>
+                        </group>
+                        <group string="Portail">
+                            <field name="upload_url" widget="CopyClipboardChar" readonly="1"/>
+                            <field name="token_expiration" readonly="1"/>
+                            <button name="action_generate_upload_link" string="Générer nouveau lien" type="object" class="btn-secondary"/>
+                            <button name="action_send_upload_request" string="Envoyer demande" type="object" class="btn-primary"/>
                         </group>
                     </group>
                     
-                    <separator string="Compliance Documents"/>
-                    <field name="compliance_document_ids" context="{'default_document_type': 'other'}">
-                        <list editable="bottom" decoration-danger="state == 'expired'">
-                            <field name="document_type"/>
-                            <field name="name"/>
-                            <field name="expiry_date"/>
-                            <field name="state" widget="badge" decoration-success="state == 'valid'"/>
-                            <field name="file_data" filename="filename" widget="binary_min"/>
-                            <field name="filename" column_invisible="1"/>
-                            <button name="action_validate_manually" type="object" icon="fa-check" title="Validate" invisible="state == 'valid'"/>
-                        </list>
-                    </field>
+                    <notebook>
+                        <page string="Documents" name="documents">
+                            <group>
+                                <group string="KBIS">
+                                    <field name="doc_kbis" filename="doc_kbis_filename"/>
+                                    <field name="doc_kbis_filename" invisible="1"/>
+                                    <field name="doc_kbis_expiry"/>
+                                    <field name="doc_kbis_status" widget="badge"/>
+                                </group>
+                                <group string="URSSAF">
+                                    <field name="doc_urssaf" filename="doc_urssaf_filename"/>
+                                    <field name="doc_urssaf_filename" invisible="1"/>
+                                    <field name="doc_urssaf_expiry"/>
+                                    <field name="doc_urssaf_status" widget="badge"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="Assurance Décennale">
+                                    <field name="doc_insurance_dec" filename="doc_insurance_dec_filename"/>
+                                    <field name="doc_insurance_dec_filename" invisible="1"/>
+                                    <field name="doc_insurance_dec_expiry"/>
+                                    <field name="doc_insurance_dec_status" widget="badge"/>
+                                </group>
+                                <group string="Assurance RC Pro">
+                                    <field name="doc_insurance_pro" filename="doc_insurance_pro_filename"/>
+                                    <field name="doc_insurance_pro_filename" invisible="1"/>
+                                    <field name="doc_insurance_pro_expiry"/>
+                                    <field name="doc_insurance_pro_status" widget="badge"/>
+                                </group>
+                            </group>
+                            <group>
+                                <group string="RIB">
+                                    <field name="doc_rib" filename="doc_rib_filename"/>
+                                    <field name="doc_rib_filename" invisible="1"/>
+                                    <field name="doc_rib_status" widget="badge"/>
+                                </group>
+                            </group>
+                        </page>
+                    </notebook>
                 </page>
-            </xpath>
+            </page>
         </field>
+    </record>
+
+    <!-- ========== SEARCH VIEW ========== -->
+    <record id="view_partner_subcontractor_search" model="ir.ui.view">
+        <field name="name">res.partner.subcontractor.search</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <search string="Sous-traitants">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <separator/>
+                <filter string="Conformes" name="compliant" domain="[('compliance_state', '=', 'compliant')]"/>
+                <filter string="Incomplets" name="incomplete" domain="[('compliance_state', '=', 'incomplete')]"/>
+                <filter string="Documents expirés" name="expired" domain="[('compliance_state', '=', 'expired')]"/>
+                <separator/>
+                <filter string="Externes" name="external" domain="[('subcontractor_type', '=', 'external')]"/>
+                <filter string="Internes" name="internal" domain="[('subcontractor_type', '=', 'internal')]"/>
+                <separator/>
+                <group expand="0" string="Grouper par">
+                    <filter string="État conformité" name="group_compliance" context="{'group_by': 'compliance_state'}"/>
+                    <filter string="Type" name="group_type" context="{'group_by': 'subcontractor_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- ========== ACTION ========== -->
+    <record id="action_subcontractor_list" model="ir.actions.act_window">
+        <field name="name">Sous-traitants</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">tree,kanban,form</field>
+        <field name="domain">[('is_subcontractor', '=', True)]</field>
+        <field name="context">{'default_is_subcontractor': True}</field>
+        <field name="search_view_id" ref="view_partner_subcontractor_search"/>
     </record>
 
 </odoo>

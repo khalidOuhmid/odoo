@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Visit Report Action -->
+    <record id="action_report_visit" model="ir.actions.report">
+        <field name="name">Compte-rendu de visite</field>
+        <field name="model">construction.visit</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_visit.report_visit_document</field>
+        <field name="report_file">construction_visit.report_visit_document</field>
+        <field name="print_report_name">'Visite_%s_%s' % (object.chantier_id.reference, object.date.strftime('%Y%m%d'))</field>
+        <field name="binding_model_id" ref="model_construction_visit"/>
+        <field name="binding_type">report</field>
+    </record>
+
+    <!-- Visit Report Template -->
+    <template id="report_visit_document">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="web.external_layout">
+                    <div class="page">
+                        <!-- Header -->
+                        <div class="row">
+                            <div class="col-12 text-center">
+                                <h1>COMPTE-RENDU DE VISITE</h1>
+                                <h3 t-out="doc.name">Visite</h3>
+                            </div>
+                        </div>
+                        
+                        <br/>
+                        
+                        <!-- Visit Info -->
+                        <div class="row">
+                            <div class="col-6">
+                                <table class="table table-sm table-bordered">
+                                    <tr>
+                                        <th class="bg-light" style="width: 40%">Chantier</th>
+                                        <td><t t-out="doc.chantier_id.name">Chantier</t></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Référence</th>
+                                        <td><t t-out="doc.chantier_id.reference">Ref</t></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Client</th>
+                                        <td><t t-out="doc.chantier_id.client.name or '-'">Client</t></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Adresse</th>
+                                        <td><t t-out="doc.chantier_id.address or '-'">Adresse</t></td>
+                                    </tr>
+                                </table>
+                            </div>
+                            <div class="col-6">
+                                <table class="table table-sm table-bordered">
+                                    <tr>
+                                        <th class="bg-light" style="width: 40%">Date</th>
+                                        <td><t t-out="doc.date.strftime('%d/%m/%Y %H:%M')">Date</t></td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Durée</th>
+                                        <td><t t-out="doc.duration"/> h</td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">Type</th>
+                                        <td>
+                                            <t t-if="doc.visit_type == 'initial'">Visite Initiale</t>
+                                            <t t-if="doc.visit_type == 'progress'">Suivi de Chantier</t>
+                                            <t t-if="doc.visit_type == 'quality'">Contrôle Qualité</t>
+                                            <t t-if="doc.visit_type == 'final'">Réception</t>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th class="bg-light">État</th>
+                                        <td><t t-out="doc.state">État</t></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                        
+                        <!-- Participants -->
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <h5>Intervenants internes</h5>
+                                <ul>
+                                    <t t-foreach="doc.user_ids" t-as="user">
+                                        <li><t t-out="user.name">Utilisateur</t></li>
+                                    </t>
+                                    <t t-if="not doc.user_ids">
+                                        <li class="text-muted">Aucun</li>
+                                    </t>
+                                </ul>
+                            </div>
+                            <div class="col-6">
+                                <h5>Participants externes</h5>
+                                <ul>
+                                    <t t-foreach="doc.partner_ids" t-as="partner">
+                                        <li><t t-out="partner.name">Partenaire</t></li>
+                                    </t>
+                                    <t t-if="not doc.partner_ids">
+                                        <li class="text-muted">Aucun</li>
+                                    </t>
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div class="row mt-4" t-if="doc.notes">
+                            <div class="col-12">
+                                <h5>Notes et Observations</h5>
+                                <div class="border p-2" t-raw="doc.notes"/>
+                            </div>
+                        </div>
+                        
+                        <!-- Report -->
+                        <div class="row mt-4" t-if="doc.report">
+                            <div class="col-12">
+                                <h5>Compte-rendu détaillé</h5>
+                                <div class="border p-2" t-raw="doc.report"/>
+                            </div>
+                        </div>
+                        
+                        <!-- Signatures -->
+                        <div class="row mt-5">
+                            <div class="col-6 text-center">
+                                <p>Signature entreprise</p>
+                                <br/><br/><br/>
+                                <hr style="width: 80%"/>
+                            </div>
+                            <div class="col-6 text-center">
+                                <p>Signature client</p>
+                                <br/><br/><br/>
+                                <hr style="width: 80%"/>
+                            </div>
+                        </div>
+                        
+                        <!-- Footer -->
+                        <div class="row mt-4">
+                            <div class="col-12 text-center text-muted small">
+                                <p>Document généré le <t t-out="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')"/></p>
+                            </div>
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ========== MENUS ========== -->
+    
+    <menuitem 
+        id="menu_construction_subcontractor_root"
+        name="Sous-traitants"
+        parent="construction_core.menu_construction_root"
+        sequence="30"/>
+    
+    <menuitem
+        id="menu_subcontractor_list"
+        name="Sous-traitants"
+        parent="menu_construction_subcontractor_root"
+        action="action_subcontractor_list"
+        sequence="10"/>
+    
+    <menuitem
+        id="menu_contract_list"
+        name="Contrats"
+        parent="menu_construction_subcontractor_root"
+        action="action_construction_contract"
+        sequence="20"/>
+
+</odoo>
