@@ -1,0 +1,20 @@
+# Construction PLM - Python Dependencies
+# For Odoo.sh and local development
+#
+# Usage:
+# - Odoo.sh: Place in custom_addons root, Odoo.sh auto-installs
+# - Local: pip install -r requirements.txt
+
+# Data processing
+pandas>=2.0.0
+openpyxl>=3.1.0
+
+# PDF generation (construction_contract)
+weasyprint>=60.0
+PyPDF2>=3.0.0
+
+# Templating
+Jinja2>=3.1.0
+
+# Image processing
+Pillow>=10.0.0

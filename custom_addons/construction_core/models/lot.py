@@ -31,11 +31,14 @@ class Lot(models.Model):
     """
     A specific Lot instance on a Construction Site (Chantier).
     Links a Lot Category to a Site with specific Subcontractors.
+    
+    Completion is percentage-based (0-100%) and contributes to overall
+    chantier progress weighted by lot price.
     """
     _name = 'construction.lot'
     _description = 'Lot de Chantier'
     _inherit = ['mail.thread', 'mail.activity.mixin']
-    _order = 'code, name'
+    _order = 'sequence, code, name'
 
     # ============= Identity ============= #
     category_id = fields.Many2one('construction.lot.category', string='Catégorie Standard')
@@ -61,18 +64,41 @@ class Lot(models.Model):
         string='Prix',
         currency_field='currency_id',
         tracking=True,
-        help="Prix du lot"
+        help="Prix du lot (calculé à partir des articles du devis)"
+    )
+    
+    # ============= Completion (NEW) ============= #
+    completion_percentage = fields.Float(
+        string='Avancement (%)',
+        default=0.0,
+        tracking=True,
+        help="Pourcentage d'avancement du lot (0-100%)"
+    )
+    is_finished = fields.Boolean(
+        string='Terminé',
+        compute='_compute_is_finished',
+        store=True,
+        readonly=False,  # Allow manual override
+        tracking=True
+    )
+    weighted_value = fields.Monetary(
+        string='Valeur pondérée',
+        compute='_compute_weighted_value',
+        store=True,
+        currency_field='currency_id',
+        help="Prix × % avancement"
     )
     
     # ============= Organization ============= #
     sequence = fields.Integer(string='Séquence', default=10)
     color = fields.Integer(string='Couleur', default=0)
     description = fields.Text(string='Description')
-    is_finished = fields.Boolean(string='Terminé', default=False, tracking=True)
     
     # ============= Partners ============= #
     subcontractor_ids = fields.Many2many(
         'res.partner',
+        'construction_lot_subcontractor_rel',
+        'lot_id', 'partner_id',
         string='Sous-traitants',
         domain="[('supplier_rank', '>', 0)]",
         tracking=True
@@ -81,16 +107,36 @@ class Lot(models.Model):
     # ============= Constraints ============= #
     _sql_constraints = [
         ('positive_price', 'CHECK(price >= 0)', 'Le prix doit être positif.'),
+        ('completion_range', 'CHECK(completion_percentage >= 0 AND completion_percentage <= 100)', 
+         'Le pourcentage doit être entre 0 et 100.'),
         ('unique_lot_per_chantier', 'unique(code, chantier_id)', 'Le code du lot doit être unique par chantier.'),
     ]
 
-    # ============= Methods ============= #
+    # ============= Computes ============= #
+    @api.depends('completion_percentage')
+    def _compute_is_finished(self):
+        for record in self:
+            record.is_finished = record.completion_percentage >= 100.0
+
+    @api.depends('price', 'completion_percentage')
+    def _compute_weighted_value(self):
+        for record in self:
+            record.weighted_value = record.price * (record.completion_percentage / 100.0)
+
+    # ============= Onchange ============= #
     @api.onchange('category_id')
     def _onchange_category_id(self):
         if self.category_id:
             self.name = self.category_id.name
             self.code = self.category_id.code
 
+    @api.onchange('is_finished')
+    def _onchange_is_finished(self):
+        """When manually set to finished, set completion to 100%."""
+        if self.is_finished and self.completion_percentage < 100:
+            self.completion_percentage = 100.0
+
+    # ============= Constraints ============= #
     @api.constrains('chantier_id', 'code')
     def _check_unique_lot_code(self):
         for record in self:
@@ -102,6 +148,19 @@ class Lot(models.Model):
             if existing:
                 raise ValidationError(_("Un lot avec le code '%s' existe déjà sur ce chantier.") % record.code)
 
+    @api.constrains('completion_percentage')
+    def _check_completion_percentage(self):
+        for record in self:
+            if record.completion_percentage < 0 or record.completion_percentage > 100:
+                raise ValidationError(_("Le pourcentage d'avancement doit être entre 0% et 100%."))
+
+    # ============= Actions ============= #
+    def action_mark_complete(self):
+        """Mark lot as 100% complete."""
+        self.ensure_one()
+        self.completion_percentage = 100.0
+        return True
+
     def action_assign_subcontractor(self):
         """
         Placeholder for wizard action to assign subcontractor.
@@ -110,3 +169,4 @@ class Lot(models.Model):
         self.ensure_one()
         # Logic to open wizard (Wizard will be migrated later)
         pass
+

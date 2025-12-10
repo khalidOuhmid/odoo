@@ -46,7 +46,7 @@ Les actions sont liées aux étapes du chantier:
         'views/menus.xml',
         
         # Portal
-        'views/portal/document_upload.xml',
+        'views/portal_templates.xml',
     ],
     'assets': {
         'web.assets_backend': [

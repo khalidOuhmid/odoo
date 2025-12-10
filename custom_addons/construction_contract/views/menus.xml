@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- Root Menu (inherits from construction_base) -->
+    <!-- Root Menu (inherits from construction_core) -->
     <menuitem id="menu_construction_contract_root"
               name="Contracts"
-              parent="construction_base.menu_construction_root"
+              parent="construction_core.menu_construction_root"
               sequence="40"
               groups="group_construction_pilote,group_construction_comptable,group_construction_admin"/>
+
 
     <!-- Contracts Submenu -->
     <menuitem id="menu_construction_contract"

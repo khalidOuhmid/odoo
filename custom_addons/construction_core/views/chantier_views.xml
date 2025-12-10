@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- KANBAN VIEW - Enhanced SAP/Salesforce Style -->
+    <!-- KANBAN VIEW - Enhanced SAP/Salesforce Style (No Drag-Drop) -->
     <record id="view_construction_chantier_kanban" model="ir.ui.view">
         <field name="name">construction.chantier.kanban</field>
         <field name="model">construction.chantier</field>
@@ -8,7 +8,12 @@
             <kanban default_group_by="stage_id"
                     class="o_kanban_small_column o_construction_kanban"
                     group_expand="_read_group_stage_id"
-                    quick_create="false">
+                    quick_create="false"
+                    on_create="construction_core.action_construction_chantier"
+                    group_create="false"
+                    group_delete="false"
+                    group_edit="false"
+                    records_draggable="false">
                 <field name="stage_id"/>
                 <field name="color"/>
                 <field name="name"/>
@@ -90,7 +95,7 @@
         </field>
     </record>
 
-    <!-- FORM VIEW - Salesforce/SAP Style -->
+    <!-- FORM VIEW - Salesforce/SAP Style with Stage Visibility -->
     <record id="view_construction_chantier_form" model="ir.ui.view">
         <field name="name">construction.chantier.form</field>
         <field name="model">construction.chantier</field>
@@ -103,6 +108,13 @@
                            readonly="1"/>
                 </header>
                 <sheet>
+                    <!-- Hidden fields for visibility control -->
+                    <field name="show_visits" invisible="1"/>
+                    <field name="show_quotes" invisible="1"/>
+                    <field name="show_lots_selection" invisible="1"/>
+                    <field name="show_invoicing" invisible="1"/>
+                    <field name="show_subcontractors" invisible="1"/>
+                    
                     <!-- Alert for completed projects -->
                     <div class="alert alert-success" role="alert" 
                          invisible="state != 'completed'">
@@ -120,14 +132,16 @@
                             <field name="lots_ids" widget="statinfo" string="Lots"/>
                         </button>
                         <button class="oe_stat_button" icon="fa-file-text-o"
-                                name="action_view_quotations" type="object">
+                                name="action_view_quotations" type="object"
+                                invisible="not show_quotes">
                             <field name="quotation_ids" widget="statinfo" string="Devis"/>
                         </button>
                         <button name="%(action_lot_subcontractor_assign_wizard)d" 
                                 type="action" 
                                 class="oe_stat_button" 
                                 icon="fa-user-plus"
-                                groups="construction_core.group_construction_manager">
+                                groups="construction_core.group_construction_manager"
+                                invisible="not show_subcontractors">
                             <span class="o_stat_text">Assigner</span>
                             <span class="o_stat_text">Sous-traitant</span>
                         </button>
@@ -150,23 +164,26 @@
                         <field name="tag_ids" widget="many2many_tags" options="{'color_field': 'color'}" placeholder="Étiquettes..."/>
                     </div>
 
-                    <!-- Action Buttons - Salesforce Style -->
-                    <div class="mb-3">
+                    <!-- Workflow Navigation Buttons -->
+                    <div class="mb-3 d-flex gap-2">
                         <button name="action_previous_stage" string="◀ Précédent" type="object" 
                                 class="btn btn-secondary btn-sm"/>
                         <button name="action_next_stage" string="Suivant ▶" type="object" 
                                 class="btn btn-primary btn-sm"/>
-                        <button name="%(action_force_stage_wizard)d" 
-                                string="⚠️ Forcer Étape" 
-                                type="action" 
-                                class="btn btn-warning btn-sm float-end"
-                                groups="construction_core.group_construction_director"
-                                title="Forcer le changement d'étape (Directeur uniquement)"/>
                     </div>
+
+                    <!-- ==================== VALIDATION CONDITIONS PANEL (SAP/Salesforce Style) ==================== -->
+                    <group string="📋 Conditions de Validation" name="validation_panel">
+                        <field name="validation_conditions_html" 
+                               readonly="1" 
+                               nolabel="1"
+                               class="w-100"/>
+                        <field name="stage_validation_info" invisible="1"/>
+                    </group>
 
                     <!-- Main Content -->
                     <notebook>
-                        <!-- Tab 1: General Info -->
+                        <!-- Tab 1: General Info (Always visible) -->
                         <page string="📋 Général" name="general">
                             <group>
                                 <group string="📍 Localisation">
@@ -212,23 +229,77 @@
                             <field name="description" placeholder="Description détaillée des travaux..."/>
                         </page>
 
-                        <!-- Tab 2: Lots -->
+                        <!-- Tab 2: Lots (Always visible, editable from stage_devis_envoye) -->
                         <page string="🔧 Lots" name="lots">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-cubes me-2"/>Gestion des Lots
+                                </h4>
+                                <button name="action_add_lot" 
+                                        type="object" 
+                                        string="➕ Ajouter un Lot"
+                                        class="btn btn-primary btn-sm"/>
+                            </div>
+                            <div class="alert alert-info" invisible="show_lots_selection">
+                                <i class="fa fa-info-circle"/> La sélection de lots sera disponible après l'étape "Devis envoyé".
+                            </div>
                             <field name="lots_ids">
-                                <list editable="bottom" decoration-success="is_finished == True">
+                                <list editable="bottom" 
+                                      decoration-success="is_finished == True"
+                                      decoration-warning="completion_percentage > 0 and completion_percentage &lt; 100"
+                                      decoration-muted="completion_percentage == 0">
                                     <field name="sequence" widget="handle"/>
-                                    <field name="code"/>
-                                    <field name="name"/>
-                                    <field name="category_id"/>
-                                    <field name="subcontractor_ids" widget="many2many_tags"/>
+                                    <field name="code" readonly="1"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="category_id" readonly="1"/>
+                                    <field name="completion_percentage" widget="progressbar" 
+                                           options="{'editable': true, 'max_value': 100}"/>
                                     <field name="price" sum="Total"/>
-                                    <field name="is_finished"/>
+                                    <field name="weighted_value" sum="Valeur réalisée" 
+                                           decoration-success="weighted_value > 0"/>
+                                    <field name="subcontractor_ids" widget="many2many_tags" 
+                                           options="{'color_field': 'color', 'limit': 3}"
+                                           domain="[('supplier_rank', '>', 0)]"
+                                           readonly="not parent.show_lots_selection"/>
+                                    <field name="is_finished" widget="boolean_toggle"/>
                                 </list>
                             </field>
                         </page>
 
-                        <!-- Tab 3: Team -->
-                        <page string="👥 Équipe" name="team">
+                        <!-- Tab 3: Visites Techniques (Visible from stage_visite_technique) -->
+                        <page string="🔍 Visites" name="visits" invisible="not show_visits">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-calendar-check-o me-2"/>Gestion des Visites Techniques
+                                        </h4>
+                                        <div class="btn-group">
+                                            <button name="action_create_visit" 
+                                                    type="object" 
+                                                    string="➕ Nouvelle Visite"
+                                                    class="btn btn-primary btn-sm"/>
+                                            <button name="action_view_all_visits" 
+                                                    type="object" 
+                                                    string="📋 Toutes les Visites"
+                                                    class="btn btn-outline-secondary btn-sm"/>
+                                            <button name="action_view_planning_visits" 
+                                                    type="object" 
+                                                    string="📅 Planning Global"
+                                                    class="btn btn-outline-info btn-sm"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mb-3">
+                                <i class="fa fa-info-circle me-2"/>
+                                <strong>Module Visites requis:</strong> Le module <em>construction_visit</em> 
+                                doit être installé pour gérer les visites techniques.
+                            </div>
+                        </page>
+
+                        <!-- Tab 4: Team/Subcontractors (Visible from stage_devis_accepte) -->
+                        <page string="👥 Équipe" name="team" invisible="not show_subcontractors">
                             <group>
                                 <group string="Responsables Internes">
                                     <field name="user_ids" widget="many2many_tags" 
@@ -240,17 +311,85 @@
                             </group>
                         </page>
 
-                        <!-- Tab 4: Devis -->
-                        <page string="💰 Devis" name="quotations">
+                        <!-- Tab 5: Devis (Visible from stage_devis_envoye) -->
+                        <page string="💰 Devis" name="quotations" invisible="not show_quotes">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">Devis liés au chantier</h4>
+                                <button name="action_create_quotation" 
+                                        type="object" 
+                                        string="➕ Créer un Devis"
+                                        class="btn btn-success btn-sm"/>
+                            </div>
                             <field name="quotation_ids">
-                                <list>
+                                <list decoration-success="state == 'sale'" 
+                                      decoration-warning="state == 'sent'" 
+                                      decoration-muted="state == 'cancel'">
                                     <field name="name"/>
                                     <field name="partner_id"/>
                                     <field name="date_order"/>
-                                    <field name="amount_total"/>
-                                    <field name="state"/>
+                                    <field name="amount_total" sum="Total"/>
+                                    <field name="state" widget="badge"/>
                                 </list>
                             </field>
+                        </page>
+
+                        <!-- Tab 6: Facturation (Visible from stage_finalisation_dossier) -->
+                        <page string="🧾 Facturation" name="invoicing" invisible="not show_invoicing">
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h4 class="mb-0">
+                                            <i class="fa fa-money me-2"/>Cycle de Facturation
+                                        </h4>
+                                        <div class="btn-group">
+                                            <button name="action_create_invoice_schedule" 
+                                                    type="object" 
+                                                    string="➕ Nouveau Planning"
+                                                    class="btn btn-primary btn-sm"/>
+                                            <button name="action_view_invoices" 
+                                                    type="object" 
+                                                    string="📋 Voir Factures"
+                                                    class="btn btn-outline-secondary btn-sm"/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="alert alert-success mb-3">
+                                <h5><i class="fa fa-check-circle me-2"/>Gestion de Facturation</h5>
+                                <p class="mb-0">
+                                    Configurez les échéances de facturation selon les cycles prédéfinis
+                                    (30/30/40, Quartiles, etc.) ou créez un planning personnalisé.
+                                </p>
+                            </div>
+                            <div class="alert alert-info mb-3">
+                                <i class="fa fa-info-circle me-2"/>
+                                <strong>Module requis:</strong> Le module <em>construction_invoice</em> 
+                                doit être installé pour la gestion complète de la facturation.
+                            </div>
+                        </page>
+
+                        <!-- Tab 7: Documents (Always visible) -->
+                        <page string="📄 Documents" name="documents">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-folder-open me-2"/>Documents du Chantier
+                                </h4>
+                                <div class="btn-group">
+                                    <button name="action_upload_document" 
+                                            type="object" 
+                                            string="📤 Ajouter Document"
+                                            class="btn btn-primary btn-sm"/>
+                                    <button name="action_view_all_documents" 
+                                            type="object" 
+                                            string="📁 Tous les Documents"
+                                            class="btn btn-outline-secondary btn-sm"/>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mb-3">
+                                <i class="fa fa-info-circle me-2"/>
+                                <strong>Module requis:</strong> Le module <em>construction_document</em> 
+                                doit être installé pour la GED complète (Plans, Devis, Contrats, etc.).
+                            </div>
                         </page>
                     </notebook>
                 </sheet>

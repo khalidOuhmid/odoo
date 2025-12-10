@@ -1,47 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- Chantier Form Extension for Purchase -->
+    <!-- Chantier Form Extension for Purchase - Simplified -->
     <record id="view_construction_chantier_form_purchase" model="ir.ui.view">
         <field name="name">construction.chantier.form.purchase</field>
         <field name="model">construction.chantier</field>
         <field name="inherit_id" ref="construction_core.view_construction_chantier_form"/>
         <field name="arch" type="xml">
-            <!-- Smart Button for Purchase Orders -->
-            <div name="button_box" position="inside">
-                <button name="action_view_purchase_orders" type="object"
-                        class="oe_stat_button" icon="fa-shopping-cart">
-                    <field name="purchase_order_count" widget="statinfo" string="Achats"/>
-                </button>
-            </div>
-            
-            <!-- Purchase tab in notebook -->
-            <page name="lots" position="after">
+            <!-- Add Purchase tab with actions only (no fields that don't exist yet) -->
+            <xpath expr="//notebook" position="inside">
                 <page string="💰 Achats" name="purchases">
                     <group>
-                        <group string="Statistiques Achats">
-                            <field name="purchase_total" widget="monetary"/>
-                            <field name="purchase_margin" widget="monetary"/>
-                        </group>
-                        <group string="Actions">
+                        <group string="Actions Achats">
                             <button name="action_create_purchase_orders" type="object"
                                     string="🛒 Créer Commandes Groupées"
                                     class="btn-primary"/>
                         </group>
                     </group>
-                    <field name="purchase_order_ids" readonly="1">
-                        <list>
-                            <field name="name"/>
-                            <field name="partner_id"/>
-                            <field name="date_order"/>
-                            <field name="amount_total" sum="Total"/>
-                            <field name="state" widget="badge"
-                                   decoration-success="state == 'purchase'"
-                                   decoration-warning="state == 'draft'"
-                                   decoration-info="state == 'sent'"/>
-                        </list>
-                    </field>
                 </page>
-            </page>
+            </xpath>
         </field>
     </record>
 </odoo>

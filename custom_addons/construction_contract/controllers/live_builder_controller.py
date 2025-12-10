@@ -34,7 +34,7 @@ class ContractLiveBuilderController(http.Controller):
         if not chantier.exists():
             raise NotFound(_("Chantier not found."))
         subcontractors = env['res.partner'].search(
-            [('contact_type', '=', 'sous_traitant')],
+            [('is_subcontractor', '=', True)],
             order='name asc'
         )
         templates = env['construction.contract.template'].search(

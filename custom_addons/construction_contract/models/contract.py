@@ -104,8 +104,8 @@ class ConstructionContract(models.Model):
         string='Subcontractor',
         required=True,
         tracking=True,
-        domain="[('contact_type', '=', 'sous_traitant')]",
-        help="Subcontractor company (from blg_contacts_extension)"
+        domain="[('is_subcontractor', '=', True)]",
+        help="Subcontractor company (from construction_subcontractor)"
     )
 
     lot_ids = fields.Many2many(

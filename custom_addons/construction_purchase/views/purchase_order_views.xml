@@ -28,7 +28,7 @@
                        domain="[('chantier_id', '=', chantier_id)]"/>
             </field>
             
-            <!-- Wizard buttons in sheet header (using xpath to header) -->
+            <!-- Wizard buttons in sheet header -->
             <xpath expr="//header" position="inside">
                 <button name="action_add_product_wizard" type="object"
                         string="🧙 Assistant Produits"
@@ -39,12 +39,6 @@
                         class="btn-secondary"
                         invisible="state != 'draft'"/>
             </xpath>
-            
-            <!-- Margin info after amount_total -->
-            <field name="amount_total" position="after">
-                <field name="margin_amount" invisible="margin_amount == 0"/>
-                <field name="margin_percent" invisible="margin_percent == 0" widget="percentage"/>
-            </field>
         </field>
     </record>
 

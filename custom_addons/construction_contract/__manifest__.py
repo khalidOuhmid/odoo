@@ -60,9 +60,9 @@
         'data/default_contract_template.xml',
         'data/urssaf_codes.xml',
 
-        # Views
-        'views/contract_views.xml',
-        'views/contract_template_views.xml',
+        # Views (template views first - defines actions referenced by contract_views)
+        'views/contract_template_views.xml',  # Defines actions
+        'views/contract_views.xml',           # References template actions
         'views/chantier_views.xml',
         'views/urssaf_code_views.xml',
         'views/menus.xml',

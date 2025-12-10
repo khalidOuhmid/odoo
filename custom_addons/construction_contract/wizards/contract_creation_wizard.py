@@ -38,7 +38,7 @@ class ContractCreationWizard(models.TransientModel):
         'res.partner',
         string='Subcontractor',
         required=True,
-        domain="[('contact_type', '=', 'sous_traitant')]",
+        domain="[('is_subcontractor', '=', True)]",
         help="Select the subcontractor"
     )
 

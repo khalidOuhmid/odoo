@@ -169,11 +169,21 @@ class ResPartner(models.Model):
     upload_url = fields.Char(compute='_compute_upload_url', string='Lien d\'upload')
     
     # ============= RELATIONS ============= #
-    contract_ids = fields.One2many(
-        'construction.contract', 'partner_id',
-        string='Contrats'
+    # NOTE: contract_ids requires construction_contract module to be installed
+    # Uncomment when using construction_contract:
+    # contract_ids = fields.One2many(
+    #     'construction.contract', 'subcontractor_id',
+    #     string='Contrats'
+    # )
+    contract_count = fields.Integer(compute='_compute_contract_count', default=0)
+    
+    specialty_lot_category_ids = fields.Many2many(
+        'construction.lot.category',
+        'partner_lot_category_specialty_rel',
+        'partner_id', 'category_id',
+        string='Spécialités (Lots)',
+        help="Types de lots que ce sous-traitant peut réaliser (ex: Gros Œuvre, Électricité)"
     )
-    contract_count = fields.Integer(compute='_compute_contract_count')
     
     # ============= COMPUTED METHODS ============= #
     
@@ -265,7 +275,11 @@ class ResPartner(models.Model):
     
     def _compute_contract_count(self):
         for partner in self:
-            partner.contract_count = len(partner.contract_ids)
+            # Only count if construction_contract module is installed
+            if hasattr(partner, 'contract_ids'):
+                partner.contract_count = len(partner.contract_ids)
+            else:
+                partner.contract_count = 0
     
     # ============= PORTAL ACTIONS ============= #
     

@@ -167,6 +167,39 @@ class Chantier(models.Model):
     lots_ids = fields.One2many('construction.lot', 'chantier_id', string='Lots')
     lots_count = fields.Integer(compute='_compute_lots_count')
     
+    # ============= Stage-Based Visibility (SAP/Salesforce UX) ============= #
+    show_visits = fields.Boolean(
+        compute='_compute_stage_visibility',
+        string='Afficher Visites',
+        help="Visible uniquement à partir de la visite technique"
+    )
+    show_quotes = fields.Boolean(
+        compute='_compute_stage_visibility',
+        string='Afficher Devis',
+        help="Visible à partir de devis envoyé"
+    )
+    show_lots_selection = fields.Boolean(
+        compute='_compute_stage_visibility',
+        string='Afficher Sélection Lots',
+        help="Visible à partir de devis envoyé"
+    )
+    show_invoicing = fields.Boolean(
+        compute='_compute_stage_visibility',
+        string='Afficher Facturation',
+        help="Visible à partir de finalisation dossier"
+    )
+    show_subcontractors = fields.Boolean(
+        compute='_compute_stage_visibility',
+        string='Afficher Sous-traitants',
+        help="Visible à partir de devis accepté"
+    )
+    
+    # ============= Validation Conditions Display ============= #
+    validation_conditions_html = fields.Html(
+        compute='_compute_validation_conditions_html',
+        string='Conditions de Validation'
+    )
+    
     # NOTE: visit_ids and document_ids are added by construction_visit and 
     # construction_document modules respectively via _inherit
 
@@ -205,13 +238,23 @@ class Chantier(models.Model):
             else:
                 record.duration_actual = 0
 
-    @api.depends('lots_ids.is_finished', 'lots_ids.price')
+    @api.depends('lots_ids.completion_percentage', 'lots_ids.price', 'lots_ids.weighted_value')
     def _compute_progress(self):
-        """Calculate progress based on finished lots."""
+        """Calculate progress based on weighted lot completion.
+        
+        Progress = (Sum of weighted_values) / (Total price) × 100
+        where weighted_value = lot_price × (completion_percentage / 100)
+        
+        Example:
+        - Lot A: 100€ at 100% = 100€ weighted
+        - Lot B: 100€ at 50% = 50€ weighted
+        - Total: 200€
+        - Progress = (100 + 50) / 200 × 100 = 75%
+        """
         for record in self:
             total_price = sum(record.lots_ids.mapped('price'))
-            finished_price = sum(record.lots_ids.filtered('is_finished').mapped('price'))
-            record.progress = (finished_price / total_price * 100) if total_price > 0 else 0.0
+            weighted_sum = sum(record.lots_ids.mapped('weighted_value'))
+            record.progress = (weighted_sum / total_price * 100) if total_price > 0 else 0.0
 
     @api.depends('lots_ids.price')
     def _compute_total_cost(self):
@@ -229,6 +272,199 @@ class Chantier(models.Model):
     def _compute_lots_count(self):
         for record in self:
             record.lots_count = len(record.lots_ids)
+
+    @api.depends('stage_id', 'stage_id.code', 'stage_id.chapter_id', 'stage_id.sequence')
+    def _compute_stage_visibility(self):
+        """Compute visibility of features based on current stage.
+        
+        Stage codes and their sequence in the workflow:
+        - REC (10): Réception - nothing special visible
+        - VT (20): Visite technique - visits become visible
+        - DE (30): Devis envoyé - quotes and lots selection visible
+        - DA (10, ch.PREP): Devis accepté - subcontractors visible
+        - FD (20, ch.PREP): Finalisation dossier - invoicing visible
+        """
+        # Get stage codes from database for comparison
+        stage_vt = self.env.ref('construction_core.stage_visite_technique', raise_if_not_found=False)
+        stage_de = self.env.ref('construction_core.stage_devis_envoye', raise_if_not_found=False)
+        stage_da = self.env.ref('construction_core.stage_devis_accepte', raise_if_not_found=False)
+        stage_fd = self.env.ref('construction_core.stage_finalisation_dossier', raise_if_not_found=False)
+        
+        for record in self:
+            if not record.stage_id:
+                record.show_visits = False
+                record.show_quotes = False
+                record.show_lots_selection = False
+                record.show_invoicing = False
+                record.show_subcontractors = False
+                continue
+            
+            current_stage = record.stage_id
+            current_chapter = current_stage.chapter_id
+            
+            # Helper to compare stages (considering chapter order + stage sequence)
+            def is_at_or_after(target_stage):
+                if not target_stage:
+                    return False
+                target_chapter = target_stage.chapter_id
+                if current_chapter.sequence > target_chapter.sequence:
+                    return True
+                elif current_chapter.sequence == target_chapter.sequence:
+                    return current_stage.sequence >= target_stage.sequence
+                return False
+            
+            # Visits visible from VT (Visite technique) onwards
+            record.show_visits = is_at_or_after(stage_vt)
+            
+            # Quotes and lot selection visible from DE (Devis envoyé) onwards
+            record.show_quotes = is_at_or_after(stage_de)
+            record.show_lots_selection = is_at_or_after(stage_de)
+            
+            # Subcontractors visible from DA (Devis accepté) onwards
+            record.show_subcontractors = is_at_or_after(stage_da)
+            
+            # Invoicing visible from FD (Finalisation dossier) onwards
+            record.show_invoicing = is_at_or_after(stage_fd)
+
+    @api.depends('stage_id')
+    def _compute_validation_conditions_html(self):
+        """Generate professional SAP/ONAYA style validation cockpit HTML."""
+        for record in self:
+            if not record.stage_id:
+                record.validation_conditions_html = """
+                    <div style="padding: 20px; text-align: center; color: #888;">
+                        <i class="fa fa-info-circle" style="font-size: 24px;"></i>
+                        <p style="margin-top: 10px;">Aucune étape définie</p>
+                    </div>
+                """
+                continue
+            
+            stage_code = record.stage_id.code
+            stage_name = record.stage_id.name
+            chapter_name = record.stage_id.chapter_id.name if record.stage_id.chapter_id else ''
+            validator_name = STAGE_TRANSITIONS.get(stage_code, {}).get('validator')
+            next_stage_code = STAGE_TRANSITIONS.get(stage_code, {}).get('next')
+            
+            # Get next stage info
+            next_stage = None
+            if next_stage_code:
+                next_stage = record.env['construction.stage'].search([('code', '=', next_stage_code)], limit=1)
+            
+            next_stage_name = next_stage.name if next_stage else 'Fin du workflow'
+            
+            # Header with current stage and progress
+            header_html = f"""
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                            padding: 16px 20px; margin: -12px -12px 16px -12px; border-radius: 8px 8px 0 0;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <span style="color: rgba(255,255,255,0.8); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">
+                                {chapter_name}
+                            </span>
+                            <h4 style="color: white; margin: 4px 0 0 0; font-size: 18px; font-weight: 600;">
+                                📍 {stage_name}
+                            </h4>
+                        </div>
+                        <div style="text-align: right;">
+                            <span style="color: rgba(255,255,255,0.8); font-size: 11px;">PROCHAINE ÉTAPE</span>
+                            <div style="color: white; font-size: 14px; font-weight: 500;">
+                                ➡️ {next_stage_name}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            """
+            
+            if not validator_name:
+                html = header_html + """
+                    <div style="padding: 20px; text-align: center;">
+                        <div style="display: inline-flex; align-items: center; justify-content: center; 
+                                    width: 60px; height: 60px; border-radius: 50%; 
+                                    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); margin-bottom: 12px;">
+                            <i class="fa fa-check" style="color: white; font-size: 28px;"></i>
+                        </div>
+                        <h5 style="color: #38a169; margin: 0;">Prêt à avancer</h5>
+                        <p style="color: #718096; font-size: 13px; margin: 8px 0 0 0;">
+                            Aucune condition requise pour cette transition
+                        </p>
+                    </div>
+                """
+                record.validation_conditions_html = html
+                continue
+            
+            # Call validator
+            validator = getattr(record, validator_name, None)
+            if validator and callable(validator):
+                can_proceed, message = validator()
+            else:
+                can_proceed, message = True, "OK"
+            
+            # Build conditions display
+            if can_proceed:
+                content_html = """
+                    <div style="padding: 20px; text-align: center;">
+                        <div style="display: inline-flex; align-items: center; justify-content: center; 
+                                    width: 70px; height: 70px; border-radius: 50%; 
+                                    background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); 
+                                    margin-bottom: 16px; box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);">
+                            <i class="fa fa-check" style="color: white; font-size: 32px;"></i>
+                        </div>
+                        <h5 style="color: #2d3748; margin: 0; font-size: 16px;">
+                            ✅ Toutes les conditions sont remplies
+                        </h5>
+                        <p style="color: #38a169; font-size: 14px; margin: 8px 0 0 0; font-weight: 500;">
+                            Vous pouvez passer à l'étape suivante
+                        </p>
+                    </div>
+                """
+            else:
+                # Parse conditions
+                conditions = message.split(", ") if ", " in message else [message]
+                conditions_items = ""
+                for i, condition in enumerate(conditions):
+                    conditions_items += f"""
+                        <div style="display: flex; align-items: center; padding: 12px 16px; 
+                                    background: #fff5f5; border-left: 3px solid #e53e3e; 
+                                    margin-bottom: 8px; border-radius: 0 6px 6px 0;">
+                            <div style="width: 28px; height: 28px; border-radius: 50%; 
+                                        background: #fed7d7; display: flex; align-items: center; 
+                                        justify-content: center; margin-right: 12px; flex-shrink: 0;">
+                                <i class="fa fa-times" style="color: #e53e3e; font-size: 12px;"></i>
+                            </div>
+                            <span style="color: #c53030; font-size: 13px; font-weight: 500;">
+                                {condition}
+                            </span>
+                        </div>
+                    """
+                
+                content_html = f"""
+                    <div style="padding: 16px;">
+                        <div style="display: flex; align-items: center; margin-bottom: 16px;">
+                            <div style="width: 40px; height: 40px; border-radius: 8px; 
+                                        background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%); 
+                                        display: flex; align-items: center; justify-content: center; margin-right: 12px;">
+                                <i class="fa fa-lock" style="color: white; font-size: 18px;"></i>
+                            </div>
+                            <div>
+                                <h5 style="color: #c05621; margin: 0; font-size: 15px;">Transition bloquée</h5>
+                                <span style="color: #975a16; font-size: 12px;">
+                                    {len(conditions)} condition{"s" if len(conditions) > 1 else ""} à remplir
+                                </span>
+                            </div>
+                        </div>
+                        {conditions_items}
+                    </div>
+                """
+            
+            html = f"""
+                <div style="background: white; border-radius: 8px; overflow: hidden; 
+                            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.06);">
+                    {header_html}
+                    {content_html}
+                </div>
+            """
+            
+            record.validation_conditions_html = html
 
     @api.depends('stage_id')
     def _compute_stage_validation_info(self):
@@ -564,6 +800,162 @@ class Chantier(models.Model):
             'view_mode': 'list,form',
             'domain': [('chantier_id', '=', self.id)],
             'context': {'default_chantier_id': self.id},
+        }
+
+    # ============= TAB ACTION METHODS ============= #
+    
+    def action_create_visit(self):
+        """Create a new visit for this chantier."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Nouvelle Visite'),
+            'res_model': 'construction.visit',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.id,
+                'default_visit_type': 'initial',  # Valid values: initial, progress, quality, final
+            },
+        }
+
+    def action_view_all_visits(self):
+        """View all visits for this chantier."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Visites - %s') % self.name,
+            'res_model': 'construction.visit',
+            'view_mode': 'list,calendar,form',
+            'domain': [('chantier_id', '=', self.id)],
+            'context': {'default_chantier_id': self.id},
+        }
+
+    def action_view_planning_visits(self):
+        """View global planning of all visits."""
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Planning Visites'),
+            'res_model': 'construction.visit',
+            'view_mode': 'calendar,list,form',
+            'context': {'search_default_group_by_chantier': 1},
+        }
+
+    def action_add_lot(self):
+        """Add a new lot to this chantier."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Ajouter un Lot'),
+            'res_model': 'construction.lot',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.id,
+            },
+        }
+
+    def action_create_quotation(self):
+        """Create a new quotation for this chantier."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Nouveau Devis'),
+            'res_model': 'sale.order',
+            'view_mode': 'form',
+            'context': {
+                'default_chantier_id': self.id,
+                'default_partner_id': self.client.id,
+            },
+        }
+
+    def action_create_invoice_schedule(self):
+        """Create invoice schedule for this chantier."""
+        self.ensure_one()
+        # Try to use wizard if available
+        wizard_action = self.env.ref('construction_invoice.action_invoice_schedule_wizard', raise_if_not_found=False)
+        if wizard_action:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Nouveau Planning de Facturation'),
+                'res_model': 'construction.invoice.schedule.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_chantier_id': self.id},
+            }
+        # Fallback: direct creation
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Planning Facturation'),
+            'res_model': 'construction.invoice.schedule',
+            'view_mode': 'form',
+            'context': {'default_chantier_id': self.id},
+        }
+
+    def action_view_invoices(self):
+        """View all invoices for this chantier."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Factures - %s') % self.name,
+            'res_model': 'account.move',
+            'view_mode': 'list,form',
+            'domain': [('chantier_id', '=', self.id), ('move_type', '=', 'out_invoice')],
+            'context': {'default_chantier_id': self.id},
+        }
+
+    # ============= DOCUMENT ACTION METHODS ============= #
+    
+    def action_upload_document(self):
+        """Open wizard to upload a document."""
+        self.ensure_one()
+        # Try to use wizard if available from construction_document
+        wizard_action = self.env.ref('construction_document.action_document_upload_wizard', raise_if_not_found=False)
+        if wizard_action:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Ajouter un Document'),
+                'res_model': 'construction.document.upload.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {'default_chantier_id': self.id},
+            }
+        # Fallback: open attachment form
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Ajouter un Document'),
+            'res_model': 'ir.attachment',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_res_model': 'construction.chantier',
+                'default_res_id': self.id,
+            },
+        }
+
+    def action_view_all_documents(self):
+        """View all documents attached to this chantier."""
+        self.ensure_one()
+        # Check if construction_document model exists
+        if 'construction.document' in self.env:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Documents - %s') % self.name,
+                'res_model': 'construction.document',
+                'view_mode': 'list,kanban,form',
+                'domain': [('chantier_id', '=', self.id)],
+                'context': {'default_chantier_id': self.id},
+            }
+        # Fallback: show standard attachments
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Documents - %s') % self.name,
+            'res_model': 'ir.attachment',
+            'view_mode': 'list,form',
+            'domain': [
+                ('res_model', '=', 'construction.chantier'),
+                ('res_id', '=', self.id)
+            ],
         }
 
     # ============= Backward Compatibility (aliases) ============= #

@@ -5,7 +5,7 @@
     <record id="view_chantier_invoice_form" model="ir.ui.view">
         <field name="name">construction.chantier.invoice.form</field>
         <field name="model">construction.chantier</field>
-        <field name="inherit_id" ref="construction_core.view_chantier_form"/>
+        <field name="inherit_id" ref="construction_core.view_construction_chantier_form"/>
         <field name="arch" type="xml">
             <!-- Add stat button -->
             <div name="button_box" position="inside">
@@ -14,14 +14,14 @@
                 </button>
             </div>
             
-            <!-- Add invoice fields in a new group -->
-            <group name="financial_info" position="after">
+            <!-- Add invoice fields using xpath to be safe -->
+            <xpath expr="//sheet" position="inside">
                 <group string="Facturation" name="invoice_config">
                     <field name="invoice_type_id"/>
                     <field name="main_quote_id" domain="[('chantier_id', '=', id)]"/>
                     <button name="action_generate_invoice_schedule" string="Générer planning" type="object" class="btn-secondary" icon="fa-calendar"/>
                 </group>
-            </group>
+            </xpath>
         </field>
     </record>
 

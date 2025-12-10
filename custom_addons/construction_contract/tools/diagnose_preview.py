@@ -77,7 +77,7 @@ def diagnose_preview(env):
     
     # 5. Check subcontractors exist
     print("\n[5/8] Checking subcontractors...")
-    subcontractors = env['res.partner'].search([('contact_type', '=', 'sous_traitant')])
+    subcontractors = env['res.partner'].search([('is_subcontractor', '=', True)])
     if subcontractors:
         print(f"   ✓ Found {len(subcontractors)} subcontractor(s)")
         for sub in subcontractors[:3]:

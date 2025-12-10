@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ==================== PORTAL UPLOAD PAGE ==================== -->
+    <template id="upload_page" name="Subcontractor Document Upload">
+        <t t-call="web.frontend_layout">
+            <div class="container py-5">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <!-- Header Card -->
+                        <div class="card shadow-lg border-0 mb-4">
+                            <div class="card-header bg-primary text-white py-4">
+                                <div class="d-flex align-items-center">
+                                    <i class="fa fa-upload fa-3x me-3"/>
+                                    <div>
+                                        <h3 class="mb-0">Portail Sous-traitant</h3>
+                                        <p class="mb-0 opacity-75">Téléversez vos documents de conformité</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="alert alert-info mb-4">
+                                    <i class="fa fa-info-circle me-2"/>
+                                    <strong>Bienvenue <t t-esc="partner.name"/>!</strong> 
+                                    Veuillez téléverser les documents demandés ci-dessous.
+                                </div>
+
+                                <form method="POST" 
+                                      t-attf-action="/subcontractor/upload/#{token}/submit" 
+                                      enctype="multipart/form-data">
+                                    
+                                    <t t-foreach="doc_types" t-as="doc">
+                                        <div class="card mb-3" 
+                                             t-attf-class="border-#{doc['status'] == 'valid' and 'success' or doc['status'] == 'expired' and 'danger' or doc['status'] == 'rejected' and 'danger' or 'secondary'}">
+                                            <div class="card-body">
+                                                <div class="row align-items-center">
+                                                    <div class="col-md-4">
+                                                        <h5 class="mb-1">
+                                                            <t t-if="doc['status'] == 'valid'">
+                                                                <i class="fa fa-check-circle text-success me-2"/>
+                                                            </t>
+                                                            <t t-elif="doc['status'] == 'expired'">
+                                                                <i class="fa fa-times-circle text-danger me-2"/>
+                                                            </t>
+                                                            <t t-elif="doc['status'] == 'to_check'">
+                                                                <i class="fa fa-clock-o text-warning me-2"/>
+                                                            </t>
+                                                            <t t-elif="doc['status'] == 'rejected'">
+                                                                <i class="fa fa-ban text-danger me-2"/>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <i class="fa fa-file-o text-muted me-2"/>
+                                                            </t>
+                                                            <t t-esc="doc['name']"/>
+                                                        </h5>
+                                                        <small class="text-muted">
+                                                            <t t-if="doc['status'] == 'valid'">Document valide</t>
+                                                            <t t-elif="doc['status'] == 'expired'">Document expiré</t>
+                                                            <t t-elif="doc['status'] == 'to_check'">En attente de validation</t>
+                                                            <t t-elif="doc['status'] == 'rejected'">Document rejeté</t>
+                                                            <t t-elif="doc['status'] == 'expiring'">Expire bientôt</t>
+                                                            <t t-else="">Manquant</t>
+                                                        </small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <input type="file" 
+                                                               t-attf-name="doc_#{doc['key']}" 
+                                                               class="form-control form-control-sm"
+                                                               accept=".pdf,.jpg,.jpeg,.png"/>
+                                                    </div>
+                                                    <div class="col-md-4" t-if="doc['has_expiry']">
+                                                        <label class="form-label small mb-1">Date d'expiration</label>
+                                                        <input type="date" 
+                                                               t-attf-name="doc_#{doc['key']}_expiry" 
+                                                               class="form-control form-control-sm"
+                                                               t-att-value="doc.get('expiry') and str(doc['expiry']) or ''"/>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </t>
+
+                                    <div class="d-grid gap-2 mt-4">
+                                        <button type="submit" class="btn btn-primary btn-lg">
+                                            <i class="fa fa-cloud-upload me-2"/>
+                                            Envoyer les documents
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Footer Info -->
+                        <div class="text-center text-muted small">
+                            <p><i class="fa fa-lock me-1"/> Vos documents sont transmis de manière sécurisée.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ==================== SUCCESS PAGE ==================== -->
+    <template id="upload_success" name="Upload Success">
+        <t t-call="web.frontend_layout">
+            <div class="container py-5">
+                <div class="row justify-content-center">
+                    <div class="col-lg-6 text-center">
+                        <div class="card shadow-lg border-0">
+                            <div class="card-body py-5">
+                                <div class="mb-4">
+                                    <i class="fa fa-check-circle text-success" style="font-size: 80px;"/>
+                                </div>
+                                <h2 class="text-success mb-3">Documents envoyés !</h2>
+                                <p class="lead text-muted mb-4">
+                                    Merci <strong><t t-esc="partner.name"/></strong>. Vos documents ont été reçus 
+                                    et seront validés par notre équipe sous 48h.
+                                </p>
+                                <div class="alert alert-info">
+                                    <i class="fa fa-info-circle me-2"/>
+                                    Vous recevrez un email lorsque vos documents auront été validés ou si des 
+                                    informations complémentaires sont nécessaires.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
+    <!-- ==================== ERROR PAGE ==================== -->
+    <template id="upload_error" name="Upload Error">
+        <t t-call="web.frontend_layout">
+            <div class="container py-5">
+                <div class="row justify-content-center">
+                    <div class="col-lg-6 text-center">
+                        <div class="card shadow-lg border-0">
+                            <div class="card-body py-5">
+                                <div class="mb-4">
+                                    <i class="fa fa-exclamation-triangle text-warning" style="font-size: 80px;"/>
+                                </div>
+                                <h2 class="text-warning mb-3"><t t-esc="error_title"/></h2>
+                                <p class="lead text-muted mb-4">
+                                    <t t-esc="error_message"/>
+                                </p>
+                                <p class="text-muted">
+                                    Contactez l'entreprise pour obtenir un nouveau lien d'upload.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>
