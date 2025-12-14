@@ -1,0 +1,200 @@
+﻿    return geoip2.database.Reader(config['geoip_country_db'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/geoip2/database.py", line 86, in __init__
+    self._db_reader = maxminddb.open_database(fileish, mode)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/maxminddb/__init__.py", line 80, in open_database
+    return cast(Reader, _extension.Reader(database, mode))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: b'/usr/share/GeoIP/GeoLite2-Country.mmdb'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/http.py", line 2505, in geoip_city_db
+    return geoip2.database.Reader(config['geoip_city_db'])
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/geoip2/database.py", line 86, in __init__
+    self._db_reader = maxminddb.open_database(fileish, mode)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/maxminddb/__init__.py", line 80, in open_database
+    return cast(Reader, _extension.Reader(database, mode))
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: b'/usr/share/GeoIP/GeoLite2-City.mmdb'
+2025-12-14 22:41:51,853 28 INFO blgtest odoo.addons.base.models.res_device: User 2 inserts device log (jekbyOfzxFvBXBoxYkj7YEEePNMvFjxrtskZQvQrqq) 
+2025-12-14 22:41:51,860 28 INFO blgtest werkzeug: 172.19.0.1 - - [14/Dec/2025 22:41:51] "GET /websocket?version=18.0-7 HTTP/1.1" 101 - 8 0.005 0.040
+2025-12-14 22:42:02,515 28 DEBUG ? odoo.service.server: cron1 polling for jobs 
+2025-12-14 22:42:22,079 28 DEBUG ? odoo.service.server: cron0 polling for jobs 
+2025-12-14 22:42:51,923 115 DEBUG ? odoo.netsvc: logger level set: "odoo.http.rpc.request:INFO" 
+2025-12-14 22:42:51,923 115 DEBUG ? odoo.netsvc: logger level set: "odoo.http.rpc.response:INFO" 
+2025-12-14 22:42:51,923 115 DEBUG ? odoo.netsvc: logger level set: ":INFO" 
+2025-12-14 22:42:51,923 115 DEBUG ? odoo.netsvc: logger level set: "odoo:DEBUG" 
+2025-12-14 22:42:51,923 115 DEBUG ? odoo.netsvc: logger level set: "odoo.sql_db:INFO" 
+2025-12-14 22:42:51,923 115 DEBUG ? odoo.netsvc: logger level set: ":INFO" 
+2025-12-14 22:42:51,924 115 INFO ? odoo: Odoo version 18.0-20251121 
+2025-12-14 22:42:51,924 115 INFO ? odoo: Using configuration file at /etc/odoo/odoo.conf 
+2025-12-14 22:42:51,924 115 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/var/lib/odoo/addons/18.0', '/mnt/custom_addons'] 
+2025-12-14 22:42:51,924 115 INFO ? odoo: database: odoo@db:5432 
+2025-12-14 22:42:52,079 115 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2025-12-14 22:42:52,120 115 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltoimage binary at /usr/local/bin/wkhtmltoimage 
+2025-12-14 22:42:52,434 115 DEBUG ? odoo.service.server: Setting signal handlers 
+2025-12-14 22:42:52,443 115 DEBUG bfranchise odoo.modules.registry: Multiprocess load registry signaling: [Registry: 16] [Cache default: 1] [Cache assets: 1] [Cache templates: 1] [Cache routing: 1] [Cache groups: 1] 
+2025-12-14 22:42:52,449 115 INFO bfranchise odoo.modules.loading: loading 1 modules... 
+2025-12-14 22:42:52,450 115 DEBUG bfranchise odoo.modules.loading: Loading module base (1/1) 
+2025-12-14 22:42:52,453 115 DEBUG bfranchise odoo.modules.loading: Module base loaded in 0.00s, 0 queries 
+2025-12-14 22:42:52,453 115 INFO bfranchise odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2025-12-14 22:42:52,467 115 INFO bfranchise odoo.modules.loading: updating modules list 
+2025-12-14 22:42:52,469 115 INFO bfranchise odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2025-12-14 22:42:53,438 115 WARNING bfranchise odoo.modules.module: Missing `license` key in manifest for 'web_gantt', defaulting to LGPL-3 
+2025-12-14 22:42:53,505 115 INFO bfranchise odoo.addons.base.models.ir_module: ALLOW access to module.button_install on ['Construction Subcontractor Management'] to user __system__ #1 via n/a 
+2025-12-14 22:42:53,538 115 DEBUG bfranchise odoo.modules.loading: Updating graph with 53 more modules 
+2025-12-14 22:42:53,538 115 INFO bfranchise odoo.modules.loading: loading 54 modules... 
+2025-12-14 22:42:53,538 115 DEBUG bfranchise odoo.modules.loading: Loading module l10n_us (2/54) 
+2025-12-14 22:42:53,540 115 DEBUG bfranchise odoo.modules.loading: Module l10n_us loaded in 0.00s, 0 queries 
+2025-12-14 22:42:53,540 115 DEBUG bfranchise odoo.modules.loading: Loading module uom (3/54) 
+2025-12-14 22:42:53,542 115 DEBUG bfranchise odoo.modules.loading: Module uom loaded in 0.00s, 0 queries 
+2025-12-14 22:42:53,542 115 DEBUG bfranchise odoo.modules.loading: Loading module web (4/54) 
+2025-12-14 22:42:53,544 115 DEBUG bfranchise odoo.modules.loading: Module web loaded in 0.00s, 0 queries 
+2025-12-14 22:42:53,544 115 DEBUG bfranchise odoo.modules.loading: Loading module auth_totp (5/54) 
+2025-12-14 22:42:53,561 115 DEBUG bfranchise odoo.modules.loading: Module auth_totp loaded in 0.02s, 0 queries 
+2025-12-14 22:42:53,561 115 DEBUG bfranchise odoo.modules.loading: Loading module base_import (6/54) 
+2025-12-14 22:42:53,814 115 DEBUG bfranchise odoo.modules.loading: Module base_import loaded in 0.25s, 0 queries 
+2025-12-14 22:42:53,814 115 DEBUG bfranchise odoo.modules.loading: Loading module base_import_module (7/54) 
+2025-12-14 22:42:53,820 115 DEBUG bfranchise odoo.modules.loading: Module base_import_module loaded in 0.01s, 0 queries 
+2025-12-14 22:42:53,820 115 DEBUG bfranchise odoo.modules.loading: Loading module base_setup (8/54) 
+2025-12-14 22:42:53,824 115 DEBUG bfranchise odoo.modules.loading: Module base_setup loaded in 0.00s, 0 queries 
+2025-12-14 22:42:53,824 115 DEBUG bfranchise odoo.modules.loading: Loading module bus (9/54) 
+2025-12-14 22:42:53,834 115 DEBUG bfranchise odoo.modules.loading: Module bus loaded in 0.01s, 0 queries 
+2025-12-14 22:42:53,834 115 DEBUG bfranchise odoo.modules.loading: Loading module http_routing (10/54) 
+2025-12-14 22:42:53,837 115 DEBUG bfranchise odoo.modules.loading: Module http_routing loaded in 0.00s, 0 queries 
+2025-12-14 22:42:53,837 115 DEBUG bfranchise odoo.modules.loading: Loading module onboarding (11/54) 
+2025-12-14 22:42:53,841 115 DEBUG bfranchise odoo.modules.loading: Module onboarding loaded in 0.00s, 0 queries 
+2025-12-14 22:42:53,841 115 DEBUG bfranchise odoo.modules.loading: Loading module resource (12/54) 
+2025-12-14 22:42:53,852 115 DEBUG bfranchise odoo.modules.loading: Module resource loaded in 0.01s, 0 queries 
+2025-12-14 22:42:53,852 115 DEBUG bfranchise odoo.modules.loading: Loading module utm (13/54) 
+2025-12-14 22:42:53,856 115 DEBUG bfranchise odoo.modules.loading: Module utm loaded in 0.00s, 0 queries 
+2025-12-14 22:42:53,856 115 DEBUG bfranchise odoo.modules.loading: Loading module web_gantt (14/54) 
+2025-12-14 22:42:53,916 115 DEBUG bfranchise odoo.modules.loading: Module web_gantt loaded in 0.06s, 0 queries 
+2025-12-14 22:42:53,916 115 DEBUG bfranchise odoo.modules.loading: Loading module web_tour (15/54) 
+2025-12-14 22:42:53,919 115 DEBUG bfranchise odoo.modules.loading: Module web_tour loaded in 0.00s, 0 queries 
+2025-12-14 22:42:53,919 115 DEBUG bfranchise odoo.modules.loading: Loading module html_editor (16/54) 
+2025-12-14 22:42:54,038 115 DEBUG bfranchise odoo.modules.loading: Module html_editor loaded in 0.12s, 0 queries 
+2025-12-14 22:42:54,038 115 DEBUG bfranchise odoo.modules.loading: Loading module iap (17/54) 
+2025-12-14 22:42:54,038 115 DEBUG bfranchise odoo.modules.loading: Module iap loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,038 115 DEBUG bfranchise odoo.modules.loading: Loading module mail (18/54) 
+2025-12-14 22:42:54,042 115 DEBUG bfranchise odoo.modules.loading: Module mail loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,042 115 DEBUG bfranchise odoo.modules.loading: Loading module web_editor (19/54) 
+2025-12-14 22:42:54,056 115 DEBUG bfranchise odoo.modules.loading: Module web_editor loaded in 0.01s, 0 queries 
+2025-12-14 22:42:54,056 115 DEBUG bfranchise odoo.modules.loading: Loading module analytic (20/54) 
+2025-12-14 22:42:54,060 115 DEBUG bfranchise odoo.modules.loading: Module analytic loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,060 115 DEBUG bfranchise odoo.modules.loading: Loading module auth_signup (21/54) 
+2025-12-14 22:42:54,065 115 DEBUG bfranchise odoo.modules.loading: Module auth_signup loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,065 115 DEBUG bfranchise odoo.modules.loading: Loading module auth_totp_mail (22/54) 
+2025-12-14 22:42:54,068 115 DEBUG bfranchise odoo.modules.loading: Module auth_totp_mail loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,068 115 DEBUG bfranchise odoo.modules.loading: Loading module base_install_request (23/54) 
+2025-12-14 22:42:54,071 115 DEBUG bfranchise odoo.modules.loading: Module base_install_request loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,071 115 DEBUG bfranchise odoo.modules.loading: Loading module contacts (24/54) 
+2025-12-14 22:42:54,073 115 DEBUG bfranchise odoo.modules.loading: Module contacts loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,073 115 DEBUG bfranchise odoo.modules.loading: Loading module google_gmail (25/54) 
+2025-12-14 22:42:54,077 115 DEBUG bfranchise odoo.modules.loading: Module google_gmail loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,077 115 DEBUG bfranchise odoo.modules.loading: Loading module iap_mail (26/54) 
+2025-12-14 22:42:54,078 115 DEBUG bfranchise odoo.modules.loading: Module iap_mail loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,079 115 DEBUG bfranchise odoo.modules.loading: Loading module mail_bot (27/54) 
+2025-12-14 22:42:54,081 115 DEBUG bfranchise odoo.modules.loading: Module mail_bot loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,081 115 DEBUG bfranchise odoo.modules.loading: Loading module phone_validation (28/54) 
+2025-12-14 22:42:54,109 115 DEBUG bfranchise odoo.modules.loading: Module phone_validation loaded in 0.03s, 0 queries 
+2025-12-14 22:42:54,109 115 DEBUG bfranchise odoo.modules.loading: Loading module privacy_lookup (29/54) 
+2025-12-14 22:42:54,113 115 DEBUG bfranchise odoo.modules.loading: Module privacy_lookup loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,113 115 DEBUG bfranchise odoo.modules.loading: Loading module product (30/54) 
+2025-12-14 22:42:54,133 115 DEBUG bfranchise odoo.modules.loading: Module product loaded in 0.02s, 0 queries 
+2025-12-14 22:42:54,133 115 DEBUG bfranchise odoo.modules.loading: Loading module resource_mail (31/54) 
+2025-12-14 22:42:54,134 115 DEBUG bfranchise odoo.modules.loading: Module resource_mail loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,135 115 DEBUG bfranchise odoo.modules.loading: Loading module sales_team (32/54) 
+2025-12-14 22:42:54,138 115 DEBUG bfranchise odoo.modules.loading: Module sales_team loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,138 115 DEBUG bfranchise odoo.modules.loading: Loading module web_unsplash (33/54) 
+2025-12-14 22:42:54,142 115 DEBUG bfranchise odoo.modules.loading: Module web_unsplash loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,142 115 DEBUG bfranchise odoo.modules.loading: Loading module partner_autocomplete (34/54) 
+2025-12-14 22:42:54,146 115 DEBUG bfranchise odoo.modules.loading: Module partner_autocomplete loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,146 115 DEBUG bfranchise odoo.modules.loading: Loading module portal (35/54) 
+2025-12-14 22:42:54,156 115 DEBUG bfranchise odoo.modules.loading: Module portal loaded in 0.01s, 0 queries 
+2025-12-14 22:42:54,156 115 DEBUG bfranchise odoo.modules.loading: Loading module sms (36/54) 
+2025-12-14 22:42:54,172 115 DEBUG bfranchise odoo.modules.loading: Module sms loaded in 0.02s, 0 queries 
+2025-12-14 22:42:54,172 115 DEBUG bfranchise odoo.modules.loading: Loading module snailmail (37/54) 
+2025-12-14 22:42:54,179 115 DEBUG bfranchise odoo.modules.loading: Module snailmail loaded in 0.01s, 0 queries 
+2025-12-14 22:42:54,179 115 DEBUG bfranchise odoo.modules.loading: Loading module auth_totp_portal (38/54) 
+2025-12-14 22:42:54,181 115 DEBUG bfranchise odoo.modules.loading: Module auth_totp_portal loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,181 115 DEBUG bfranchise odoo.modules.loading: Loading module digest (39/54) 
+2025-12-14 22:42:54,186 115 DEBUG bfranchise odoo.modules.loading: Module digest loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,186 115 DEBUG bfranchise odoo.modules.loading: Loading module payment (40/54) 
+2025-12-14 22:42:54,201 115 DEBUG bfranchise odoo.modules.loading: Module payment loaded in 0.02s, 0 queries 
+2025-12-14 22:42:54,201 115 DEBUG bfranchise odoo.modules.loading: Loading module spreadsheet (41/54) 
+2025-12-14 22:42:54,206 115 DEBUG bfranchise odoo.modules.loading: Module spreadsheet loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,206 115 DEBUG bfranchise odoo.modules.loading: Loading module account (42/54) 
+2025-12-14 22:42:54,279 115 DEBUG bfranchise odoo.modules.loading: Module account loaded in 0.07s, 0 queries 
+2025-12-14 22:42:54,279 115 DEBUG bfranchise odoo.modules.loading: Loading module spreadsheet_dashboard (43/54) 
+2025-12-14 22:42:54,283 115 DEBUG bfranchise odoo.modules.loading: Module spreadsheet_dashboard loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,283 115 DEBUG bfranchise odoo.modules.loading: Loading module account_edi_ubl_cii (44/54) 
+2025-12-14 22:42:54,298 115 DEBUG bfranchise odoo.modules.loading: Module account_edi_ubl_cii loaded in 0.01s, 0 queries 
+2025-12-14 22:42:54,298 115 DEBUG bfranchise odoo.modules.loading: Loading module account_payment (45/54) 
+2025-12-14 22:42:54,310 115 DEBUG bfranchise odoo.modules.loading: Module account_payment loaded in 0.01s, 0 queries 
+2025-12-14 22:42:54,310 115 DEBUG bfranchise odoo.modules.loading: Loading module l10n_us_account (46/54) 
+2025-12-14 22:42:54,311 115 DEBUG bfranchise odoo.modules.loading: Module l10n_us_account loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,311 115 DEBUG bfranchise odoo.modules.loading: Loading module snailmail_account (47/54) 
+2025-12-14 22:42:54,314 115 DEBUG bfranchise odoo.modules.loading: Module snailmail_account loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,314 115 DEBUG bfranchise odoo.modules.loading: Loading module spreadsheet_account (48/54) 
+2025-12-14 22:42:54,316 115 DEBUG bfranchise odoo.modules.loading: Module spreadsheet_account loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,316 115 DEBUG bfranchise odoo.modules.loading: Loading module spreadsheet_dashboard_account (49/54) 
+2025-12-14 22:42:54,316 115 DEBUG bfranchise odoo.modules.loading: Module spreadsheet_dashboard_account loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,316 115 DEBUG bfranchise odoo.modules.loading: Loading module sale (50/54) 
+2025-12-14 22:42:54,343 115 DEBUG bfranchise odoo.modules.loading: Module sale loaded in 0.03s, 0 queries 
+2025-12-14 22:42:54,343 115 DEBUG bfranchise odoo.modules.loading: Loading module construction_core (51/54) 
+2025-12-14 22:42:54,466 115 DEBUG bfranchise odoo.modules.loading: Module construction_core loaded in 0.12s, 0 queries 
+2025-12-14 22:42:54,466 115 DEBUG bfranchise odoo.modules.loading: Loading module sale_async_emails (52/54) 
+2025-12-14 22:42:54,467 115 DEBUG bfranchise odoo.modules.loading: Module sale_async_emails loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,467 115 DEBUG bfranchise odoo.modules.loading: Loading module sale_edi_ubl (53/54) 
+2025-12-14 22:42:54,470 115 DEBUG bfranchise odoo.modules.loading: Module sale_edi_ubl loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,470 115 DEBUG bfranchise odoo.modules.loading: Loading module sale_sms (54/54) 
+2025-12-14 22:42:54,470 115 DEBUG bfranchise odoo.modules.loading: Module sale_sms loaded in 0.00s, 0 queries 
+2025-12-14 22:42:54,470 115 INFO bfranchise odoo.modules.loading: 54 modules loaded in 0.93s, 0 queries (+0 extra) 
+2025-12-14 22:42:54,471 115 DEBUG bfranchise odoo.modules.loading: Updating graph with 1 more modules 
+2025-12-14 22:42:54,471 115 INFO bfranchise odoo.modules.loading: loading 55 modules... 
+2025-12-14 22:42:54,471 115 INFO bfranchise odoo.modules.loading: Loading module construction_subcontractor (55/55) 
+2025-12-14 22:42:54,575 115 WARNING bfranchise odoo.modules.loading: Transient module states were reset 
+2025-12-14 22:42:54,575 115 ERROR bfranchise odoo.modules.registry: Failed to load registry 
+2025-12-14 22:42:54,576 115 CRITICAL bfranchise odoo.service.server: Failed to initialize database `bfranchise`. 
+Traceback (most recent call last):
+  File "/usr/lib/python3/dist-packages/odoo/service/server.py", line 1366, in preload_registries
+    registry = Registry.new(dbname, update_module=update_module)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/decorator.py", line 232, in fun
+    return caller(func, *(extras + args), **kw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/tools/func.py", line 97, in locked
+    return func(inst, *args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 129, in new
+    odoo.modules.load_modules(registry, force_demo, status, update_module)
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 489, in load_modules
+    processed_modules += load_marked_modules(env, graph,
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 365, in load_marked_modules
+    loaded, processed = load_module_graph(
+                        ^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/modules/loading.py", line 195, in load_module_graph
+    model_names = registry.load(env.cr, package)
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/modules/registry.py", line 302, in load
+    model = cls._build_model(self, cr)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3/dist-packages/odoo/models.py", line 736, in _build_model
+    raise TypeError("Model %r does not exist in registry." % name)
+TypeError: Model 'purchase.order' does not exist in registry.
+2025-12-14 22:42:54,581 115 INFO bfranchise odoo.service.server: Initiating shutdown 
+2025-12-14 22:42:54,581 115 INFO bfranchise odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2025-12-14 22:42:54,581 115 DEBUG bfranchise odoo.service.server: on_close call <bound method Event.set of <threading.Event at 0x7fc96e8fc2c0: unset>> 
+2025-12-14 22:42:54,581 115 DEBUG bfranchise odoo.service.server: on_close call <function _kick_all at 0x7fc96e7d7380> 
+2025-12-14 22:42:54,581 115 DEBUG bfranchise odoo.service.server: current thread: <_MainThread(MainThread, started 140504355442816)> 
+2025-12-14 22:42:54,581 115 DEBUG bfranchise odoo.service.server: process <_MainThread(MainThread, started 140504355442816)> (False) 
+2025-12-14 22:42:54,581 115 INFO bfranchise odoo.sql_db: ConnectionPool(read/write;used=0/count=0/max=64): Closed 1 connections  
+2025-12-14 22:42:54,581 115 DEBUG bfranchise odoo.service.server: -- 
+2025-12-14 22:43:03,552 28 DEBUG ? odoo.service.server: cron1 polling for jobs 

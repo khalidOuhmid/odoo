@@ -1,42 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
         <!-- ========================================= -->
         <!-- SECURITY GROUPS - Role-Based Access      -->
         <!-- ========================================= -->
 
-        <!-- 1. DIRECTEUR - All Rights -->
-        <record id="group_construction_director" model="res.groups">
-            <field name="name">Construction / Directeur</field>
-            <field name="category_id" ref="base.module_category_construction"/>
-            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
-            <field name="comment">Directeurs: Accès complet + Forcer les étapes</field>
+        <!-- 0. MODULE CATEGORY -->
+        <record id="module_category_construction" model="ir.module.category">
+            <field name="name">Construction</field>
+            <field name="description">Gestion des Chantiers et Sous-traitance</field>
+            <field name="sequence">10</field>
         </record>
 
-        <!-- 2. ADMIN - Same as Director -->
+        <!-- 1. USER (Previously Manager/Pilote) - Standard Access -->
+        <record id="group_construction_user" model="res.groups">
+            <field name="name">Construction / Utilisateur</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
+            <field name="comment">Utilisateurs: Gestion quotidienne des chantiers (sans suppression critique)</field>
+        </record>
+
+        <!-- 2. ADMINISTRATOR (Previously Director) - Full Access -->
         <record id="group_construction_admin" model="res.groups">
             <field name="name">Construction / Administrateur</field>
-            <field name="category_id" ref="base.module_category_construction"/>
-            <field name="implied_ids" eval="[(4, ref('group_construction_director'))]"/>
-            <field name="comment">Administrateurs: Mêmes droits que Directeur</field>
+            <field name="category_id" ref="module_category_construction"/>
+            <field name="implied_ids" eval="[(4, ref('group_construction_user'))]"/>
+            <field name="users" eval="[(4, ref('base.user_root')), (4, ref('base.user_admin'))]"/>
+            <field name="comment">Administrateurs: Accès complet, suppression, forcer les étapes</field>
         </record>
 
-        <!-- 3. PILOTE CHANTIER - All except Force Stage -->
-        <record id="group_construction_manager" model="res.groups">
-            <field name="name">Construction / Pilote Chantier</field>
-            <field name="category_id" ref="base.module_category_construction"/>
-            <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
-            <field name="comment">Pilotes: Gestion complète sans forcer les étapes</field>
-        </record>
-
-        <!-- 4. COMPTABILITÉ - Finance Access Only -->
+        <!-- 3. COMPTABILITÉ - Finance Access Only -->
         <record id="group_construction_accountant" model="res.groups">
             <field name="name">Construction / Comptabilité</field>
-            <field name="category_id" ref="base.module_category_construction"/>
+            <field name="category_id" ref="module_category_construction"/>
             <field name="implied_ids" eval="[(4, ref('base.group_user'))]"/>
             <field name="comment">Compta: Accès finances, factures, contrats sous-traitance</field>
         </record>
 
+        <!-- COMPATIBILITY ALIASES (Optional, to prevent upgrade errors on existing XMLs using old IDs) -->
+        <!-- We keep the XML IDs same but change names/implied, OR we rename XML IDs and rely on Odoo to handle it.
+             Best practice for refactor: Rename XML IDs to new standard, but here we might break views using 'group_construction_director'.
+             Let's check if 'group_construction_director' is used in views.
+             For now, I'm redefining the records. If I change the ID, I must update usage.
+             User requested "Unified", so I'll create NEW IDs and map old ones or just replace content.
+             Actually, let's keep it simple: Map 'group_construction_manager' -> 'User' content, 'group_construction_director' -> 'Admin' content.
+             But I'll rename the XML IDs in the file to match the new semantic. I'll need to Grep for usage.
+        -->
     </data>
 </odoo>

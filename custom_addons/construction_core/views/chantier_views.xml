@@ -140,7 +140,7 @@
                                 type="action" 
                                 class="oe_stat_button" 
                                 icon="fa-user-plus"
-                                groups="construction_core.group_construction_manager"
+                                groups="construction_core.group_construction_user"
                                 invisible="not show_subcontractors">
                             <span class="o_stat_text">Assigner</span>
                             <span class="o_stat_text">Sous-traitant</span>
@@ -240,28 +240,53 @@
                                         string="➕ Ajouter un Lot"
                                         class="btn btn-primary btn-sm"/>
                             </div>
-                            <div class="alert alert-info" invisible="show_lots_selection">
-                                <i class="fa fa-info-circle"/> La sélection de lots sera disponible après l'étape "Devis envoyé".
+                            
+                            <div class="alert alert-info border-0 shadow-sm" invisible="show_lots_selection">
+                                <div class="d-flex align-items-center">
+                                    <i class="fa fa-info-circle fa-2x me-3 text-primary"/>
+                                    <div>
+                                        <strong>Configuration des Lots :</strong>
+                                        <ul class="mb-0 ps-3">
+                                            <li>Utilisez le bouton <b>"Ajouter un Lot"</b> ci-dessus pour créer un nouveau lot.</li>
+                                            <li>Pour configurer un lot (dates, sous-traitants, détails), cliquez sur l'icône <i class="fa fa-cog"/> dans la liste.</li>
+                                        </ul>
+                                    </div>
+                                </div>
                             </div>
+                            
+                            <div class="alert alert-warning" invisible="not show_lots_selection">
+                                <i class="fa fa-exclamation-triangle mr-2"/> La sélection de lots n'est disponible qu'après l'étape "Devis envoyé".
+                            </div>
+
                             <field name="lots_ids">
-                                <list editable="bottom" 
+                                <list create="false"
+                                      editable="bottom" 
                                       decoration-success="is_finished == True"
                                       decoration-warning="completion_percentage > 0 and completion_percentage &lt; 100"
                                       decoration-muted="completion_percentage == 0">
                                     <field name="sequence" widget="handle"/>
-                                    <field name="code" readonly="1"/>
-                                    <field name="name" readonly="1"/>
-                                    <field name="category_id" readonly="1"/>
+                                    <field name="code" string="N°"/>
+                                    <field name="name"/>
+                                    <field name="execution_type" widget="badge"
+                                           decoration-info="execution_type == 'external'"
+                                           decoration-success="execution_type == 'internal'"/>
+                                    <field name="subcontractor_id" 
+                                           placeholder="Sous-traitant..."
+                                           invisible="execution_type == 'internal'"
+                                           options="{'no_create': True}"/>
+                                    <field name="date_start_planned" optional="hide"/>
+                                    <field name="date_end_planned" optional="hide"/>
                                     <field name="completion_percentage" widget="progressbar" 
                                            options="{'editable': true, 'max_value': 100}"/>
                                     <field name="price" sum="Total"/>
-                                    <field name="weighted_value" sum="Valeur réalisée" 
-                                           decoration-success="weighted_value > 0"/>
-                                    <field name="subcontractor_ids" widget="many2many_tags" 
-                                           options="{'color_field': 'color', 'limit': 3}"
-                                           domain="[('supplier_rank', '>', 0)]"
-                                           readonly="not parent.show_lots_selection"/>
+                                    <field name="margin_percent" string="Marge %" optional="show"
+                                           decoration-success="margin_percent > 20"
+                                           decoration-warning="margin_percent > 0 and margin_percent &lt;= 20"
+                                           decoration-danger="margin_percent &lt;= 0"/>
                                     <field name="is_finished" widget="boolean_toggle"/>
+                                    <button name="action_open_lot_cockpit" type="object"
+                                            icon="fa-cog" title="Gérer ce lot"
+                                            class="btn btn-link"/>
                                 </list>
                             </field>
                         </page>
@@ -300,15 +325,59 @@
 
                         <!-- Tab 4: Team/Subcontractors (Visible from stage_devis_accepte) -->
                         <page string="👥 Équipe" name="team" invisible="not show_subcontractors">
+                            <!-- Hidden field for contract generation visibility -->
+                            <field name="show_contract_generation" invisible="1"/>
+                            <field name="project_subcontractor_ids" invisible="1"/>
+                            
                             <group>
                                 <group string="Responsables Internes">
                                     <field name="user_ids" widget="many2many_tags" 
                                            options="{'color_field': 'color'}"/>
                                 </group>
-                                <group string="Sous-traitants">
-                                    <field name="subcontractor_ids" widget="many2many_tags"/>
-                                </group>
                             </group>
+                            
+                            <!-- Subcontractors from Lots Section -->
+                            <group string="👷 Sous-traitants du Projet">
+                                <div class="o_horizontal_separator mb-3">
+                                    <span class="text-muted">
+                                        Liste des sous-traitants assignés aux lots de ce chantier
+                                    </span>
+                                </div>
+                            </group>
+                            
+                            <!-- Subcontractor List with Contract Generation -->
+                            <div class="table-responsive" invisible="not project_subcontractor_ids">
+                                <table class="table table-hover">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Sous-traitant</th>
+                                            <th>Lots assignés</th>
+                                            <th>État Conformité</th>
+                                            <th class="text-end">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <!-- Dynamic content handled by project_subcontractor_ids -->
+                                    </tbody>
+                                </table>
+                            </div>
+                            
+                            <!-- Contract Eligibility Check -->
+                            <div class="mt-3" invisible="not show_contract_generation">
+                                <button name="action_check_contract_eligibility" 
+                                        type="object" 
+                                        string="🔍 Vérifier Éligibilité Contrats"
+                                        class="btn btn-outline-primary"/>
+                            </div>
+                            
+                            <!-- Legacy subcontractor field (hidden) -->
+                            <field name="subcontractor_ids" invisible="1"/>
+                            
+                            <div class="alert alert-info mt-3" invisible="project_subcontractor_ids">
+                                <i class="fa fa-info-circle me-2"/>
+                                Aucun sous-traitant assigné. Affectez des sous-traitants aux lots 
+                                dans l'onglet "Lots".
+                            </div>
                         </page>
 
                         <!-- Tab 5: Devis (Visible from stage_devis_envoye) -->
@@ -333,8 +402,34 @@
                             </field>
                         </page>
 
-                        <!-- Tab 6: Facturation (Visible from stage_finalisation_dossier) -->
-                        <page string="🧾 Facturation" name="invoicing" invisible="not show_invoicing">
+
+
+                        <!-- Tab 7: Documents (Always visible) -->
+                        <page string="📄 Documents" name="documents">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-folder-open me-2"/>Documents du Chantier
+                                </h4>
+                                <div class="btn-group">
+                                    <button name="action_upload_document" 
+                                            type="object" 
+                                            string="📤 Ajouter Document"
+                                            class="btn btn-primary btn-sm"/>
+                                    <button name="action_view_all_documents" 
+                                            type="object" 
+                                            string="📁 Tous les Documents"
+                                            class="btn btn-outline-secondary btn-sm"/>
+                                </div>
+                            </div>
+                            <div class="alert alert-info mb-3">
+                                <i class="fa fa-info-circle me-2"/>
+                                <strong>Module requis:</strong> Le module <em>construction_document</em> 
+                                doit être installé pour la GED complète (Plans, Devis, Contrats, etc.).
+                            </div>
+                        </page>
+
+                        <!-- Tab 8: Facturation (STRICTLY Conditional) -->
+                         <page string="🧾 Facturation" name="invoicing" invisible="stage_id != %(construction_core.stage_finalisation_dossier)d and not show_invoicing">
                             <div class="row mb-4">
                                 <div class="col-12">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -361,35 +456,10 @@
                                     (30/30/40, Quartiles, etc.) ou créez un planning personnalisé.
                                 </p>
                             </div>
-                            <div class="alert alert-info mb-3">
-                                <i class="fa fa-info-circle me-2"/>
-                                <strong>Module requis:</strong> Le module <em>construction_invoice</em> 
-                                doit être installé pour la gestion complète de la facturation.
-                            </div>
-                        </page>
-
-                        <!-- Tab 7: Documents (Always visible) -->
-                        <page string="📄 Documents" name="documents">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h4 class="mb-0">
-                                    <i class="fa fa-folder-open me-2"/>Documents du Chantier
-                                </h4>
-                                <div class="btn-group">
-                                    <button name="action_upload_document" 
-                                            type="object" 
-                                            string="📤 Ajouter Document"
-                                            class="btn btn-primary btn-sm"/>
-                                    <button name="action_view_all_documents" 
-                                            type="object" 
-                                            string="📁 Tous les Documents"
-                                            class="btn btn-outline-secondary btn-sm"/>
-                                </div>
-                            </div>
-                            <div class="alert alert-info mb-3">
-                                <i class="fa fa-info-circle me-2"/>
-                                <strong>Module requis:</strong> Le module <em>construction_document</em> 
-                                doit être installé pour la GED complète (Plans, Devis, Contrats, etc.).
-                            </div>
+                            <!-- Placeholder for actual fields that would normally be here -->
+                            <group>
+                                <field name="company_id" groups="base.group_multi_company"/>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Subcontractor Compliance Request Enterprise Template -->
+        <record id="email_template_subcontractor_compliance_enterprise" model="mail.template">
+            <field name="name">Sous-traitant: Demande de Conformité (Enterprise)</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">[Action Requise] Finalisation de votre dossier conformité - BLG GROUPE</field>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.id }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; border: 1px solid #E5E3E2; background-color: #FFFFFF;">
+                    <!-- Header BLG Style: Bordeaux/Terracotta -->
+                    <div style="background-color: #92564C; color: white; padding: 25px; text-align: center;">
+                        <h2 style="margin:0; font-family: 'Times New Roman', Times, serif; letter-spacing: 1px; text-transform: uppercase;">BLG GROUPE</h2>
+                    </div>
+
+                    <div style="padding: 30px; background-color: #FFFFFF; color: #978A86;">
+                        <p style="font-size: 16px; margin-bottom: 20px;">Bonjour,</p>
+                        
+                        <p style="font-size: 15px; line-height: 1.5; color: #978A86;">
+                            Nous avons besoin de vos documents administratifs à jour pour la bonne gestion de notre collaboration.
+                        </p>
+                        
+                        <!-- Status Card with Beige Rosé Background -->
+                        <div style="background-color: #D4C5BC; border-left: 4px solid #92564C; padding: 15px; margin: 25px 0;">
+                            <strong style="color: #92564C; font-family: 'Times New Roman', Times, serif; font-size: 16px;">
+                                Statut du dossier : <t t-out="dict(object._fields['compliance_state'].selection).get(object.compliance_state) or 'Inconnu'"/>
+                            </strong>
+                            <p style="font-size: 13px; margin-top: 5px; color: #505050;">
+                                La conformité de vos documents est indispensable pour le règlement de vos factures.
+                            </p>
+                        </div>
+
+                        <p t-if="object.missing_documents" style="color: #92564C; font-weight: bold;">Documents manquants ou à renouveler :</p>
+                        <ul t-if="object.missing_documents" style="color: #978A86;">
+                             <t t-foreach="object.missing_documents.split('\n')" t-as="doc">
+                                <li><strong><t t-out="doc"/></strong></li>
+                            </t>
+                        </ul>
+
+                        <!-- Action Button (Bordeaux) -->
+                        <div style="text-align: center; margin-top: 35px; margin-bottom: 20px;">
+                            <a t-att-href="object.upload_url" style="background-color: #92564C; color: white; padding: 12px 30px; text-decoration: none; border-radius: 2px; font-weight: bold; font-family: 'Times New Roman', Times, serif; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Accéder à mon Espace Partenaire
+                            </a>
+                        </div>
+                        
+                        <div style="font-size: 12px; color: #AEADAB; margin-top: 40px; border-top: 1px solid #E5E3E2; padding-top: 15px; text-align: center;">
+                            <p>BLG GROUPE - Service Administratif</p>
+                            <p><em>Ce message est automatique. Merci de ne pas y répondre directement.</em></p>
+                        </div>
+                    </div>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>

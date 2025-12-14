@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+    <!-- Stub template for missing widgets -->
+    <t t-name="construction_sale.StubWidget">
+        <!-- Empty stub - renders nothing -->
+        <div class="d-none"/>
+    </t>
+</templates>

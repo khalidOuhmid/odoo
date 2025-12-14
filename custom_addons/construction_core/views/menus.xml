@@ -12,10 +12,12 @@
               parent="menu_construction_root"
               sequence="10"/>
 
+    <!-- Configuration Menu (Director Only) -->
     <menuitem id="menu_construction_config"
               name="Configuration"
               parent="menu_construction_root"
-              sequence="100"/>
+              sequence="100"
+              groups="group_construction_admin"/>
 
     <!-- Actions -->
     <menuitem id="menu_construction_chantier"

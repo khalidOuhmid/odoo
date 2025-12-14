@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_sale_to_purchase_wizard_form" model="ir.ui.view">
+        <field name="name">construction.sale.to.purchase.wizard.form</field>
+        <field name="model">construction.sale.to.purchase.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Generate Purchase Orders">
+                <sheet>
+                    <group>
+                        <field name="sale_order_id" options="{'no_open': True}"/>
+                    </group>
+                    <group string="Options">
+                        <field name="lot_id" 
+                               placeholder="All Lots"
+                               options="{'no_create': True}"/>
+                        <field name="vendor_id" 
+                               placeholder="Use Lot's Subcontractor"
+                               options="{'no_create': True}"/>
+                    </group>
+                    <div class="alert alert-info" role="alert">
+                        <strong>How it works:</strong><br/>
+                        <ul>
+                            <li>Lines grouped by <b>Technical Lot</b> (or specific lot if selected).</li>
+                            <li>One Purchase Order created per <b>Subcontractor</b> (or override vendor).</li>
+                            <li><b>CRITICAL:</b> PO uses <span class="text-success">Cost Price (price_buy)</span>, NOT selling price!</li>
+                        </ul>
+                    </div>
+                </sheet>
+                <footer>
+                    <button string="Generate Orders" name="action_generate_orders" type="object" class="btn-primary" data-hotkey="q"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action for the Action Menu -->
+    <record id="action_sale_to_purchase_wizard" model="ir.actions.act_window">
+        <field name="name">Generate Purchase Orders</field>
+        <field name="res_model">construction.sale.to.purchase.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">form</field>
+    </record>
+</odoo>

@@ -27,6 +27,7 @@ DOCUMENT_TYPES = {
         'status_field': 'doc_kbis_status',
         'has_expiry': True,
         'required': True,
+        'validity_months': 2,  # Validité 2 mois
         'sequence': 10,
     },
     'urssaf': {
@@ -36,6 +37,7 @@ DOCUMENT_TYPES = {
         'status_field': 'doc_urssaf_status',
         'has_expiry': True,
         'required': True,
+        'validity_months': 2,  # Validité 2 mois
         'sequence': 20,
     },
     'insurance_dec': {
@@ -44,8 +46,17 @@ DOCUMENT_TYPES = {
         'expiry_field': 'doc_insurance_dec_expiry',
         'status_field': 'doc_insurance_dec_status',
         'has_expiry': True,
-        'required': True,
+        'required': True,  # BLOQUANT
         'sequence': 30,
+    },
+    'cni': {
+        'name': 'Carte d\'Identité',
+        'field': 'doc_cni',
+        'expiry_field': 'doc_cni_expiry',
+        'status_field': 'doc_cni_status',
+        'has_expiry': True,
+        'required': True,
+        'sequence': 35,
     },
     'insurance_pro': {
         'name': 'Assurance RC Pro',
@@ -53,7 +64,7 @@ DOCUMENT_TYPES = {
         'expiry_field': 'doc_insurance_pro_expiry',
         'status_field': 'doc_insurance_pro_status',
         'has_expiry': True,
-        'required': True,
+        'required': False,  # NON BLOQUANT
         'sequence': 40,
     },
     'rib': {
@@ -62,12 +73,13 @@ DOCUMENT_TYPES = {
         'expiry_field': False,
         'status_field': 'doc_rib_status',
         'has_expiry': False,
-        'required': True,
+        'required': False,  # NON BLOQUANT
         'sequence': 50,
     },
 }
 
 EXPIRY_WARNING_DAYS = 30
+EXPIRY_CRITICAL_DAYS = 7  # Red line threshold
 
 
 class ResPartner(models.Model):
@@ -88,6 +100,23 @@ class ResPartner(models.Model):
         ('external', 'Sous-traitant externe'),
         ('internal', 'Ressource interne'),
     ], string='Type', default='external')
+    
+    # ============= LIFECYCLE (Salesforce Path) ============= #
+    subcontractor_stage = fields.Selection([
+        ('draft', 'Brouillon'),
+        ('invited', 'Invitation Envoyée'),
+        ('incomplete', 'Dossier Incomplet'),
+        ('compliant', 'Dossier Conforme'),
+        ('blocked', 'Bloqué'),
+    ], string='Étape', default='draft', tracking=True,
+       help="Cycle de vie du dossier sous-traitant")
+    
+    # ============= ALERT LEVEL (Yellow/Red Lines) ============= #
+    alert_level = fields.Selection([
+        ('green', 'Conforme'),
+        ('yellow', 'Alerte'),
+        ('red', 'Critique'),
+    ], string='Niveau d\'Alerte', compute='_compute_alert_level', store=True)
     
     # ============= DOCUMENTS: KBIS ============= #
     doc_kbis = fields.Binary(string='KBIS', attachment=True)
@@ -151,6 +180,19 @@ class ResPartner(models.Model):
         ('rejected', 'Rejeté'),
     ], string='Statut RIB', compute='_compute_doc_statuses', store=True)
     
+    # ============= DOCUMENTS: CNI (Carte d'Identité) ============= #
+    doc_cni = fields.Binary(string='Carte d\'Identité', attachment=True)
+    doc_cni_filename = fields.Char(string='Nom fichier CNI')
+    doc_cni_expiry = fields.Date(string='Expiration CNI')
+    doc_cni_status = fields.Selection([
+        ('missing', 'Manquant'),
+        ('to_check', 'À vérifier'),
+        ('valid', 'Valide'),
+        ('expiring', 'Expire bientôt'),
+        ('expired', 'Expiré'),
+        ('rejected', 'Rejeté'),
+    ], string='Statut CNI', compute='_compute_doc_statuses', store=True)
+    
     # ============= COMPLIANCE STATE ============= #
     compliance_state = fields.Selection([
         ('compliant', 'Conforme'),
@@ -185,6 +227,11 @@ class ResPartner(models.Model):
         help="Types de lots que ce sous-traitant peut réaliser (ex: Gros Œuvre, Électricité)"
     )
     
+    lot_ids = fields.One2many(
+        'construction.lot', 'subcontractor_id',
+        string='Lots Assignés'
+    )
+    
     # ============= COMPUTED METHODS ============= #
     
     @api.depends(
@@ -192,6 +239,7 @@ class ResPartner(models.Model):
         'doc_urssaf', 'doc_urssaf_expiry',
         'doc_insurance_dec', 'doc_insurance_dec_expiry',
         'doc_insurance_pro', 'doc_insurance_pro_expiry',
+        'doc_cni', 'doc_cni_expiry',
         'doc_rib'
     )
     def _compute_doc_statuses(self):
@@ -228,23 +276,23 @@ class ResPartner(models.Model):
     
     @api.depends(
         'doc_kbis_status', 'doc_urssaf_status',
-        'doc_insurance_dec_status', 'doc_insurance_pro_status',
-        'doc_rib_status', 'is_subcontractor'
+        'doc_insurance_dec_status', 'doc_cni_status',
+        'is_subcontractor'
     )
     def _compute_compliance_state(self):
-        """Compute overall compliance state from document statuses."""
+        """Compute overall compliance state from REQUIRED document statuses only."""
+        required_docs = [k for k, v in DOCUMENT_TYPES.items() if v.get('required')]
         for partner in self:
             if not partner.is_subcontractor:
                 partner.compliance_state = False
                 continue
             
-            statuses = [
-                partner.doc_kbis_status,
-                partner.doc_urssaf_status,
-                partner.doc_insurance_dec_status,
-                partner.doc_insurance_pro_status,
-                partner.doc_rib_status,
-            ]
+            # Only check required documents
+            statuses = []
+            for doc_key in required_docs:
+                config = DOCUMENT_TYPES[doc_key]
+                status = getattr(partner, config['status_field'], 'missing')
+                statuses.append(status)
             
             if 'expired' in statuses:
                 partner.compliance_state = 'expired'
@@ -252,6 +300,53 @@ class ResPartner(models.Model):
                 partner.compliance_state = 'incomplete'
             else:
                 partner.compliance_state = 'compliant'
+    
+    @api.depends(
+        'doc_kbis_status', 'doc_urssaf_status',
+        'doc_insurance_dec_status', 'doc_cni_status',
+        'doc_kbis_expiry', 'doc_urssaf_expiry',
+        'doc_insurance_dec_expiry', 'doc_cni_expiry'
+    )
+    def _compute_alert_level(self):
+        """Compute alert level based on document expiry thresholds.
+        
+        🟢 Green: All OK (> 30 days)
+        🟡 Yellow: 7-30 days remaining
+        🔴 Red: < 7 days or expired
+        """
+        today = date.today()
+        yellow_threshold = today + timedelta(days=EXPIRY_WARNING_DAYS)
+        red_threshold = today + timedelta(days=EXPIRY_CRITICAL_DAYS)
+        
+        required_docs = [k for k, v in DOCUMENT_TYPES.items() if v.get('required') and v.get('has_expiry')]
+        
+        for partner in self:
+            if not partner.is_subcontractor:
+                partner.alert_level = False
+                continue
+            
+            has_expired = False
+            has_critical = False
+            has_warning = False
+            
+            for doc_key in required_docs:
+                config = DOCUMENT_TYPES[doc_key]
+                status = getattr(partner, config['status_field'], 'missing')
+                expiry = getattr(partner, config['expiry_field'], None) if config.get('expiry_field') else None
+                
+                if status == 'expired':
+                    has_expired = True
+                elif expiry and expiry <= red_threshold:
+                    has_critical = True
+                elif status == 'expiring' or (expiry and expiry <= yellow_threshold):
+                    has_warning = True
+            
+            if has_expired or has_critical:
+                partner.alert_level = 'red'
+            elif has_warning:
+                partner.alert_level = 'yellow'
+            else:
+                partner.alert_level = 'green'
     
     def _compute_missing_documents(self):
         """List missing or invalid documents."""
@@ -302,27 +397,59 @@ class ResPartner(models.Model):
     def action_send_upload_request(self):
         """Send email with upload link to subcontractor."""
         self.ensure_one()
-        
-        if not self.email:
-            raise UserError(_("Ce partenaire n'a pas d'adresse email."))
-        
-        # Generate token if not exists
-        if not self.upload_token or (self.token_expiration and self.token_expiration < fields.Datetime.now()):
+        """Send the upload link via email."""
+        self.ensure_one()
+        if not self.upload_token:
             self.action_generate_upload_link()
-        
-        # Find and send template
-        template = self.env.ref('construction_subcontractor.email_template_upload_request', raise_if_not_found=False)
+            
+        template = self.env.ref('construction_subcontractor.email_template_subcontractor_compliance_enterprise')
         if template:
             template.send_mail(self.id, force_send=True)
-            self.message_post(body=_("📧 Demande de documents envoyée par email"))
-        else:
-            # Fallback: post in chatter
+            
             self.message_post(
-                body=_("📋 Lien d'upload: %s") % self.upload_url,
-                message_type='notification'
+                body=_("📧 Demande de mise à jour envoyée par email à %s") % self.email,
+                message_type='comment'
             )
+            
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _("Succès"),
+                'message': _("Email de demande envoyé."),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_send_upload_sms(self):
+        """Send the upload link via SMS."""
+        self.ensure_one()
+        if not self.mobile:
+            raise UserError(_("Veuillez renseigner un numéro de mobile pour ce partenaire."))
+            
+        if not self.upload_token:
+            self.action_generate_upload_link()
+            
+        # Short message for SMS
+        message = _("BLG Groupe: Veuillez mettre à jour vos documents de sous-traitance sur votre espace sécurisé: %s") % self.upload_url
         
-        return True
+        # Use Odoo's SMS composer if available, or simpler fallback
+        # Here we mimic opening the SMS composer with pre-filled body
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Envoyer SMS',
+            'res_model': 'sms.composer',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_res_model': 'res.partner',
+                'default_res_id': self.id,
+                'default_composition_mode': 'comment', # Or 'mass'
+                'default_body': message,
+                'default_recipient_single_number_itf': self.mobile,
+            }
+        }
     
     # ============= DOCUMENT VALIDATION ACTIONS ============= #
     
@@ -355,6 +482,55 @@ class ResPartner(models.Model):
             'context': {'default_partner_id': self.id},
         }
     
+    # ============= WRITE OVERRIDE (Archiving & Automation) ============= #
+    
+    def write(self, vals):
+        """
+        Override write to:
+        1. Archive old documents before they are replaced.
+        2. Auto-update stage based on compliance after changes.
+        """
+        # 1. Archive old documents
+        if any(cfg['field'] in vals for cfg in DOCUMENT_TYPES.values()):
+            for partner in self:
+                for doc_key, config in DOCUMENT_TYPES.items():
+                    field_name = config['field']
+                    
+                    # If this field is being updated and has a value (uploading new file)
+                    if field_name in vals and vals[field_name]:
+                        current_file = getattr(partner, field_name)
+                        # If there was a file before, archive it
+                        if current_file and current_file != vals[field_name]:
+                            filename = getattr(partner, field_name + '_filename') or config['name']
+                            expiry_date = getattr(partner, config['expiry_field']) if config.get('expiry_field') else False
+                            
+                            self.env['subcontractor.document.archive'].create({
+                                'partner_id': partner.id,
+                                'document_type': doc_key,
+                                'file_data': current_file,
+                                'filename': f"{filename.split('.')[0]}_ARCHIVE_{fields.Date.today().strftime('%Y%m%d')}.pdf",
+                                'expiry_date': expiry_date,
+                                'replaced_by_user_id': self.env.user.id,
+                            })
+
+        # 2. Execute Write
+        res = super(ResPartner, self).write(vals)
+        
+        # 3. Stage Automation
+        # Trigger if compliance or docs changed
+        trigger_fields = ['compliance_state'] + [cfg['field'] for cfg in DOCUMENT_TYPES.values()]
+        if any(f in vals for f in trigger_fields):
+            for partner in self:
+                if partner.is_subcontractor:
+                    # Auto-advance to compliant if ready
+                    if partner.compliance_state == 'compliant' and partner.subcontractor_stage != 'compliant':
+                        partner.subcontractor_stage = 'compliant'
+                    # Fallback if became incomplete
+                    elif partner.compliance_state != 'compliant' and partner.subcontractor_stage in ['compliant', 'bloque']:
+                        partner.subcontractor_stage = 'incomplete'
+                        
+        return res
+
     # ============= CRON: EXPIRY CHECK ============= #
     
     @api.model

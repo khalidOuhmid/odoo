@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Client Action for the Owl SPA -->
+    <record id="action_construction_quote_builder" model="ir.actions.client">
+        <field name="name">Smart Quote Builder</field>
+        <field name="tag">construction_sale.quote_builder</field>
+        <field name="target">current</field>
+        <field name="context">{}</field>
+    </record>
+
+    <!-- Menu Item in Sales App -->
+    <menuitem id="menu_construction_quote_builder"
+              name="Smart Builder (SPA)"
+              parent="sale.sale_order_menu"
+              action="action_construction_quote_builder"
+              sequence="0"/>
+</odoo>

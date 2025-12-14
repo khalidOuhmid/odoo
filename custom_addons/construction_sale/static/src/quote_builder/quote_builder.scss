@@ -1,0 +1,396 @@
+/* ============================================= */
+/* QUOTE BUILDER                                 */
+/* ============================================= */
+
+/* Variables */
+:root {
+    --qb-primary: #875A7B;
+    /* Odoo Purple */
+    --qb-success: #28A745;
+    /* Green */
+    --qb-warning: #FFC107;
+    /* Yellow */
+    --qb-border: #dee2e6;
+    --qb-bg-light: #f8f9fa;
+    --qb-text: #212529;
+    --qb-text-muted: #6c757d;
+}
+
+/* Main Container */
+.o_construction_quote_builder {
+    background: white;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Header - Clean Odoo Style */
+.o_quote_header {
+    background: var(--qb-primary);
+    padding: 12px 24px;
+    border-bottom: none;
+}
+
+.o_quote_header h2 {
+    font-size: 1.25rem;
+    font-weight: 500;
+    margin: 0;
+}
+
+.o_quote_header .badge {
+    background: rgba(255, 255, 255, 0.2);
+    font-weight: 400;
+}
+
+.o_btn_create_quote {
+    background: var(--qb-success) !important;
+    border: none !important;
+    font-weight: 500;
+    padding: 8px 20px;
+    border-radius: 4px;
+}
+
+.o_btn_create_quote:hover:not(:disabled) {
+    background: #218838 !important;
+}
+
+/* Summary Bar - Light and Clean */
+.o_summary_bar {
+    background: var(--qb-bg-light);
+    border-bottom: 1px solid var(--qb-border);
+    padding: 16px 24px;
+}
+
+.o_summary_bar .col {
+    padding: 0 12px;
+}
+
+.o_summary_bar small {
+    font-size: 0.65rem !important;
+    letter-spacing: 0.5px;
+    color: var(--qb-text-muted);
+}
+
+.o_quote_margin_badge {
+    background: #fff3cd;
+    color: #856404;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+/* Lot Sidebar - Minimal */
+.o_lot_sidebar {
+    background: white;
+    border-right: 1px solid var(--qb-border);
+    min-width: 180px;
+}
+
+.o_lot_sidebar_header {
+    background: var(--qb-bg-light);
+    padding: 12px 16px;
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--qb-text-muted);
+    border-bottom: 1px solid var(--qb-border);
+}
+
+.o_lot_button {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--qb-border);
+    border-radius: 0;
+    padding: 10px 16px;
+    text-align: left;
+    font-size: 0.85rem;
+    color: var(--qb-text);
+    transition: background 0.15s;
+}
+
+.o_lot_button:hover {
+    background: var(--qb-bg-light);
+}
+
+.o_lot_button.active {
+    background: var(--qb-primary) !important;
+    color: white !important;
+    border-color: var(--qb-primary);
+}
+
+.o_lot_button .badge {
+    background: var(--qb-border);
+    color: var(--qb-text-muted);
+    font-size: 0.7rem;
+    padding: 2px 6px;
+}
+
+.o_lot_button.active .badge {
+    background: rgba(255, 255, 255, 0.3);
+    color: white;
+}
+
+.o_btn_add_product {
+    background: var(--qb-success) !important;
+    border: none !important;
+    border-radius: 0 !important;
+    font-weight: 500;
+}
+
+/* Catalog Panel - Clean Cards */
+.o_catalog_panel {
+    background: var(--qb-bg-light);
+    border-right: 1px solid var(--qb-border);
+    min-width: 240px;
+}
+
+.o_catalog_header {
+    background: white;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--qb-border);
+}
+
+.o_catalog_header input {
+    border: 1px solid var(--qb-border);
+    border-radius: 4px;
+    padding: 8px 12px;
+    font-size: 0.85rem;
+}
+
+.o_product_card {
+    background: white;
+    border: 1px solid var(--qb-border);
+    border-radius: 4px;
+    padding: 12px;
+    margin: 8px;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.o_product_card:hover {
+    border-color: var(--qb-primary);
+    background: #fafafa;
+}
+
+.o_product_card .o_product_name {
+    font-weight: 500;
+    font-size: 0.85rem;
+    color: var(--qb-text);
+    margin-bottom: 4px;
+}
+
+.o_product_card .o_price {
+    color: var(--qb-success);
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.o_product_card .o_uom {
+    color: var(--qb-text-muted);
+    font-size: 0.75rem;
+}
+
+/* Estimator Panel */
+.o_estimator_panel {
+    background: white;
+    flex: 1;
+}
+
+.o_estimator_header {
+    background: var(--qb-bg-light);
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--qb-border);
+}
+
+.o_estimator_header h5 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--qb-text-muted);
+    margin: 0;
+}
+
+/* Section Headers in Grid */
+.o_quote_section_header {
+    background: var(--qb-primary);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 4px 4px 0 0;
+    margin-top: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.o_quote_section_header .fw-semibold {
+    font-size: 0.85rem;
+}
+
+.o_quote_section_header .badge {
+    background: rgba(255, 255, 255, 0.2);
+    font-size: 0.7rem;
+}
+
+.o_quote_section_header .badge-success {
+    background: var(--qb-success) !important;
+}
+
+/* Data Table */
+.o_quote_table {
+    background: white;
+    border: 1px solid var(--qb-border);
+    border-top: none;
+    margin-bottom: 16px;
+    border-radius: 0 0 4px 4px;
+}
+
+.o_quote_table thead {
+    background: var(--qb-bg-light);
+}
+
+.o_quote_table th {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--qb-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--qb-border);
+}
+
+.o_quote_table td {
+    padding: 10px 12px;
+    font-size: 0.85rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.o_quote_table tbody tr:hover {
+    background: #fafafa;
+}
+
+.o_quote_table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Inputs in Table */
+.o_quote_table input {
+    border: 1px solid var(--qb-border);
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 0.85rem;
+    width: 100%;
+    max-width: 80px;
+}
+
+.o_quote_table input:focus {
+    border-color: var(--qb-primary);
+    outline: none;
+}
+
+/* Margin Cells */
+.o_margin_cell {
+    background: #fffbeb !important;
+}
+
+.o_margin_input {
+    border-color: var(--qb-warning) !important;
+}
+
+/* Optional Lines */
+.o_quote_line_optional {
+    opacity: 0.5;
+    background: var(--qb-bg-light) !important;
+}
+
+.o_quote_line_optional td {
+    font-style: italic;
+}
+
+/* Footer */
+.o_quote_footer {
+    background: var(--qb-bg-light);
+    border-top: 1px solid var(--qb-border);
+    padding: 12px 24px;
+}
+
+.o_quote_total_badge {
+    background: var(--qb-success) !important;
+    color: white !important;
+    font-weight: 500;
+    padding: 8px 16px;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+/* Wizards / Modals */
+.o_quote_wizard .modal-content {
+    border-radius: 8px;
+    border: none;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.15);
+}
+
+.o_quote_wizard .modal-header {
+    background: var(--qb-primary);
+    color: white;
+    border-radius: 8px 8px 0 0;
+    padding: 16px 20px;
+}
+
+.o_quote_wizard .modal-header .modal-title {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.o_quote_wizard .modal-body {
+    padding: 20px;
+}
+
+.o_quote_wizard .modal-footer {
+    background: var(--qb-bg-light);
+    border-radius: 0 0 8px 8px;
+    padding: 12px 20px;
+}
+
+.o_quote_wizard.o_create_product .modal-header {
+    background: var(--qb-success);
+}
+
+/* Warning banner */
+.o_no_project_warning {
+    background: #dc3545;
+    color: white;
+    padding: 12px 24px;
+    font-weight: 500;
+}
+
+/* Empty states */
+.o_empty_state {
+    color: var(--qb-text-muted);
+    text-align: center;
+    padding: 48px 24px;
+}
+
+.o_empty_state i {
+    font-size: 3rem;
+    opacity: 0.3;
+    margin-bottom: 16px;
+}
+
+.o_empty_state p {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Loading overlay */
+.o_quote_builder_loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+
+    .o_lot_sidebar,
+    .o_catalog_panel {
+        min-width: 150px;
+    }
+}

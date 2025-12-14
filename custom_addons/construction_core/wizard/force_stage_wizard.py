@@ -31,7 +31,7 @@ class ForceStageWizard(models.TransientModel):
         self.ensure_one()
         
         # Security check - Only Directors/Admins
-        if not self.env.user.has_group('construction_core.group_construction_director'):
+        if not self.env.user.has_group('construction_core.group_construction_admin'):
             raise UserError(_("Seuls les Directeurs et Administrateurs peuvent forcer un changement d'étape."))
 
         # Log the forced change with proper HTML

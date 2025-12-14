@@ -35,6 +35,8 @@
         'website',
         'construction_core',  # Core chantier and lot models
         'contacts',  # Provides partner model for subcontractors
+        'purchase',
+        'construction_purchase',
     ],
 
     # External Python dependencies
@@ -66,6 +68,7 @@
         'views/chantier_views.xml',
         'views/urssaf_code_views.xml',
         'views/menus.xml',
+        'views/purchase_order_views.xml',
 
         # Wizards
         'wizards/views/contract_creation_wizard_views.xml',
@@ -87,6 +90,8 @@
             'construction_contract/static/src/js/urssaf_code_selector.js',
             'construction_contract/static/src/xml/urssaf_code_selector.xml',
             'construction_contract/static/src/css/urssaf_code_selector.css',
+            'construction_contract/static/src/components/contract_editor/contract_editor.js',
+            'construction_contract/static/src/components/contract_editor/contract_editor.xml',
         ],
         'construction_contract.assets_template_editor': [
             'construction_contract/static/src/lib/grapesjs/grapes.min.js',

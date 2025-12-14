@@ -242,7 +242,7 @@ class MailThread(models.AbstractModel):
         """Create activity to notify responsible user."""
         try:
             # Find construction manager
-            manager_group = self.env.ref('construction_core.group_construction_manager', raise_if_not_found=False)
+            manager_group = self.env.ref('construction_core.group_construction_user', raise_if_not_found=False)
             if not manager_group:
                 return
             

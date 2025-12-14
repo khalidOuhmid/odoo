@@ -1,97 +1,302 @@
-<?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- ==================== PORTAL UPLOAD PAGE ==================== -->
+    <!-- ==================== PORTAL UPLOAD PAGE (Clean Enterprise + AJAX) ==================== -->
     <template id="upload_page" name="Subcontractor Document Upload">
-        <t t-call="web.frontend_layout">
-            <div class="container py-5">
-                <div class="row justify-content-center">
-                    <div class="col-lg-8">
-                        <!-- Header Card -->
-                        <div class="card shadow-lg border-0 mb-4">
-                            <div class="card-header bg-primary text-white py-4">
-                                <div class="d-flex align-items-center">
-                                    <i class="fa fa-upload fa-3x me-3"/>
-                                    <div>
-                                        <h3 class="mb-0">Portail Sous-traitant</h3>
-                                        <p class="mb-0 opacity-75">Téléversez vos documents de conformité</p>
-                                    </div>
+        <t t-call="web.layout"> <!-- USES WEB.LAYOUT FOR PURE HTML (No Website Chrome) -->
+            <t t-set="head">
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Portail Partenaire | <t t-esc="partner.name"/></title>
+                <!-- Bootstrap 5 (via CDN for reliability in minimal layout or Odoo assets if available) -->
+                <!-- We'll reuse Odoo common assets but stripped -->
+                <t t-call-assets="web.assets_common" t-js="false"/>
+                <t t-call-assets="web.assets_frontend" t-js="false"/>
+                <t t-call-assets="web.assets_common" t-css="false"/>
+                <script type="text/javascript">
+                    // AJAX Upload Logic
+                    
+                    function getDocContainer(element) {
+                        return element.closest('.doc-row-container');
+                    }
+
+                    function onFileSelect(input) {
+                        const container = getDocContainer(input);
+                        const file = input.files[0];
+                        if (!file) return;
+
+                        // UI Elements
+                        const labelSpan = container.querySelector('.file-label-text');
+                        const validateBtn = container.querySelector('.btn-validate');
+                        const selectBtn = container.querySelector('.btn-select'); // The wrapper label
+
+                        // Update Label with Filename
+                        if (labelSpan) labelSpan.textContent = file.name;
+                        
+                        // Style Update: Show Validate Button
+                        if (validateBtn) validateBtn.classList.remove('d-none');
+                        
+                        // Optional: Highlight the select button to show state
+                        selectBtn.classList.remove('btn-outline-primary', 'border-0');
+                        selectBtn.classList.add('btn-light', 'border');
+                    }
+
+                    async function uploadDocument(triggerElement, docKey) {
+                        const container = getDocContainer(triggerElement);
+                        const fileInput = container.querySelector('input[type="file"]');
+                        const statusBadge = container.querySelector('.status-badge');
+                        const spinner = container.querySelector('.spinner-border');
+                        const validateBtn = container.querySelector('.btn-validate');
+                        
+                        // Show Loading
+                        if (statusBadge) statusBadge.classList.add('d-none');
+                        if (spinner) spinner.classList.remove('d-none');
+                        if (validateBtn) validateBtn.classList.add('disabled'); // Disable double click
+                        
+                        const formData = new FormData();
+                        formData.append('doc_key', docKey);
+                        
+                        if (fileInput.files &amp;&amp; fileInput.files.length &gt; 0) {
+                            formData.append('file', fileInput.files[0]);
+                        }
+                        
+                        // Also send expiry date if present in the same container
+                        const expiryInput = container.querySelector('input[type="date"]');
+                        if (expiryInput &amp;&amp; expiryInput.value) {
+                            formData.append('expiry_date', expiryInput.value);
+                        }
+
+                        try {
+                            const response = await fetch('/subcontractor/upload/<t t-esc="token"/>/process', {
+                                method: 'POST',
+                                body: formData
+                            });
+                            const result = await response.json();
+                            
+                            if (result.success) {
+                                // Update Status Badge Visuals
+                                if (statusBadge) {
+                                    statusBadge.className = 'status-badge badge rounded-pill'; // reset
+                                    if (result.status === 'valid') {
+                                        statusBadge.classList.add('bg-success');
+                                        statusBadge.textContent = 'Valide';
+                                    } else if (result.status === 'expired') {
+                                        statusBadge.classList.add('bg-danger');
+                                        statusBadge.textContent = 'Expiré';
+                                    } else {
+                                        statusBadge.classList.add('bg-warning', 'text-dark');
+                                        statusBadge.textContent = 'En traitement';
+                                    }
+                                }
+                                
+                                // Reset Validation UI
+                                if (validateBtn) validateBtn.classList.add('d-none');
+                                if (validateBtn) validateBtn.classList.remove('disabled');
+                                const labelSpan = container.querySelector('.file-label-text');
+                                if (labelSpan) labelSpan.textContent = "Remplacer"; // Reset text
+                                
+                            } else {
+                                alert("Erreur: " + result.error);
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert("Erreur de connexion serveur.");
+                        } finally {
+                            if (spinner) spinner.classList.add('d-none');
+                            if (statusBadge) statusBadge.classList.remove('d-none');
+                        }
+                    }
+                    
+                    // Trigger upload on Date change too (Optional: keep or require generic validate?)
+                    // User asked for manual validation "if wrong doc". Date change is less risky.
+                    // For now, let's keep date change auto-save as it's separate from the file risk.
+                    async function updateDate(input, docKey) {
+                         // Re-use logic, triggering upload without file logic requirement being new
+                         // But our shared uploadDocument grabs the file input. 
+                         // If file input is empty, backend handles it fine (just updates date).
+                         await uploadDocument(input, docKey);
+                    }
+                </script>
+            </t>
+            
+            <div class="bg-light min-vh-100 d-flex flex-column" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;">
+                <!-- Slim Header BLG - Modernized -->
+                <div class="bg-white border-bottom shadow-sm fixed-top" style="border-bottom: 3px solid #92564C !important; box-shadow: 0 4px 20px rgba(0,0,0,0.05) !important;">
+                    <div class="container py-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center">
+                                <!-- Logo Integration -->
+                                <img src="/construction_subcontractor/static/src/images/Logo.png" alt="BLG GROUPE" height="50" class="me-3"/>
+                                
+                                <div class="d-none d-md-block border-start ps-3 ms-3" style="border-color: #E5E3E2 !important;">
+                                    <small style="color: #978A86; letter-spacing: 1px; font-weight: 500;">ESPACE PARTENAIRE | <t t-esc="partner.name"/></small>
                                 </div>
                             </div>
-                            <div class="card-body p-4">
-                                <div class="alert alert-info mb-4">
-                                    <i class="fa fa-info-circle me-2"/>
-                                    <strong>Bienvenue <t t-esc="partner.name"/>!</strong> 
-                                    Veuillez téléverser les documents demandés ci-dessous.
+                            <div class="text-end">
+                                <a href="mailto:support@blggroupe.com" class="btn btn-sm rounded-pill px-3 py-2" style="border: 1px solid #E5E3E2; color: #978A86; background-color: #FAFAFA;">
+                                    <i class="fa fa-envelope me-2"/> <span class="d-none d-sm-inline">Besoin d'aide ?</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Content -->
+                <div class="container py-5 mt-5 flex-grow-1">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-10">
+                            <!-- Helper Banner -->
+                            <div class="alert border-0 shadow-sm mb-4 rounded-3" style="background-color: #D4C5BC; color: #505050;">
+                                <i class="fa fa-info-circle me-2" style="color: #92564C;"/> 
+                                <strong>Sauvegarde Automatique :</strong> Vos documents sont enregistrés dès que vous les sélectionnez.
+                            </div>
+
+                            <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="box-shadow: 0 10px 40px rgba(0,0,0,0.03) !important;">
+                                <div class="card-header bg-white py-4 px-4 border-bottom" style="border-bottom: 1px solid #F0F0F0 !important;">
+                                    <h5 class="mb-0 fw-bold" style="color: #978A86; font-family: 'Times New Roman', Times, serif; font-size: 1.25rem;">Dossier Administratif</h5>
+                                </div>
+                                
+                                <!-- Desktop Table View (Hidden on Mobile) -->
+                                <div class="table-responsive d-none d-md-block">
+                                    <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
+                                        <thead class="" style="background-color: #FAFAFA;">
+                                            <tr>
+                                                <th style="width: 5%; border-bottom: none;" class="text-center py-3">#</th>
+                                                <th style="width: 35%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Document Requis</th>
+                                                <th style="width: 15%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Statut</th>
+                                                <th style="width: 20%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Validité</th>
+                                                <th style="width: 25%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <t t-foreach="doc_types" t-as="doc">
+                                                <tr class="doc-row-container">
+                                                    <td class="text-center">
+                                                        <i class="fa fa-file-text-o text-muted"/>
+                                                    </td>
+                                                    <td>
+                                                        <div class="fw-bold text-dark"><t t-esc="doc['name']"/></div>
+                                                        <small t-if="doc.get('required')" class="text-danger fw-bold" style="font-size: 0.75rem;">* OBLIGATOIRE</small>
+                                                        <small t-else="" class="text-muted" style="font-size: 0.75rem;">OPTIONNEL</small>
+                                                    </td>
+                                                    <td>
+                                                        <!-- Status Badge -->
+                                                        <span t-attf-class="status-badge badge rounded-pill {{doc['status'] == 'valid' and 'bg-success' or doc['status'] == 'expired' and 'bg-danger' or 'bg-warning text-dark'}}">
+                                                            <t t-if="doc['status'] == 'valid'">Valide</t>
+                                                            <t t-elif="doc['status'] == 'expired'">Expiré</t>
+                                                            <t t-elif="doc['status'] == 'missing'">Manquant</t>
+                                                            <t t-else="">Non vérifié</t>
+                                                        </span>
+                                                        <!-- Loading Spinner (Hidden by default) -->
+                                                        <div class="spinner-border spinner-border-sm text-primary d-none" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                    </td>
+                                                    <td>
+                                                        <div t-if="doc['has_expiry'] and doc['key'] not in ['doc_urssaf_certificate', 'doc_kbis']">
+                                                            <input type="date" 
+                                                                   t-attf-class="form-control form-control-sm border-0 bg-light"
+                                                                   t-att-value="doc.get('expiry') and str(doc['expiry']) or ''"
+                                                                   t-attf-onchange="updateDate(this, '#{doc['key']}')"
+                                                                   t-att-style="'color: #92564C; font-weight: bold;' if doc['status'] == 'expired' else ''"/>
+                                                        </div>
+                                                        <span t-else="" class="text-muted small">-</span>
+                                                    </td>
+                                                    <td>
+                                                        <div class="file-upload-wrapper d-flex gap-2">
+                                                            <!-- Selector -->
+                                                            <label class="btn btn-sm btn-select position-relative rounded-pill flex-grow-1" style="border: 1px solid #92564C; color: #92564C;">
+                                                                <span class="text-truncate d-block file-label-text" style="max-width: 150px;">
+                                                                    <i class="fa fa-folder-open me-1"/> 
+                                                                    <t t-if="doc['has_file']">Remplacer</t>
+                                                                    <t t-else="">Choisir</t>
+                                                                </span>
+                                                                <input type="file" 
+                                                                       onchange="onFileSelect(this)"
+                                                                       class="position-absolute top-0 start-0 opacity-0 w-100 h-100"
+                                                                       style="cursor: pointer;"/>
+                                                            </label>
+                                                            
+                                                            <!-- Validator -->
+                                                            <button class="btn btn-sm btn-validate rounded-pill text-white d-none shadow-sm" 
+                                                                    style="background-color: #92564C;"
+                                                                    type="button"
+                                                                    t-attf-onclick="uploadDocument(this, '{{ doc['key'] }}')">
+                                                                <i class="fa fa-check"/>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            </t>
+                                        </tbody>
+                                    </table>
                                 </div>
 
-                                <form method="POST" 
-                                      t-attf-action="/subcontractor/upload/#{token}/submit" 
-                                      enctype="multipart/form-data">
-                                    
+                                <!-- Mobile Card View (Visible on Mobile) -->
+                                <div class="d-md-none p-3" style="background-color: #F8F9FA;">
                                     <t t-foreach="doc_types" t-as="doc">
-                                        <div class="card mb-3" 
-                                             t-attf-class="border-#{doc['status'] == 'valid' and 'success' or doc['status'] == 'expired' and 'danger' or doc['status'] == 'rejected' and 'danger' or 'secondary'}">
-                                            <div class="card-body">
-                                                <div class="row align-items-center">
-                                                    <div class="col-md-4">
-                                                        <h5 class="mb-1">
-                                                            <t t-if="doc['status'] == 'valid'">
-                                                                <i class="fa fa-check-circle text-success me-2"/>
-                                                            </t>
-                                                            <t t-elif="doc['status'] == 'expired'">
-                                                                <i class="fa fa-times-circle text-danger me-2"/>
-                                                            </t>
-                                                            <t t-elif="doc['status'] == 'to_check'">
-                                                                <i class="fa fa-clock-o text-warning me-2"/>
-                                                            </t>
-                                                            <t t-elif="doc['status'] == 'rejected'">
-                                                                <i class="fa fa-ban text-danger me-2"/>
-                                                            </t>
-                                                            <t t-else="">
-                                                                <i class="fa fa-file-o text-muted me-2"/>
-                                                            </t>
+                                        <div class="card mb-3 border-0 shadow-sm rounded-3">
+                                            <div class="card-body p-3 doc-row-container">
+                                                <!-- Header: Title + Badge -->
+                                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                                    <div>
+                                                        <h6 class="fw-bold text-dark mb-1" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                                            <i class="fa fa-file-text-o text-muted me-2"/>
                                                             <t t-esc="doc['name']"/>
-                                                        </h5>
-                                                        <small class="text-muted">
-                                                            <t t-if="doc['status'] == 'valid'">Document valide</t>
-                                                            <t t-elif="doc['status'] == 'expired'">Document expiré</t>
-                                                            <t t-elif="doc['status'] == 'to_check'">En attente de validation</t>
-                                                            <t t-elif="doc['status'] == 'rejected'">Document rejeté</t>
-                                                            <t t-elif="doc['status'] == 'expiring'">Expire bientôt</t>
-                                                            <t t-else="">Manquant</t>
-                                                        </small>
+                                                        </h6>
+                                                        <small t-if="doc.get('required')" class="text-danger fw-bold" style="font-size: 0.7rem;">* OBLIGATOIRE</small>
+                                                        <small t-else="" class="text-muted" style="font-size: 0.7rem;">OPTIONNEL</small>
                                                     </div>
-                                                    <div class="col-md-4">
+                                                    <!-- Status Badge -->
+                                                    <span t-attf-class="status-badge badge rounded-pill {{doc['status'] == 'valid' and 'bg-success' or doc['status'] == 'expired' and 'bg-danger' or 'bg-warning text-dark'}}">
+                                                        <t t-if="doc['status'] == 'valid'">Valide</t>
+                                                        <t t-elif="doc['status'] == 'expired'">Expiré</t>
+                                                        <t t-elif="doc['status'] == 'missing'">Manquant</t>
+                                                        <t t-else="">Wait...</t>
+                                                    </span>
+                                                    <!-- Loading Spinner -->
+                                                    <div class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
+                                                </div>
+
+                                                <!-- Body: Expiry Date -->
+                                                <div class="mb-3" t-if="doc['has_expiry'] and doc['key'] not in ['doc_urssaf_certificate', 'doc_kbis']">
+                                                     <label class="text-muted small mb-1">Date d'expiration</label>
+                                                     <input type="date" 
+                                                            t-attf-class="form-control form-control-sm border-0 bg-light"
+                                                            t-att-value="doc.get('expiry') and str(doc['expiry']) or ''"
+                                                            t-attf-onchange="updateDate(this, '#{doc['key']}')"
+                                                            t-att-style="'color: #92564C; font-weight: bold;' if doc['status'] == 'expired' else ''"/>
+                                                </div>
+
+                                                <!-- Footer: Actions -->
+                                                <div class="file-upload-wrapper d-flex flex-column gap-2">
+                                                    <!-- Selector -->
+                                                    <label class="btn btn-select w-100 position-relative rounded-3 py-2" style="border: 1px solid #92564C; color: #92564C;">
+                                                        <span class="d-block fw-bold file-label-text">
+                                                            <i class="fa fa-folder-open me-2"/> 
+                                                            <t t-if="doc['has_file']">Remplacer le document</t>
+                                                            <t t-else="">Choisir le document</t>
+                                                        </span>
                                                         <input type="file" 
-                                                               t-attf-name="doc_#{doc['key']}" 
-                                                               class="form-control form-control-sm"
-                                                               accept=".pdf,.jpg,.jpeg,.png"/>
-                                                    </div>
-                                                    <div class="col-md-4" t-if="doc['has_expiry']">
-                                                        <label class="form-label small mb-1">Date d'expiration</label>
-                                                        <input type="date" 
-                                                               t-attf-name="doc_#{doc['key']}_expiry" 
-                                                               class="form-control form-control-sm"
-                                                               t-att-value="doc.get('expiry') and str(doc['expiry']) or ''"/>
-                                                    </div>
+                                                               onchange="onFileSelect(this)"
+                                                               class="position-absolute top-0 start-0 opacity-0 w-100 h-100"
+                                                               style="cursor: pointer;"/>
+                                                    </label>
+                                                    
+                                                    <!-- Validator -->
+                                                    <button class="btn btn-validate w-100 rounded-3 py-2 text-white d-none shadow-sm" 
+                                                            style="background-color: #92564C;"
+                                                            type="button"
+                                                            t-attf-onclick="uploadDocument(this, '{{ doc['key'] }}')">
+                                                        <i class="fa fa-check me-2"/> <span class="fw-bold">Envoyer / Valider</span>
+                                                    </button>
                                                 </div>
                                             </div>
                                         </div>
                                     </t>
-
-                                    <div class="d-grid gap-2 mt-4">
-                                        <button type="submit" class="btn btn-primary btn-lg">
-                                            <i class="fa fa-cloud-upload me-2"/>
-                                            Envoyer les documents
-                                        </button>
-                                    </div>
-                                </form>
+                                </div>
                             </div>
-                        </div>
-
-                        <!-- Footer Info -->
-                        <div class="text-center text-muted small">
-                            <p><i class="fa fa-lock me-1"/> Vos documents sont transmis de manière sécurisée.</p>
+                            
+                            <div class="text-center mt-4 text-muted small">
+                                <p>© 2025 BLG Groupe Construction - Tous droits réservés.</p>
+                            </div>
                         </div>
                     </div>
                 </div>

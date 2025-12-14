@@ -146,4 +146,6 @@ URSSAFCodeSelector.props = {
     onCodeSelected: { type: Function, optional: true },
 };
 
-registry.category("fields").add("urssaf_code_selector", URSSAFCodeSelector);
+registry.category("fields").add("urssaf_code_selector", {
+    component: URSSAFCodeSelector,
+});

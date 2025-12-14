@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_lot_form_subcontractor_inherit" model="ir.ui.view">
+        <field name="name">construction.lot.form.subcontractor.inherit</field>
+        <field name="model">construction.lot</field>
+        <field name="inherit_id" ref="construction_core.view_construction_lot_form"/>
+        <field name="arch" type="xml">
+            <!-- Replace subcontractor_id with readonly version + Button -->
+            <xpath expr="//field[@name='subcontractor_id']" position="replace">
+                <label for="subcontractor_id"/>
+                <div class="o_row">
+                    <field name="subcontractor_id" readonly="1" force_save="1"/>
+                    <button name="%(construction_subcontractor.action_subcontractor_assignment_wizard)d" 
+                            type="action" 
+                            string="Assigner" 
+                            icon="fa-user-plus"
+                            class="btn-primary"
+                            context="{'default_lot_id': id}"
+                            invisible="execution_type == 'internal'"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

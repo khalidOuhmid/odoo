@@ -1,59 +1,37 @@
 {
-    'name': 'Construction Sale Extension',
-    'version': '18.0.1.0.0',
-    'summary': 'Extension intelligente pour la création de devis construction',
+    'name': 'Construction Sale',
+    'version': '18.0.1.0.2',
+    'category': 'Construction/Sales',
+    'summary': 'Next-gen Construction Sales Interface (SPA)',
     'description': """
-Construction Sale Extension
-===========================
-
-Module d'extension pour la création de devis intelligents dans le contexte 
-de projets de construction avec intégration complète au module construction_base.
-
-Fonctionnalités principales :
-* Wizard intelligent de création de devis par lots
-* Intégration native avec les chantiers de construction 
-* Gestion automatisée des produits par lots
-* Interface moderne et intuitive
-
-Compatibilité : Odoo 18.0
+    Construction Sale Module
+    ========================
+    Advanced SPA-like interface for construction quotes using Odoo Owl framework.
+    
+    Features:
+    - Owl-based Quote Builder
+    - Real-time Draft Saving (LocalStorage)
+    - Construction-specific line details (Location, Dimensions, Color)
+    - Construction Site integration
     """,
-    'category': 'Construction',
-    'author': 'BLG Groupe',
-    'website': 'https://www.blggroupe.com',
-    'license': 'LGPL-3',
-    'depends': [
-        'base',
-        'sale',
-        'product',
-        'construction_base',
-    ],
+    'author': 'Antigravity',
+    'depends': ['sale', 'construction_core', 'web', 'purchase'],
     'data': [
-        # Sécurité
-        'security/ir.model.access.csv',
-        
-        # Données de base
-        'data/product_category_data.xml',
-        'data/product_sequence_data.xml',
-        'data/construction_uom_data.xml',
-        'data/construction_product_categories.xml',
-        'data/construction_products_data.xml',
-        
-        # Wizards (popup d'abord pour définir les actions)
-        'wizards/popup_views.xml',
-        'wizards/quote_wizard_views.xml',
-        
-        # Vues principales
+        'wizards/sale_to_purchase_views.xml',
         'views/sale_order_views.xml',
-        'views/modern_wizards.xml',
+        'views/sale_order_report.xml',
+        'views/client_actions.xml',
     ],
     'assets': {
         'web.assets_backend': [
-            'construction_sale/static/src/scss/quote_builder.scss',
-            'construction_sale/static/src/js/quote_builder.js',
+            'construction_sale/static/src/stub_widgets.xml',
+            'construction_sale/static/src/stub_widgets.js',
+            'construction_sale/static/src/quote_builder/quote_builder.xml',
+            'construction_sale/static/src/quote_builder/quote_builder.scss',
+            'construction_sale/static/src/quote_builder/quote_builder.js',
         ],
     },
     'installable': True,
-    'application': False,
-    'auto_install': False,
-    'sequence': 100,
+    'application': True,
+    'license': 'LGPL-3',
 }

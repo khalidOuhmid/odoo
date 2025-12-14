@@ -38,12 +38,15 @@ Les actions sont liées aux étapes du chantier:
         
         # Data
         'data/mail_templates.xml',
+        'data/email_templates_enterprise.xml',
         'data/cron_jobs.xml',
         
         # Views
         'views/res_partner_views.xml',
         'views/construction_contract_views.xml',
         'views/menus.xml',
+        'wizard/subcontractor_assignment_wizard_views.xml',
+        'views/lot_integration_views.xml',
         
         # Portal
         'views/portal_templates.xml',

@@ -1,1 +1,1 @@
-from . import quote_wizard
+from . import sale_to_purchase_wizard

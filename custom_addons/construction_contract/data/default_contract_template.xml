@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data noupdate="1">
+    <data noupdate="0">
 
         <!-- Default Contract Template -->
         <record id="default_contract_template" model="construction.contract.template">
-            <field name="name">Standard Subcontractor Contract (French Construction Law)</field>
-            <field name="description">Standard template compliant with French construction law (Code Civil articles 1710-1779)</field>
+            <field name="name">Contrat Sous-Traitance BLG (Standard)</field>
+            <field name="description">Modèle standard BLG Groupe avec Conditions Générales</field>
             <field name="sequence">1</field>
             <field name="is_default" eval="True"/>
             <field name="active" eval="True"/>
@@ -13,319 +13,233 @@
             <!-- GrapesJS HTML -->
             <field name="grapesjs_html"><![CDATA[
 <div class="contract-container">
+    <div class="header-logo">
+        <img src="/web/image/res.company/{{ company.id }}/logo" alt="BLG Groupe" style="max-height: 80px;"/>
+    </div>
+
     <div class="contract-header">
         <h1>CONTRAT DE SOUS-TRAITANCE</h1>
-        <h2>{{ contract.name }}</h2>
+        <h2>Référence : {{ contract.name }}</h2>
     </div>
 
+    <!-- Payment Schedule -->
     <div class="contract-section">
-        <h3>ENTRE LES SOUSSIGNÉS :</h3>
-        <p><strong>L'Entreprise Principale :</strong><br/>
-        {{ company.name }}<br/>
-        SIRET: {{ company.siret }}<br/>
-        Adresse: {{ company.address }}</p>
-
-        <p>Ci-après dénommée "l'Entrepreneur Principal"</p>
-
-        <p><strong>D'UNE PART,</strong></p>
-
-        <p><strong>Et le Sous-Traitant :</strong><br/>
-        {{ subcontractor.name }}<br/>
-        SIRET: {{ subcontractor.siret }}<br/>
-        Adresse: {{ subcontractor.address }}</p>
-
-        <p>Ci-après dénommé "le Sous-Traitant"</p>
-
-        <p><strong>D'AUTRE PART,</strong></p>
-    </div>
-
-    <div class="contract-section">
-        <h3>ARTICLE 1 - OBJET DU CONTRAT</h3>
-        <p>Le présent contrat a pour objet la réalisation des travaux suivants dans le cadre du chantier :</p>
-        <p><strong>Chantier :</strong> {{ chantier.name }}<br/>
-        <strong>Référence :</strong> {{ chantier.reference }}<br/>
-        <strong>Adresse :</strong> {{ chantier.address }}, {{ chantier.postal_code }} {{ chantier.city }}</p>
-
-        <h4>Lots concernés :</h4>
-        <table class="contract-table">
+        <h3>4. Échéancier de paiement</h3>
+        <p>Le prix est payable selon l'échéancier suivant :</p>
+        <table class="contract-table payment-schedule">
             <thead>
                 <tr>
-                    <th>Lot</th>
-                    <th>Description</th>
-                    <th>Montant HT</th>
+                    <th>Avancement réel chantier</th>
+                    <th>Facturation</th>
+                    <th>Montant en € H.T.</th>
                 </tr>
             </thead>
             <tbody>
-                {% for lot in lots %}
                 <tr>
-                    <td>{{ lot.name }}</td>
-                    <td>{{ lot.description }}</td>
-                    <td>{{ lot.amount }}</td>
+                    <td>30%</td>
+                    <td>30%</td>
+                    <td>— €</td>
                 </tr>
-                {% endfor %}
+                <tr>
+                    <td>100%</td>
+                    <td>70%</td>
+                    <td>— €</td>
+                </tr>
+                <tr class="total-row">
+                    <td>TOTAL</td>
+                    <td>100%</td>
+                    <td>{{ contract.total_amount_ht }}</td>
+                </tr>
             </tbody>
         </table>
+        <p class="small-text">
+            La gestion financière est assurée depuis un compte tiers sécurisé. La signature du PV de réception par le MAITRE D'OUVRAGE, <u>qui atteste que les travaux ont été réalisés conformément au cahier des charges</u>, permet la libération des fonds vers notre partenaire travaux (le sous-traitant) a maximum J+30 après réception des travaux.<br/>
+            En complément des modalités de règlement du sous-traitant (voir § ci-avant), cet article vaut garantie de paiement du sous-traitant accepté par le MAITRE D'OUVRAGE par sa signature du Contrat de sous-traitance.
+        </p>
     </div>
 
+    <!-- Delays -->
     <div class="contract-section">
-        <h3>ARTICLE 2 - DURÉE ET DÉLAIS</h3>
-        <p><strong>Date de début des travaux :</strong> {{ contract.start_date }}<br/>
-        <strong>Date de fin prévue :</strong> {{ contract.end_date }}</p>
-
-        <p>Le Sous-Traitant s'engage à respecter ces délais. En cas de retard non justifié, des pénalités pourront être appliquées conformément à l'article 9 du présent contrat.</p>
+        <h3>5. Délais et pénalités de retard</h3>
+        <h4>5.1. Retenues sur situations mensuelles et/ou décompte définitif</h4>
+        <p>Les prestations doivent être exécutées dans les conditions de délai indiquées dans la Commande. Le respect des délais prévus au planning contractuel constitue une obligation essentielle...</p>
+        
+        <h4>5.2. Pénalités diverses</h4>
+        <p><strong>5.2.1. Pénalités de retard</strong> - Suivant article 5.1</p>
     </div>
 
+    <!-- Documents -->
     <div class="contract-section">
-        <h3>ARTICLE 3 - PRIX ET MODALITÉS DE PAIEMENT</h3>
-        <p><strong>Montant total HT :</strong> {{ contract.total_amount_ht }}<br/>
-        <strong>TVA :</strong> {{ contract.total_amount_tva }}<br/>
-        <strong>Montant total TTC :</strong> <span class="highlight">{{ contract.total_amount_ttc }}</span></p>
-
-        <p><strong>Retenue de garantie :</strong> {{ contract.retention_rate }}% soit {{ contract.retention_amount }}</p>
-
-        <p>Le paiement sera effectué selon les modalités suivantes, sur présentation de factures conformes et après réception des travaux :</p>
+        <h3>6. Documents à transmettre</h3>
+        <p>Le prestataire remet, à la signature de la présente commande et tous les 6 mois :</p>
         <ul>
-            <li>Acompte de 30% au démarrage des travaux</li>
-            <li>Acompte de 40% à mi-parcours</li>
-            <li>Solde de 30% à la réception des travaux, déduction faite de la retenue de garantie</li>
-        </ul>
-
-        <p>La retenue de garantie sera libérée à l'expiration du délai de garantie d'un an.</p>
-    </div>
-
-    <div class="contract-section">
-        <h3>ARTICLE 4 - OBLIGATIONS DE L'ENTREPRENEUR PRINCIPAL</h3>
-        <p>L'Entrepreneur Principal s'engage à :</p>
-        <ul>
-            <li>Mettre à disposition du Sous-Traitant les moyens d'accès au chantier</li>
-            <li>Coordonner les différents corps d'état</li>
-            <li>Fournir les plans et documents techniques nécessaires</li>
-            <li>Effectuer les paiements dans les délais convenus</li>
+            <li>Un extrait K bis</li>
+            <li>Une Attestation de fourniture des déclarations sociales (URSSAF)</li>
+            <li>La liste nominative des salariés étrangers</li>
+            <li>Une attestation d'assurance responsabilité civile et décennale</li>
         </ul>
     </div>
 
+    <!-- Validité -->
     <div class="contract-section">
-        <h3>ARTICLE 5 - OBLIGATIONS DU SOUS-TRAITANT</h3>
-        <p>Le Sous-Traitant s'engage à :</p>
-        <ul>
-            <li>Réaliser les travaux conformément aux règles de l'art et aux normes en vigueur</li>
-            <li>Respecter le planning établi et les délais convenus</li>
-            <li>Disposer de toutes les assurances obligatoires (responsabilité civile, décennale)</li>
-            <li>Respecter les règles de sécurité sur le chantier</li>
-            <li>Fournir le personnel qualifié et l'outillage nécessaire</li>
-            <li>Assurer le nettoyage de son poste de travail</li>
-        </ul>
+        <h3>7. Validité</h3>
+        <p>Cette commande est nulle si elle n'est pas retournée acceptée, accompagnée des documents demandés dans les 5 jours à compter de sa réception...</p>
     </div>
 
-    <div class="contract-section">
-        <h3>ARTICLE 6 - ASSURANCES ET GARANTIES</h3>
-        <p>Le Sous-Traitant atteste disposer des assurances suivantes :</p>
-        <ul>
-            <li><strong>Assurance Responsabilité Civile Professionnelle</strong></li>
-            <li><strong>Assurance Décennale</strong> (si applicable)</li>
-        </ul>
-
-        <p>Le Sous-Traitant garantit l'Entrepreneur Principal contre tous recours de tiers relatifs aux travaux exécutés.</p>
-
-        <p><strong>Code URSSAF :</strong> {{ subcontractor.urssaf_code }}</p>
-    </div>
-
-    <div class="contract-section">
-        <h3>ARTICLE 7 - RÉSILIATION</h3>
-        <p>Le présent contrat pourra être résilié de plein droit en cas de :</p>
-        <ul>
-            <li>Manquement grave aux obligations contractuelles</li>
-            <li>Retard important dans l'exécution des travaux</li>
-            <li>Non-respect des normes de sécurité</li>
-            <li>Défaut d'assurance</li>
-        </ul>
-
-        <p>La résiliation sera notifiée par lettre recommandée avec accusé de réception, avec un préavis de 15 jours.</p>
-    </div>
-
-    <div class="contract-section">
-        <h3>ARTICLE 8 - RÈGLEMENT DES LITIGES</h3>
-        <p>En cas de litige relatif à l'interprétation ou à l'exécution du présent contrat, les parties s'engagent à rechercher une solution amiable.</p>
-
-        <p>À défaut d'accord amiable dans un délai de 30 jours, le litige sera porté devant le Tribunal Judiciaire compétent.</p>
-    </div>
-
-    <div class="contract-section">
-        <h3>ARTICLE 9 - PÉNALITÉS DE RETARD</h3>
-        <p>En cas de retard dans l'exécution des travaux non justifié par un cas de force majeure, des pénalités seront appliquées à hauteur de <strong>1/1000 du montant total TTC par jour de retard</strong>.</p>
-    </div>
-
-    <div class="contract-section">
-        <h3>ARTICLE 10 - PLAN DE PRÉVENTION</h3>
-        <p>Le Sous-Traitant s'engage à respecter le Plan Particulier de Sécurité et de Protection de la Santé (PPSPS) du chantier.</p>
-
-        <p>Un plan de prévention sera établi conjointement avant le démarrage des travaux si le chantier représente plus de 400 heures de travail.</p>
-    </div>
-
+    <!-- Signature Zone -->
     <div class="contract-footer">
-        <p>Fait en deux exemplaires originaux,</p>
-        <p>À {% if subcontractor_signature and subcontractor_signature.signature_date and subcontractor.city %}{{ subcontractor.city }}{% elif company.city %}{{ company.city }}{% else %}_____________{% endif %}, le {% if subcontractor_signature and subcontractor_signature.signature_date %}{{ subcontractor_signature.signature_date }}{% else %}{{ contract.date }}{% endif %}</p>
+        <p>Fait à Bordeaux, le {{ contract.date }}</p>
 
         <div class="signature-block">
-            <div class="signature-left">
-                <p><strong>Pour l'Entrepreneur Principal</strong></p>
-                <p>{{ company.name }}</p>
+            <div class="signature-column">
+                <p class="sig-title">Le Contractant</p>
+                <!-- Company Signature -->
                 {% if company_signature %}
-                    <p><strong>Signature électronique :</strong></p>
-                    <img src="{{ company_signature.image_data }}" alt="Signature de l'entreprise" style="max-width: 250px; max-height: 100px; border: 1px solid #ddd; margin-top: 10px;"/>
+                    <div class="sig-image-container">
+                        {{ company_signature }}
+                    </div>
                 {% else %}
-                    <p>Signature électronique</p>
-                    <br/><br/>
+                    <div class="sig-placeholder">[Signature BLG]</div>
                 {% endif %}
             </div>
 
-            <div class="signature-right">
-                <p><strong>Pour le Sous-Traitant</strong></p>
-                <p>{{ subcontractor.name }}</p>
+            <div class="signature-column">
+                <p class="sig-title">L'Entreprise</p>
+                <p class="small-text">(Signature et cachet)</p>
+                <!-- Subcontractor Signature -->
                 {% if subcontractor_signature %}
-                    <p><strong>Signature électronique :</strong></p>
-                    <img src="{{ subcontractor_signature.image_data }}" alt="Signature du sous-traitant" style="max-width: 250px; max-height: 100px; border: 1px solid #ddd; margin-top: 10px;"/>
-                    <p style="margin-top: 5px; font-size: 10px; color: #666;">
-                        Signé le {{ subcontractor_signature.signature_date }}
-                    </p>
+                    <div class="sig-image-container">
+                        <img src="{{ subcontractor_signature.image_data }}" alt="Signature"/>
+                        <p class="sig-meta">Signé le {{ subcontractor_signature.signature_date }}</p>
+                    </div>
                 {% else %}
-                    <p>Signature électronique</p>
-                    <br/><br/>
+                    <div class="sig-placeholder">[En attente de signature]</div>
                 {% endif %}
             </div>
         </div>
+    </div>
+    
+    <!-- Page Break -->
+    <div style="page-break-before: always;"></div>
+
+    <!-- CGA -->
+    <div class="contract-section">
+        <div class="header-logo">
+             <img src="/web/image/res.company/{{ company.id }}/logo" alt="BLG Groupe" style="max-height: 60px;"/>
+        </div>
+        <h1 style="color: #A0522D; text-align: center; margin-top: 20px;">Conditions Générales d'Achat</h1>
+        
+        <h3>1. Conditions d'achat</h3>
+        <p>Toutes les conditions générales de vente du prestataire figurant sur ses lettres...</p>
+        
+        <h3>2. Règlementation du travail - Hygiène et sécurité</h3>
+        <p>L'entreprise fait son affaire personnelle, sans recours contre le contractant général...</p>
     </div>
 </div>
             ]]></field>
 
             <!-- GrapesJS CSS -->
             <field name="grapesjs_css"><![CDATA[
+body {
+    font-family: 'Arial', sans-serif;
+    color: #333;
+    font-size: 11pt;
+    line-height: 1.4;
+}
 .contract-container {
+    padding: 40px;
     max-width: 800px;
     margin: 0 auto;
-    padding: 40px;
-    font-family: 'Georgia', 'Times New Roman', serif;
-    line-height: 1.8;
-    color: #333;
 }
-
-.contract-header {
-    text-align: center;
-    margin-bottom: 40px;
-    border-bottom: 3px solid #0056b3;
-    padding-bottom: 20px;
+.header-logo {
+    text-align: right;
+    margin-bottom: 20px;
 }
-
 .contract-header h1 {
-    font-size: 28px;
-    margin: 0;
-    color: #0056b3;
-    text-transform: uppercase;
-    letter-spacing: 2px;
+    color: #A0522D; /* BLG Red/Brown */
+    font-size: 24px;
+    margin-bottom: 5px;
 }
-
 .contract-header h2 {
-    font-size: 18px;
-    margin: 10px 0 0 0;
     color: #666;
-    font-weight: normal;
-}
-
-.contract-section {
-    margin-bottom: 30px;
-}
-
-.contract-section h3 {
     font-size: 16px;
-    color: #0056b3;
-    text-transform: uppercase;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 5px;
-    margin-bottom: 15px;
+    font-weight: normal;
+    margin-top: 0;
 }
-
-.contract-section h4 {
-    font-size: 14px;
-    color: #333;
-    margin: 15px 0 10px 0;
+h3 {
+    color: #A0522D;
+    font-size: 14pt;
+    margin-top: 25px;
+    margin-bottom: 10px;
+    font-weight: bold;
 }
-
-.contract-section p {
-    margin: 10px 0;
-    text-align: justify;
+h4 {
+    color: #A0522D;
+    font-size: 11pt;
+    margin-top: 15px;
+    font-weight: bold;
+    font-style: italic;
 }
-
-.contract-section ul {
-    margin: 10px 0 10px 30px;
-}
-
-.contract-section li {
-    margin: 5px 0;
-}
-
 .contract-table {
     width: 100%;
     border-collapse: collapse;
-    margin: 15px 0;
+    margin: 20px 0;
 }
-
-.contract-table th,
-.contract-table td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-}
-
 .contract-table th {
-    background-color: #0056b3;
-    color: white;
+    border-top: 2px solid #A0522D;
+    border-bottom: 2px solid #A0522D;
+    padding: 10px;
+    text-align: center;
+    color: #333;
+    font-weight: normal;
+}
+.contract-table td {
+    padding: 10px;
+    text-align: center;
+    border-bottom: 1px solid #ddd;
+}
+.total-row td {
+    border-top: 2px solid #A0522D;
     font-weight: bold;
+    color: #A0522D;
 }
-
-.contract-table tr:nth-child(even) {
-    background-color: #f9f9f9;
+.small-text {
+    font-size: 9pt;
+    font-style: italic;
+    color: #555;
+    text-align: justify;
 }
-
-.highlight {
-    color: #0056b3;
-    font-weight: bold;
-    font-size: 18px;
-}
-
 .contract-footer {
     margin-top: 50px;
-    border-top: 2px solid #0056b3;
-    padding-top: 30px;
 }
-
 .signature-block {
     display: flex;
     justify-content: space-between;
     margin-top: 40px;
 }
-
-.signature-left,
-.signature-right {
+.signature-column {
     width: 45%;
+    text-align: center;
 }
-
-.signature-left p,
-.signature-right p {
-    margin: 5px 0;
+.sig-title {
+    color: #A0522D;
+    font-weight: bold;
+    margin-bottom: 5px;
 }
-
-@media print {
-    .contract-container {
-        padding: 20px;
-    }
-
-    .contract-section {
-        page-break-inside: avoid;
-    }
+.sig-placeholder {
+    height: 100px;
+    border: 1px dashed #ccc;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #999;
+    margin-top: 10px;
+}
+.sig-image-container img {
+    max-width: 200px;
+    max-height: 100px;
 }
             ]]></field>
-
         </record>
-
     </data>
 </odoo>

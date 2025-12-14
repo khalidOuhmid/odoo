@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_subcontractor_assignment_wizard_form" model="ir.ui.view">
+        <field name="name">subcontractor.assignment.wizard.form</field>
+        <field name="model">subcontractor.assignment.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Assignation Sous-traitant (Gatekeeper)">
+                <sheet>
+                    <div class="alert alert-info" role="alert">
+                        <strong>Objectif:</strong> Assigner un sous-traitant conforme au lot <field name="lot_id" class="fw-bold" nolabel="1"/>
+                    </div>
+                
+                    <group>
+                        <field name="partner_id" options="{'no_create': True}"/>
+                    </group>
+                    
+                    <!-- Compliance Card (SAP Style) -->
+                    <div class="card mb-3" invisible="not partner_id">
+                        <div class="card-header bg-light">
+                            <strong>État de Conformité</strong>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-6">
+                                    <field name="alert_level" widget="badge" 
+                                           decoration-success="alert_level == 'green'"
+                                           decoration-warning="alert_level == 'yellow'"
+                                           decoration-danger="alert_level == 'red'"/>
+                                </div>
+                                <div class="col-6 text-end">
+                                    <field name="compliance_state" widget="badge"
+                                           decoration-success="compliance_state == 'compliant'"
+                                           decoration-warning="compliance_state == 'incomplete'"
+                                           decoration-danger="compliance_state == 'expired'"/>
+                                </div>
+                            </div>
+                            
+                            <hr invisible="not blocking_reasons"/>
+                            <field name="blocking_reasons" nolabel="1" widget="html" class="text-danger"/>
+                        </div>
+                    </div>
+                    
+                    <!-- Force Assignment Section -->
+                    <group invisible="not is_blocked">
+                        <div class="alert alert-danger" role="alert">
+                            🛑 <strong>BLOCAGE :</strong> Documents critiques manquants.
+                        </div>
+                        <field name="force_assignment" widget="boolean_toggle"/>
+                        <field name="force_reason" placeholder="Pourquoi déroger ?" 
+                               required="force_assignment"
+                               invisible="not force_assignment"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_confirm" string="Confirmer l'Assignation" type="object" 
+                            class="btn-primary" 
+                            data-hotkey="q"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel" data-hotkey="z"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_subcontractor_assignment_wizard" model="ir.actions.act_window">
+        <field name="name">Assigner Sous-traitant</field>
+        <field name="res_model">subcontractor.assignment.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

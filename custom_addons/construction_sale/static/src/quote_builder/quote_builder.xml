@@ -1,0 +1,546 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="construction_sale.QuoteBuilder">
+        <div t-attf-class="o_construction_quote_builder h-100 d-flex flex-column #{state.loading ? 'o_quote_builder_loading' : ''}">
+            
+            <!-- NO PROJECT WARNING -->
+            <div t-if="!state.chantierId" class="o_no_project_warning text-center">
+                <i class="fa fa-exclamation-triangle me-2"/>
+                ⚠️ AUCUN CHANTIER LIÉ - Veuillez accéder via un chantier existant
+            </div>
+            
+            <!-- HEADER BAR -->
+            <div class="o_quote_header px-4 py-3 d-flex justify-content-between align-items-center">
+                <div class="d-flex align-items-center gap-3">
+                    <h4 class="m-0 fw-bold">
+                        <i class="fa fa-calculator me-2"/>Estimateur Chantier
+                    </h4>
+                    <t t-if="state.chantierName">
+                        <span class="badge fs-6">
+                            <i class="fa fa-map-marker me-1"/>
+                            <t t-esc="state.chantierName"/>
+                        </span>
+                    </t>
+                </div>
+                
+                <div class="d-flex gap-2">
+                    <button t-if="state.cart.length > 0" 
+                            class="btn btn-outline-light btn-sm"
+                            t-on-click="clearDraft">
+                        <i class="fa fa-trash me-1"/>Réinitialiser
+                    </button>
+                    <button class="btn o_btn_create_quote btn-sm shadow"
+                            t-on-click="createQuote"
+                            t-att-disabled="state.cart.length === 0 ? 'disabled' : undefined">
+                        <i class="fa fa-file-text me-1"/>Générer le Devis
+                    </button>
+                </div>
+            </div>
+
+            <!-- SUMMARY BAR -->
+            <div class="o_summary_bar px-4 py-3">
+                <div class="row g-3 text-center align-items-center">
+                    <div class="col">
+                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">Lignes</small>
+                        <span class="fs-4 fw-bold text-primary" t-esc="state.cart.length"/>
+                    </div>
+                    <div class="col">
+                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">Quantité</small>
+                        <span class="fs-4 fw-bold text-info" t-esc="getTotalQty().toFixed(2)"/>
+                    </div>
+                    <div class="col">
+                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">Montant HT</small>
+                        <span class="fs-4 fw-bold text-success" t-esc="formatMoney(getCartTotal())"/>
+                    </div>
+                    <!-- Global Margin Control (Manager only) -->
+                    <div class="col" t-if="state.showMargin">
+                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">
+                            <i class="fa fa-percent me-1"/>Marge par défaut
+                        </small>
+                        <div class="input-group input-group-sm mx-auto" style="max-width: 100px;">
+                            <input type="number" 
+                                   class="form-control text-center fw-bold"
+                                   t-att-value="state.defaultMargin"
+                                   t-on-change="onGlobalMarginChange"
+                                   min="0" max="500" step="5"/>
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col" t-if="state.showMargin">
+                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">
+                            <i class="fa fa-lock me-1"/>Marge totale
+                        </small>
+                        <span class="fs-5 fw-bold o_quote_margin_badge px-2 py-1 rounded">
+                            <t t-esc="formatMoney(getCartMargin())"/>
+                            <small>(<t t-esc="getCartMarginPercent().toFixed(1)"/>%)</small>
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MAIN LAYOUT -->
+            <div class="d-flex flex-grow-1 overflow-hidden">
+                
+                <!-- LEFT: Lot Sidebar -->
+                <div class="o_lot_sidebar d-flex flex-column" style="width: 200px; min-width: 200px;">
+                    <div class="o_lot_sidebar_header p-3">
+                        <h6 class="m-0 text-uppercase small fw-bold">
+                            <i class="fa fa-folder-open me-2"/>Lots
+                        </h6>
+                    </div>
+                    
+                    <div class="flex-grow-1 overflow-auto p-2">
+                        <t t-if="state.lots.length > 0">
+                            <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
+                                <button t-attf-class="o_lot_button btn w-100 text-start mb-2 py-2 #{state.selectedLotId === lot.id ? 'active' : ''}"
+                                        t-on-click="() => this.onLotClick(lot.id)">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong t-esc="lot.code"/>
+                                        <span class="badge" t-esc="getLotItemCount(lot.id)"/>
+                                    </div>
+                                    <small class="text-truncate d-block mt-1 opacity-75" t-esc="lot.name"/>
+                                </button>
+                            </t>
+                        </t>
+                        
+                        <t t-if="state.lots.length === 0">
+                            <div class="text-center py-4 text-muted">
+                                <i class="fa fa-folder-o fa-2x mb-2 opacity-50"/>
+                                <p class="small mb-0">Aucun lot</p>
+                            </div>
+                        </t>
+                    </div>
+                    
+                    <div class="p-2 border-top bg-light">
+                        <button class="btn o_btn_add_product btn-sm w-100"
+                                t-on-click="onCreateProduct">
+                            <i class="fa fa-plus me-1"/>Nouveau Produit
+                        </button>
+                    </div>
+                </div>
+
+                <!-- CENTER: Product Catalog -->
+                <div class="o_catalog_panel flex-grow-1 d-flex flex-column overflow-hidden" style="max-width: 320px;">
+                    <div class="o_catalog_header">
+                        <h6 class="text-uppercase small fw-bold mb-2 text-secondary">
+                            <i class="fa fa-search me-2"/>Catalogue
+                        </h6>
+                        <input type="text" 
+                               class="form-control form-control-sm shadow-sm" 
+                               placeholder="Rechercher un produit..."
+                               t-att-value="state.searchTerm"
+                               t-on-input="onSearchInput"/>
+                    </div>
+                    
+                    <div class="flex-grow-1 overflow-auto p-2">
+                        <div t-if="state.loading" class="text-center py-5">
+                            <div class="spinner-border text-primary"/>
+                            <p class="text-muted mt-2 small">Chargement...</p>
+                        </div>
+                        
+                        <div t-if="!state.loading">
+                            <t t-foreach="state.products" t-as="product" t-key="product.id">
+                                <div class="o_product_card card mb-2 shadow-sm"
+                                     t-on-click="() => this.onProductClick(product)">
+                                    <div class="card-body py-2 px-3">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div class="flex-grow-1 overflow-hidden">
+                                                <div class="fw-bold text-truncate" t-esc="product.name"/>
+                                                <small class="text-muted" t-esc="product.default_code"/>
+                                            </div>
+                                            <div class="text-end ms-2">
+                                                <div class="o_price" t-esc="formatMoney(product.list_price)"/>
+                                                <span t-if="product.uom_id" class="badge bg-light text-secondary" t-esc="product.uom_id[1]"/>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+                            
+                            <div t-if="state.products.length === 0" class="o_empty_state">
+                                <i class="fa fa-database"/>
+                                <p class="mb-0">Aucun produit trouvé</p>
+                                <button class="btn btn-link btn-sm" t-on-click="onCreateProduct">
+                                    + Créer un produit
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Estimator Grid -->
+                <div class="o_estimator_panel flex-grow-1 d-flex flex-column overflow-hidden">
+                    <div class="o_estimator_header p-3">
+                        <h5 class="m-0 fw-bold text-secondary">
+                            <i class="fa fa-list-alt me-2"/>Estimation Détaillée
+                        </h5>
+                        <small class="text-muted">Cliquez sur un produit pour le configurer</small>
+                    </div>
+                    
+                    <div class="flex-grow-1 overflow-auto p-3">
+                        
+                        <!-- Empty State -->
+                        <div t-if="state.cart.length === 0" class="o_empty_state h-100 d-flex flex-column align-items-center justify-content-center">
+                            <i class="fa fa-shopping-cart"/>
+                            <h5>Panier vide</h5>
+                            <p>Sélectionnez un lot puis ajoutez des produits</p>
+                        </div>
+                        
+                        <!-- Grouped by Lot -->
+                        <t t-if="state.cart.length > 0">
+                            <t t-foreach="getGroupedCart()" t-as="group" t-key="group.id">
+                                <div class="o_quote_section_header px-3 py-2 mt-3 d-flex justify-content-between align-items-center">
+                                    <span>
+                                        <i class="fa fa-folder me-2"/>
+                                        <t t-esc="group.name"/>
+                                    </span>
+                                    <div>
+                                        <span class="badge me-2" t-esc="group.lines.length + ' article(s)'"/>
+                                        <span class="badge badge-success" t-esc="formatMoney(group.total)"/>
+                                    </div>
+                                </div>
+                                
+                                <table class="o_quote_table table table-sm mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 28%;">Produit</th>
+                                            <th style="width: 12%;" class="text-center">Dim.</th>
+                                            <th style="width: 8%;" class="text-center">Qté</th>
+                                            <th t-if="state.showMargin" style="width: 10%;" class="text-end o_margin_cell">Coût</th>
+                                            <th t-if="state.showMargin" style="width: 10%;" class="text-center o_margin_cell">Marge%</th>
+                                            <th style="width: 10%;" class="text-end">P.U.</th>
+                                            <th style="width: 10%;" class="text-end">Total</th>
+                                            <th style="width: 8%;" class="text-center">Opt.</th>
+                                            <th style="width: 4%;"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <t t-foreach="group.lines" t-as="line" t-key="line._index">
+                                            <tr t-attf-class="align-middle #{line.isOptional ? 'o_quote_line_optional' : ''}">
+                                                <!-- Product Name -->
+                                                <td>
+                                                    <input type="text" 
+                                                           class="form-control form-control-sm border-0 bg-transparent fw-bold"
+                                                           t-att-value="line.name"
+                                                           t-on-change="(ev) => this.onLineNameChange(ev, line._index)"/>
+                                                    <small t-if="line.specs?.location" class="text-muted d-block ps-2">
+                                                        <i class="fa fa-map-marker me-1"/>
+                                                        <t t-esc="line.specs.location"/>
+                                                    </small>
+                                                </td>
+                                                
+                                                <!-- Dimensions -->
+                                                <td class="text-center">
+                                                    <div class="d-flex gap-1 justify-content-center">
+                                                        <t t-if="line.uom_type !== 'unit'">
+                                                            <input type="number" class="form-control form-control-sm text-center" 
+                                                                   style="width: 40px;" placeholder="L"
+                                                                   t-att-value="line.dimension_l"
+                                                                   t-on-change="(ev) => this.onLineDimLChange(ev, line._index)"
+                                                                   step="0.1"/>
+                                                            <t t-if="line.uom_type === 'm2' || line.uom_type === 'm3'">
+                                                                <input type="number" class="form-control form-control-sm text-center" 
+                                                                       style="width: 40px;" placeholder="W"
+                                                                       t-att-value="line.dimension_w"
+                                                                       t-on-change="(ev) => this.onLineDimWChange(ev, line._index)"
+                                                                       step="0.1"/>
+                                                            </t>
+                                                            <t t-if="line.uom_type === 'm3'">
+                                                                <input type="number" class="form-control form-control-sm text-center" 
+                                                                       style="width: 40px;" placeholder="H"
+                                                                       t-att-value="line.dimension_h"
+                                                                       t-on-change="(ev) => this.onLineDimHChange(ev, line._index)"
+                                                                       step="0.1"/>
+                                                            </t>
+                                                        </t>
+                                                        <t t-else=""><span class="text-muted">-</span></t>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- Quantity -->
+                                                <td class="text-center">
+                                                    <input type="number" 
+                                                           class="form-control form-control-sm text-center" 
+                                                           style="width: 60px; margin: auto;"
+                                                           t-att-value="line.qty.toFixed(2)"
+                                                           t-on-change="(ev) => this.onLineQtyChange(ev, line._index)"
+                                                           min="0.01" step="0.01"/>
+                                                </td>
+                                                
+                                                <!-- Cost -->
+                                                <td t-if="state.showMargin" class="text-end o_margin_cell small">
+                                                    <t t-esc="formatMoney(line.price_buy)"/>
+                                                </td>
+                                                
+                                                <!-- Margin % -->
+                                                <td t-if="state.showMargin" class="text-center o_margin_cell">
+                                                    <div class="input-group input-group-sm" style="width: 70px; margin: auto;">
+                                                        <input type="number" 
+                                                               class="o_margin_input form-control text-center"
+                                                               t-att-value="line.target_margin_percent.toFixed(0)"
+                                                               t-on-change="(ev) => this.onLineMarginChange(ev, line._index)"
+                                                               min="0" max="99" step="5"/>
+                                                        <span class="input-group-text">%</span>
+                                                    </div>
+                                                </td>
+                                                
+                                                <!-- Unit Price -->
+                                                <td class="text-end fw-bold">
+                                                    <t t-esc="formatMoney(line.price_unit)"/>
+                                                </td>
+                                                
+                                                <!-- Total -->
+                                                <td class="text-end">
+                                                    <span class="fw-bold text-success" t-esc="formatMoney(line.qty * line.price_unit)"/>
+                                                </td>
+                                                
+                                                <!-- Optional -->
+                                                <td class="text-center">
+                                                    <input type="checkbox"
+                                                           class="form-check-input"
+                                                           t-att-checked="line.isOptional"
+                                                           t-on-change="() => this.onLineOptionalToggle(line._index)"
+                                                           title="Ligne optionnelle"/>
+                                                </td>
+                                                
+                                                <!-- Delete -->
+                                                <td class="text-center">
+                                                    <button class="btn btn-link text-danger p-0"
+                                                            t-on-click="() => this.onRemoveLine(line._index)">
+                                                        <i class="fa fa-times"/>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </t>
+                        </t>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div t-if="state.cart.length > 0" class="o_quote_footer p-3">
+                        <div class="row align-items-center">
+                            <div class="col-md-5">
+                                <small class="text-muted">
+                                    <i class="fa fa-info-circle me-1"/>Cochez "Opt." pour exclure du total
+                                </small>
+                            </div>
+                            <div class="col-md-7 text-end">
+                                <t t-if="state.showMargin">
+                                    <span class="me-3 text-muted">
+                                        Coût: <t t-esc="formatMoney(getCartCost())"/>
+                                    </span>
+                                    <span class="me-3 o_quote_margin_badge px-2 py-1 rounded">
+                                        <i class="fa fa-lock me-1"/>
+                                        <t t-esc="formatMoney(getCartMargin())"/>
+                                        (<t t-esc="getCartMarginPercent().toFixed(1)"/>%)
+                                    </span>
+                                </t>
+                                <span class="o_quote_total_badge">
+                                    Total: <t t-esc="formatMoney(getCartTotal())"/>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- LINE CONFIG WIZARD -->
+            <div t-if="state.showLineConfigWizard" class="modal show d-block" style="background: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-lg o_quote_wizard">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title">
+                                <i class="fa fa-cog me-2"/>Configurer la ligne
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" t-on-click="onCloseLineWizard"/>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Désignation</label>
+                                    <input type="text" class="form-control"
+                                           t-att-value="state.wizardProduct?.overrideName"
+                                           t-on-input="onWizardNameChange"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Quantité</label>
+                                    <input type="number" class="form-control"
+                                           t-att-value="state.wizardProduct?.qty"
+                                           t-on-input="onWizardQtyChange"
+                                           min="0.01" step="0.01"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Emplacement</label>
+                                    <input type="text" class="form-control" placeholder="Ex: Chambre 1"
+                                           t-att-value="state.wizardProduct?.location"
+                                           t-on-input="onWizardLocationChange"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Couleur</label>
+                                    <input type="text" class="form-control" placeholder="Ex: Blanc"
+                                           t-att-value="state.wizardProduct?.color"
+                                           t-on-input="onWizardColorChange"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Lot</label>
+                                    <select class="form-select" t-on-change="onWizardLotChange">
+                                        <option value="">-- Sélectionner --</option>
+                                        <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
+                                            <option t-att-value="lot.id" 
+                                                    t-att-selected="state.wizardProduct?.lot_id === lot.id">
+                                                <t t-esc="lot.code"/> - <t t-esc="lot.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
+                                
+                                <t t-if="state.showMargin">
+                                    <div class="col-12"><hr/><h6 class="text-uppercase small fw-bold text-muted"><i class="fa fa-lock me-2"/>Tarification</h6></div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Coût (€)</label>
+                                        <input type="text" class="form-control bg-light" readonly="readonly" t-att-value="formatMoney(state.wizardProduct?.price_buy)"/>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Marge %</label>
+                                        <div class="input-group">
+                                            <input type="number" class="form-control" 
+                                                   t-att-value="state.wizardProduct?.target_margin_percent" 
+                                                   t-on-input="onWizardMarginChange" 
+                                                   min="0" max="500" step="1"/>
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Prix de Vente</label>
+                                        <input type="text" class="form-control bg-light fw-bold text-success" readonly="readonly" t-att-value="formatMoney(state.wizardProduct?.price_unit)"/>
+                                    </div>
+                                </t>
+                                
+                                <!-- Dimensions Section -->
+                                <t t-if="state.wizardProduct?.uom_type !== 'unit'">
+                                    <div class="col-12"><hr/><h6 class="text-uppercase small fw-bold text-muted"><i class="fa fa-ruler me-2"/>Dimensions</h6></div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Longueur (m)</label>
+                                        <input type="number" class="form-control" 
+                                               t-att-value="state.wizardProduct?.dimension_l" 
+                                               t-on-input="onWizardDimLChange"
+                                               min="0" step="0.01"/>
+                                    </div>
+                                    <t t-if="state.wizardProduct?.uom_type === 'm2' or state.wizardProduct?.uom_type === 'm3'">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Largeur (m)</label>
+                                            <input type="number" class="form-control" 
+                                                   t-att-value="state.wizardProduct?.dimension_w" 
+                                                   t-on-input="onWizardDimWChange"
+                                                   min="0" step="0.01"/>
+                                        </div>
+                                    </t>
+                                    <t t-if="state.wizardProduct?.uom_type === 'm3'">
+                                        <div class="col-md-3">
+                                            <label class="form-label">Hauteur (m)</label>
+                                            <input type="number" class="form-control" 
+                                                   t-att-value="state.wizardProduct?.dimension_h" 
+                                                   t-on-input="onWizardDimHChange"
+                                                   min="0" step="0.01"/>
+                                        </div>
+                                    </t>
+                                    <div class="col-md-3">
+                                        <label class="form-label">UoM</label>
+                                        <input type="text" class="form-control bg-light" readonly="readonly" 
+                                               t-att-value="state.wizardProduct?.uom_type === 'm2' ? 'm²' : (state.wizardProduct?.uom_type === 'm3' ? 'm³' : 'ml')"/>
+                                    </div>
+                                </t>
+                                
+                                <div class="col-12">
+                                    <label class="form-label">Notes</label>
+                                    <textarea class="form-control" rows="2" t-att-value="state.wizardProduct?.notes" t-on-input="onWizardNotesChange"/>
+                                </div>
+                                
+                                <div class="col-12">
+                                    <div class="form-check">
+                                        <input type="checkbox" class="form-check-input" id="optCheck" t-att-checked="state.wizardProduct?.isOptional" t-on-change="onWizardOptionalToggle"/>
+                                        <label class="form-check-label" for="optCheck"><strong>Ligne optionnelle</strong> (exclue du total)</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" t-on-click="onCloseLineWizard">Annuler</button>
+                            <button type="button" class="btn btn-primary" t-on-click="onConfirmLineWizard">
+                                <i class="fa fa-plus me-1"/>Ajouter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CREATE PRODUCT WIZARD -->
+            <div t-if="state.showCreateProductWizard" class="modal show d-block" style="background: rgba(0,0,0,0.5);">
+                <div class="modal-dialog modal-lg o_quote_wizard o_create_product">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title"><i class="fa fa-cube me-2"/>Nouveau Produit</h5>
+                            <button type="button" class="btn-close btn-close-white" t-on-click="onCloseCreateProductWizard"/>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row g-3">
+                                <div class="col-md-8">
+                                    <label class="form-label fw-bold">Nom <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" placeholder="Ex: Carrelage Sol 60x60" t-att-value="state.newProduct?.name" t-on-input="onNewProductNameChange"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Couleur</label>
+                                    <input type="text" class="form-control" placeholder="Blanc, Gris..." t-att-value="state.newProduct?.color" t-on-input="onNewProductColorChange"/>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Unité <span class="text-danger">*</span></label>
+                                    <select class="form-select" t-on-change="onNewProductUomChange">
+                                        <option value="">-- Sélectionner --</option>
+                                        <t t-foreach="state.uomList" t-as="uom" t-key="uom.id">
+                                            <option t-att-value="uom.id" t-att-selected="state.newProduct?.uom_id === uom.id"><t t-esc="uom.name"/></option>
+                                        </t>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Dimensions</label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control text-center" placeholder="L" t-att-value="state.newProduct?.dimension_l" t-on-input="onNewProductDimLChange" step="0.01"/>
+                                        <span class="input-group-text">×</span>
+                                        <input type="number" class="form-control text-center" placeholder="W" t-att-value="state.newProduct?.dimension_w" t-on-input="onNewProductDimWChange" step="0.01"/>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label fw-bold">Coût d'achat <span class="text-danger">*</span></label>
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" placeholder="0.00" t-att-value="state.newProduct?.list_price" t-on-input="onNewProductPriceChange" step="0.01" min="0"/>
+                                        <span class="input-group-text">€</span>
+                                    </div>
+                                    <small class="text-muted">Prix fournisseur (la marge sera appliquée)</small>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label fw-bold">Lots</label>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
+                                            <button type="button" t-attf-class="btn btn-sm #{state.newProduct?.lot_ids?.includes(lot.id) ? 'btn-primary' : 'btn-outline-secondary'}" t-on-click="() => this.onToggleNewProductLot(lot.id)">
+                                                <t t-esc="lot.code"/> - <t t-esc="lot.name"/>
+                                            </button>
+                                        </t>
+                                        <span t-if="state.lots.length === 0" class="text-muted small">Aucun lot</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" t-on-click="onCloseCreateProductWizard">Annuler</button>
+                            <button type="button" class="btn btn-success" t-on-click="onConfirmCreateProductWizard">
+                                <i class="fa fa-check me-1"/>Créer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </t>
+</templates>

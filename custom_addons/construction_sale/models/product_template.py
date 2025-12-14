@@ -1,84 +1,141 @@
-# models/product_template.py
-from odoo import models, fields, _
+# -*- coding: utf-8 -*-
+"""
+Product Template Construction Extension
+========================================
+Adds construction-specific pricing and specification fields.
+"""
+
+from odoo import models, fields, api
+from typing import Any
 
 
 class ProductTemplate(models.Model):
+    """Extended Product Template with Construction pricing models.
+    
+    Supports multiple pricing strategies:
+    - Standard (per unit)
+    - Per square meter (m²)
+    - Per linear meter (ml)
+    - Per weight (kg)
+    """
     _inherit = 'product.template'
 
-    lot_ids = fields.Many2many(
-        'construction.lot',
-        string='Lots de construction',
-        help="Lots de construction où ce produit/service peut être utilisé"
+    # ============================================================
+    # CONSTRUCTION PRICING
+    # ============================================================
+
+    price_type = fields.Selection(
+        [
+            ('standard', 'Standard (Unit)'),
+            ('m2', 'Per Square Meter (m²)'),
+            ('ml', 'Per Linear Meter (ml)'),
+            ('weight', 'Per Kilogram (kg)'),
+        ],
+        string='Pricing Type',
+        default='standard',
+        help="Determines how this product is priced in construction quotes"
     )
 
-    construction_specialty = fields.Selection([
-        ('general', 'Général'),
-        ('demolition', 'Démolition'),
-        ('maconnerie', 'Maçonnerie'),
-        ('platrerie', 'Plâtrerie'),
-        ('plomberie_cvc', 'Plomberie CVC'),
-        ('electricite', 'Électricité'),
-        ('menuiserie_ext', 'Menuiserie extérieure'),
-        ('menuiserie_int', 'Menuiserie intérieure'),
-        ('peinture', 'Peinture & finition'),
-        ('sol', 'Sol souple et parquet'),
-        ('carrelage', 'Carrelage & faïence'),
-    ], string='Spécialité construction')
+    # Field required by some Odoo views - prevents OWL crash
+    service_to_purchase = fields.Boolean(
+        string='Subcontracting Service',
+        default=False,
+        help="If checked, this service will trigger a purchase order for subcontracting"
+    )
 
+    price_type_label = fields.Char(
+        string='Pricing Label',
+        compute='_compute_price_type_label',
+        store=True,
+        help="Human-readable pricing type for display"
+    )
 
-class ProductProduct(models.Model):
-    _inherit = 'product.product'
+    construction_specialty = fields.Char(
+        string='Construction Specialty',
+        compute='_compute_construction_specialty',
+        help="Categorization for construction workflows (e.g., 'Flooring', 'Plumbing')"
+    )
 
-    lot_ids = fields.Many2many(related='product_tmpl_id.lot_ids', readonly=False)
-    construction_specialty = fields.Selection(related='product_tmpl_id.construction_specialty', readonly=False)
+    # ============================================================
+    # MEASUREMENT VALUES
+    # ============================================================
 
-    def action_open_edit_modal(self):
-        """Open this product in a modal form for editing from wizards/lists."""
-        self.ensure_one()
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Edit Product - %s') % (self.display_name or self.name),
-            'res_model': 'product.product',
-            'res_id': self.id,
-            'view_mode': 'form',
-            'target': 'new',
-            'context': {
-                'form_view_initial_mode': 'edit',
-                'default_categ_id': self.categ_id.id,
-            },
+    surface_required = fields.Boolean(
+        string='Surface Input Required',
+        compute='_compute_required_fields',
+        help="True if pricing requires surface area"
+    )
+
+    length_required = fields.Boolean(
+        string='Length Input Required',
+        compute='_compute_required_fields',
+        help="True if pricing requires length"
+    )
+
+    weight_required = fields.Boolean(
+        string='Weight Input Required',
+        compute='_compute_required_fields',
+        help="True if pricing requires weight"
+    )
+
+    surface_value = fields.Float(
+        string='Reference Surface (m²)',
+        help="Default surface area for calculations"
+    )
+
+    length_value = fields.Float(
+        string='Reference Length (m)',
+        help="Default length for calculations"
+    )
+
+    weight_value = fields.Float(
+        string='Reference Weight (kg)',
+        help="Default weight for calculations"
+    )
+
+    # ============================================================
+    # COMPUTED FIELDS
+    # ============================================================
+
+    @api.depends('price_type')
+    def _compute_price_type_label(self) -> None:
+        """Generate human-readable label for pricing type.
+        
+        Returns:
+            None (updates field in-place)
+        """
+        labels = {
+            'standard': 'Unit',
+            'm2': 'm²',
+            'ml': 'ml',
+            'weight': 'kg',
         }
+        for product in self:
+            product.price_type_label = labels.get(product.price_type, 'Unit')
 
-    def action_open_product_in_new_tab(self):
-        """Open the product in a new browser tab to avoid closing the wizard modal."""
-        self.ensure_one()
-        url = '/web#id=%d&model=product.product&view_type=form' % self.id
-        return {
-            'type': 'ir.actions.act_url',
-            'url': url,
-            'target': 'new',
-        }
+    @api.depends('price_type')
+    def _compute_required_fields(self) -> None:
+        """Determine which input fields are required based on pricing type.
+        
+        Returns:
+            None (updates fields in-place)
+        """
+        for product in self:
+            product.surface_required = product.price_type == 'm2'
+            product.length_required = product.price_type == 'ml'
+            product.weight_required = product.price_type == 'weight'
 
-    def action_add_product(self):
-        """Ajouter ce produit au wizard de devis actif"""
-        # Récupérer le wizard depuis le contexte
-        wizard_id = self.env.context.get('wizard_id')
-        active_id = self.env.context.get('active_id')
+    @api.depends('categ_id', 'price_type')
+    def _compute_construction_specialty(self) -> None:
+        """Derive construction specialty from category and pricing.
         
-        if not wizard_id:
-            # Essayer de récupérer depuis le contexte parent si disponible
-            wizard_id = self.env.context.get('default_wizard_id')
-        
-        if wizard_id:
-            wizard = self.env['construction.quote.wizard'].browse(wizard_id)
-            wizard.with_context(product_id=self.id).action_add_product()
-            
-            # Recharger la vue wizard
-            return {
-                'type': 'ir.actions.act_window',
-                'res_model': 'construction.quote.wizard',
-                'res_id': wizard_id,
-                'view_mode': 'form',
-                'target': 'new',
-            }
-        
-        return {'type': 'ir.actions.do_nothing'}
+        Returns:
+            None (updates field in-place)
+        """
+        for product in self:
+            specialty = product.categ_id.name if product.categ_id else 'General'
+            if product.price_type == 'm2':
+                specialty += ' (Surface)'
+            elif product.price_type == 'ml':
+                specialty += ' (Linear)'
+            product.construction_specialty = specialty

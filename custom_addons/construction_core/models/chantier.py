@@ -135,6 +135,10 @@ class Chantier(models.Model):
     )
     
     # ============= Financial ============= #
+    company_id = fields.Many2one(
+        'res.company', 'Company', required=True,
+        index=True, default=lambda self: self.env.company
+    )
     currency_id = fields.Many2one(
         'res.currency',
         string='Devise',
@@ -166,6 +170,21 @@ class Chantier(models.Model):
     
     lots_ids = fields.One2many('construction.lot', 'chantier_id', string='Lots')
     lots_count = fields.Integer(compute='_compute_lots_count')
+    
+    # ============= Project Team (Computed from Lots) ============= #
+    project_subcontractor_ids = fields.Many2many(
+        'res.partner',
+        compute='_compute_project_subcontractors',
+        string='Sous-traitants du Projet',
+        help="Sous-traitants assignés aux lots de ce chantier"
+    )
+    
+    # ============= Contract Generation Visibility ============= #
+    show_contract_generation = fields.Boolean(
+        compute='_compute_show_contract_generation',
+        string='Afficher Génération Contrat',
+        help="Visible à partir de finalisation dossier"
+    )
     
     # ============= Stage-Based Visibility (SAP/Salesforce UX) ============= #
     show_visits = fields.Boolean(
@@ -272,6 +291,29 @@ class Chantier(models.Model):
     def _compute_lots_count(self):
         for record in self:
             record.lots_count = len(record.lots_ids)
+
+    @api.depends('lots_ids.subcontractor_id', 'lots_ids.execution_type')
+    def _compute_project_subcontractors(self):
+        """Compute all subcontractors from external lots in this project."""
+        for record in self:
+            external_lots = record.lots_ids.filtered(
+                lambda l: l.execution_type == 'external' and l.subcontractor_id
+            )
+            record.project_subcontractor_ids = external_lots.mapped('subcontractor_id')
+
+    @api.depends('stage_id')
+    def _compute_show_contract_generation(self):
+        """Show contract generation button from stage FD (Finalisation Dossier)."""
+        stage_fd = self.env.ref(
+            'construction_core.stage_finalisation_dossier', 
+            raise_if_not_found=False
+        )
+        for record in self:
+            if not record.stage_id or not stage_fd:
+                record.show_contract_generation = False
+                continue
+            record.show_contract_generation = record._is_at_or_after_stage(stage_fd)
+
 
     @api.depends('stage_id', 'stage_id.code', 'stage_id.chapter_id', 'stage_id.sequence')
     def _compute_stage_visibility(self):
@@ -496,7 +538,7 @@ class Chantier(models.Model):
 
     def write(self, vals):
         if 'stage_id' in vals and not self.env.context.get('bypass_stage_validation'):
-            if not self.env.user.has_group('construction_core.group_construction_director'):
+            if not self.env.user.has_group('construction_core.group_construction_admin'):
                 raise ValidationError(_(
                     "Modification directe de l'étape interdite.\n"
                     "Utilisez les boutons 'Suivant' ou 'Précédent'."
@@ -858,14 +900,21 @@ class Chantier(models.Model):
     def action_create_quotation(self):
         """Create a new quotation for this chantier."""
         self.ensure_one()
+        
+        # Create draft order immediately
+        order = self.env['sale.order'].create({
+            'partner_id': self.client.id,
+            'chantier_id': self.id,
+        })
+        
+        # Open the Quote Builder
         return {
-            'type': 'ir.actions.act_window',
-            'name': _('Nouveau Devis'),
-            'res_model': 'sale.order',
-            'view_mode': 'form',
+            'type': 'ir.actions.client',
+            'tag': 'construction_sale.quote_builder',
+            'name': _('Smart Quote Builder'),
             'context': {
                 'default_chantier_id': self.id,
-                'default_partner_id': self.client.id,
+                'default_order_id': order.id,
             },
         }
 
@@ -958,6 +1007,157 @@ class Chantier(models.Model):
             ],
         }
 
+    # ============= CONTRACT GENERATION GATE ============= #
+    
+    def _is_at_or_after_stage(self, target_stage):
+        """Check if current stage is at or after target stage.
+        
+        Uses chapter sequence + stage sequence for comparison.
+        """
+        self.ensure_one()
+        if not self.stage_id or not target_stage:
+            return False
+        
+        current = self.stage_id
+        current_chapter = current.chapter_id
+        target_chapter = target_stage.chapter_id
+        
+        if current_chapter.sequence > target_chapter.sequence:
+            return True
+        elif current_chapter.sequence == target_chapter.sequence:
+            return current.sequence >= target_stage.sequence
+        return False
+
+    def _can_generate_contract(self, partner_id):
+        """Validate contract generation conditions for a subcontractor.
+        
+        Args:
+            partner_id: ID of the subcontractor (res.partner)
+            
+        Returns:
+            tuple: (can_generate: bool, message: str)
+            
+        Validation Rules:
+        1. Chantier stage >= stage_finalisation_dossier (FD)
+        2. Partner has at least 1 external lot assigned
+        3. Every external lot for this partner has a confirmed PO
+        """
+        self.ensure_one()
+        
+        # Rule 1: Check stage
+        stage_fd = self.env.ref(
+            'construction_core.stage_finalisation_dossier', 
+            raise_if_not_found=False
+        )
+        if not stage_fd or not self._is_at_or_after_stage(stage_fd):
+            return False, _(
+                "Le chantier doit être au stade 'Finalisation Dossier' minimum."
+            )
+        
+        # Rule 2: Check partner has external lots
+        partner_lots = self.lots_ids.filtered(
+            lambda l: l.execution_type == 'external' and l.subcontractor_id.id == partner_id
+        )
+        if not partner_lots:
+            return False, _(
+                "Aucun lot en sous-traitance assigné à ce partenaire."
+            )
+        
+        # Rule 3: Check all lots have validated POs
+        lots_without_po = partner_lots.filtered(lambda l: not l._has_validated_po())
+        if lots_without_po:
+            lot_names = ', '.join(lots_without_po.mapped('name'))
+            return False, _(
+                "Lots sans bon de commande validé: %s"
+            ) % lot_names
+        
+        return True, _("OK - Toutes les conditions sont remplies")
+
+    def action_generate_contract(self, partner_id=None):
+        """Open contract creation form pre-filled with subcontractor data.
+        
+        Args:
+            partner_id: Subcontractor partner ID (can come from context)
+        """
+        self.ensure_one()
+        
+        # Get partner_id from context if not provided
+        if not partner_id:
+            partner_id = self.env.context.get('default_partner_id')
+        
+        if not partner_id:
+            raise UserError(_(
+                "Veuillez sélectionner un sous-traitant."
+            ))
+        
+        # Validate conditions
+        can_generate, message = self._can_generate_contract(partner_id)
+        if not can_generate:
+            raise UserError(_(
+                "Impossible de générer le contrat:\n%s"
+            ) % message)
+        
+        # Get partner lots
+        partner_lots = self.lots_ids.filtered(
+            lambda l: l.execution_type == 'external' and l.subcontractor_id.id == partner_id
+        )
+        
+        # Get confirmed POs for these lots
+        PurchaseOrder = self.env.get('purchase.order')
+        po_ids = []
+        if PurchaseOrder:
+            pos = PurchaseOrder.search([
+                ('lot_ids', 'in', partner_lots.ids),
+                ('state', 'in', ['purchase', 'done'])
+            ])
+            po_ids = pos.ids
+        
+        # Check if construction.contract model exists
+        if 'construction.contract' not in self.env:
+            raise UserError(_(
+                "Le module 'construction_subcontractor' doit être installé "
+                "pour la gestion des contrats."
+            ))
+        
+        # Open contract form pre-filled
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Nouveau Contrat - %s') % self.env['res.partner'].browse(partner_id).name,
+            'res_model': 'construction.contract',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_partner_id': partner_id,
+                'default_chantier_id': self.id,
+                'default_lot_ids': [(6, 0, partner_lots.ids)],
+                'default_purchase_order_ids': [(6, 0, po_ids)] if po_ids else False,
+                'default_date_start': self.date_start_internal or self.date_start_contract,
+                'default_date_end': self.date_end_internal or self.date_end_contract,
+            },
+        }
+
+    def action_check_contract_eligibility(self):
+        """Check contract eligibility for all project subcontractors."""
+        self.ensure_one()
+        results = []
+        for partner in self.project_subcontractor_ids:
+            can_gen, msg = self._can_generate_contract(partner.id)
+            status = "✅" if can_gen else "❌"
+            results.append(f"{status} {partner.name}: {msg}")
+        
+        message = "\n".join(results) if results else _("Aucun sous-traitant sur ce projet")
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Éligibilité Contrats'),
+                'message': message,
+                'type': 'info',
+                'sticky': True,
+            }
+        }
+
     # ============= Backward Compatibility (aliases) ============= #
     def action_next_stage(self):
         """Alias for action_move_to_next_stage."""
@@ -966,3 +1166,4 @@ class Chantier(models.Model):
     def action_previous_stage(self):
         """Alias for action_move_to_previous_stage."""
         return self.action_move_to_previous_stage()
+

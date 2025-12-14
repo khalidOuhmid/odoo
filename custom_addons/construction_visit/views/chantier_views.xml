@@ -19,20 +19,6 @@
                     </div>
                 </button>
             </div>
-
-            <!-- Add Visit Page -->
-            <page name="lots" position="before">
-                <page string="Visites" name="visits">
-                    <field name="visit_ids">
-                        <list decoration-muted="state == 'completed'">
-                            <field name="date"/>
-                            <field name="name"/>
-                            <field name="visit_type"/>
-                            <field name="state" widget="badge"/>
-                        </list>
-                    </field>
-                </page>
-            </page>
         </field>
     </record>
 </odoo>

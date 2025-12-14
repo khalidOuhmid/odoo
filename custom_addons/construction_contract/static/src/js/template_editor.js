@@ -18,3 +18,4 @@ odoo.define('construction_contract.template_editor', function (require) {
 });
 
 
+

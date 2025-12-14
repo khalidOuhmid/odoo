@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- ========== VUE FORMULAIRE PRODUIT CONSTRUCTION ========== -->
+        
+        <record id="view_product_template_form_construction" model="ir.ui.view">
+            <field name="name">product.template.form.construction</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                
+                <!-- Ajouter la classe CSS spécifique -->
+                <xpath expr="//form" position="attributes">
+                    <attribute name="class">o_construction_product</attribute>
+                </xpath>
+                
+                <!-- Ajout des champs de type de prix après le champ categ_id -->
+                <xpath expr="//field[@name='categ_id']" position="after">
+                    <field name="price_type" 
+                           invisible="price_type != 'custom'"/>
+                    
+                    <!-- Champs conditionnels selon le type de prix -->
+                    <field name="surface_required" invisible="1"/>
+                    <field name="length_required" invisible="1"/>
+                    <field name="weight_required" invisible="1"/>
+                    
+                    <field name="surface_value" 
+                           invisible="not surface_required"
+                           placeholder="Surface en m²"/>
+                    <field name="length_value" 
+                           invisible="not length_required"
+                           placeholder="Longueur en m"/>
+                    <field name="weight_value" 
+                           invisible="not weight_required"
+                           placeholder="Poids en kg"/>
+                </xpath>
+                
+                <!-- Ajouter un onglet pour les informations construction -->
+                <xpath expr="//notebook" position="inside">
+                    <page string="🏗️ Construction" name="construction">
+                        <group>
+                            <group string="Types de prix">
+                                <field name="price_type" readonly="1"/>
+                                <field name="price_type_label" readonly="1"/>
+                                <field name="construction_specialty" readonly="1"/>
+                            </group>
+                            <group string="Valeurs de calcul">
+                                <field name="surface_value" readonly="1"/>
+                                <field name="length_value" readonly="1"/>
+                                <field name="weight_value" readonly="1"/>
+                            </group>
+                        </group>
+                    </page>
+                </xpath>
+                
+            </field>
+        </record>
+        
+        <!-- ========== VUE LISTE PRODUIT CONSTRUCTION ========== -->
+        
+        <record id="view_product_template_tree_construction" model="ir.ui.view">
+            <field name="name">product.template.tree.construction</field>
+            <field name="model">product.template</field>
+            <field name="inherit_id" ref="product.product_template_tree_view"/>
+            <field name="arch" type="xml">
+                
+                <!-- Ajouter classe CSS spécifique -->
+                <xpath expr="//list" position="attributes">
+                    <attribute name="class">o_construction_product_list</attribute>
+                </xpath>
+                
+                <!-- Ajout des colonnes construction -->
+                <xpath expr="//field[@name='list_price']" position="after">
+                    <field name="price_type" optional="show"/>
+                    <field name="price_type_label" optional="hide"/>
+                </xpath>
+                
+            </field>
+        </record>
+        
+        <!-- ========== VUE FORMULAIRE PRODUIT VARIANT CONSTRUCTION ========== -->
+        
+        <record id="view_product_product_form_construction" model="ir.ui.view">
+            <field name="name">product.product.form.construction</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_template_form_view"/>
+            <field name="arch" type="xml">
+                
+                <!-- Ajouter la classe CSS spécifique -->
+                <xpath expr="//form" position="attributes">
+                    <attribute name="class">o_construction_product_variant</attribute>
+                </xpath>
+                
+                <!-- Ajout des champs de type de prix -->
+                <xpath expr="//field[@name='categ_id']" position="after">
+                    <field name="price_type" readonly="1"/>
+                    <field name="price_type_label" readonly="1"/>
+                </xpath>
+                
+            </field>
+        </record>
+        
+    </data>
+</odoo>

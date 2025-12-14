@@ -39,30 +39,50 @@
             
             <!-- Add Subcontractor tab -->
             <page name="internal_notes" position="before">
-                <page string="Sous-traitant" name="subcontractor_page" invisible="not is_subcontractor">
+                <page string="Sous-traitant" name="subcontractor_page" invisible="not is_subcontractor or subcontractor_type == 'internal'">
                     <group>
-                        <group string="Conformité">
-                            <field name="compliance_state" widget="badge" readonly="1"/>
-                            <field name="missing_documents" readonly="1" invisible="compliance_state == 'compliant'"/>
+                        <group string="Qualification">
+                            <field name="specialty_lot_category_ids" widget="many2many_tags" options="{'color_field': 'color'}"/>
+                            <field name="lot_ids" widget="many2many_tags" readonly="1" string="Lots Assignés (Chantiers)"/>
                         </group>
-                        <group string="Portail">
-                            <field name="upload_url" widget="CopyClipboardChar" readonly="1"/>
-                            <field name="token_expiration" readonly="1"/>
-                            <button name="action_generate_upload_link" string="Générer nouveau lien" type="object" class="btn-secondary"/>
-                            <button name="action_send_upload_request" string="Envoyer demande" type="object" class="btn-primary"/>
+                        <group string="Conformité &amp; Portail">
+                            <field name="compliance_state" widget="badge" readonly="1"/>
+                            <field name="alert_level" widget="badge" decoration-success="alert_level == 'green'" decoration-warning="alert_level == 'yellow'" decoration-danger="alert_level == 'red'"/>
+                            
+                            <label for="upload_url" string="Lien Portail"/>
+                            <div class="o_row">
+                                <field name="upload_url" widget="CopyClipboardChar" readonly="1"/>
+                                <button name="action_generate_upload_link" icon="fa-refresh" type="object" class="btn-link" title="Générer nouveau lien"/>
+                                <button name="action_send_upload_request" icon="fa-envelope" type="object" class="btn-link" title="Envoyer par email"/>
+                                <button name="action_send_upload_sms" icon="fa-mobile" type="object" class="btn-link" title="Envoyer par SMS"/>
+                            </div>
                         </group>
                     </group>
                     
                     <notebook>
-                        <page string="Documents" name="documents">
+                        <page string="Documents Requis" name="documents">
                             <group>
-                                <group string="KBIS">
+                                <group string="Identité &amp; Juridique">
                                     <field name="doc_kbis" filename="doc_kbis_filename"/>
                                     <field name="doc_kbis_filename" invisible="1"/>
                                     <field name="doc_kbis_expiry"/>
                                     <field name="doc_kbis_status" widget="badge"/>
+                                    
+                                    <separator/>
+                                    
+                                    <field name="doc_cni" filename="doc_cni_filename"/>
+                                    <field name="doc_cni_filename" invisible="1"/>
+                                    <field name="doc_cni_expiry"/>
+                                    <field name="doc_cni_status" widget="badge"/>
                                 </group>
-                                <group string="URSSAF">
+                                <group string="Assurances &amp; Social">
+                                    <field name="doc_insurance_dec" filename="doc_insurance_dec_filename"/>
+                                    <field name="doc_insurance_dec_filename" invisible="1"/>
+                                    <field name="doc_insurance_dec_expiry"/>
+                                    <field name="doc_insurance_dec_status" widget="badge"/>
+                                    
+                                    <separator/>
+                                    
                                     <field name="doc_urssaf" filename="doc_urssaf_filename"/>
                                     <field name="doc_urssaf_filename" invisible="1"/>
                                     <field name="doc_urssaf_expiry"/>
@@ -70,21 +90,7 @@
                                 </group>
                             </group>
                             <group>
-                                <group string="Assurance Décennale">
-                                    <field name="doc_insurance_dec" filename="doc_insurance_dec_filename"/>
-                                    <field name="doc_insurance_dec_filename" invisible="1"/>
-                                    <field name="doc_insurance_dec_expiry"/>
-                                    <field name="doc_insurance_dec_status" widget="badge"/>
-                                </group>
-                                <group string="Assurance RC Pro">
-                                    <field name="doc_insurance_pro" filename="doc_insurance_pro_filename"/>
-                                    <field name="doc_insurance_pro_filename" invisible="1"/>
-                                    <field name="doc_insurance_pro_expiry"/>
-                                    <field name="doc_insurance_pro_status" widget="badge"/>
-                                </group>
-                            </group>
-                            <group>
-                                <group string="RIB">
+                                <group string="Bancaire (Optionnel)">
                                     <field name="doc_rib" filename="doc_rib_filename"/>
                                     <field name="doc_rib_filename" invisible="1"/>
                                     <field name="doc_rib_status" widget="badge"/>

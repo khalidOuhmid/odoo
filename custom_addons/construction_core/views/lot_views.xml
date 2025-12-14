@@ -21,20 +21,35 @@
     </record>
 
 
-    <!-- LOT FORM VIEW - Enhanced SAP/Salesforce Style -->
+    <!-- LOT FORM VIEW - Cockpit Style (SAP/ONAYA Inspired) -->
     <record id="view_construction_lot_form" model="ir.ui.view">
         <field name="name">construction.lot.form</field>
         <field name="model">construction.lot</field>
         <field name="arch" type="xml">
             <form string="Lot de Chantier">
                 <header>
-                    <field name="is_finished" widget="boolean_toggle" nolabel="1" options="{'autosave': False}"/>
-                    <span class="text-muted ms-2" invisible="is_finished == False">✓ Terminé</span>
+                    <!-- Execution Type Badge -->
+                    <field name="execution_type" widget="radio" options="{'horizontal': true}"/>
+                    <field name="is_finished" widget="boolean_toggle" nolabel="1"/>
+                    <span class="badge bg-success ms-2" invisible="is_finished == False">✓ Terminé</span>
                 </header>
                 <sheet>
-                    <!-- Button Box - simplified without invalid actions -->
+                    <!-- Smart Button Box -->
                     <div class="oe_button_box" name="button_box">
+                        <button name="action_view_purchase_orders" type="object"
+                                class="oe_stat_button" icon="fa-shopping-cart"
+                                invisible="execution_type == 'internal'">
+                            <field name="cost_total" widget="statinfo" string="Coût Achats"/>
+                        </button>
+                        <button name="action_view_documents" type="object"
+                                class="oe_stat_button" icon="fa-file-o">
+                            <field name="document_count" widget="statinfo" string="Documents"/>
+                        </button>
                     </div>
+                    
+                    <!-- Ribbon for finished lots -->
+                    <widget name="web_ribbon" title="Terminé" bg_color="text-bg-success" 
+                            invisible="is_finished == False"/>
                     
                     <!-- Title Section -->
                     <div class="oe_title">
@@ -43,39 +58,108 @@
                             <field name="name" placeholder="Nom du Lot" class="text-break"/>
                         </h1>
                         <div class="o_row">
-                            <span class="construction_lot_code">
+                            <span class="badge bg-secondary me-2">
                                 <field name="code" placeholder="01" nolabel="1" class="oe_inline"/>
                             </span>
                             <field name="category_id" placeholder="Catégorie" class="oe_inline" 
-                                   options="{'no_create': True}"/>
+                                   options="{'no_create': True, 'no_open': True}"/>
+                            <span class="mx-2">|</span>
+                            <field name="chantier_id" options="{'no_create': True}" readonly="1"/>
                         </div>
                     </div>
                     
-                    <group>
-                        <group string="📋 Informations">
-                            <field name="chantier_id" options="{'no_create': True}"/>
-                            <field name="sequence"/>
-                        </group>
-                        <group string="💰 Financier">
-                            <field name="price" widget="monetary"/>
-                            <field name="currency_id" invisible="1"/>
-                        </group>
-                    </group>
-
                     <notebook>
-                        <page string="👥 Sous-traitants" name="subcontractors">
-                            <group string="Sous-traitants affectés">
-                                <field name="subcontractor_ids" widget="many2many_tags"
-                                       options="{'color_field': 'color'}" nolabel="1"/>
+                        <!-- TAB 1: OVERVIEW (📊) -->
+                        <page string="📊 Vue d'ensemble" name="overview">
+                            <group>
+                                <!-- Execution Details -->
+                                <group string="👷 Exécution" invisible="execution_type == 'internal'">
+                                    <field name="subcontractor_id" 
+                                           placeholder="Sélectionner un sous-traitant..."
+                                           options="{'no_create': True}"/>
+                                    <field name="subcontractor_ids" widget="many2many_tags"
+                                           options="{'color_field': 'color'}"
+                                           invisible="1"/>
+                                </group>
+                                <group string="👷 Équipe Interne" invisible="execution_type == 'external'">
+                                    <field name="internal_team_user_ids" widget="many2many_tags"
+                                           placeholder="Affecter des utilisateurs BLG..."/>
+                                </group>
+                                
+                                <!-- Planning -->
+                                <group string="📅 Planning">
+                                    <label for="date_start_planned"/>
+                                    <div class="o_row">
+                                        <field name="date_start_planned" class="oe_inline"/>
+                                        <span class="mx-2">→</span>
+                                        <field name="date_end_planned" class="oe_inline"/>
+                                    </div>
+                                    <field name="completion_percentage" widget="progressbar"/>
+                                </group>
                             </group>
-                            <!-- Subcontractor Selection Widget -->
-                            <div class="alert alert-info" role="alert">
+                            
+                            <!-- Financials Section (Read-only Computed) -->
+                            <group string="💰 Synthèse Financière">
+                                <group>
+                                    <field name="currency_id" invisible="1"/>
+                                    <field name="revenue_total" readonly="1" 
+                                           widget="monetary"
+                                           options="{'currency': 'currency_id'}"/>
+                                    <field name="cost_total" readonly="1"
+                                           widget="monetary"
+                                           options="{'currency': 'currency_id'}"/>
+                                </group>
+                                <group>
+                                    <field name="margin_eur" readonly="1"
+                                           widget="monetary"
+                                           decoration-success="margin_eur > 0"
+                                           decoration-danger="margin_eur &lt; 0"/>
+                                    <field name="margin_percent" readonly="1"
+                                           widget="percentage"
+                                           decoration-success="margin_percent > 20"
+                                           decoration-warning="margin_percent > 0 and margin_percent &lt;= 20"
+                                           decoration-danger="margin_percent &lt;= 0"/>
+                                </group>
+                            </group>
+                            
+                            <!-- Info Box -->
+                            <div class="alert alert-info" role="alert" 
+                                 invisible="execution_type == 'internal'">
                                 <i class="fa fa-info-circle me-2"/>
-                                Utilisez le wizard "Assigner Sous-traitant" pour affecter rapidement des sous-traitants qualifiés.
+                                <strong>Coût:</strong> Somme des bons de commande confirmés.
+                                <strong class="ms-3">Revenu:</strong> Prix facturé au client (devis).
                             </div>
                         </page>
+                        
+                        <!-- TAB 2: DOCUMENTS (📂) -->
+                        <page string="📂 Documents" name="documents">
+                            <group string="Documents du Lot">
+                                <field name="document_ids" widget="many2many_binary" 
+                                       nolabel="1" colspan="2"/>
+                            </group>
+                            <div class="alert alert-secondary" role="alert">
+                                <i class="fa fa-folder-open me-2"/>
+                                Joignez ici: planning du lot, spécifications techniques, 
+                                bons de commande (auto-liés après génération).
+                            </div>
+                        </page>
+                        
+                        <!-- TAB 3: NOTES (📝) -->
                         <page string="📝 Notes" name="notes">
-                            <field name="description" placeholder="Notes et informations complémentaires sur ce lot..."/>
+                            <group>
+                                <field name="description" nolabel="1" colspan="2"
+                                       placeholder="Notes et informations complémentaires sur ce lot..."/>
+                            </group>
+                            <group>
+                                <group>
+                                    <field name="sequence"/>
+                                    <field name="color" widget="color_picker"/>
+                                </group>
+                                <group>
+                                    <field name="price" widget="monetary" string="Prix Lot"/>
+                                    <field name="weighted_value" readonly="1"/>
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
@@ -83,6 +167,7 @@
             </form>
         </field>
     </record>
+
 
     <!-- LOT LIST VIEW - Enhanced -->
     <record id="view_construction_lot_tree" model="ir.ui.view">

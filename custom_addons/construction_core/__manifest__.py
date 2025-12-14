@@ -27,6 +27,7 @@ Enterprise Standards:
         'contacts',
         'sale',
         'mail',
+        'purchase',
         # 'web_gantt', # Optional: Check if enterprise is available, otherwise remove
     ],
     'data': [
