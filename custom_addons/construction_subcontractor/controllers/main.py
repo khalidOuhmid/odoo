@@ -6,7 +6,8 @@ Handles the public portal page where subcontractors upload their compliance docu
 """
 
 import logging
-from datetime import datetime
+from datetime import datetime, date
+from dateutil.relativedelta import relativedelta
 
 from odoo import http, _
 from odoo.http import request
@@ -181,4 +182,435 @@ class SubcontractorPortalController(http.Controller):
         
         return request.make_json_response({'success': True, 'message': 'No changes detected'})
 
-    # Removed old 'subcontractor_upload_submit' and 'upload_error_page' as we are single-page app now
+    @http.route('/subcontractor/upload/<string:token>/submit-single', type='json', auth='public', csrf=False)
+    def subcontractor_submit_single(self, token, **post):
+        """Submit a single staged document from localStorage.
+        
+        This endpoint receives base64-encoded file data that was cached
+        in the browser's localStorage during the staging workflow.
+        
+        Args:
+            token: Partner upload token for authentication
+            doc_key: Document type key (kbis, urssaf, etc.)
+            file_base64: Base64-encoded file content
+            filename: Original filename
+            expiry_date: Optional expiry date (YYYY-MM-DD)
+            
+        Returns:
+            JSON response with success status and updated document state
+        """
+        # Validate token and get partner
+        partner = request.env['res.partner'].sudo().search([
+            ('upload_token', '=', token)
+        ], limit=1)
+        
+        if not partner:
+            return {'error': _("Lien invalide ou partenaire introuvable."), 'success': False}
+        
+        if partner.token_expiration and partner.token_expiration < datetime.now():
+            return {'error': _("Lien expiré."), 'success': False}
+        
+        # Extract parameters from JSON body
+        doc_key = post.get('doc_key')
+        file_base64 = post.get('file_base64')
+        filename = post.get('filename')
+        expiry_date_str = post.get('expiry_date')
+        
+        if not doc_key:
+            return {'error': _("Type de document manquant."), 'success': False}
+        
+        if not file_base64:
+            return {'error': _("Contenu du fichier manquant."), 'success': False}
+        
+        # Prepare update values
+        updates = {}
+        file_field = f'doc_{doc_key}'  # e.g., doc_kbis
+        
+        # --- Auto-Renaming Logic (SAP-style consistent naming) ---
+        DOC_PREFIXES = {
+            'kbis': 'KBIS',
+            'urssaf': 'URSSAF',
+            'insurance_dec': 'DECENNALE',
+            'insurance_pro': 'RC_PRO',
+            'cni': 'CNI',
+            'rib': 'RIB',
+        }
+        
+        import os
+        clean_name = "".join([c if c.isalnum() or c in (' ', '-', '_') else '_' for c in partner.name]).strip()
+        prefix = DOC_PREFIXES.get(doc_key, doc_key.upper())
+        date_str = datetime.today().strftime('%Y-%m-%d')
+        ext = os.path.splitext(filename)[1] if filename else '.pdf'
+        
+        new_filename = f"{prefix} {clean_name} - {date_str}{ext}"
+        
+        # Store file content (already base64 encoded)
+        updates[file_field] = file_base64
+        updates[f'{file_field}_filename'] = new_filename
+        
+        # Handle expiry date
+        if expiry_date_str:
+            try:
+                expiry_date = datetime.strptime(expiry_date_str, '%Y-%m-%d').date()
+                updates[f'{file_field}_expiry'] = expiry_date
+            except ValueError:
+                return {'error': _("Format de date invalide."), 'success': False}
+        
+        # Execute write with transaction safety
+        try:
+            partner.write(updates)
+            partner._compute_compliance_state()  # Force immediate recompute
+            
+            # Audit trail in chatter
+            partner.message_post(
+                body=_("📄 Document '%s' soumis via le portail (workflow de staging).") % doc_key,
+                message_type='notification'
+            )
+            
+            return {
+                'success': True,
+                'doc_key': doc_key,
+                'status': getattr(partner, f'{file_field}_status', 'valid'),
+                'is_compliant': partner.compliance_state == 'compliant'
+            }
+        except Exception as e:
+            _logger.error(f"Submit error for {partner.name} - {doc_key}: {str(e)}")
+            return {'error': str(e), 'success': False}
+
+    # ============= SERVER-SIDE SESSION STAGING ============= #
+    # Fixes localStorage quota exceeded error for large files
+    
+    def _get_session_key(self, token):
+        """Generate unique session key for staging area."""
+        return f'subcontractor_staged_{token}'
+    
+    def _validate_token(self, token):
+        """Validate token and return partner or None.
+        
+        Returns:
+            tuple: (partner, error_dict) - partner if valid, else (None, error)
+        """
+        partner = request.env['res.partner'].sudo().search([
+            ('upload_token', '=', token)
+        ], limit=1)
+        
+        if not partner:
+            return None, {'error': _("Lien invalide ou partenaire introuvable."), 'success': False}
+        
+        if partner.token_expiration and partner.token_expiration < datetime.now():
+            return None, {'error': _("Lien expiré."), 'success': False}
+        
+        return partner, None
+
+    @http.route('/subcontractor/upload/<string:token>/stage', type='http', auth='public', 
+                methods=['POST'], csrf=False)
+    def stage_document(self, token, **post):
+        """Stage a document in server session without saving to database.
+        
+        This avoids localStorage quota issues by storing files server-side.
+        Files are stored in session until user clicks 'Submit All'.
+        
+        Args:
+            token: Partner upload token
+            doc_key: Document type key
+            file: Uploaded file
+            expiry_date: Optional expiry date
+            
+        Returns:
+            JSON response with staged document info
+        """
+        import base64
+        import os
+        
+        partner, error = self._validate_token(token)
+        if error:
+            return request.make_json_response(error, status=400)
+        
+        doc_key = post.get('doc_key')
+        if not doc_key:
+            return request.make_json_response(
+                {'error': _("Type de document manquant."), 'success': False}, 
+                status=400
+            )
+        
+        # Get or create staging area in session
+        session_key = self._get_session_key(token)
+        if session_key not in request.session:
+            request.session[session_key] = {}
+        
+        staged_docs = request.session[session_key]
+        
+        # Process uploaded file
+        if 'file' in request.httprequest.files:
+            file = request.httprequest.files['file']
+            if file.filename:
+                file_content = base64.b64encode(file.read()).decode('utf-8')
+                ext = os.path.splitext(file.filename)[1] or '.pdf'
+                
+                # Expiry Logic - Auto-calculate for KBIS/URSSAF
+                expiry_date_str = post.get('expiry_date')
+                calculated_expiry = None
+                
+                if doc_key == 'kbis':
+                    # KBIS valid for 3 months from today
+                    calculated_expiry = (date.today() + relativedelta(months=3)).strftime('%Y-%m-%d')
+                elif doc_key == 'urssaf':
+                    # URSSAF valid for 6 months from today
+                    calculated_expiry = (date.today() + relativedelta(months=6)).strftime('%Y-%m-%d')
+                
+                final_expiry = calculated_expiry if calculated_expiry else expiry_date_str
+
+                staged_docs[doc_key] = {
+                    'filename': file.filename,
+                    'file_data': file_content,
+                    'extension': ext,
+                    'expiry_date': final_expiry,
+                    'timestamp': datetime.now().isoformat()
+                }
+                
+                # Update session and mark as modified to ensure persistence
+                request.session[session_key] = staged_docs
+                request.session.modified = True
+                
+                _logger.info(f"Staged {doc_key} for token {token[:10]}..., session key: {session_key}, count: {len(staged_docs)}")
+                
+                return request.make_json_response({
+                    'success': True,
+                    'doc_key': doc_key,
+                    'filename': file.filename,
+                    'staged_count': len(staged_docs)
+                })
+        
+        # Handle date update only? (Not used in current flow but kept for safety)
+        if (post.get('expiry_date') or post.get('issue_date')) and doc_key in staged_docs:
+             # Same logic...
+             pass
+        
+        return request.make_json_response(
+            {'error': _("Aucun fichier fourni."), 'success': False}, 
+            status=400
+        )
+
+    @http.route('/subcontractor/upload/<string:token>/session-state', type='http', 
+                auth='public', methods=['POST'], csrf=False)
+    def get_session_state(self, token, **post):
+        """Get current staging state from server session.
+        
+        Returns list of staged document keys for UI recovery.
+        """
+        partner, error = self._validate_token(token)
+        if error:
+            return request.make_json_response(error, status=400)
+        
+        session_key = self._get_session_key(token)
+        staged_docs = request.session.get(session_key, {})
+        
+        return request.make_json_response({
+            'success': True,
+            'staged_docs': {
+                key: {
+                    'filename': doc['filename'],
+                    'expiry_date': doc.get('expiry_date'),
+                    'timestamp': doc.get('timestamp')
+                }
+                for key, doc in staged_docs.items()
+            },
+            'staged_count': len(staged_docs)
+        })
+
+    @http.route('/subcontractor/upload/<string:token>/submit-all', type='http', 
+                auth='public', methods=['POST'], csrf=False)
+    def submit_all_staged(self, token, **post):
+        """Submit all staged documents to database.
+        
+        Moves documents from session staging area to partner record.
+        Clears session after successful submission.
+        """
+        import os
+        
+        partner, error = self._validate_token(token)
+        if error:
+            return request.make_json_response(error, status=400)
+        
+        session_key = self._get_session_key(token)
+        staged_docs = request.session.get(session_key, {})
+        
+        _logger.info(f"Submit-all for token {token[:10]}..., session key: {session_key}, staged_docs keys: {list(staged_docs.keys()) if staged_docs else 'EMPTY'}")
+        
+        if not staged_docs:
+            return request.make_json_response({'error': _("Aucun document en attente. Veuillez d'abord sélectionner des fichiers."), 'success': False}, status=400)
+        
+        # Document prefixes for consistent naming
+        DOC_PREFIXES = {
+            'kbis': 'KBIS',
+            'urssaf': 'URSSAF',
+            'insurance_dec': 'DECENNALE',
+            'insurance_pro': 'RC_PRO',
+            'cni': 'CNI',
+            'rib': 'RIB',
+        }
+        
+        updates = {}
+        submitted_docs = []
+        
+        for doc_key, doc_data in staged_docs.items():
+            file_field = f'doc_{doc_key}'
+            
+            # Generate standardized filename
+            clean_name = "".join([
+                c if c.isalnum() or c in (' ', '-', '_') else '_' 
+                for c in partner.name
+            ]).strip()
+            prefix = DOC_PREFIXES.get(doc_key, doc_key.upper())
+            date_str = datetime.today().strftime('%Y-%m-%d')
+            ext = doc_data.get('extension', '.pdf')
+            
+            new_filename = f"{prefix} {clean_name} - {date_str}{ext}"
+            
+            # Add to updates
+            updates[file_field] = doc_data['file_data']
+            updates[f'{file_field}_filename'] = new_filename
+            
+            # Handle expiry date passed from stage
+            if doc_data.get('expiry_date'):
+                try:
+                    expiry = datetime.strptime(doc_data['expiry_date'], '%Y-%m-%d').date()
+                    updates[f'{file_field}_expiry'] = expiry
+                except ValueError:
+                    pass  # Skip invalid dates
+            
+            submitted_docs.append(doc_key)
+        
+        try:
+            partner.write(updates)
+            partner._compute_compliance_state()
+            
+            # Clear session staging area
+            request.session[session_key] = {}
+            
+            # Audit trail
+            partner.message_post(
+                body=_("📄 %d document(s) soumis via le portail: %s") % (
+                    len(submitted_docs), 
+                    ', '.join(submitted_docs)
+                ),
+                message_type='notification'
+            )
+            
+            return request.make_json_response({
+                'success': True,
+                'submitted_count': len(submitted_docs),
+                'submitted_docs': submitted_docs,
+                'is_compliant': partner.compliance_state == 'compliant',
+                'redirect_url': f'/subcontractor/upload/{token}/success'
+            })
+        except Exception as e:
+            _logger.error(f"Submit all error for {partner.name}: {str(e)}")
+            return request.make_json_response({'error': str(e), 'success': False}, status=500)
+
+    @http.route('/subcontractor/upload/<string:token>/clear-staged', type='json', 
+                auth='public', csrf=False)
+    def clear_staged(self, token, doc_key=None, **post):
+        """Clear staged documents from session.
+        
+        Args:
+            doc_key: Optional - clear specific doc, or all if not provided
+        """
+        partner, error = self._validate_token(token)
+        if error:
+            return error
+        
+        session_key = self._get_session_key(token)
+        
+        if doc_key:
+            # Clear specific document
+            staged_docs = request.session.get(session_key, {})
+            if doc_key in staged_docs:
+                del staged_docs[doc_key]
+                request.session[session_key] = staged_docs
+        else:
+            # Clear all
+            request.session[session_key] = {}
+        
+        return {'success': True, 'message': 'Staging area cleared'}
+
+    @http.route('/subcontractor/upload/<string:token>/success', type='http', auth='public',
+                csrf=False)
+    def upload_success(self, token, **kwargs):
+        """Display success page after document submission."""
+        from odoo.http import Response
+        
+        partner, error = self._validate_token(token)
+        if error:
+            return Response(f"""
+            <html>
+            <head><title>Erreur</title></head>
+            <body style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#f5f5f5;">
+                <div style="text-align:center;padding:40px;background:white;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,0.1);">
+                    <h1 style="color:#dc3545;">Erreur</h1>
+                    <p>{str(error)}</p>
+                </div>
+            </body>
+            </html>
+            """, content_type='text/html')
+        
+        html = f"""
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>Documents Soumis - BLG Groupe</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+            <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+            <style>
+                body {{ background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%); min-height: 100vh; }}
+                .success-card {{ border-radius: 20px; }}
+            </style>
+        </head>
+        <body class="d-flex align-items-center justify-content-center">
+            <div class="container py-5">
+                <div class="row justify-content-center">
+                    <div class="col-lg-8">
+                        <div class="text-center mb-4">
+                            <h4 class="text-muted">BLG Groupe - Espace Partenaire</h4>
+                        </div>
+                        
+                        <div class="card success-card shadow-lg border-0">
+                            <div class="card-body text-center py-5">
+                                <div class="mb-4">
+                                    <i class="fa-solid fa-circle-check text-success" style="font-size: 100px;"></i>
+                                </div>
+                                <h1 class="text-success mb-3">Documents soumis avec succès !</h1>
+                                <p class="lead text-muted mb-4">
+                                    Merci <strong>{partner.name}</strong> pour votre soumission.
+                                </p>
+                                
+                                <div class="alert alert-info text-start mb-4" role="alert">
+                                    <h5 class="alert-heading"><i class="fa-solid fa-info-circle me-2"></i>Prochaines étapes</h5>
+                                    <hr>
+                                    <ul class="mb-0">
+                                        <li>Vos documents vont être <strong>vérifiés</strong> par notre équipe administrative.</li>
+                                        <li>Vous recevrez une <strong>notification par email</strong> une fois la vérification terminée.</li>
+                                        <li>En cas de problème, nous vous contacterons pour demander des corrections.</li>
+                                    </ul>
+                                </div>
+                                
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="/subcontractor/upload/{token}" class="btn btn-outline-secondary btn-lg">
+                                        <i class="fa-solid fa-arrow-left me-2"></i>Retour au portail
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <p class="text-center text-muted mt-4 small">
+                            <i class="fa-solid fa-building me-1"></i> © 2025 BLG Groupe - Tous droits réservés
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </body>
+        </html>
+        """
+        return Response(html, content_type='text/html')

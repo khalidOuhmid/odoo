@@ -46,6 +46,7 @@ Les actions sont liées aux étapes du chantier:
         'views/construction_contract_views.xml',
         'views/menus.xml',
         'wizard/subcontractor_assignment_wizard_views.xml',
+        'wizard/document_validation_wizard_views.xml',
         'views/lot_integration_views.xml',
         
         # Portal

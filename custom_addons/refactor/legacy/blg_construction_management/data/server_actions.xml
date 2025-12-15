@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <!-- Server Action: Progress Workflow -->
+        <record id="server_action_progress_workflow" model="ir.actions.server">
+            <field name="name">Faire progresser le workflow</field>
+            <field name="model_id" ref="model_blg_chantier"/>
+            <field name="state">code</field>
+            <field name="code">
+if records:
+    for record in records:
+        record.action_progress_workflow()
+            </field>
+        </record>
+
+        <!-- Server Action: Schedule Visit -->
+        <record id="server_action_schedule_visit" model="ir.actions.server">
+            <field name="name">Planifier une visite</field>
+            <field name="model_id" ref="model_blg_chantier"/>
+            <field name="state">code</field>
+            <field name="code">
+if records:
+    for record in records:
+        record.action_schedule_visit()
+            </field>
+        </record>
+
+        <!-- Server Action: Create Quote -->
+        <record id="server_action_create_quote" model="ir.actions.server">
+            <field name="name">Créer un devis</field>
+            <field name="model_id" ref="model_blg_chantier"/>
+            <field name="state">code</field>
+            <field name="code">
+if records:
+    for record in records:
+        record.action_create_quote()
+            </field>
+        </record>
+
+        <!-- Server Action: Assign Subcontractors -->
+        <record id="server_action_assign_subcontractors" model="ir.actions.server">
+            <field name="name">Assigner des sous-traitants</field>
+            <field name="model_id" ref="model_blg_chantier"/>
+            <field name="state">code</field>
+            <field name="code">
+if records:
+    for record in records:
+        record.action_assign_subcontractors()
+            </field>
+        </record>
+
+        <!-- Server Action: Mark Not Pursued -->
+        <record id="server_action_mark_not_pursued" model="ir.actions.server">
+            <field name="name">Marquer sans suite</field>
+            <field name="model_id" ref="model_blg_chantier"/>
+            <field name="state">code</field>
+            <field name="code">
+if records:
+    for record in records:
+        record.action_mark_not_pursued()
+            </field>
+        </record>
+
+        <!-- Note: Automated actions (base.automation) have been removed as they are not compatible with Odoo 18 -->
+        <!-- These would need to be replaced with ir.cron or other suitable mechanisms if needed -->
+    </data>
+</odoo>

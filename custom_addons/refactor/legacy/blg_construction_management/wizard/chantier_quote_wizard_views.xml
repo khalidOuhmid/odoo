@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_chantier_quote_wizard_form" model="ir.ui.view">
+        <field name="name">blg.chantier.quote.wizard.form</field>
+        <field name="model">blg.chantier.quote.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_create_quote" string="✓ Créer le devis" 
+                            type="object" class="btn-primary"/>
+                    <button string="Annuler" special="cancel" class="btn-secondary"/>
+                </header>
+
+                <sheet>
+                    <div class="oe_title mb-3">
+                        <h1>
+                            <i class="fa fa-file-text-o me-2"/>
+                            Créer un devis pour le chantier
+                        </h1>
+                        <h3 class="text-muted">
+                            <field name="chantier_id" readonly="1"/>
+                        </h3>
+                    </div>
+
+                    <group>
+                        <group name="quote_info" string="Informations du devis">
+                            <field name="client_id"/>
+                            <field name="quote_name"/>
+                            <field name="validity_days"/>
+                        </group>
+                        <group name="options" string="Options">
+                            <field name="create_sections"/>
+                            <field name="open_product_selection"/>
+                        </group>
+                    </group>
+
+                    <group name="lots_selection" string="Lots à inclure dans le devis">
+                        <p class="text-muted">
+                            Sélectionnez les lots (corps de métier) que vous souhaitez inclure dans ce devis.
+                        </p>
+                        <field name="available_lot_ids" invisible="1"/>
+                        <field name="selected_lot_ids" widget="many2many_checkboxes" nolabel="1">
+                            <list>
+                                <field name="sequence" widget="handle"/>
+                                <field name="name"/>
+                                <field name="code"/>
+                            </list>
+                        </field>
+                    </group>
+
+                    <group name="conditions" string="Conditions particulières">
+                        <field name="note" nolabel="1" 
+                               placeholder="Ajoutez des conditions particulières pour ce devis..."/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_chantier_quote_wizard" model="ir.actions.act_window">
+        <field name="name">Créer un devis</field>
+        <field name="res_model">blg.chantier.quote.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

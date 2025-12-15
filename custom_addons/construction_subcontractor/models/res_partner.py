@@ -308,11 +308,16 @@ class ResPartner(models.Model):
         'doc_insurance_dec_expiry', 'doc_cni_expiry'
     )
     def _compute_alert_level(self):
-        """Compute alert level based on document expiry thresholds.
+        """Compute alert level based on document status and expiry thresholds.
         
-        🟢 Green: All OK (> 30 days)
-        🟡 Yellow: 7-30 days remaining
-        🔴 Red: < 7 days or expired
+        Alert Level Logic (SAP-style state machine):
+        - False: No documents present yet (nothing to alert on)
+        - 'green': All OK (documents valid, >30 days remaining)
+        - 'yellow': Warning (7-30 days remaining before expiry)
+        - 'red': Critical (<7 days remaining or expired)
+        
+        Note: Missing documents are NOT in alert scope - they are tracked
+        via compliance_state. Alert level only applies to existing documents.
         """
         today = date.today()
         yellow_threshold = today + timedelta(days=EXPIRY_WARNING_DAYS)
@@ -325,6 +330,25 @@ class ResPartner(models.Model):
                 partner.alert_level = False
                 continue
             
+            # STATE: Check if any required documents are missing
+            # If missing, alert level is not applicable (use compliance_state instead)
+            has_any_doc = False
+            has_missing = False
+            
+            for doc_key in required_docs:
+                config = DOCUMENT_TYPES[doc_key]
+                status = getattr(partner, config['status_field'], 'missing')
+                if status == 'missing':
+                    has_missing = True
+                else:
+                    has_any_doc = True
+            
+            # No documents at all = no alert level displayed
+            if not has_any_doc:
+                partner.alert_level = False
+                continue
+            
+            # STATE: Evaluate expiry levels for existing documents
             has_expired = False
             has_critical = False
             has_warning = False
@@ -334,6 +358,10 @@ class ResPartner(models.Model):
                 status = getattr(partner, config['status_field'], 'missing')
                 expiry = getattr(partner, config['expiry_field'], None) if config.get('expiry_field') else None
                 
+                # Skip missing documents (already handled by compliance_state)
+                if status == 'missing':
+                    continue
+                
                 if status == 'expired':
                     has_expired = True
                 elif expiry and expiry <= red_threshold:
@@ -341,6 +369,7 @@ class ResPartner(models.Model):
                 elif status == 'expiring' or (expiry and expiry <= yellow_threshold):
                     has_warning = True
             
+            # STATE MACHINE: Determine final alert level
             if has_expired or has_critical:
                 partner.alert_level = 'red'
             elif has_warning:
@@ -467,6 +496,37 @@ class ResPartner(models.Model):
             raise UserError(_("Tous les documents sont présents."))
         
         return self.action_send_upload_request()
+    
+    def action_open_validation_wizard(self, doc_type=None):
+        """Open document validation wizard for a specific document type.
+        
+        Args:
+            doc_type: Document type key (kbis, urssaf, etc.)
+                     Can also be passed via context as 'default_doc_type'
+        
+        Returns:
+            Action to open validation wizard
+        """
+        self.ensure_one()
+        
+        # Get doc_type from parameter or context
+        if not doc_type:
+            doc_type = self.env.context.get('default_doc_type')
+        
+        if not doc_type:
+            raise UserError(_("Type de document non spécifié."))
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Validation Document'),
+            'res_model': 'document.validation.wizard',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_partner_id': self.id,
+                'default_doc_type': doc_type,
+            }
+        }
     
     # ============= CONTRACT ACTIONS ============= #
     

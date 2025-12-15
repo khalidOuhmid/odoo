@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_partner_form_inherit_construction" model="ir.ui.view">
+        <field name="name">res.partner.form.construction.18</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='sales_purchases']" position="after">
+                <page name="construction" string="Construction">
+                    <group>
+                        <group>
+                            <field name="travaux_count" string="Nombre de travaux assignés"/>
+                        </group>
+                        <group>
+                            <field name="construction_contact" readonly="1"/>
+                            <field name="construction_role" readonly="1"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Travaux assignés" name="travaux">
+                            <field name="chantier_ids" readonly="1">
+                                <list>
+                                    <field name="name" string="Chantier"/>
+                                    <field name="address" string="Adresse du chantier"/>
+                                    <field name="stage_id" string="Étape"/>
+                                    <field name="date_start_contract" string="Début"/>
+                                    <field name="date_end_contract" string="Fin"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Vue de recherche personnalisée pour les contacts construction -->
+    <record id="view_res_partner_filter_construction" model="ir.ui.view">
+        <field name="name">res.partner.search.construction.18</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_res_partner_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='supplier']" position="after">
+                <filter name="construction_contact" string="Contacts Construction" domain="[('construction_contact', '=', True)]"/>
+            </xpath>
+            <xpath expr="//group[@name='group_by']" position="inside">
+                <filter name="construction_role" string="Rôle Construction" context="{'group_by': 'construction_role'}" domain="[('construction_contact', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- Liste des contacts construction -->
+    <record id="view_res_partner_tree_construction" model="ir.ui.view">
+        <field name="name">res.partner.tree.construction.18</field>
+        <field name="model">res.partner</field>
+        <field name="arch" type="xml">
+            <list string="Contacts Construction">
+                <field name="name"/>
+                <field name="email"/>
+                <field name="phone"/>
+                <field name="mobile"/>
+                <field name="construction_role"/>
+                <field name="travaux_count"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action pour les contacts construction -->
+    <record id="action_construction_contacts" model="ir.actions.act_window">
+        <field name="name">Contacts Construction</field>
+        <field name="res_model">res.partner</field>
+        <field name="view_mode">list,form</field>
+        <field name="view_id" ref="blg_construction_management.view_res_partner_tree_construction"/>
+        <field name="domain">[('construction_contact', '=', True)]</field>
+        <field name="context">{
+            'default_construction_contact': True,
+        }</field>
+        <field name="search_view_id" ref="blg_construction_management.view_res_partner_filter_construction"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Créez votre premier contact construction !
+            </p>
+        </field>
+    </record>
+</odoo>

@@ -115,14 +115,14 @@ class SaleOrderLine(models.Model):
     price_buy = fields.Float(
         string='Cost Price',
         digits='Product Price',
-        groups='construction_core.group_construction_manager,construction_core.group_construction_director',
+        groups='construction_core.group_construction_user,construction_core.group_construction_admin',
         help="Purchase/cost price for this line. Defaults to product standard price."
     )
 
     target_margin_percent = fields.Float(
         string='Target Margin (%)',
         default=50.0,
-        groups='construction_core.group_construction_manager,construction_core.group_construction_director',
+        groups='construction_core.group_construction_user,construction_core.group_construction_admin',
         help="Target profit margin percentage. Price = Cost / (1 - Margin%)"
     )
 
@@ -131,7 +131,7 @@ class SaleOrderLine(models.Model):
         compute='_compute_margin',
         store=True,
         currency_field='currency_id',
-        groups='construction_core.group_construction_manager,construction_core.group_construction_director',
+        groups='construction_core.group_construction_user,construction_core.group_construction_admin',
         help="Profit margin in currency (Sale Price - Cost Price)"
     )
 
@@ -139,7 +139,7 @@ class SaleOrderLine(models.Model):
         string='Actual Margin (%)',
         compute='_compute_margin',
         store=True,
-        groups='construction_core.group_construction_manager,construction_core.group_construction_director',
+        groups='construction_core.group_construction_user,construction_core.group_construction_admin',
         help="Profit margin as percentage of sale price"
     )
 

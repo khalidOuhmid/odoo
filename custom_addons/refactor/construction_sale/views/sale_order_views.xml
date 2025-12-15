@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_order_form_inherit_construction" model="ir.ui.view">
+        <field name="name">sale.order.form.inherit.construction</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="chantier_id" context="{'default_partner_id': partner_id}"/>
+                <field name="lot_ids" widget="many2many_tags" 
+                       invisible="not chantier_id"
+                       options="{'no_create': True}"/>
+            </field>
+            
+            <xpath expr="//header" position="inside">
+                <button name="action_create_chantier" string="Créer Chantier" 
+                        type="object"
+                        invisible="chantier_id or state not in ['draft', 'sent']"/>
+            </xpath>
+            
+                <button name="action_create_purchase_order" string="Créer Achat"
+                        type="object" class="btn-secondary"
+                        invisible="state not in ['sale', 'done']"/>
+            </xpath>
+            
+            <xpath expr="//field[@name='order_line']/tree/field[@name='name']" position="after">
+                <field name="location" optional="hide"/>
+                <field name="construction_lot_id" optional="hide"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

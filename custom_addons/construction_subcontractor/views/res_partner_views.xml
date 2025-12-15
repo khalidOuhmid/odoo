@@ -66,34 +66,84 @@
                                     <field name="doc_kbis" filename="doc_kbis_filename"/>
                                     <field name="doc_kbis_filename" invisible="1"/>
                                     <field name="doc_kbis_expiry"/>
-                                    <field name="doc_kbis_status" widget="badge"/>
+                                    <div class="o_row">
+                                        <field name="doc_kbis_status" widget="badge"/>
+                                        <button name="action_open_validation_wizard" 
+                                                type="object" 
+                                                string="Vérifier"
+                                                icon="fa-check-circle"
+                                                class="btn btn-primary btn-sm ms-2"
+                                                title="Vérifier ce document"
+                                                invisible="doc_kbis_status != 'to_check'"
+                                                context="{'default_doc_type': 'kbis'}"/>
+                                    </div>
                                     
                                     <separator/>
                                     
                                     <field name="doc_cni" filename="doc_cni_filename"/>
                                     <field name="doc_cni_filename" invisible="1"/>
                                     <field name="doc_cni_expiry"/>
-                                    <field name="doc_cni_status" widget="badge"/>
+                                    <div class="o_row">
+                                        <field name="doc_cni_status" widget="badge"/>
+                                        <button name="action_open_validation_wizard" 
+                                                type="object" 
+                                                string="Vérifier"
+                                                icon="fa-check-circle"
+                                                class="btn btn-primary btn-sm ms-2"
+                                                title="Vérifier ce document"
+                                                invisible="doc_cni_status != 'to_check'"
+                                                context="{'default_doc_type': 'cni'}"/>
+                                    </div>
                                 </group>
                                 <group string="Assurances &amp; Social">
                                     <field name="doc_insurance_dec" filename="doc_insurance_dec_filename"/>
                                     <field name="doc_insurance_dec_filename" invisible="1"/>
                                     <field name="doc_insurance_dec_expiry"/>
-                                    <field name="doc_insurance_dec_status" widget="badge"/>
+                                    <div class="o_row">
+                                        <field name="doc_insurance_dec_status" widget="badge"/>
+                                        <button name="action_open_validation_wizard" 
+                                                type="object" 
+                                                string="Vérifier"
+                                                icon="fa-check-circle"
+                                                class="btn btn-primary btn-sm ms-2"
+                                                title="Vérifier ce document"
+                                                invisible="doc_insurance_dec_status != 'to_check'"
+                                                context="{'default_doc_type': 'insurance_dec'}"/>
+                                    </div>
                                     
                                     <separator/>
                                     
                                     <field name="doc_urssaf" filename="doc_urssaf_filename"/>
                                     <field name="doc_urssaf_filename" invisible="1"/>
                                     <field name="doc_urssaf_expiry"/>
-                                    <field name="doc_urssaf_status" widget="badge"/>
+                                    <div class="o_row">
+                                        <field name="doc_urssaf_status" widget="badge"/>
+                                        <button name="action_open_validation_wizard" 
+                                                type="object" 
+                                                string="Vérifier"
+                                                icon="fa-check-circle"
+                                                class="btn btn-primary btn-sm ms-2"
+                                                title="Vérifier ce document"
+                                                invisible="doc_urssaf_status != 'to_check'"
+                                                context="{'default_doc_type': 'urssaf'}"/>
+                                    </div>
                                 </group>
                             </group>
                             <group>
                                 <group string="Bancaire (Optionnel)">
                                     <field name="doc_rib" filename="doc_rib_filename"/>
                                     <field name="doc_rib_filename" invisible="1"/>
-                                    <field name="doc_rib_status" widget="badge"/>
+                                    <div class="o_row">
+                                        <field name="doc_rib_status" widget="badge"/>
+                                        <button name="action_open_validation_wizard" 
+                                                type="object" 
+                                                string="Vérifier"
+                                                icon="fa-check-circle"
+                                                class="btn btn-primary btn-sm ms-2"
+                                                title="Vérifier ce document"
+                                                invisible="doc_rib_status != 'to_check'"
+                                                context="{'default_doc_type': 'rib'}"/>
+                                    </div>
                                 </group>
                             </group>
                         </page>

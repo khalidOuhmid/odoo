@@ -55,9 +55,9 @@
             <!-- Add Cost & Margin Fields -->
             <xpath expr="//field[@name='order_line']/list/field[@name='price_unit']" position="after">
                 <field name="price_buy" optional="hide" 
-                       groups="construction_core.group_construction_manager,construction_core.group_construction_director"/>
+                       groups="construction_core.group_construction_user,construction_core.group_construction_admin"/>
                 <field name="target_margin_percent" optional="hide" string="Margin %"
-                       groups="construction_core.group_construction_manager,construction_core.group_construction_director"/>
+                       groups="construction_core.group_construction_user,construction_core.group_construction_admin"/>
             </xpath>
 
             <!-- Technical Notes Column -->

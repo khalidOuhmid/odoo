@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <record id="lot_general" model="blg_contacts_extension.lot">
+            <field name="name">Général</field>
+            <field name="code">GEN-01</field>
+        </record>
+        <record id="lot_demolition" model="blg_contacts_extension.lot">
+            <field name="name">Démolition</field>
+            <field name="code">DEM-01</field>
+        </record>
+        <record id="lot_gros_oeuvre" model="blg_contacts_extension.lot">
+            <field name="name">Gros oeuvre</field>
+            <field name="code">GRO-01</field>
+        </record>
+        <record id="lot_platrerie" model="blg_contacts_extension.lot">
+            <field name="name">Plâtrerie</field>
+            <field name="code">PLA-01</field>
+        </record>
+        <record id="lot_plomberie" model="blg_contacts_extension.lot">
+            <field name="name">Plomberie</field>
+            <field name="code">PLO-01</field>
+        </record>
+        <record id="lot_electricite" model="blg_contacts_extension.lot">
+            <field name="name">Électricité</field>
+            <field name="code">ELEC-01</field>
+        </record>
+        <record id="lot_menuiserie_ext" model="blg_contacts_extension.lot">
+            <field name="name">Menuiserie ext</field>
+            <field name="code">MENEXT-01</field>
+        </record>
+        <record id="lot_menuiserie_int" model="blg_contacts_extension.lot">
+            <field name="name">Menuiserie int</field>
+            <field name="code">MENINT-01</field>
+        </record>
+        <record id="lot_peinture" model="blg_contacts_extension.lot">
+            <field name="name">Peinture &amp; finition</field>
+            <field name="code">PEI-01</field>
+        </record>
+        <record id="lot_sol_souple" model="blg_contacts_extension.lot">
+            <field name="name">Sol souple et parquet</field>
+            <field name="code">SOL-01</field>
+        </record>
+    </data>
+</odoo>

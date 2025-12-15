@@ -1,0 +1,319 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Paramètres de configuration système -->
+
+        <!-- Configuration des documents -->
+        <record id="config_document_max_file_size" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.document_max_file_size_mb</field>
+            <field name="value">10.0</field>
+        </record>
+
+        <record id="config_document_allowed_types" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.document_allowed_file_types</field>
+            <field name="value">.pdf,.jpg,.jpeg,.png</field>
+        </record>
+
+        <record id="config_auto_validation_enabled" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_auto_document_validation</field>
+            <field name="value">False</field>
+        </record>
+
+        <record id="config_auto_archiving_enabled" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_auto_archiving</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_auto_archive_delay" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.auto_archive_delay_days</field>
+            <field name="value">30</field>
+        </record>
+
+        <!-- Configuration du portail -->
+        <record id="config_portal_token_validity" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.portal_token_validity_days</field>
+            <field name="value">7</field>
+        </record>
+
+        <record id="config_enable_qr_codes" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_portal_qr_codes</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_enable_short_urls" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_short_urls</field>
+            <field name="value">False</field>
+        </record>
+
+        <record id="config_portal_custom_instructions" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.portal_custom_instructions</field>
+            <field name="value"><![CDATA[
+                <p>Bienvenue sur le portail sécurisé BLG Groupe.</p>
+                <p>Téléversez vos documents administratifs obligatoires en suivant les instructions ci-dessous.</p>
+                <p>Pour toute assistance, contactez-nous au 01 23 45 67 89.</p>
+            ]]></field>
+        </record>
+
+        <!-- Configuration des notifications -->
+        <record id="config_notification_reminder_frequency" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.notification_reminder_frequency_days</field>
+            <field name="value">7</field>
+        </record>
+
+        <record id="config_notification_expiry_warning" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.notification_expiry_warning_days</field>
+            <field name="value">30</field>
+        </record>
+
+        <record id="config_enable_automatic_emails" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_automatic_emails</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_enable_sms_notifications" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_sms_notifications</field>
+            <field name="value">False</field>
+        </record>
+
+
+
+        <!-- Configuration des scores -->
+        <record id="config_enable_health_score_calculation" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_health_score_calculation</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_score_recalculation_frequency" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.score_recalculation_frequency_hours</field>
+            <field name="value">4</field>
+        </record>
+
+        <!-- Configuration de sécurité -->
+        <record id="config_enable_audit_logging" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_audit_logging</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_archive_retention_days" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.archive_retention_days</field>
+            <field name="value">2555</field> <!-- 7 ans -->
+        </record>
+
+        <record id="config_enable_document_encryption" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_document_encryption</field>
+            <field name="value">False</field>
+        </record>
+
+        <record id="config_enable_automatic_backup" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_automatic_backup</field>
+            <field name="value">True</field>
+        </record>
+
+        <!-- Configuration des intégrations API -->
+        <record id="config_enable_urssaf_api" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_urssaf_api</field>
+            <field name="value">False</field>
+        </record>
+
+        <record id="config_urssaf_api_key" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.urssaf_api_key</field>
+            <field name="value"></field>
+        </record>
+
+        <record id="config_urssaf_api_endpoint" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.urssaf_api_endpoint</field>
+            <field name="value">https://api.urssaf.fr/</field>
+        </record>
+
+
+
+        <!-- Configuration des crons -->
+        <record id="config_cron_document_check_enabled" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.cron_document_check_enabled</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_cron_notification_enabled" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.cron_notification_enabled</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_cron_cleanup_enabled" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.cron_cleanup_enabled</field>
+            <field name="value">True</field>
+        </record>
+
+        <!-- Configuration des performances -->
+        <record id="config_batch_processing_size" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.batch_processing_size</field>
+            <field name="value">100</field>
+        </record>
+
+        <record id="config_cache_timeout_seconds" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.cache_timeout_seconds</field>
+            <field name="value">3600</field>
+        </record>
+
+        <record id="config_max_concurrent_uploads" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.max_concurrent_uploads</field>
+            <field name="value">5</field>
+        </record>
+
+        <!-- Configuration des templates d'email -->
+        <record id="config_default_email_template_request" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.default_email_template_document_request</field>
+            <field name="value">construction_contact_extension.email_template_partner_document_request</field>
+        </record>
+
+        <record id="config_default_email_template_validation" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.default_email_template_document_validation</field>
+            <field name="value">construction_contact_extension.email_template_document_validation</field>
+        </record>
+
+        <record id="config_default_email_template_rejection" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.default_email_template_document_rejection</field>
+            <field name="value">construction_contact_extension.email_template_document_rejection</field>
+        </record>
+
+        <record id="config_default_email_template_expiry" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.default_email_template_document_expiry</field>
+            <field name="value">construction_contact_extension.email_template_document_expiry</field>
+        </record>
+
+        <!-- Configuration du logging -->
+        <record id="config_log_level" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.log_level</field>
+            <field name="value">INFO</field>
+        </record>
+
+        <record id="config_log_file_path" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.log_file_path</field>
+            <field name="value">/var/log/odoo/construction_contact_extension.log</field>
+        </record>
+
+        <record id="config_log_max_size_mb" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.log_max_size_mb</field>
+            <field name="value">50</field>
+        </record>
+
+        <!-- Configuration des webhooks -->
+        <record id="config_enable_webhooks" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_webhooks</field>
+            <field name="value">False</field>
+        </record>
+
+        <record id="config_webhook_document_validation_url" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.webhook_document_validation_url</field>
+            <field name="value"></field>
+        </record>
+
+        <record id="config_webhook_secret_key" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.webhook_secret_key</field>
+            <field name="value"></field>
+        </record>
+
+        <!-- Configuration des exports -->
+        <record id="config_enable_excel_exports" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_excel_exports</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_export_include_archived" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.export_include_archived_documents</field>
+            <field name="value">False</field>
+        </record>
+
+        <!-- Configuration du multi-tenant -->
+        <record id="config_enable_multi_company" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_multi_company_support</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_company_isolation_mode" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.company_isolation_mode</field>
+            <field name="value">strict</field> <!-- strict, flexible, shared -->
+        </record>
+
+        <!-- Configuration de développement/debug -->
+        <record id="config_debug_mode" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.debug_mode</field>
+            <field name="value">False</field>
+        </record>
+
+        <record id="config_enable_profiling" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_performance_profiling</field>
+            <field name="value">False</field>
+        </record>
+
+        <record id="config_test_mode" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.test_mode</field>
+            <field name="value">False</field>
+        </record>
+
+        <!-- Configuration des limites -->
+        <record id="config_max_documents_per_partner" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.max_documents_per_partner</field>
+            <field name="value">50</field>
+        </record>
+
+        <record id="config_max_archives_per_partner" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.max_archives_per_partner</field>
+            <field name="value">200</field>
+        </record>
+
+        <record id="config_max_tokens_per_partner" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.max_active_tokens_per_partner</field>
+            <field name="value">3</field>
+        </record>
+
+        <!-- Configuration de l'interface utilisateur -->
+        <record id="config_enable_dark_mode" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_dark_mode_portal</field>
+            <field name="value">False</field>
+        </record>
+
+        <record id="config_portal_theme_color" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.portal_theme_primary_color</field>
+            <field name="value">#1e40af</field>
+        </record>
+
+        <record id="config_enable_animations" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_portal_animations</field>
+            <field name="value">True</field>
+        </record>
+
+        <!-- Configuration de la conformité RGPD -->
+        <record id="config_enable_gdpr_compliance" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_gdpr_compliance</field>
+            <field name="value">True</field>
+        </record>
+
+        <record id="config_data_retention_policy" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.data_retention_policy_years</field>
+            <field name="value">7</field>
+        </record>
+
+        <record id="config_anonymization_enabled" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.enable_data_anonymization</field>
+            <field name="value">False</field>
+        </record>
+
+        <!-- Configuration de la localisation -->
+        <record id="config_default_language" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.default_portal_language</field>
+            <field name="value">fr_FR</field>
+        </record>
+
+        <record id="config_timezone" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.default_timezone</field>
+            <field name="value">Europe/Paris</field>
+        </record>
+
+        <record id="config_date_format" model="ir.config_parameter">
+            <field name="key">construction_contact_extension.default_date_format</field>
+            <field name="value">%d/%m/%Y</field>
+        </record>
+
+    </data>
+</odoo>

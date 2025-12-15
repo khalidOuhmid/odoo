@@ -20,6 +20,6 @@
         parent="menu_construction_invoice_root"
         action="action_invoice_type"
         sequence="20"
-        groups="construction_core.group_construction_manager"/>
+        groups="construction_core.group_construction_user"/>
 
 </odoo>

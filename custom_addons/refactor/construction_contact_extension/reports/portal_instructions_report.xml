@@ -1,0 +1,574 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Guide d'instructions pour le portail -->
+        <template id="portal_instructions_report">
+            <t t-call="web.html_container">
+                <t t-call="web.external_layout">
+                    <div class="page">
+
+                        <!-- En-tête -->
+                        <div class="row mb-4">
+                            <div class="col-12 text-center">
+                                <h1 class="mb-3">📖 Guide d'Utilisation du Portail</h1>
+                                <h2 class="text-primary">Upload de Documents Administratifs</h2>
+                                <p class="text-muted lead">Guide complet pour les sous-traitants BLG Groupe</p>
+                            </div>
+                        </div>
+
+                        <!-- Introduction -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-primary">
+                                    <div class="card-header bg-primary text-white">
+                                        <h4 class="mb-0">🎯 Objectif de ce Guide</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="mb-3">
+                                            Ce guide vous accompagne dans l'utilisation du portail sécurisé BLG Groupe
+                                            pour le téléversement de vos documents administratifs obligatoires.
+                                        </p>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6 class="text-primary">✅ Vous apprendrez à :</h6>
+                                                <ul>
+                                                    <li>Accéder au portail sécurisé</li>
+                                                    <li>Téléverser vos documents</li>
+                                                    <li>Vérifier le statut de validation</li>
+                                                    <li>Renouveler les documents expirés</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="text-success">🎯 Avantages :</h6>
+                                                <ul>
+                                                    <li>Gain de temps considérable</li>
+                                                    <li>Suivi en temps réel</li>
+                                                    <li>Sécurité maximale</li>
+                                                    <li>Disponible 24h/24</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Étape 1 : Accès au portail -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-info text-white">
+                                        <h4 class="mb-0">1️⃣ Accès au Portail</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <h5 class="text-info">📧 Réception du lien</h5>
+                                                <p>
+                                                    Vous recevrez par email un lien sécurisé unique pour accéder au portail.
+                                                    Ce lien est personnalisé et temporaire pour garantir la sécurité.
+                                                </p>
+
+                                                <h6 class="text-primary mt-3">Informations importantes :</h6>
+                                                <div class="alert alert-warning">
+                                                    <ul class="mb-0">
+                                                        <li><strong>Validité :</strong> Le lien est valide pendant 7 jours</li>
+                                                        <li><strong>Sécurité :</strong> Ne partagez jamais ce lien</li>
+                                                        <li><strong>Support :</strong> Contactez-nous si le lien ne fonctionne pas</li>
+                                                    </ul>
+                                                </div>
+
+                                                <h6 class="text-success mt-3">💻 Navigation recommandée :</h6>
+                                                <ul>
+                                                    <li>Utilisez un navigateur récent (Chrome, Firefox, Safari, Edge)</li>
+                                                    <li>Activez JavaScript</li>
+                                                    <li>Connexion internet stable recommandée</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="text-center p-3 border rounded bg-light">
+                                                    <h6 class="text-muted">Exemple d'email reçu</h6>
+                                                    <div class="border rounded p-2 bg-white" style="font-size: 12px;">
+                                                        <strong>De :</strong> BLG Groupe<br/>
+                                                        <strong>Objet :</strong> Documents requis<br/>
+                                                        <hr style="margin: 5px 0;"/>
+                                                        Bonjour [Nom],<br/>
+                                                        Cliquez sur le lien ci-dessous :<br/>
+                                                        <a href="#" class="btn btn-primary btn-sm mt-1">
+                                                            🔗 Accéder au portail
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Étape 2 : Interface du portail -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-success text-white">
+                                        <h4 class="mb-0">2️⃣ Interface du Portail</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="text-success">🖥️ Découverte de l'interface</h5>
+
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <h6 class="text-primary">📊 Tableau de bord</h6>
+                                                <p>En haut de la page, vous trouverez :</p>
+                                                <ul>
+                                                    <li><strong>Complétude :</strong> % de documents uploadés</li>
+                                                    <li><strong>Valides :</strong> Nombre de documents approuvés</li>
+                                                    <li><strong>À vérifier :</strong> Documents en attente</li>
+                                                    <li><strong>Expirés :</strong> Documents à renouveler</li>
+                                                </ul>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="text-info">📄 Liste des documents</h6>
+                                                <p>Chaque document est présenté dans une carte avec :</p>
+                                                <ul>
+                                                    <li><strong>Nom du document</strong> (ex: Carte d'identité)</li>
+                                                    <li><strong>Badge de statut</strong> (Valide, Manquant, etc.)</li>
+                                                    <li><strong>Zone d'upload</strong> par glisser-déposer</li>
+                                                    <li><strong>Date d'expiration</strong> si applicable</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info">
+                                            <h6 class="text-info">🔍 Codes couleur des statuts :</h6>
+                                            <div class="row">
+                                                <div class="col-md-3"><span class="badge badge-success">Valide</span> Document approuvé</div>
+                                                <div class="col-md-3"><span class="badge badge-warning">Expire bientôt</span> À renouveler</div>
+                                                <div class="col-md-3"><span class="badge badge-danger">Expiré</span> Renouvellement requis</div>
+                                                <div class="col-md-3"><span class="badge badge-info">À vérifier</span> En cours de validation</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Étape 3 : Upload des documents -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-warning text-dark">
+                                        <h4 class="mb-0">3️⃣ Téléversement des Documents</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="text-warning">📤 Méthodes d'upload</h5>
+
+                                        <div class="row mb-4">
+                                            <div class="col-md-6">
+                                                <div class="card border-primary">
+                                                    <div class="card-header bg-light">
+                                                        <h6 class="text-primary mb-0">Méthode 1 : Glisser-Déposer</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ol>
+                                                            <li>Localisez le fichier sur votre ordinateur</li>
+                                                            <li>Glissez le fichier vers la zone d'upload</li>
+                                                            <li>Relâchez le fichier dans la zone</li>
+                                                            <li>Le fichier se télécharge automatiquement</li>
+                                                        </ol>
+                                                        <div class="text-center mt-3">
+                                                            <div class="border-dashed p-3 bg-light rounded">
+                                                                <i class="fa fa-cloud-upload fa-2x text-primary"></i><br/>
+                                                                <small>Glissez votre fichier ici</small>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <div class="card border-success">
+                                                    <div class="card-header bg-light">
+                                                        <h6 class="text-success mb-0">Méthode 2 : Clic et Sélection</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ol>
+                                                            <li>Cliquez sur la zone d'upload</li>
+                                                            <li>Naviguez dans l'explorateur de fichiers</li>
+                                                            <li>Sélectionnez le document souhaité</li>
+                                                            <li>Cliquez sur "Ouvrir"</li>
+                                                        </ol>
+                                                        <div class="text-center mt-3">
+                                                            <button class="btn btn-success">
+                                                                <i class="fa fa-file"></i> Choisir un fichier
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <h6 class="text-danger">⚠️ Contraintes techniques importantes :</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-sm">
+                                                <thead class="table-dark">
+                                                    <tr>
+                                                        <th>Contrainte</th>
+                                                        <th>Valeur</th>
+                                                        <th>Détail</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td><strong>Formats acceptés</strong></td>
+                                                        <td>PDF, JPG, PNG</td>
+                                                        <td>PDF recommandé pour les documents officiels</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Taille maximum</strong></td>
+                                                        <td>10 MB</td>
+                                                        <td>Compressez les images si nécessaire</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Résolution minimum</strong></td>
+                                                        <td>300 DPI</td>
+                                                        <td>Pour garantir la lisibilité</td>
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Lisibilité</strong></td>
+                                                        <td>Texte net</td>
+                                                        <td>Évitez les photos floues ou sombres</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Documents spécifiques -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-secondary text-white">
+                                        <h4 class="mb-0">4️⃣ Documents Spécifiques</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="text-secondary">📋 Exigences par type de document</h5>
+
+                                        <div class="accordion" id="documentsAccordion">
+
+                                            <!-- Carte d'identité -->
+                                            <div class="card">
+                                                <div class="card-header" id="headingIdentity">
+                                                    <h6 class="mb-0">
+                                                        <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#collapseIdentity">
+                                                            🆔 Carte d'Identité / Passeport
+                                                        </button>
+                                                    </h6>
+                                                </div>
+                                                <div id="collapseIdentity" class="collapse show">
+                                                    <div class="card-body">
+                                                        <div class="row">
+                                                            <div class="col-md-6">
+                                                                <h6 class="text-success">✅ Exigences :</h6>
+                                                                <ul>
+                                                                    <li>Scan recto-verso obligatoire</li>
+                                                                    <li>Document en cours de validité</li>
+                                                                    <li>Toutes les informations lisibles</li>
+                                                                    <li>Format PDF de préférence</li>
+                                                                </ul>
+                                                            </div>
+                                                            <div class="col-md-6">
+                                                                <h6 class="text-danger">❌ À éviter :</h6>
+                                                                <ul>
+                                                                    <li>Photos prises avec le téléphone</li>
+                                                                    <li>Documents partiellement visibles</li>
+                                                                    <li>Reflets ou ombres</li>
+                                                                    <li>Documents périmés</li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- URSSAF -->
+                                            <div class="card">
+                                                <div class="card-header" id="headingUrssaf">
+                                                    <h6 class="mb-0">
+                                                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseUrssaf">
+                                                            🏛️ Attestation URSSAF
+                                                        </button>
+                                                    </h6>
+                                                </div>
+                                                <div id="collapseUrssaf" class="collapse">
+                                                    <div class="card-body">
+                                                        <div class="alert alert-warning">
+                                                            <strong>⏰ Important :</strong> L'attestation doit dater de moins de 3 mois
+                                                        </div>
+                                                        <ul>
+                                                            <li>Document officiel avec cachet URSSAF</li>
+                                                            <li>Nom et SIRET correspondant à votre entreprise</li>
+                                                            <li>Mentions de régularité visibles</li>
+                                                            <li>Format PDF uniquement</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- KBIS -->
+                                            <div class="card">
+                                                <div class="card-header" id="headingKbis">
+                                                    <h6 class="mb-0">
+                                                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseKbis">
+                                                            🏢 Extrait KBIS
+                                                        </button>
+                                                    </h6>
+                                                </div>
+                                                <div id="collapseKbis" class="collapse">
+                                                    <div class="card-body">
+                                                        <div class="alert alert-info">
+                                                            <strong>📅 Validité :</strong> Maximum 3 mois depuis la date d'édition
+                                                        </div>
+                                                        <ul>
+                                                            <li>Extrait original du greffe</li>
+                                                            <li>Toutes les pages si document multi-pages</li>
+                                                            <li>Activité déclarée correspondant à vos spécialités</li>
+                                                            <li>Entreprise non radiée</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- Assurance -->
+                                            <div class="card">
+                                                <div class="card-header" id="headingInsurance">
+                                                    <h6 class="mb-0">
+                                                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseInsurance">
+                                                            🛡️ Attestation d'Assurance
+                                                        </button>
+                                                    </h6>
+                                                </div>
+                                                <div id="collapseInsurance" class="collapse">
+                                                    <div class="card-body">
+                                                        <div class="alert alert-success">
+                                                            <strong>🔒 Sécurité :</strong> Couverture responsabilité civile professionnelle obligatoire
+                                                        </div>
+                                                        <ul>
+                                                            <li>En cours de validité (minimum 1 an)</li>
+                                                            <li>Montants de garantie conformes</li>
+                                                            <li>Activités couvertes correspondantes</li>
+                                                            <li>Cachet et signature de l'assureur</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <!-- RIB -->
+                                            <div class="card">
+                                                <div class="card-header" id="headingRib">
+                                                    <h6 class="mb-0">
+                                                        <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#collapseRib">
+                                                            🏦 RIB (Relevé d'Identité Bancaire)
+                                                        </button>
+                                                    </h6>
+                                                </div>
+                                                <div id="collapseRib" class="collapse">
+                                                    <div class="card-body">
+                                                        <ul>
+                                                            <li>RIB original de votre banque</li>
+                                                            <li>IBAN et BIC parfaitement lisibles</li>
+                                                            <li>Nom du titulaire identique à votre entreprise</li>
+                                                            <li>Compte actif et non clôturé</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Suivi et validation -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header bg-primary text-white">
+                                        <h4 class="mb-0">5️⃣ Suivi et Validation</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="text-primary">🔍 Processus de validation</h5>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <h6 class="text-info">📋 Étapes de validation :</h6>
+                                                <ol>
+                                                    <li><strong>Upload :</strong> Votre document est téléversé</li>
+                                                    <li><strong>Vérification :</strong> Contrôle automatique et manuel</li>
+                                                    <li><strong>Validation :</strong> Approbation par notre équipe</li>
+                                                    <li><strong>Notification :</strong> Confirmation par email</li>
+                                                </ol>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <h6 class="text-success">⏱️ Délais indicatifs :</h6>
+                                                <ul>
+                                                    <li><strong>Vérification automatique :</strong> Immédiate</li>
+                                                    <li><strong>Validation manuelle :</strong> 24-48h ouvrées</li>
+                                                    <li><strong>Rejet avec motif :</strong> Sous 24h</li>
+                                                    <li><strong>Notification :</strong> Temps réel</li>
+                                                </ul>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info mt-3">
+                                            <h6 class="text-info">📧 Notifications automatiques :</h6>
+                                            <p class="mb-0">
+                                                Vous recevrez un email pour chaque changement de statut de vos documents
+                                                (validation, rejet, expiration prochaine).
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Résolution des problèmes -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <div class="card border-danger">
+                                    <div class="card-header bg-danger text-white">
+                                        <h4 class="mb-0">6️⃣ Résolution des Problèmes</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <h5 class="text-danger">🚨 Problèmes Fréquents</h5>
+
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card">
+                                                    <div class="card-header bg-light">
+                                                        <h6 class="text-danger mb-0">❌ Le lien ne fonctionne pas</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul>
+                                                            <li>Vérifiez l'expiration du lien (7 jours)</li>
+                                                            <li>Essayez un autre navigateur</li>
+                                                            <li>Désactivez temporairement l'antivirus</li>
+                                                            <li>Contactez notre support</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <div class="card">
+                                                    <div class="card-header bg-light">
+                                                        <h6 class="text-warning mb-0">⚠️ Upload impossible</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul>
+                                                            <li>Vérifiez la taille du fichier (&lt; 10MB)</li>
+                                                            <li>Contrôlez le format (PDF, JPG, PNG)</li>
+                                                            <li>Testez votre connexion internet</li>
+                                                            <li>Redémarrez votre navigateur</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="row mt-3">
+                                            <div class="col-md-6">
+                                                <div class="card">
+                                                    <div class="card-header bg-light">
+                                                        <h6 class="text-info mb-0">📋 Document rejeté</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul>
+                                                            <li>Lisez attentivement le motif de rejet</li>
+                                                            <li>Corrigez selon les instructions</li>
+                                                            <li>Uploadez une nouvelle version</li>
+                                                            <li>Respectez les exigences qualité</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div class="col-md-6">
+                                                <div class="card">
+                                                    <div class="card-header bg-light">
+                                                        <h6 class="text-success mb-0">✅ Pas de notification</h6>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <ul>
+                                                            <li>Vérifiez vos spams/courriers indésirables</li>
+                                                            <li>Confirmez votre adresse email</li>
+                                                            <li>Ajoutez BLG à vos contacts</li>
+                                                            <li>Consultez directement le portail</li>
+                                                        </ul>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Contact et support -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h4 class="mb-0">📞 Contact et Support</h4>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4 text-center">
+                                                <i class="fa fa-phone fa-3x text-primary mb-3"></i>
+                                                <h5>Téléphone</h5>
+                                                <p class="h6 text-primary">01 23 45 67 89</p>
+                                                <small>Lun-Ven : 8h-18h</small>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <i class="fa fa-envelope fa-3x text-success mb-3"></i>
+                                                <h5>Email</h5>
+                                                <p class="h6 text-success">support@blggroupe.com</p>
+                                                <small>Réponse sous 24h</small>
+                                            </div>
+                                            <div class="col-md-4 text-center">
+                                                <i class="fa fa-globe fa-3x text-info mb-3"></i>
+                                                <h5>Site Web</h5>
+                                                <p class="h6 text-info">www.blggroupe.com</p>
+                                                <small>FAQ et ressources</small>
+                                            </div>
+                                        </div>
+
+                                        <hr/>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </template>
+
+        <!-- Action pour le rapport des instructions portail -->
+        <record id="action_portal_instructions_report" model="ir.actions.report">
+            <field name="name">Guide d'Instructions Portail</field>
+            <field name="model">res.partner</field>
+            <field name="report_type">qweb-pdf</field>
+            <field name="report_name">construction_contact_extension.portal_instructions_report</field>
+            <field name="report_file">construction_contact_extension.portal_instructions_report</field>
+            <field name="binding_model_id" ref="base.model_res_partner"/>
+            <field name="binding_type">report</field>
+        </record>
+
+    </data>
+</odoo>

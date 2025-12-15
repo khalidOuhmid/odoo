@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="construction_projects" name="Construction Projects">
+        <t t-call="website.layout">
+            <div class="container mt-4">
+                <h1>My Construction Projects</h1>
+                <div class="row mt-4">
+                    <t t-foreach="projects" t-as="project">
+                        <div class="col-md-4 mb-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title"><t t-esc="project.name"/></h5>
+                                    <p class="card-text text-muted">
+                                        <t t-esc="project.client_id.name"/>
+                                    </p>
+                                    <p>
+                                        <span class="badge badge-info">
+                                            <t t-esc="project.stage_id.name"/>
+                                        </span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </t>
+                </div>
+            </div>
+        </t>
+    </template>
+</odoo>

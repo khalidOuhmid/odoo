@@ -5,7 +5,7 @@
         <field name="model">construction.lot</field>
         <field name="inherit_id" ref="construction_core.view_construction_lot_form"/>
         <field name="arch" type="xml">
-            <!-- Replace subcontractor_id with readonly version + Button -->
+            <!-- Replace subcontractor_id with readonly version + Button + Compliance Display -->
             <xpath expr="//field[@name='subcontractor_id']" position="replace">
                 <label for="subcontractor_id"/>
                 <div class="o_row">
@@ -18,7 +18,32 @@
                             context="{'default_lot_id': id}"
                             invisible="execution_type == 'internal'"/>
                 </div>
+                
+                <!-- Subcontractor Compliance Status -->
+                <label for="subcontractor_compliance_state" 
+                       invisible="not subcontractor_id"
+                       string="Conformité"/>
+                <div class="o_row" invisible="not subcontractor_id">
+                    <field name="subcontractor_compliance_state" widget="badge"
+                           decoration-success="subcontractor_compliance_state == 'compliant'"
+                           decoration-warning="subcontractor_compliance_state == 'incomplete'"
+                           decoration-danger="subcontractor_compliance_state == 'expired'"/>
+                    <field name="subcontractor_alert_level" widget="badge"
+                           decoration-success="subcontractor_alert_level == 'green'"
+                           decoration-warning="subcontractor_alert_level == 'yellow'"
+                           decoration-danger="subcontractor_alert_level == 'red'"
+                           invisible="not subcontractor_alert_level"/>
+                </div>
+                
+                <!-- Document Expiry Warning -->
+                <div colspan="2" class="alert alert-warning mb-0 mt-2" role="alert"
+                     invisible="not subcontractor_doc_warning">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <strong>Alerte Documents :</strong>
+                    <field name="subcontractor_doc_warning" widget="html" nolabel="1" class="mt-2"/>
+                </div>
             </xpath>
         </field>
     </record>
 </odoo>
+

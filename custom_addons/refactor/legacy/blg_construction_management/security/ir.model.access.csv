@@ -1,0 +1,17 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_blg_chantier,access_blg_chantier,model_blg_chantier,,1,1,1,1
+access_blg_chapter,access_blg_chapter,model_blg_chapter,,1,1,1,1
+access_blg_stage,access_blg_stage,model_blg_stage,,1,1,1,1
+access_blg_chantier_tag,access_blg_chantier_tag,model_blg_chantier_tag,,1,1,1,1
+access_blg_chantier_lot,access_blg_chantier_lot,model_blg_chantier_lot,,1,1,1,1
+access_blg_visite,access_blg_visite,model_blg_visite,,1,1,1,1
+access_blg_document,access_blg_document,model_blg_document,,1,1,1,1
+access_blg_import_email_wizard,access_blg_import_email_wizard,model_blg_import_email_wizard,,1,1,1,1
+access_blg_assign_subcontractor_wizard,access_blg_assign_subcontractor_wizard,model_blg_assign_subcontractor_wizard,,1,1,1,1
+access_blg_chantier_all,blg.chantier.all,model_blg_chantier,,1,1,1,1
+access_blg_chapter_all,blg.chapter.all,model_blg_chapter,,1,1,1,1
+access_blg_stage_all,blg.stage.all,model_blg_stage,,1,1,1,1
+access_blg_document_all,blg.document.all,model_blg_document,,1,1,1,1
+access_blg_visite_all,blg.visite.all,model_blg_visite,,1,1,1,1
+access_blg_chantier_lot_all,blg.chantier.lot.all,model_blg_chantier_lot,,1,1,1,1
+access_blg_lot_type_all,blg.lot.type.all,model_blg_lot_type,,1,1,1,1

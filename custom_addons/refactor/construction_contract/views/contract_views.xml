@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_contract_tree" model="ir.ui.view">
+        <field name="name">construction.contract.tree</field>
+        <field name="model">construction.contract</field>
+        <field name="arch" type="xml">
+            <list string="Contrats Sous-Traitants">
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="partner_id"/>
+                <field name="lot_id"/>
+                <field name="amount_ht"/>
+                <field name="state" widget="badge" decoration-success="state == 'signed'"/>
+                <field name="documents_valid" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_construction_contract_form" model="ir.ui.view">
+        <field name="name">construction.contract.form</field>
+        <field name="model">construction.contract</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                     <button name="action_send_signature" string="Envoyer pour Signature" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                     <button name="action_preview_portal" string="Aperçu Portail" type="object" invisible="state == 'draft'" icon="fa-globe"/>
+                     <button name="action_sign" string="Marquer comme Signé" type="object" invisible="state != 'sent'"/>
+                     <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="chantier_id"/>
+                            <field name="lot_id"/>
+                            <field name="partner_id"/>
+                        </group>
+                        <group>
+                             <field name="amount_ht"/>
+                             <field name="date_signature"/>
+                             <field name="documents_valid"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Documents &amp; Fusion">
+                            <group string="Pièces à Fusionner">
+                                <field name="cctp_attachment_id" />
+                                <field name="planning_attachment_id" />
+                                <field name="other_attachment_ids" widget="many2many_binary"/>
+                            </group>
+                            <div class="text-center mt-3">
+                                <button name="_generate_full_pdf" string="Générer PDF Complet (Fusion)" type="object" icon="fa-cogs" class="btn-secondary"/>
+                            </div>
+                            <group string="Résultat">
+                                <field name="contract_pdf_name" invisible="1"/>
+                                <field name="contract_pdf" filename="contract_pdf_name" widget="pdf_viewer"/>
+                            </group>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_construction_contract" model="ir.actions.act_window">
+        <field name="name">Contrats</field>
+        <field name="res_model">construction.contract</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem id="menu_contract_list"
+              name="Tous les Contrats"
+              parent="menu_contract_root"
+              action="action_construction_contract"
+              sequence="10"/>
+</odoo>

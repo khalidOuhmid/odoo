@@ -11,108 +11,259 @@
                 <t t-call-assets="web.assets_frontend" t-js="false"/>
                 <t t-call-assets="web.assets_common" t-css="false"/>
                 <script type="text/javascript">
-                    // AJAX Upload Logic
+                    // ============================================
+                    // PORTAL DOCUMENT STAGING WORKFLOW
+                    // Server-side Session Storage (fixes quota issues)
+                    // ============================================
                     
+                    const TOKEN = '<t t-esc="token"/>';
+                    const BASE_URL = `/subcontractor/upload/${TOKEN}`;
+                    
+                    // STATE: Document staging status
+                    const DocState = {
+                        EMPTY: 'empty',      // No file selected
+                        STAGED: 'staged',    // File in server session, not saved to DB
+                        SUBMITTED: 'submitted' // File saved to database
+                    };
+                    
+                    // Cached staged docs (synced from server)
+                    let stagedDocsCache = {};
+                    
+                    // ============= DOM HELPERS ============= //
                     function getDocContainer(element) {
                         return element.closest('.doc-row-container');
                     }
-
-                    function onFileSelect(input) {
+                    
+                    function updateUIState(container, state, filename = null) {
+                        const statusBadge = container.querySelector('.status-badge');
+                        const stagedIndicator = container.querySelector('.staged-indicator');
+                        const validateBtn = container.querySelector('.btn-validate');
+                        const selectBtn = container.querySelector('.btn-select');
+                        const labelSpan = container.querySelector('.file-label-text');
+                        
+                        // Reset classes
+                        if (stagedIndicator) stagedIndicator.classList.add('d-none');
+                        if (validateBtn) validateBtn.classList.add('d-none');
+                        
+                        switch(state) {
+                            case DocState.STAGED:
+                                if (stagedIndicator) {
+                                    stagedIndicator.classList.remove('d-none');
+                                    stagedIndicator.textContent = '📎 En attente';
+                                    stagedIndicator.classList.remove('text-success');
+                                }
+                                if (validateBtn) validateBtn.classList.remove('d-none');
+                                if (labelSpan &amp;&amp; filename) labelSpan.textContent = filename;
+                                if (selectBtn) {
+                                    selectBtn.classList.remove('btn-outline-primary');
+                                    selectBtn.classList.add('btn-warning', 'border-warning');
+                                }
+                                break;
+                            case DocState.SUBMITTED:
+                                if (stagedIndicator) {
+                                    stagedIndicator.classList.remove('d-none');
+                                    stagedIndicator.textContent = '✓ Envoyé';
+                                    stagedIndicator.classList.add('text-success');
+                                }
+                                if (selectBtn) {
+                                    selectBtn.classList.remove('btn-warning', 'border-warning');
+                                }
+                                break;
+                            case DocState.EMPTY:
+                            default:
+                                if (selectBtn) {
+                                    selectBtn.classList.remove('btn-warning', 'border-warning');
+                                }
+                                break;
+                        }
+                    }
+                    
+                    // ============= FILE STAGING (Server-side) ============= //
+                    async function onFileSelect(input) {
                         const container = getDocContainer(input);
                         const file = input.files[0];
                         if (!file) return;
-
-                        // UI Elements
-                        const labelSpan = container.querySelector('.file-label-text');
-                        const validateBtn = container.querySelector('.btn-validate');
-                        const selectBtn = container.querySelector('.btn-select'); // The wrapper label
-
-                        // Update Label with Filename
-                        if (labelSpan) labelSpan.textContent = file.name;
                         
-                        // Style Update: Show Validate Button
-                        if (validateBtn) validateBtn.classList.remove('d-none');
+                        // Update button label immediately with file name
+                        const labelText = container.querySelector('.file-label-text');
+                        if (labelText) {
+                            labelText.innerHTML = `<i class="fa fa-check-circle text-success me-1"></i>${file.name.substring(0, 20)}...`;
+                        }
                         
-                        // Optional: Highlight the select button to show state
-                        selectBtn.classList.remove('btn-outline-primary', 'border-0');
-                        selectBtn.classList.add('btn-light', 'border');
+                        handleDocStage(input);
+                    }
+                    
+                    async function onDateChange(input) {
+                        handleDocStage(input);
                     }
 
-                    async function uploadDocument(triggerElement, docKey) {
-                        const container = getDocContainer(triggerElement);
+                    async function handleDocStage(element) {
+                        const container = getDocContainer(element);
                         const fileInput = container.querySelector('input[type="file"]');
-                        const statusBadge = container.querySelector('.status-badge');
-                        const spinner = container.querySelector('.spinner-border');
-                        const validateBtn = container.querySelector('.btn-validate');
+                        const file = fileInput.files[0];
                         
-                        // Show Loading
-                        if (statusBadge) statusBadge.classList.add('d-none');
-                        if (spinner) spinner.classList.remove('d-none');
-                        if (validateBtn) validateBtn.classList.add('disabled'); // Disable double click
+                        // If no file selected yet, do nothing
+                        if (!file) return;
+
+                        const docKey = container.dataset.docKey;
                         
-                        const formData = new FormData();
-                        formData.append('doc_key', docKey);
+                        // KBIS and URSSAF: No date input needed (auto-calculated by server)
+                        const autoExpireDocs = ['kbis', 'urssaf'];
                         
-                        if (fileInput.files &amp;&amp; fileInput.files.length &gt; 0) {
-                            formData.append('file', fileInput.files[0]);
-                        }
-                        
-                        // Also send expiry date if present in the same container
-                        const expiryInput = container.querySelector('input[type="date"]');
-                        if (expiryInput &amp;&amp; expiryInput.value) {
-                            formData.append('expiry_date', expiryInput.value);
+                        // For docs requiring date input, check the date
+                        if (!autoExpireDocs.includes(docKey)) {
+                            const expiryDateInput = container.querySelector('.input-expiry-date');
+                            if (expiryDateInput &amp;&amp; !expiryDateInput.value) {
+                                if (element === fileInput) {
+                                    alert("Veuillez renseigner la date d'expiration avant de choisir le fichier.");
+                                }
+                                return; // Stop if date missing for non-auto docs
+                            }
                         }
 
+                        // Show loading
+                        const spinner = container.querySelector('.spinner-border');
+                        if (spinner) spinner.classList.remove('d-none');
+                        
+                        // Upload to server session via FormData
+                        const formData = new FormData();
+                        formData.append('doc_key', docKey);
+                        formData.append('file', file);
+                        
+                        // Only send date for non-auto docs
+                        if (!autoExpireDocs.includes(docKey)) {
+                            const expiryDateInput = container.querySelector('.input-expiry-date');
+                            if (expiryDateInput?.value) {
+                                formData.append('expiry_date', expiryDateInput.value);
+                            }
+                        }
+                        
                         try {
-                            const response = await fetch('/subcontractor/upload/<t t-esc="token"/>/process', {
+                            const response = await fetch(`${BASE_URL}/stage`, {
                                 method: 'POST',
                                 body: formData
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            
+                            const result = await response.json();
+                            
+                            if (result.success) {
+                                // Update local cache
+                                stagedDocsCache[docKey] = { filename: result.filename };
+                                
+                                // Update UI
+                                updateUIState(container, DocState.STAGED, result.filename);
+                                updateGlobalSubmitButton();
+                            } else {
+                                alert('Erreur: ' + (result.error || 'Échec du staging'));
+                            }
+                        } catch (error) {
+                            console.error('Staging error:', error);
+                            alert('Erreur de connexion au serveur.');
+                        } finally {
+                            if (spinner) spinner.classList.add('d-none');
+                        }
+                    }
+                    
+                    // ============= GLOBAL SUBMIT ============= //
+                    async function submitAllDocuments() {
+                        const count = Object.keys(stagedDocsCache).length;
+                        if (count === 0) {
+                            alert('Aucun document en attente.');
+                            return;
+                        }
+                        
+                        const submitBtn = document.getElementById('global-submit-btn');
+                        if (submitBtn) {
+                            submitBtn.disabled = true;
+                            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Envoi en cours...';
+                        }
+                        
+                        try {
+                            const response = await fetch(`${BASE_URL}/submit-all`, {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({})
                             });
                             const result = await response.json();
                             
                             if (result.success) {
-                                // Update Status Badge Visuals
-                                if (statusBadge) {
-                                    statusBadge.className = 'status-badge badge rounded-pill'; // reset
-                                    if (result.status === 'valid') {
-                                        statusBadge.classList.add('bg-success');
-                                        statusBadge.textContent = 'Valide';
-                                    } else if (result.status === 'expired') {
-                                        statusBadge.classList.add('bg-danger');
-                                        statusBadge.textContent = 'Expiré';
-                                    } else {
-                                        statusBadge.classList.add('bg-warning', 'text-dark');
-                                        statusBadge.textContent = 'En traitement';
-                                    }
+                                // Redirect to success page
+                                if (result.redirect_url) {
+                                    window.location.href = result.redirect_url;
+                                    return;
                                 }
                                 
-                                // Reset Validation UI
-                                if (validateBtn) validateBtn.classList.add('d-none');
-                                if (validateBtn) validateBtn.classList.remove('disabled');
-                                const labelSpan = container.querySelector('.file-label-text');
-                                if (labelSpan) labelSpan.textContent = "Remplacer"; // Reset text
-                                
+                                // Fallback (shouldn't reach here normally)
+                                stagedDocsCache = {};
+                                updateGlobalSubmitButton();
+                                alert(`✅ ${result.submitted_count} document(s) envoyé(s) avec succès !`);
                             } else {
-                                alert("Erreur: " + result.error);
+                                alert('Erreur: ' + (result.error || 'Échec de l\'envoi'));
                             }
                         } catch (error) {
-                            console.error('Error:', error);
-                            alert("Erreur de connexion serveur.");
+                            console.error('Submit all error:', error);
+                            alert('Erreur de connexion au serveur.');
                         } finally {
-                            if (spinner) spinner.classList.add('d-none');
-                            if (statusBadge) statusBadge.classList.remove('d-none');
+                            if (submitBtn) {
+                                submitBtn.disabled = false;
+                                submitBtn.innerHTML = '<i class="fa fa-paper-plane me-2"></i>Soumettre mes documents';
+                            }
                         }
                     }
                     
-                    // Trigger upload on Date change too (Optional: keep or require generic validate?)
-                    // User asked for manual validation "if wrong doc". Date change is less risky.
-                    // For now, let's keep date change auto-save as it's separate from the file risk.
-                    async function updateDate(input, docKey) {
-                         // Re-use logic, triggering upload without file logic requirement being new
-                         // But our shared uploadDocument grabs the file input. 
-                         // If file input is empty, backend handles it fine (just updates date).
-                         await uploadDocument(input, docKey);
+                    // ============= SINGLE DOC SUBMIT (via global) ============= //
+                    async function submitSingleDocument(triggerElement, docKey) {
+                        // For single doc, just redirect to submit all for simplicity
+                        // Server will only submit what's in session
+                        if (!stagedDocsCache[docKey]) {
+                            alert('Aucun document en attente pour ce type.');
+                            return;
+                        }
+                        await submitAllDocuments();
                     }
+                    
+                    function updateGlobalSubmitButton() {
+                        const count = Object.keys(stagedDocsCache).length;
+                        const btn = document.getElementById('global-submit-btn');
+                        const badge = document.getElementById('staged-count-badge');
+                        
+                        if (btn) btn.disabled = count === 0;
+                        if (badge) {
+                            badge.textContent = count;
+                            badge.classList.toggle('d-none', count === 0);
+                        }
+                    }
+                    
+                    // ============= PAGE LOAD: Recover from server session ============= //
+                    document.addEventListener('DOMContentLoaded', async function() {
+                        try {
+                            const response = await fetch(`${BASE_URL}/session-state`, {
+                                method: 'POST',
+                                headers: {'Content-Type': 'application/json'},
+                                body: JSON.stringify({})
+                            });
+                            const result = await response.json();
+                            
+                            if (result.success &amp;&amp; result.staged_docs) {
+                                stagedDocsCache = result.staged_docs;
+                                
+                                for (const [docKey, docData] of Object.entries(result.staged_docs)) {
+                                    const container = document.querySelector(`[data-doc-key="${docKey}"]`);
+                                    if (container) {
+                                        updateUIState(container, DocState.STAGED, docData.filename);
+                                    }
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Session recovery error:', error);
+                        }
+                        
+                        updateGlobalSubmitButton();
+                    });
                 </script>
             </t>
             
@@ -145,7 +296,7 @@
                             <!-- Helper Banner -->
                             <div class="alert border-0 shadow-sm mb-4 rounded-3" style="background-color: #D4C5BC; color: #505050;">
                                 <i class="fa fa-info-circle me-2" style="color: #92564C;"/> 
-                                <strong>Sauvegarde Automatique :</strong> Vos documents sont enregistrés dès que vous les sélectionnez.
+                                <strong>Mode Brouillon :</strong> Sélectionnez vos documents, puis cliquez sur "Soumettre" pour les envoyer.
                             </div>
 
                             <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="box-shadow: 0 10px 40px rgba(0,0,0,0.03) !important;">
@@ -153,7 +304,7 @@
                                     <h5 class="mb-0 fw-bold" style="color: #978A86; font-family: 'Times New Roman', Times, serif; font-size: 1.25rem;">Dossier Administratif</h5>
                                 </div>
                                 
-                                <!-- Desktop Table View (Hidden on Mobile) -->
+                                <!-- Desktop Table View -->
                                 <div class="table-responsive d-none d-md-block">
                                     <table class="table table-hover align-middle mb-0" style="border-collapse: separate; border-spacing: 0;">
                                         <thead class="" style="background-color: #FAFAFA;">
@@ -161,13 +312,13 @@
                                                 <th style="width: 5%; border-bottom: none;" class="text-center py-3">#</th>
                                                 <th style="width: 35%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Document Requis</th>
                                                 <th style="width: 15%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Statut</th>
-                                                <th style="width: 20%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Validité</th>
+                                                <th style="width: 20%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Date</th>
                                                 <th style="width: 25%; border-bottom: none;" class="text-uppercase small text-muted font-weight-bold py-3">Action</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             <t t-foreach="doc_types" t-as="doc">
-                                                <tr class="doc-row-container">
+                                                <tr class="doc-row-container" t-att-data-doc-key="doc['key']" t-att-data-required="doc.get('required')">
                                                     <td class="text-center">
                                                         <i class="fa fa-file-text-o text-muted"/>
                                                     </td>
@@ -184,24 +335,29 @@
                                                             <t t-elif="doc['status'] == 'missing'">Manquant</t>
                                                             <t t-else="">Non vérifié</t>
                                                         </span>
-                                                        <!-- Loading Spinner (Hidden by default) -->
-                                                        <div class="spinner-border spinner-border-sm text-primary d-none" role="status">
-                                                            <span class="visually-hidden">Loading...</span>
-                                                        </div>
+                                                        <span class="staged-indicator badge rounded-pill bg-info text-white ms-1 d-none">📎 Prêt</span>
+                                                        <div class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
                                                     </td>
                                                     <td>
-                                                        <div t-if="doc['has_expiry'] and doc['key'] not in ['doc_urssaf_certificate', 'doc_kbis']">
-                                                            <input type="date" 
-                                                                   t-attf-class="form-control form-control-sm border-0 bg-light"
-                                                                   t-att-value="doc.get('expiry') and str(doc['expiry']) or ''"
-                                                                   t-attf-onchange="updateDate(this, '#{doc['key']}')"
-                                                                   t-att-style="'color: #92564C; font-weight: bold;' if doc['status'] == 'expired' else ''"/>
+                                                        <!-- Date Input Logic -->
+                                                        <div t-if="doc.get('has_expiry')" class="date-input-wrapper">
+                                                            <t t-if="doc['key'] in ['kbis', 'urssaf']">
+                                                                <small class="text-muted" style="font-size: 0.7em;"><i class="fa fa-clock-o me-1"></i>Validité calculée automatiquement</small>
+                                                            </t>
+                                                            <t t-else="">
+                                                                <small class="text-muted d-block mb-1" style="font-size: 0.7em;">Date d'expiration</small>
+                                                                <input type="date" name="expiry_date"
+                                                                       class="form-control form-control-sm border-0 bg-light input-expiry-date"
+                                                                       t-att-value="doc.get('expiry') and str(doc['expiry']) or ''"
+                                                                       onchange="onDateChange(this)"
+                                                                       t-att-required="doc.get('required')"
+                                                                       t-att-style="'color: #92564C; font-weight: bold;' if doc['status'] == 'expired' else ''"/>
+                                                            </t>
                                                         </div>
                                                         <span t-else="" class="text-muted small">-</span>
                                                     </td>
                                                     <td>
                                                         <div class="file-upload-wrapper d-flex gap-2">
-                                                            <!-- Selector -->
                                                             <label class="btn btn-sm btn-select position-relative rounded-pill flex-grow-1" style="border: 1px solid #92564C; color: #92564C;">
                                                                 <span class="text-truncate d-block file-label-text" style="max-width: 150px;">
                                                                     <i class="fa fa-folder-open me-1"/> 
@@ -213,14 +369,6 @@
                                                                        class="position-absolute top-0 start-0 opacity-0 w-100 h-100"
                                                                        style="cursor: pointer;"/>
                                                             </label>
-                                                            
-                                                            <!-- Validator -->
-                                                            <button class="btn btn-sm btn-validate rounded-pill text-white d-none shadow-sm" 
-                                                                    style="background-color: #92564C;"
-                                                                    type="button"
-                                                                    t-attf-onclick="uploadDocument(this, '{{ doc['key'] }}')">
-                                                                <i class="fa fa-check"/>
-                                                            </button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -229,74 +377,73 @@
                                     </table>
                                 </div>
 
-                                <!-- Mobile Card View (Visible on Mobile) -->
+                                <!-- Mobile Card View -->
                                 <div class="d-md-none p-3" style="background-color: #F8F9FA;">
                                     <t t-foreach="doc_types" t-as="doc">
                                         <div class="card mb-3 border-0 shadow-sm rounded-3">
-                                            <div class="card-body p-3 doc-row-container">
-                                                <!-- Header: Title + Badge -->
+                                            <div class="card-body p-3 doc-row-container" t-att-data-doc-key="doc['key']" t-att-data-required="doc.get('required')">
                                                 <div class="d-flex justify-content-between align-items-start mb-2">
                                                     <div>
-                                                        <h6 class="fw-bold text-dark mb-1" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+                                                        <h6 class="fw-bold text-dark mb-1">
                                                             <i class="fa fa-file-text-o text-muted me-2"/>
                                                             <t t-esc="doc['name']"/>
                                                         </h6>
                                                         <small t-if="doc.get('required')" class="text-danger fw-bold" style="font-size: 0.7rem;">* OBLIGATOIRE</small>
                                                         <small t-else="" class="text-muted" style="font-size: 0.7rem;">OPTIONNEL</small>
                                                     </div>
-                                                    <!-- Status Badge -->
                                                     <span t-attf-class="status-badge badge rounded-pill {{doc['status'] == 'valid' and 'bg-success' or doc['status'] == 'expired' and 'bg-danger' or 'bg-warning text-dark'}}">
                                                         <t t-if="doc['status'] == 'valid'">Valide</t>
                                                         <t t-elif="doc['status'] == 'expired'">Expiré</t>
                                                         <t t-elif="doc['status'] == 'missing'">Manquant</t>
-                                                        <t t-else="">Wait...</t>
+                                                        <t t-else="">Statut</t>
                                                     </span>
-                                                    <!-- Loading Spinner -->
+                                                    <span class="staged-indicator badge rounded-pill bg-info text-white ms-1 d-none">📎 Prêt</span>
                                                     <div class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
                                                 </div>
 
-                                                <!-- Body: Expiry Date -->
-                                                <div class="mb-3" t-if="doc['has_expiry'] and doc['key'] not in ['doc_urssaf_certificate', 'doc_kbis']">
-                                                     <label class="text-muted small mb-1">Date d'expiration</label>
-                                                     <input type="date" 
-                                                            t-attf-class="form-control form-control-sm border-0 bg-light"
-                                                            t-att-value="doc.get('expiry') and str(doc['expiry']) or ''"
-                                                            t-attf-onchange="updateDate(this, '#{doc['key']}')"
-                                                            t-att-style="'color: #92564C; font-weight: bold;' if doc['status'] == 'expired' else ''"/>
+                                                <div class="mb-3" t-if="doc.get('has_expiry')">
+                                                    <t t-if="doc['key'] in ['kbis', 'urssaf']">
+                                                        <small class="text-muted"><i class="fa fa-clock-o me-1"></i>Validité calculée automatiquement</small>
+                                                    </t>
+                                                    <t t-else="">
+                                                        <label class="text-muted small mb-1">Date d'expiration *</label>
+                                                        <input type="date" name="expiry_date" 
+                                                               class="form-control form-control-sm border-0 bg-light input-expiry-date"
+                                                               t-att-value="doc.get('expiry') and str(doc['expiry']) or ''"
+                                                               onchange="onDateChange(this)"/>
+                                                    </t>
                                                 </div>
 
-                                                <!-- Footer: Actions -->
-                                                <div class="file-upload-wrapper d-flex flex-column gap-2">
-                                                    <!-- Selector -->
-                                                    <label class="btn btn-select w-100 position-relative rounded-3 py-2" style="border: 1px solid #92564C; color: #92564C;">
-                                                        <span class="d-block fw-bold file-label-text">
-                                                            <i class="fa fa-folder-open me-2"/> 
-                                                            <t t-if="doc['has_file']">Remplacer le document</t>
-                                                            <t t-else="">Choisir le document</t>
-                                                        </span>
-                                                        <input type="file" 
-                                                               onchange="onFileSelect(this)"
-                                                               class="position-absolute top-0 start-0 opacity-0 w-100 h-100"
-                                                               style="cursor: pointer;"/>
-                                                    </label>
-                                                    
-                                                    <!-- Validator -->
-                                                    <button class="btn btn-validate w-100 rounded-3 py-2 text-white d-none shadow-sm" 
-                                                            style="background-color: #92564C;"
-                                                            type="button"
-                                                            t-attf-onclick="uploadDocument(this, '{{ doc['key'] }}')">
-                                                        <i class="fa fa-check me-2"/> <span class="fw-bold">Envoyer / Valider</span>
-                                                    </button>
-                                                </div>
+                                                <label class="btn btn-select w-100 position-relative rounded-3 py-2" style="border: 1px solid #92564C; color: #92564C;">
+                                                    <span class="d-block fw-bold file-label-text">
+                                                        <i class="fa fa-folder-open me-2"/> 
+                                                        <t t-if="doc['has_file']">Remplacer</t>
+                                                        <t t-else="">Choisir</t>
+                                                    </span>
+                                                    <input type="file" 
+                                                           onchange="onFileSelect(this)"
+                                                           class="position-absolute top-0 start-0 opacity-0 w-100 h-100"
+                                                           style="cursor: pointer;"/>
+                                                </label>
                                             </div>
                                         </div>
                                     </t>
                                 </div>
                             </div>
-                            
-                            <div class="text-center mt-4 text-muted small">
-                                <p>© 2025 BLG Groupe Construction - Tous droits réservés.</p>
+
+                            <!-- Bottom Action Bar -->
+                            <div class="fixed-bottom bg-white border-top shadow-lg p-3 d-flex justify-content-center" style="z-index: 1030;">
+                                <button type="button" id="global-submit-btn" 
+                                        class="btn btn-lg rounded-pill shadow px-5" 
+                                        style="background-color: #92564C; color: white; transition: all 0.3s;"
+                                        onclick="submitAllDocuments()" disabled="disabled">
+                                    <i class="fa fa-paper-plane me-2"/>
+                                    SOUMETTRE <span id="staged-count-badge" class="badge bg-light text-dark ms-2 d-none">0</span>
+                                </button>
                             </div>
+                            
+                            <!-- Spacer for fixed bottom bar -->
+                            <div style="height: 100px;"></div>
                         </div>
                     </div>
                 </div>
@@ -357,5 +504,67 @@
                 </div>
             </div>
         </t>
+    </template>
+
+    <!-- ==================== SUCCESS PAGE ==================== -->
+    <template id="subcontractor_upload_success" name="Upload Success">
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Documents Soumis - BLG Groupe</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+                <style>
+                    body { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%); min-height: 100vh; }
+                    .success-card { border-radius: 20px; }
+                    .blg-header { background-color: #92564C; }
+                </style>
+            </head>
+            <body class="d-flex align-items-center justify-content-center">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-8">
+                            <!-- Header -->
+                            <div class="text-center mb-4">
+                                <h4 class="text-muted">BLG Groupe - Espace Partenaire</h4>
+                            </div>
+                            
+                            <div class="card success-card shadow-lg border-0">
+                                <div class="card-body text-center py-5">
+                                    <div class="mb-4">
+                                        <i class="fa-solid fa-circle-check text-success" style="font-size: 100px;"></i>
+                                    </div>
+                                    <h1 class="text-success mb-3">Documents soumis avec succès !</h1>
+                                    <p class="lead text-muted mb-4">
+                                        Merci <strong><t t-esc="partner.name"/></strong> pour votre soumission.
+                                    </p>
+                                    
+                                    <div class="alert alert-info text-start mb-4" role="alert">
+                                        <h5 class="alert-heading"><i class="fa-solid fa-info-circle me-2"></i>Prochaines étapes</h5>
+                                        <hr/>
+                                        <ul class="mb-0">
+                                            <li>Vos documents vont être <strong>vérifiés</strong> par notre équipe administrative.</li>
+                                            <li>Vous recevrez une <strong>notification par email</strong> une fois la vérification terminée.</li>
+                                            <li>En cas de problème, nous vous contacterons pour demander des corrections.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-center gap-3">
+                                        <a t-attf-href="/subcontractor/upload/#{partner.upload_token}" class="btn btn-outline-secondary btn-lg">
+                                            <i class="fa-solid fa-arrow-left me-2"></i>Retour au portail
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <p class="text-center text-muted mt-4 small">
+                                <i class="fa-solid fa-building me-1"></i> © 2025 BLG Groupe - Tous droits réservés
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </body>
+        </html>
     </template>
 </odoo>

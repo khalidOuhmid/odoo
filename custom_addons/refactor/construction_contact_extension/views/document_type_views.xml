@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Vue liste des types de documents -->
+        <record id="view_document_type_list" model="ir.ui.view">
+            <field name="name">document.type.list</field>
+            <field name="model">document.type</field>
+            <field name="arch" type="xml">
+                <list string="Types de Documents" create="true" delete="true">
+                    <field name="sequence" widget="handle"/>
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="is_mandatory" widget="boolean"/>
+                    <field name="has_expiry" widget="boolean"/>
+                    <field name="validity_period_months"/>
+                    <field name="allowed_file_types"/>
+                    <field name="max_file_size_mb" widget="float"/>
+                    <field name="active" widget="boolean"/>
+                </list>
+            </field>
+        </record>
+
+        <!-- Vue formulaire des types de documents -->
+        <record id="view_document_type_form" model="ir.ui.view">
+            <field name="name">document.type.form</field>
+            <field name="model">document.type</field>
+            <field name="arch" type="xml">
+                <form string="Type de Document">
+                    <sheet>
+                        <div class="oe_title">
+                            <h1>
+                                <field name="name" required="1" placeholder="ex: Carte d'identité"/>
+                            </h1>
+                        </div>
+
+                        <group>
+                            <group string="Informations Générales">
+                                <field name="code" required="1"/>
+                                <field name="sequence"/>
+                                <field name="is_mandatory"/>
+                                <field name="active"/>
+                            </group>
+
+                            <group string="Gestion de l'Expiration">
+                                <field name="has_expiry"/>
+                                <field name="validity_period_months" invisible="not has_expiry"/>
+                                <field name="expiry_warning_days" invisible="not has_expiry"/>
+                                <field name="require_expiry_date" invisible="not has_expiry"/>
+                            </group>
+                        </group>
+
+                        <group>
+                            <group string="Contraintes de Fichier">
+                                <field name="allowed_file_types"/>
+                                <field name="max_file_size_mb" widget="float"/>
+                            </group>
+                        </group>
+
+                        <notebook>
+                            <page string="Description" name="description">
+                                <field name="description" widget="html"/>
+                            </page>
+
+                            <page string="Instructions d'Upload" name="upload_instructions">
+                                <field name="upload_instructions" widget="html"/>
+                            </page>
+
+                            <page string="Checklist de Validation" name="validation_checklist">
+                                <field name="validation_checklist" widget="html"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action principale -->
+        <record id="action_document_type" model="ir.actions.act_window">
+            <field name="name">Types de Documents</field>
+            <field name="res_model">document.type</field>
+            <field name="view_mode">list,form</field>
+            <field name="help" type="html">
+                <p class="o_view_nocontent_smiling_face">
+                    Créer votre premier type de document
+                </p>
+            </field>
+        </record>
+
+    </data>
+</odoo>

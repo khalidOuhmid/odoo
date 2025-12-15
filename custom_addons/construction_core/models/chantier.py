@@ -756,7 +756,7 @@ class Chantier(models.Model):
             }
         else:
             # Open force wizard for directors
-            if self.env.user.has_group('construction_core.group_construction_director'):
+            if self.env.user.has_group('construction_core.group_construction_admin'):
                 next_stage = self._get_next_stage()
                 return {
                     'name': _('Forcer le Changement d\'Étape'),

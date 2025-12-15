@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Vue formulaire pour la suppression définitive -->
+        <record id="archive_permanent_delete_wizard_form_view" model="ir.ui.view">
+            <field name="name">archive.permanent.delete.wizard.form</field>
+            <field name="model">archive.permanent.delete.wizard</field>
+            <field name="arch" type="xml">
+                <form string="Suppression Définitive d'Archive">
+                    <header>
+                        <button name="action_permanent_delete" string="SUPPRIMER DÉFINITIVEMENT"
+                                type="object" class="btn-danger oe_highlight"
+                                invisible="not can_delete"
+                                data-confirm="ATTENTION : Cette action est IRRÉVERSIBLE ! Êtes-vous absolument sûr ?"/>
+                        <button name="action_view_archive_details" string="Voir Détails Archive"
+                                type="object" class="btn-secondary"/>
+                        <button name="action_cancel_deletion" string="Annuler"
+                                type="object" class="btn-link"/>
+                    </header>
+
+                    <sheet>
+                        <div class="oe_title">
+                            <h1 class="text-danger">
+                                ⚠️ SUPPRESSION DÉFINITIVE
+                            </h1>
+                            <h2>
+                                <field name="archive_name" readonly="1"/>
+                            </h2>
+                        </div>
+
+                        <!-- Avertissement principal -->
+                        <field name="warning_message" nolabel="1" widget="html"/>
+
+                        <!-- Informations de l'archive -->
+                        <group string="Archive à Supprimer">
+                            <group>
+                                <field name="archive_id" readonly="1"/>
+                                <field name="partner_name" readonly="1"/>
+                                <field name="document_type" readonly="1"/>
+                            </group>
+                        </group>
+
+                        <!-- Détails de l'archive -->
+                        <field name="archive_info" nolabel="1" widget="html"/>
+
+                        <!-- Raison de la suppression -->
+                        <group string="Justification de la Suppression" col="1">
+                            <field name="deletion_reason" required="1"/>
+                            <field name="deletion_details"
+                                   placeholder="Expliquez en détail la raison de cette suppression définitive..."
+                                   required="deletion_reason in ['gdpr_request', 'legal_requirement', 'security_breach']"/>
+                            <field name="reference_number"
+                                   placeholder="Numéro de dossier, ticket ou référence externe"/>
+                        </group>
+
+                        <!-- Options de traçabilité -->
+                        <group string="Options de Traçabilité">
+                            <field name="create_audit_log"/>
+                            <field name="notify_stakeholders"/>
+                            <field name="backup_before_delete"/>
+                        </group>
+
+                        <!-- Confirmations de sécurité -->
+                        <group string="Confirmations de Sécurité" col="1">
+                            <div class="alert alert-danger">
+                                <h4>CONFIRMATIONS OBLIGATOIRES</h4>
+                                <p>Vous devez confirmer chaque point ci-dessous :</p>
+                            </div>
+
+                            <field name="confirm_partner_name"/>
+                            <field name="confirm_document_type"/>
+                            <field name="confirm_irreversible"/>
+
+                            <group>
+                                <label for="confirmation_text" string="Tapez 'SUPPRIMER' pour confirmer :"/>
+                                <field name="confirmation_text" nolabel="1"
+                                       placeholder="SUPPRIMER"
+                                       style="background-color: #ffebee; border: 2px solid #f44336;"/>
+                            </group>
+                        </group>
+
+                        <!-- Indicateur de capacité à supprimer -->
+                        <div class="alert alert-success" invisible="not can_delete">
+                            <strong>✅ Toutes les confirmations sont validées</strong>
+                            <p>Vous pouvez maintenant procéder à la suppression définitive.</p>
+                        </div>
+
+                        <div class="alert alert-danger" invisible="can_delete">
+                            <strong>❌ Confirmations incomplètes</strong>
+                            <field name="missing_confirmations" nolabel="1" widget="html"/>
+                        </div>
+
+                    </sheet>
+                </form>
+            </field>
+        </record>
+
+        <!-- Action pour la suppression définitive -->
+        <record id="archive_permanent_delete_wizard_action" model="ir.actions.act_window">
+            <field name="name">Suppression Définitive</field>
+            <field name="res_model">archive.permanent.delete.wizard</field>
+            <field name="view_mode">form</field>
+            <field name="target">new</field>
+        </record>
+
+    </data>
+</odoo>

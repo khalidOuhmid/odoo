@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_visit_tree" model="ir.ui.view">
+        <field name="name">construction.visit.tree</field>
+        <field name="model">construction.visit</field>
+        <field name="arch" type="xml">
+            <list string="Visites de Chantier">
+                <field name="date"/>
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="user_id"/>
+                <field name="state" widget="badge"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_construction_visit_form" model="ir.ui.view">
+        <field name="name">construction.visit.form</field>
+        <field name="model">construction.visit</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_validate" string="Valider &amp; Envoyer" type="object" class="oe_highlight" invisible="state != 'draft'"/>
+                    <button name="action_print_report" string="Imprimer Rapport" type="object" invisible="state == 'draft'"/>
+                    <field name="state" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="chantier_id"/>
+                            <field name="date"/>
+                            <field name="duration"/>
+                        </group>
+                        <group>
+                            <field name="user_id"/>
+                            <field name="weather"/>
+                            <field name="attendee_ids" widget="many2many_tags"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Compte-Rendu">
+                            <field name="observations" placeholder="Détails de la visite, notes, réserves..."/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_construction_visit_calendar" model="ir.ui.view">
+        <field name="name">construction.visit.calendar</field>
+        <field name="model">construction.visit</field>
+        <field name="arch" type="xml">
+            <calendar date_start="date" string="Visites" color="user_id">
+                <field name="name"/>
+                <field name="chantier_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="action_construction_visit" model="ir.actions.act_window">
+        <field name="name">Rapports de Visite</field>
+        <field name="res_model">construction.visit</field>
+        <field name="view_mode">tree,form,calendar</field>
+    </record>
+
+    <menuitem id="menu_visit_list"
+              name="Tous les Rapports"
+              parent="menu_visit_root"
+              action="action_construction_visit"
+              sequence="10"/>
+</odoo>

@@ -1,0 +1,217 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Menu racine : Sous-traitants -->
+        <menuitem id="menu_subcontractors_root"
+                  name="Sous-traitants"
+                  sequence="25"
+                  groups="group_subcontractor_user"></menuitem>
+
+        <!-- Sous-menu : Gestion des Partenaires -->
+        <menuitem id="menu_subcontractors_management"
+                  name="Gestion des Partenaires"
+                  parent="menu_subcontractors_root"
+                  sequence="10"
+                  groups="group_subcontractor_user"/>
+
+        <!-- Sous-traitants -->
+        <menuitem id="menu_subcontractors_list"
+                  name="Sous-traitants"
+                  parent="menu_subcontractors_management"
+                  action="action_partner_subcontractor"
+                  sequence="10"
+                  groups="group_subcontractor_user"/>
+
+        <!-- Spécialités -->
+        <menuitem id="menu_construction_lots"
+                  name="Spécialités"
+                  parent="menu_subcontractors_management"
+                  action="construction_base.action_construction_lot"
+                  sequence="20"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Sous-menu : Documents -->
+        <menuitem id="menu_documents"
+                  name="Documents"
+                  parent="menu_subcontractors_root"
+                  sequence="20"
+                  groups="group_subcontractor_user"/>
+
+        <!-- Documents partenaires -->
+        <menuitem id="menu_partner_documents"
+                  name="Documents Partenaires"
+                  parent="menu_documents"
+                  action="action_partner_document"
+                  sequence="10"
+                  groups="group_subcontractor_user"/>
+
+        <!-- Types de documents -->
+        <menuitem id="menu_document_types"
+                  name="Types de Documents"
+                  parent="menu_documents"
+                  action="action_document_type"
+                  sequence="20"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Archives de documents -->
+        <menuitem id="menu_document_archives"
+                  name="Archives"
+                  parent="menu_documents"
+                  action="action_document_archive"
+                  sequence="30"
+                  groups="group_subcontractor_user"/>
+
+
+
+        <!-- Sous-menu : Outils -->
+        <menuitem id="menu_subcontractor_tools"
+                  name="Outils"
+                  parent="menu_subcontractors_root"
+                  sequence="40"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Opérations en lot -->
+        <menuitem id="menu_bulk_operations"
+                  name="Opérations en Lot"
+                  parent="menu_subcontractor_tools"
+                  action="construction_contact_extension.bulk_operations_wizard_action"
+                  sequence="10"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Générateur de liens portail -->
+        <menuitem id="menu_portal_links"
+                  name="Liens Portail"
+                  parent="menu_subcontractor_tools"
+                  action="construction_contact_extension.portal_link_wizard_action"
+                  sequence="20"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Sous-menu : Rapports -->
+        <menuitem id="menu_subcontractor_reports"
+                  name="Rapports"
+                  parent="menu_subcontractors_root"
+                  sequence="50"
+                  groups="group_subcontractor_user"/>
+
+        <!-- Rapport documents -->
+        <menuitem id="menu_document_reports"
+                  name="Rapport Documents"
+                  parent="menu_subcontractor_reports"
+                  action="construction_contact_extension.action_partner_document_report"
+                  sequence="10"
+                  groups="group_subcontractor_user"/>
+
+        <!-- Statistiques -->
+        <menuitem id="menu_statistics_reports"
+                  name="Statistiques"
+                  parent="menu_subcontractor_reports"
+                  action="construction_contact_extension.action_statistics_report"
+                  sequence="20"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Instructions portail -->
+        <menuitem id="menu_portal_instructions"
+                  name="Guide Portail"
+                  parent="menu_subcontractor_reports"
+                  action="construction_contact_extension.action_portal_instructions_report"
+                  sequence="30"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Sous-menu : Configuration -->
+        <menuitem id="menu_subcontractor_config"
+                  name="Configuration"
+                  parent="menu_subcontractors_root"
+                  sequence="60"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Paramètres du module -->
+        <menuitem id="menu_subcontractor_settings"
+                  name="Paramètres"
+                  parent="menu_subcontractor_config"
+                  action="construction_contact_extension.action_subcontractor_config_settings"
+                  sequence="10"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Notifications -->
+        <menuitem id="menu_notification_service"
+                  name="Service de Notifications"
+                  parent="menu_subcontractor_config"
+                  action="construction_contact_extension.action_partner_notification_service"
+                  sequence="20"
+                  groups="group_subcontractor_manager"/>
+
+        <!-- Intégration avec les modules existants -->
+
+        <!-- Ajout dans le menu Contacts si disponible -->
+        <!-- Note: Décommenter si le module contacts est installé -->
+        <!--
+        <menuitem id="menu_contacts_subcontractors"
+                  name="Sous-traitants"
+                  parent="contacts.menu_contacts"
+                  action="construction_contact_extension.action_partner_subcontractor"
+                  sequence="30"
+                  groups="group_subcontractor_user"/>
+        -->
+
+        <!-- Ajout dans le menu Projets si disponible -->
+        <!-- Note: Décommenter si le module project est installé -->
+        <!--
+        <menuitem id="menu_project_subcontractors"
+                  name="Sous-traitants"
+                  parent="project.menu_main_pm"
+                  action="construction_contact_extension.action_partner_subcontractor"
+                  sequence="50"
+                  groups="group_subcontractor_user"/>
+        -->
+
+        <!-- Menu contextuel pour les validateurs -->
+        <menuitem id="menu_document_validation"
+                  name="À Valider"
+                  parent="menu_documents"
+                  action="construction_contact_extension.action_documents_to_validate"
+                  sequence="5"
+                  groups="group_document_validator"/>
+
+        <!-- Menu pour les documents expirés (alerte) -->
+        <menuitem id="menu_expired_documents"
+                  name="⚠️ Documents Expirés"
+                  parent="menu_documents"
+                  action="construction_contact_extension.action_expired_documents"
+                  sequence="15"
+                  groups="group_subcontractor_user"/>
+
+
+        <!-- Menu d'administration avancée (système uniquement) -->
+        <menuitem id="menu_subcontractor_admin"
+                  name="Administration Sous-traitants"
+                  parent="base.menu_administration"
+                  sequence="25"
+                  groups="base.group_system"/>
+
+        <!-- Gestion des archives (admin) -->
+        <menuitem id="menu_archive_management"
+                  name="Gestion Archives"
+                  parent="menu_subcontractor_admin"
+                  action="construction_contact_extension.action_archive_management"
+                  sequence="10"
+                  groups="base.group_system"/>
+
+        <!-- Audit et logs -->
+        <menuitem id="menu_subcontractor_audit"
+                  name="Logs et Audit"
+                  parent="menu_subcontractor_admin"
+                  action="construction_contact_extension.action_subcontractor_audit_logs"
+                  sequence="20"
+                  groups="base.group_system"/>
+
+        <!-- Migration et maintenance -->
+        <menuitem id="menu_subcontractor_maintenance"
+                  name="Maintenance"
+                  parent="menu_subcontractor_admin"
+                  action="construction_contact_extension.action_subcontractor_maintenance"
+                  sequence="30"
+                  groups="base.group_system"/>
+
+    </data>
+</odoo>

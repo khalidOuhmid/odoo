@@ -80,6 +80,8 @@
                                     <field name="subcontractor_ids" widget="many2many_tags"
                                            options="{'color_field': 'color'}"
                                            invisible="1"/>
+                                    
+                                    <!-- Subcontractor Compliance: defined via view inheritance in construction_subcontractor -->
                                 </group>
                                 <group string="👷 Équipe Interne" invisible="execution_type == 'external'">
                                     <field name="internal_team_user_ids" widget="many2many_tags"

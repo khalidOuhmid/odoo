@@ -40,19 +40,35 @@
         <field name="arch" type="xml">
             <form string="Contrat de Sous-Traitance">
                 <header>
-                    <!-- ACTION PRINCIPALE: Brouillon → Générer PDF -->
-                    <button name="action_generate_pdf" string="Générer le PDF"
+                    <!-- ACTION PRINCIPALE: Brouillon → Générer HTML -->
+                    <button name="action_generate_contract_html" string="Générer Contrat"
                             type="object" class="btn-primary"
-                            icon="fa-file-pdf-o"
+                            icon="fa-magic"
                             invisible="state != 'draft'"
                             groups="group_construction_pilote,group_construction_admin"
-                            help="Générer le document PDF du contrat"/>
+                            help="Générer le brouillon du contrat depuis le modèle"/>
 
-                    <!-- ACTION PRINCIPALE: Généré → Envoyer pour Signature -->
+                    <!-- ACTION: Généré → Éditer -->
+                    <button name="action_open_contract_editor" string="Éditer Contrat"
+                            type="object" class="btn-secondary"
+                            icon="fa-pencil"
+                            invisible="state != 'generated'"
+                            groups="group_construction_pilote,group_construction_admin"
+                            help="Ouvrir l'éditeur visuel pour modifier le contrat"/>
+
+                    <!-- ACTION PRINCIPALE: Généré → Générer PDF Final -->
+                    <button name="action_generate_pdf" string="Générer PDF Final"
+                            type="object" class="btn-primary"
+                            icon="fa-file-pdf-o"
+                            invisible="state != 'generated'"
+                            groups="group_construction_pilote,group_construction_admin"
+                            help="Générer le document PDF final pour signature"/>
+
+                    <!-- ACTION PRINCIPALE: Envoyé → Envoyer pour Signature -->
                     <button name="action_send_for_signature" string="Envoyer pour Signature"
                             type="object" class="btn-success"
                             icon="fa-paper-plane"
-                            invisible="state != 'generated'"
+                            invisible="state != 'sent'"
                             help="Envoyer le contrat au sous-traitant par email et SMS"/>
 
                     <!-- ACTION PRINCIPALE: Envoyé → Renvoyer ou Rappel -->

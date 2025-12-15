@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Template pour validation de document -->
+        <record id="email_template_document_validation" model="mail.template">
+            <field name="name">Validation Document Sous-traitant</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">✅ Document validé - ${ctx.get('document_type', 'Document')} - ${object.name}</field>
+            <field name="email_from">${object.company_id.email or user.email}</field>
+            <field name="email_to">${object.email}</field>
+            <field name="partner_to">${object.id}</field>
+            <field name="body_html"><![CDATA[
+                <div style="margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #f8fafc;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+
+                            <!-- Header Success -->
+                            <div style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); padding: 30px; text-align: center;">
+                                <div style="background: rgba(255,255,255,0.2); width: 80px; height: 80px; border-radius: 50%; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center;">
+                                    <div style="font-size: 40px;">✅</div>
+                                </div>
+                                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">
+                                    Document Validé
+                                </h1>
+                            </div>
+
+                            <!-- Content -->
+                            <div style="padding: 30px;">
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 20px;">
+                                    Bonjour <strong>${object.name}</strong>,
+                                </p>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 25px;">
+                                    Excellente nouvelle ! Votre document <strong>${ctx.get('document_type', 'Document')}</strong>
+                                    a été validé avec succès par notre équipe.
+                                </p>
+
+                                <!-- Document validé -->
+                                <div style="background: #f0fdf4; border-left: 4px solid #16a34a; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                                    <h3 style="color: #166534; margin: 0 0 10px 0; font-size: 18px;">
+                                        📄 Document validé :
+                                    </h3>
+                                    <p style="margin: 0; color: #374151; font-size: 15px;">
+                                        <strong>${ctx.get('document_type', 'Document')}</strong>
+                                    </p>
+                                    % if ctx.get('validation_date'):
+                                    <p style="margin: 10px 0 0 0; color: #6b7280; font-size: 14px;">
+                                        Validé le ${ctx.get('validation_date')} par ${ctx.get('validated_by', 'notre équipe')}
+                                    </p>
+                                    % endif
+                                </div>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-top: 25px;">
+                                    Votre dossier administratif progresse bien. Merci pour votre collaboration !
+                                </p>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 0;">
+                                    Cordialement,<br/>
+                                    <strong>L'équipe BLG Groupe</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ]]></field>
+        </record>
+
+
+
+        <!-- Template pour suppression définitive d'archive -->
+        <record id="email_template_archive_deletion" model="mail.template">
+            <field name="name">Suppression Archive Définitive</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">🗑️ Suppression définitive d'archive - ${ctx.get('document_type', 'Document')} - ${object.name}</field>
+            <field name="email_from">${object.company_id.email or user.email}</field>
+            <field name="email_to">${object.email}</field>
+            <field name="partner_to">${object.id}</field>
+            <field name="body_html"><![CDATA[
+                <div style="margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #f8fafc;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+
+                            <div style="background: #6b7280; padding: 30px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">
+                                    🗑️ Suppression Définitive d'Archive
+                                </h1>
+                            </div>
+
+                            <div style="padding: 30px;">
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 20px;">
+                                    Bonjour <strong>${object.name}</strong>,
+                                </p>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 25px;">
+                                    Nous vous informons qu'une archive de document vous concernant a été
+                                    supprimée définitivement de nos systèmes.
+                                </p>
+
+                                <!-- Détails de la suppression -->
+                                <div style="background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                                    <h3 style="color: #374151; margin: 0 0 15px 0; font-size: 18px;">
+                                        📄 Archive supprimée :
+                                    </h3>
+                                    <ul style="margin: 0; padding-left: 20px; color: #374151;">
+                                        <li style="margin-bottom: 8px;"><strong>Document :</strong> ${ctx.get('document_type', 'Non spécifié')}</li>
+                                        <li style="margin-bottom: 8px;"><strong>Nom du fichier :</strong> ${ctx.get('archive_name', 'Non spécifié')}</li>
+                                        <li style="margin-bottom: 8px;"><strong>Raison :</strong> ${ctx.get('deletion_reason', 'Non spécifiée')}</li>
+                                        <li style="margin-bottom: 8px;"><strong>Date :</strong> ${ctx.get('deletion_date', 'Non spécifiée')}</li>
+                                        % if ctx.get('reference_number'):
+                                        <li style="margin-bottom: 8px;"><strong>Référence :</strong> ${ctx.get('reference_number')}</li>
+                                        % endif
+                                    </ul>
+                                </div>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-top: 25px;">
+                                    Cette suppression a été effectuée conformément à notre politique
+                                    de gestion des données et aux réglementations en vigueur.
+                                </p>
+
+                                % if ctx.get('contact_email'):
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                                    Pour toute question concernant cette suppression, vous pouvez contacter :
+                                    <a href="mailto:${ctx.get('contact_email')}" style="color: #1e40af;">
+                                        ${ctx.get('contact_email')}
+                                    </a>
+                                </p>
+                                % endif
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 0;">
+                                    Cordialement,<br/>
+                                    <strong>L'équipe BLG Groupe</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ]]></field>
+        </record>
+
+        <!-- Template pour expiration de token -->
+        <record id="email_template_token_expiry" model="mail.template">
+            <field name="name">Expiration Token Upload</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">⏰ Lien d'upload expirant bientôt - ${object.name}</field>
+            <field name="email_from">${object.company_id.email or user.email}</field>
+            <field name="email_to">${object.email}</field>
+            <field name="partner_to">${object.id}</field>
+            <field name="body_html"><![CDATA[
+                <div style="margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #f8fafc;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+
+                            <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">
+                                    ⏰ Lien d'Upload Expirant
+                                </h1>
+                            </div>
+
+                            <div style="padding: 30px;">
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 20px;">
+                                    Bonjour <strong>${object.name}</strong>,
+                                </p>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 25px;">
+                                    Nous vous rappelons que votre lien d'accès au portail de téléversement
+                                    de documents expire bientôt.
+                                </p>
+
+                                <!-- Détails expiration -->
+                                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+                                    <h3 style="color: #92400e; margin: 0 0 10px 0; font-size: 18px;">
+                                        📅 Expiration du lien :
+                                    </h3>
+                                    <p style="margin: 0; color: #374151; font-size: 15px;">
+                                        <strong>${ctx.get('expiry_date', 'Non spécifiée')}</strong>
+                                    </p>
+                                    <p style="margin: 10px 0 0 0; color: #92400e; font-size: 14px; font-weight: 600;">
+                                        Temps restant : ${ctx.get('days_until_expiry', 'N/A')} jour(s)
+                                    </p>
+                                </div>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-top: 25px;">
+                                    Si vous avez encore des documents à téléverser, merci de le faire avant l'expiration.
+                                    Après cette date, vous devrez demander un nouveau lien d'accès.
+                                </p>
+
+                                % if ctx.get('contact_email'):
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6;">
+                                    Pour obtenir un nouveau lien, contactez :
+                                    <a href="mailto:${ctx.get('contact_email')}" style="color: #1e40af;">
+                                        ${ctx.get('contact_email')}
+                                    </a>
+                                </p>
+                                % endif
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 0;">
+                                    Cordialement,<br/>
+                                    <strong>L'équipe BLG Groupe</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ]]></field>
+        </record>
+
+        <!-- Template générique -->
+        <record id="email_template_generic" model="mail.template">
+            <field name="name">Template Générique Sous-traitant</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">${ctx.get('subject', 'Information importante')} - ${object.name}</field>
+            <field name="email_from">${object.company_id.email or user.email}</field>
+            <field name="email_to">${object.email}</field>
+            <field name="partner_to">${object.id}</field>
+            <field name="body_html"><![CDATA[
+                <div style="margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #f8fafc;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+
+                            <div style="background: linear-gradient(135deg, #1e40af 0%, #1e3a8a 100%); padding: 30px; text-align: center;">
+                                <img src="/web/static/img/logo.png" alt="BLG Groupe" style="height: 50px; margin-bottom: 20px;">
+                                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">
+                                    ${ctx.get('title', 'Information Importante')}
+                                </h1>
+                            </div>
+
+                            <div style="padding: 30px;">
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 20px;">
+                                    Bonjour <strong>${object.name}</strong>,
+                                </p>
+
+                                <div style="font-size: 16px; color: #374151; line-height: 1.6;">
+                                    ${ctx.get('content', 'Contenu du message personnalisé.')}
+                                </div>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-top: 25px; margin-bottom: 0;">
+                                    Cordialement,<br/>
+                                    <strong>L'équipe BLG Groupe</strong>
+                                </p>
+                            </div>
+
+                            <!-- Footer -->
+                            <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                                <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                                    📧 ${object.company_id.email or 'contact@blggroupe.com'} |
+                                    📞 ${object.company_id.phone or '01 23 45 67 89'} |
+                                    🌐 ${object.company_id.website or 'www.blggroupe.com'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ]]></field>
+        </record>
+
+    </data>
+</odoo>

@@ -1,0 +1,396 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data noupdate="1">
+        <!-- Main Contract Template -->
+        <record id="default_contract_template" model="construction.contract.template">
+            <field name="name">Contrat Sous-Traitance Standard (BLG)</field>
+            <field name="is_default">True</field>
+            <field name="active">True</field>
+            <field name="body_html"><![CDATA[
+<!-- BLG CONTRACT TEMPLATE -->
+<style>
+    .contract-container {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        font-size: 11pt;
+        line-height: 1.4;
+        color: #000;
+        max-width: 210mm;
+        margin: 0 auto;
+        padding: 0 10mm;
+    }
+    h1 {
+        font-size: 16pt;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-top: 20px;
+        margin-bottom: 15px;
+        border-bottom: 2px solid #000;
+        padding-bottom: 5px;
+    }
+    h2 {
+        font-size: 13pt;
+        font-weight: bold;
+        margin-top: 15px;
+        margin-bottom: 10px;
+        color: #B22222; /* BLG Red */
+    }
+    h3 {
+        font-size: 11pt;
+        font-weight: bold;
+        margin-top: 10px;
+        margin-bottom: 5px;
+        text-decoration: underline;
+    }
+    p {
+        margin-bottom: 8px;
+        text-align: justify;
+    }
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+    }
+    table td, table th {
+        border: 1px solid #000;
+        padding: 5px 8px;
+        vertical-align: top;
+    }
+    .penalty-table td {
+        background-color: #f9f9f9;
+        font-weight: bold;
+        color: #B22222;
+        text-align: right;
+    }
+    .signature-section {
+        margin-top: 40px;
+        page-break-inside: avoid;
+    }
+    .signature-box {
+        border: 1px solid #ccc;
+        height: 120px;
+        margin-top: 10px;
+        padding: 10px;
+        position: relative;
+    }
+    .signature-img {
+        max-height: 100px;
+        display: block;
+        margin: auto;
+    }
+    .page-break {
+        page-break-before: always;
+    }
+</style>
+
+<div class="contract-container">
+
+    <!-- PAGE 1: Conditions Générales d'Achat (Introduction et sections 1-4) -->
+    <h1>Conditions Générales d'Achat</h1>
+
+    <h2>1. Conditions d'achat</h2>
+    <p>
+        Toutes les conditions générales de vente du prestataire figurant sur ses lettres, avis de réception, devis, factures, borderaux, ... ne peuvent être admises sans le consentement écrit de l'entreprise. Toute modification éventuelle de la présente commande n'est opposable au contractant général que si elle fait l'objet d'un accord écrit de celui-ci. Toute cession ou sous-traitance de la présente commande est impossible au contractant général sauf accord écrit préalable de celui-ci. Dans tous les cas l'entreprise restera seule responsable envers le contractant général.
+    </p>
+
+    <h2>2. Réglementation du travail - Hygiène et sécurité</h2>
+    <p>
+        L'entreprise fait son affaire personnelle, sans recours contre le contractant général, de toutes les obligations auxquelles sont tenues les entreprises en matière de protection de la santé, de sécurité et d'environnement. Elle est seule responsable de la sécurité, de quelque façon que ce soit, dont intervenant sur le chantier.
+    </p>
+
+    <h2>3. Matériel et outillage</h2>
+    <p>
+        Le matériel et l'outillage nécessaires à l'exécution des prestations confiées à l'entreprise sont à la charge de cette dernière. La maintenance durant toute la durée de l'utilisation ainsi que la garde, le contrôle et la surveillance sont à la charge de l'entreprise.
+    </p>
+
+    <h2>4. Obligations diverses de l'entreprise</h2>
+    <h3>1.1. Étendue du contrat</h3>
+    <p>
+        L'entreprise reconnaît avoir préalablement pris connaissance des documents et mené les investigations nécessaires pour accomplir sa mission. Dans le cadre de son forfait, elle mettra en œuvre tous les moyens nécessaires (matériels, personnels, ...) à cet effet. L'entreprise déclare être parfaitement informée des obligations du marché principal tant en ce qui concerne ses propres travaux que ceux des autres entreprises et connaître parfaitement l'étendue et la nature de ses obligations. Elle exécute tous les travaux relevant de sa spécialité, même si ceux-ci ne sont pas insuffisamment décrits dans les documents contractuels. Elle exécute le contrat avec le soin et la compétence d'un professionnel qualité et expérimenté. Elle s'assure de ses obligations de manière et dans les délais, tels que le contractant général ne puisse être en défaut au regard d'une quelconque de ses obligations résultant du marché principal. Elle est tenue d'une obligation de résultat et d'une obligation de conseils et d'information envers le contractant général. À ce titre, elle doit notamment communiquer toutes observations sur tous les documents qui sont portés à sa connaissance et tous éléments susceptibles d'avoir une incidence sur la bonne exécution du contrat.
+    </p>
+    <p>
+        L'entreprise s'engage à remettre au contractant général dès sa demande tous documents qui lui sont nécessaires. Elle s'engage à respecter les contraintes de travail imposées par le contractant. Elle s'engage à respecter en toutes circonstances les règles de l'art et les obligations de manière et dans les délais, tels que le contractant général ne puisse être en défaut au regard d'une quelconque de ses obligations résultant du marché principal. Toute prestation supplémentaire demandée par l'entreprise fera l'objet d'une commande séparée.
+    </p>
+
+    <h3>1.2. Qualification de l'entreprise</h3>
+    <p>
+        L'entreprise déclare avoir les qualifications, compétences et moyens nécessaires pour exécuter la commande. Elle fournit, à la demande qui lui en est faite par le contractant général, tous certificats ou attestations en justifiant et notamment tous certificats susceptibles d'être requis dans le cadre du marché principal.
+    </p>
+
+    <h3>1.3. Groupement d'entreprises</h3>
+    <p>
+        Dans l'hypothèse de l'exécution de la commande est confiée à un groupement d'entreprises, chaque membre du groupement est responsable solidairement de la bonne exécution de la commande, quels que soient les travaux qui lui sont confiés. Les entreprises groupées désignent désignent un mandataire commun signataire du marché ayant tous pouvoirs pour les représenter et prendre en leur nom tous les engagements nécessaires. Le groupement d'entreprises est possible et sera obligatoirement établi avant la signature du marché sauf dérogation dudit. Il est intégré sous-traité jusqu'à rang au-delà du 1er rang. Dans le cas de la sous-traitance du 1er degré, l'entreprise fournira obligatoirement toutes les pièces administratives, une copie du marché correspondant et la caution de paiement du sous-traitant.
+    </p>
+
+    <h3>1.4. Suivi de chantier</h3>
+    <p>
+        Les entreprises désignées pour la réalisation des travaux s'interdisent toutes relations directes avec le maître de l'ouvrage. Les éventuels problèmes de définition de prestations et financiers doivent être impérativement exposés au
+        <!-- PAGE 2 BREAK -->
+        contractant général afin que celui-ci puisse les prendre en compte dans le déroulement du chantier. D'autre part le maître de l'ouvrage s'engage à informer le contractant général de toutes les modifications éventuelles est interdit toute relation directe avec le client. L'entreprise s'engage à assister à toutes les réunions de coordination et aux rendez-vous de chantier auxquels le contractant général et/ou le client l'aura (ont) invité. La punctualité de l'entreprise est exigée lors de chaque réunion de coordination. Les comptes rendus rendus adressée à l'entreprise ou lui est remise au plus tard lors de la réunion suivante. À défaut de contestation motivée, formulée par écrit au plus tard lors de la réunion suivant la remise du compte-rendu, les dispositions consignées dans ce compte-rendu sont réputées acceptées par l'entreprise. L'absence au rendez-vous de coordination sans avis préalable 48 heures à l'avance fera l'objet d'une pénalité de 70,00 € H.T. systématiquement.
+    </p>
+    <p>
+        Jusqu'à la réception, l'entreprise doit la protection et la surveillance de tous ses ouvrages, de tous ses approvisionnements de son matériel, qu'ils soient en œuvre, stockés en magasin ou sur le chantier. L'entreprise ne peut en aucun cas prétendre à un remboursement notamment à titre du compte prorata en cas de détérioration, pertes, vols, etc.
+    </p>
+
+    <h2>5. Délais et pénalités de retard</h2>
+
+    <h3>5.1. Retenues sur situations mensuelles et/ou décompte définitif</h3>
+    <p>
+        Les prestations doivent être exécutées dans les conditions de délai indiquées dans la Commande. Le respect des délais prévus au planning contractuel constitue une obligation essentielle de l'entreprise qui s'engage à respecter tous les délais de démarre et de dommage et de terminizon que les délais intermédiaires correspondant aux différents ouvrages ou tâches composant l'ouvrage. Les périodes de congés ne sont pas une cause de suspension de délai. L'entreprise doit maintenir pendant ces périodes le personnel nécessaire pour assure le déroulement des travaux conformément au planning contractuel en vigueur. Le délai d'exécution pris en compte toutes les sujétions compris les imperfections. En cas d'inobservation des délais y compris les gonds de réserves et de GPA, l'entreprise supportera de plein droit des pénalités de retard fixes, sauf dispositions contraires dans la Commande, à {{penalite_retard_jour}} euros HT par jour calendaire de retard, qui seront retenues de plein droit sur les paiements. L'application de ces pénalités ne fera pas obstacle à la mise à charge du délai pénalisé constaté pour résilier la présente commande, dans les conditions de l'article 8 ci-dessous.
+    </p>
+
+    <h3>5.2. Pénalités diverses</h3>
+    <p><strong>5.2.1. Pénalités de retard</strong><br/>
+    Suivant article 5.1</p>
+
+    <p><strong>5.2.2. Pénalités sur infractions aux prescriptions de chantier</strong><br/>
+    Dans le cas où les prescriptions ci-dessous ne seraient pas observées, il sera fait application de pénalités indépendantes de celles visées aux articles 5.1 et avec lesquelles elles se cumulent.
+    Ces pénalités interviendront de plein droit, sur la simple constatation par BLG GROUPE des infractions, et après notification écrite d'avoir à exécuter la prescription au plus tard le lendemain.
+    Elles seront déduites des situations mensuelles et/ou du décompte définitif.</p>
+
+    <table class="penalty-table" border="1" style="width:100%; border-collapse: collapse;">
+        <tr>
+            <td style="text-align:left; background-color:white;">Retard dans la remise ou la diffusion de documents nécessaires à l'exécution des travaux (plans d'exécution, notes de calculs, notes techniques, études de détail, plans de synthèse, certificats, procès-verbaux, photographies d'avancement, etc.) :</td>
+            <td>➤ {{penalty_docs_delay}} € HT / jour</td>
+        </tr>
+        <tr>
+            <td style="text-align:left; background-color:white;">Non-respect des prescriptions relatives à la sécurité, à l'hygiène, à la signalisation du chantier :</td>
+            <td>➤ {{penalty_safety}} € HT / jour</td>
+        </tr>
+        <tr>
+            <td style="text-align:left; background-color:white;">Retard dans la production de justificatifs et/ou prévisions de prix pour ouvrages non prévus :</td>
+            <td>➤ {{penalty_justificatifs}} € HT / jour</td>
+        </tr>
+        <tr>
+            <td style="text-align:left; background-color:white;">Retard dans la présentation sur le chantier des prototypes, d'éléments de construction, d'échantillons :</td>
+            <td>➤ {{penalty_prototypes}} € HT / jour</td>
+        </tr>
+        <tr>
+            <td style="text-align:left; background-color:white;">Retard dans le nettoyage du chantier :</td>
+            <td>➤ {{penalty_cleaning}} € HT / jour</td>
+        </tr>
+    </table>
+
+    <!-- PAGE 3 -->
+    <div class="page-break"></div>
+    
+    <h2>6. Modalités de règlement</h2>
+    <p>
+        Le règlement du bon de commande initial sera effectué par virement bancaire suivant l'échéancier de paiement sous réserve de l'adéquation de celui-ci avec l'avancement réel du chantier.
+    </p>
+
+    <!-- NOTE: The text jumps back to "4. Échéancier de paiement" in the prompt's Page 3 but seems to be a continuation. The prompt structure says "Page 3... sections 5 and 6". But then header "4. Échéancier de paiement". I will follow the text flow provided. -->
+    
+    <h2>4. Échéancier de paiement</h2>
+    <p>Le prix est payable selon l'échéancier suivant :</p>
+    
+    <table border="1" style="width:100%; text-align:center;">
+        <tr style="background-color:#eee;">
+            <th>Avancement réel chantier</th>
+            <th>Facturation</th>
+            <th>Montant en € H.T.</th>
+        </tr>
+        <tr>
+            <td>30%</td>
+            <td>30%</td>
+            <td>{{advance_payment_30}}</td>
+        </tr>
+        <tr>
+            <td>100%</td>
+            <td>70%</td>
+            <td>{{final_payment_70}}</td>
+        </tr>
+        <tr style="font-weight:bold;">
+            <td colspan="2" style="text-align:right;">TOTAL</td>
+            <td>{{amount_total_recap}}</td>
+        </tr>
+    </table>
+    
+    <p>
+        La gestion financière est assurée depuis un compte tiers sécurisé. La signature du PV de réception par le {{master_name}} (MAITRE D'OUVRAGE), qui atteste que les travaux ont été réalisés conformément au cahier des charges, permet la libération des fonds de notre partenaire travaux de le sous-traitant (voir § ci-avant), cet article vaut garantie de paiement du sous-traitant accepté par le MAITRE D'OUVRAGE par sa signature du Contrat de sous-traitance.
+    </p>
+
+    <h2>5. Délais</h2>
+    <p>
+        Suivant planning prévisionnel en annexe, tout planning remis par {{contractant_nom}} en cours d'exécution du marché aura valeur contractuelle.
+    </p>
+
+    <h3>Documents contractuels et annexes</h3>
+    <p>La présente commande et le cas échéant ses annexes, à savoir, par ordre de préséance :</p>
+    <ul>
+        <li>Les documents graphiques : plans d'exécution du projet.</li>
+        <li>La notice technique : dossier d'exécution et planning du projet.</li>
+        <li>Le bon de commande (Les quantités et prestations y figurant sont estimatives et ne sauraient être exploitées pour remettre en cause de quelque manière que ce soit le caractère forfaitaire du marché. Elle n'est pas contractuelle mais sert de base pour fixer les prix de travaux modificatifs et dresser les situations de travaux et décomptes)</li>
+        <li>Les « conditions générales de commande » jointes</li>
+    </ul>
+
+    <h2>6. Documents à transmettre</h2>
+    <p>Le prestataire remet, à la signature de la présente commande et tous les 6 mois :</p>
+    <ul>
+        <li>Un extrait K bis</li>
+        <li>Une Attestation de fourniture des déclarations sociales et de paiement des cotisations de sécurité sociales émanant de l'organisme de protection sociale chargé du recouvrement portant le nombre de salariés déclarés datant de moins de 3 mois.</li>
+        <li>La liste nominative de ses salariés étrangers soumis à autorisation de travail auxquels il fera appel pour l'exécution de cette commande accompagnée de l'attestation conforme au décret 2007-801 du 11/05/2007.</li>
+        <li>Une attestation (datant de moins de trois mois) d'assurance responsabilité civile professionnelle et décennale à l'égard de tous tiers, y compris l'entreprise, valable tant pendant la durée des prestations qu'après leur achèvement.</li>
+    </ul>
+
+    <!-- PAGE 4 Repeats some CGA but then adds new sections 7, 8, 9, 10 -->
+    <div class="page-break"></div>
+
+    <h2>7. Garanties, responsabilités et assurances</h2>
+    <p>
+        L'entreprise fait son affaire de toute réclamation concernant l'utilisation de brevets ou de licences, de sorte que le contractant général et le client ne puisse être recherchée, ni les prestations arrêtées ou interrompues. Sauf accord écrit préalable du contractant général, elle s'interdit d'utiliser ou de communiquer à des tiers toute étude ou document qu'il aurait dû ou connaître pour exécuter sa prestation. D'une façon générale, l'entreprise garantit le contractant général contre tout recours de tiers consécutif à un préjudice provoqué par la réalisation de ses prestations. Elle s'oblige à souscrire une police d'assurance couvrant le risque de responsabilité civile professionnelle et décennale à l'égard de tous tiers, y compris l'entreprise, avec une garantie suffisante pour la nature et l'importance du risque correspondant aux prestations qui lui sont confiées.
+    </p>
+
+    <h2>8. Résiliation</h2>
+    <p>
+        La présente commande peut être résiliée au bénéfice du contractant général, après mise en demeure restée infructueuse pendant 8 jours pour inexécution par l'entreprise d'une de ses obligations contractuelles et ce, sans préjudice des dommages-intérêts. Dans tous les cas de résiliation, le contractant général notifiera à l'entreprise défaillante par lettre recommandée ou par courrier électronique ou par tiers lieu de l'état d'avancement de la prestation. En l'absence d'un mandataire de l'entreprise, le relais sera effectué par le contractant général sera réputé contradictoire et opposable à l'entreprise. Le contractant général aura la faculté de designer une nouvelle entreprise pour poursuivre les prestations interrompues.
+    </p>
+    <p>
+        Dans tous les cas, les charges supplémentaires résultant de l'intervention d'un entrepreneur nouvellement désigné ainsi que les frais de gestion et de pilotage liés à cette substitution seront à la charge de l'entreprise défaillante et ce, qu'il s'agisse du prix ou des délais, cette dernière précision étant donnée à titre indicatif et non limitatif.
+    </p>
+
+    <h2>9. Règlement des litiges</h2>
+    <p>
+        Tout différend, quelles qu'en soient la nature et la date de survenance, relatif à l'interprétation, l'exécution ou la résiliation de la présente commande, et qui n'aurait pu trouver de solution amiable, sera soumis à l'appréciation des tribunaux de Paris. En cas de litige, la loi applicable sera la loi française. Cependant, la présente clause attributive de juridiction demeurera sans effet en cas d'appel en garantie formé par le contractant général à l'encontre de l'entreprise à la suite d'une procédure judiciaire principale.
+    </p>
+
+    <h2>10. Réception</h2>
+    <h3>10.1. Préparation à la réception</h3>
+    <p>
+        L'exécution des travaux doit aboutir à la livraison au Maître d'Ouvrage au jour de la réception, d'un ouvrage achevé dans les conditions de qualité prévues par les DTU ou les règles de l'art. Le contractant général peut procéder, avant la réception, à des visites détaillées et à l'établissement de listes de travaux à reprendre. Le contractant général établit également la liste des documents que l'entreprise devra lui remettre avant la réception.
+    </p>
+
+    <h3>10.2. Réception</h3>
+    <p>
+        Conformément aux dispositions de l'article 1792.6 du Code Civil, la réception est l'acte par lequel le Maître d'Ouvrage déclare accepter l'ouvrage avec ou sans réserve. Cette réception, qui est unique, libère l'entreprise de ses obligations contractuelles. Il sera ainsi procédé en convocation du contractant général à une visite de réception avec l'entreprise. Celle-ci entraînera l'établissement de la liste de travaux à reprendre. Ces malfaçons, omissions et autres imperfections seront précisées au travers d'un procès-verbal qui devra être signé et tamponné.
+    </p>
+
+    <h3>10.3. Réserves de réception et prise de possession</h3>
+    <p>
+        Les réserves mentionnées par le Maître d'Ouvrage au procès-verbal de réception ou par les occupants lors de la prise de possession sont transmises à l'entreprise et lui sont opposables. La transmission de ces listes de réserves de réception et / ou prise de possession n'a pas pour effet d'annuler les demandes de travaux à reprendre adressées à l'entreprise en application de l'article 10.1. Les éventuelles réserves ou observations formulées par le contrôleur technique ou par une autorité administrative compétente sont également opposables à l'entreprise.
+    </p>
+
+    <h3>10.4. Levées de réserves</h3>
+    <p>
+        L'entreprise effectue elle-même les travaux nécessaires à la levée des réserves dans un délai de 15 jours maximum à compter de la réception. À la fin de cette période, il sera programmé à l'initiative du contractant général une visite sur les lieux et le renvoi des listes de réserve levées lors de la réception et de sa période de préparation. Cette visite de levée des réserves consignant l'achèvement des travaux sera précisée au travers d'un procès-verbal remis à l'entreprise. Les conditions pour le non-respect de cette clause sont décrites au chapitre 5.
+    </p>
+
+    <!-- PAGE 7: Contrat de sous-traitance -->
+    <div class="page-break"></div>
+    <h1>Contrat de sous-traitance</h1>
+
+    <h2>1. Désignation des parties contractantes</h2>
+    <table border="0" style="width:100%; border:none;">
+        <tr>
+            <td style="width:50%; border:none;">
+                <strong>Contractant général :</strong><br/><br/>
+                {{contractant_nom}}<br/>
+                {{contractant_adresse}}<br/>
+                {{contractant_cp_ville}}
+            </td>
+            <td style="width:50%; border:none;">
+                <strong>L'entreprise :</strong><br/><br/>
+                {{entreprise_nom}}<br/>
+                {{entreprise_adresse}}<br/>
+                {{entreprise_cp_ville}}<br/>
+                SIRET : {{entreprise_siret}}<br/>
+                Code NAF : {{entreprise_naf}}
+            </td>
+        </tr>
+    </table>
+
+    <h2>2. Désignation des prestations</h2>
+    <p>
+        <strong>Nature des prestations objet du contrat :</strong><br/>
+        {{service_description}}
+    </p>
+    <p>
+        <strong>Référence chantier / Projet :</strong><br/>
+        {{chantier_reference}} / {{chantier_nom}}
+    </p>
+    <p>
+        <strong>Adresse :</strong><br/>
+        {{chantier_adresse}}
+    </p>
+
+    <h2>3. Prix</h2>
+    <p>
+        <strong>Montant de la somme du bon de commande N° {{bc_numero}}</strong>
+    </p>
+    <p style="font-size: 14pt; font-weight: bold; text-align: center; border: 2px solid #000; padding: 10px; margin: 20px 0;">
+        {{montant_ht}} H.T.
+    </p>
+    <p>
+        Le prix est ferme et non révisable. « AUTOLIQUIDATION, article 242 nonies A de l'annexe II au code général des impôts.
+    </p>
+    <p>
+        Ce prix comprend l'ensemble des coûts, frais et détours de l'Entreprise nécessaires à la bonne exécution du Contrat et dont l'appréciation relève de la seule responsabilité de l'Entreprise et couvre l'ensemble des aléas d'exécution des travaux.
+    </p>
+    <p>
+        Le prix constitue l'intégralité de la rémunération due par {{contractant_nom}} à l'Entreprise, laquelle ne saurait prétendre à aucun supplément de prix en raison de prestations qui, bien que non expressément énumérées, entrent dans le cadre de ses obligations contractuelles.
+    </p>
+    <p>
+        De même, l'Entreprise ne pourra se prévaloir en aucun cas d'erreurs d'appréciation ou de difficultés d'exécution pour obtenir une augmentation du prix du contrat. À ce titre, l'Entreprise entend renoncer par anticipation au bénéfice des dispositions de l'article 1195 du Code Civil.
+    </p>
+
+    <!-- PAGE 8 -->
+    <div class="page-break"></div>
+    
+    <h2>11. Relations entre parties</h2>
+    <p>
+        Préalablement à la production de ce bon de commande, le {{master_name}} (MAITRE D'OUVRAGE), que vous aviez rencontré lors d'une réunion, a signé le contrat de construction le liant à {{contractant_nom}} et, de fait, agréé votre entreprise comme sous-traitant.
+    </p>
+
+    <!-- PAGE 9: Validité et Signatures -->
+    <h2>7. Validité</h2>
+    <p>
+        Cette commande est nulle si elle n'est pas retournée acceptée, accompagnée des documents demandés dans les 5 jours à compter de sa réception par le prestataire, à moins que ce dernier n'ait commencé à exécuter les prestations objet de la présente, auquel cas ce commencement d'exécution vaut acceptation sans réserve par le prestataire de la présente commande.
+    </p>
+    
+    <p>
+        Fait à <strong>{{lieu_signature}}</strong>, le <strong>{{date_signature}}</strong>.
+    </p>
+    <p style="font-style: italic;">En 2 exemplaires originaux</p>
+
+    <div class="signature-section">
+        <table style="width:100%; border:none;">
+            <tr>
+                <td style="width:50%; border:none; vertical-align:top;">
+                    <strong>Le Contractant</strong><br/>
+                    {{signataire_contractant_nom}}<br/>
+                    <div class="signature-box">
+                        <t t-if="signature_blg_image">
+                            <img t-att-src="'data:image/png;base64,' + signature_blg_image" alt="Signature BLG" class="signature-img"/>
+                        </t>
+                    </div>
+                    <small style="color:gray;">
+                        {{contractant_nom}}<br/>
+                        {{contractant_adresse}}, {{contractant_cp_ville}}<br/>
+                        <!-- SIRET hardcoded based on prompt or needs variable? Prompt has hardcoded in transcription. -->
+                        N° de siret : 91918081000021<br/>
+                        ☎ 05 40 45 27 20
+                    </small>
+                </td>
+                <td style="width:50%; border:none; vertical-align:top;">
+                    <strong>L'Entreprise</strong><br/>
+                    {{signataire_entreprise_nom}}<br/>
+                    <div class="signature-box">
+                        <t t-if="signature_partner_image">
+                            <img t-att-src="'data:image/png;base64,' + signature_partner_image" alt="Signature Entreprise" class="signature-img"/>
+                        </t>
+                        <t t-else="">
+                            <div style="color:#999; text-align:center; padding-top:40px;">(Signature attendue)</div>
+                        </t>
+                    </div>
+                    <small style="color:gray;">
+                        (Signature et cachet)
+                    </small>
+                </td>
+            </tr>
+        </table>
+    </div>
+
+</div>
+            ]]></field>
+        </record>
+    </data>
+</odoo>

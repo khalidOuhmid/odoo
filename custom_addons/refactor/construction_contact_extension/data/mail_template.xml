@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+
+        <!-- Template pour nouveau sous-traitant -->
+        <record id="mail_template_new_subcontractor" model="mail.template">
+            <field name="name">Bienvenue Nouveau Sous-traitant</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">🎉 Bienvenue chez BLG Groupe - ${object.name}</field>
+            <field name="email_from">${object.company_id.email or user.email}</field>
+            <field name="email_to">${object.email}</field>
+            <field name="partner_to">${object.id}</field>
+            <field name="body_html"><![CDATA[
+                <div style="margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #f8fafc 0%, #e3f0ff 100%);">
+                    <div style="max-width: 650px; margin: 0 auto; padding: 20px;">
+                        <div style="background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.12);">
+
+                            <!-- Header Welcome -->
+                            <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 40px 30px; text-align: center; color: white;">
+                                <div style="background: rgba(255,255,255,0.2); width: 100px; height: 100px; border-radius: 50%; margin: 0 auto 25px; display: flex; align-items: center; justify-content: center; font-size: 50px;">
+                                    🎉
+                                </div>
+                                <h1 style="margin: 0; font-size: 28px; font-weight: 700; margin-bottom: 10px;">
+                                    Bienvenue dans la famille BLG !
+                                </h1>
+                                <p style="margin: 0; font-size: 18px; opacity: 0.9;">
+                                    Nous sommes ravis de vous compter parmi nos partenaires
+                                </p>
+                            </div>
+
+                            <!-- Content -->
+                            <div style="padding: 40px 30px;">
+                                <p style="font-size: 18px; color: #374151; line-height: 1.7; margin-bottom: 25px;">
+                                    Bonjour <strong>${object.name}</strong>,
+                                </p>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 30px;">
+                                    Félicitations ! Votre entreprise a été ajoutée avec succès à notre réseau
+                                    de partenaires sous-traitants. Cette collaboration marque le début d'une
+                                    relation de confiance et de qualité.
+                                </p>
+
+                                <!-- Informations du partenaire -->
+                                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; margin: 30px 0;">
+                                    <h3 style="color: #1e40af; margin: 0 0 20px 0; font-size: 20px; display: flex; align-items: center;">
+                                        <span style="margin-right: 10px;">🏢</span>
+                                        Vos informations
+                                    </h3>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div>
+                                            <p style="margin: 0; font-size: 14px; color: #6b7280; margin-bottom: 5px;">Entreprise</p>
+                                            <p style="margin: 0; font-size: 16px; color: #374151; font-weight: 600;">${object.name}</p>
+                                        </div>
+                                        % if object.email:
+                                        <div>
+                                            <p style="margin: 0; font-size: 14px; color: #6b7280; margin-bottom: 5px;">Email</p>
+                                            <p style="margin: 0; font-size: 16px; color: #374151;">${object.email}</p>
+                                        </div>
+                                        % endif
+                                        % if object.phone:
+                                        <div>
+                                            <p style="margin: 0; font-size: 14px; color: #6b7280; margin-bottom: 5px;">Téléphone</p>
+                                            <p style="margin: 0; font-size: 16px; color: #374151;">${object.phone}</p>
+                                        </div>
+                                        % endif
+                                        % if object.speciality_ids:
+                                        <div style="grid-column: 1 / -1;">
+                                            <p style="margin: 0; font-size: 14px; color: #6b7280; margin-bottom: 5px;">Spécialités</p>
+                                            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+                                                % for speciality in object.speciality_ids:
+                                                <span style="background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 16px; font-size: 14px; font-weight: 500;">
+                                                    ${speciality.name}
+                                                </span>
+                                                % endfor
+                                            </div>
+                                        </div>
+                                        % endif
+                                    </div>
+                                </div>
+
+                                <!-- Prochaines étapes -->
+                                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 25px; margin: 30px 0; border-radius: 0 8px 8px 0;">
+                                    <h3 style="color: #92400e; margin: 0 0 20px 0; font-size: 18px;">
+                                        📋 Prochaines étapes importantes
+                                    </h3>
+                                    <ol style="margin: 0; padding-left: 20px; color: #374151; line-height: 1.6;">
+                                        <li style="margin-bottom: 12px;">
+                                            <strong>Documents administratifs :</strong> Vous recevrez prochainement
+                                            un lien sécurisé pour téléverser vos documents obligatoires
+                                        </li>
+                                        <li style="margin-bottom: 12px;">
+                                            <strong>Formation sécurité :</strong> Participation aux sessions
+                                            de formation aux procédures BLG Groupe
+                                        </li>
+                                        <li style="margin-bottom: 12px;">
+                                            <strong>Premier chantier :</strong> Attribution des premières missions
+                                            selon vos spécialités
+                                        </li>
+                                        <li style="margin-bottom: 0;">
+                                            <strong>Suivi qualité :</strong> Mise en place des processus
+                                            de contrôle et d'amélioration continue
+                                        </li>
+                                    </ol>
+                                </div>
+
+                                <!-- Contact et support -->
+                                <div style="background: #eff6ff; border: 1px solid #bae6fd; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                                    <h4 style="color: #0369a1; margin: 0 0 15px 0; font-size: 16px;">
+                                        📞 Votre contact dédié
+                                    </h4>
+                                    <p style="margin: 0; color: #374151; font-size: 15px; line-height: 1.5;">
+                                        Pour toute question ou assistance, votre interlocuteur privilégié reste disponible :
+                                    </p>
+                                    <div style="margin-top: 15px; padding: 15px; background: white; border-radius: 6px;">
+                                        <p style="margin: 0; font-weight: 600; color: #374151;">
+                                            ${user.name or 'Équipe BLG Groupe'}
+                                        </p>
+                                        <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">
+                                            📧 ${user.email or object.company_id.email or 'contact@blggroupe.com'}<br/>
+                                            📞 ${user.phone or object.company_id.phone or '01 23 45 67 89'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 35px; padding-top: 25px; border-top: 1px solid #e5e7eb;">
+                                    <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 15px;">
+                                        Nous sommes convaincus que cette collaboration sera fructueuse et durable.
+                                        Ensemble, nous bâtirons l'excellence !
+                                    </p>
+
+                                    <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 0;">
+                                        À très bientôt,<br/>
+                                        <strong>L'équipe BLG Groupe</strong>
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- Footer -->
+                            <div style="background: #1f2937; color: white; padding: 25px 30px; text-align: center;">
+                                <div style="margin-bottom: 15px;">
+                                    <img src="/web/static/img/logo.png" alt="BLG Groupe" style="height: 40px; filter: brightness(0) invert(1);">
+                                </div>
+                                <p style="margin: 0; font-size: 14px; opacity: 0.8;">
+                                    🌐 www.blggroupe.com | 📧 contact@blggroupe.com | 📞 01 23 45 67 89
+                                </p>
+                                <p style="margin: 10px 0 0 0; font-size: 12px; opacity: 0.6;">
+                                    BLG Groupe - Votre partenaire de confiance dans le BTP
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ]]></field>
+            <field name="auto_delete">False</field>
+            <field name="lang">fr_FR</field>
+        </record>
+
+        <!-- Template pour rapport mensuel -->
+        <record id="mail_template_monthly_report" model="mail.template">
+            <field name="name">Rapport Mensuel Sous-traitant</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">📊 Rapport mensuel - ${object.name} - ${ctx.get('month_year', '')}</field>
+            <field name="email_from">${object.company_id.email or user.email}</field>
+            <field name="email_to">${object.email}</field>
+            <field name="partner_to">${object.id}</field>
+            <field name="body_html"><![CDATA[
+                <div style="margin: 0; padding: 0; font-family: 'Segoe UI', sans-serif; background: #f8fafc;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 20px;">
+                        <div style="background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+
+                            <div style="background: linear-gradient(135deg, #059669 0%, #10b981 100%); padding: 30px; text-align: center;">
+                                <h1 style="color: white; margin: 0; font-size: 24px; font-weight: 700;">
+                                    📊 Rapport Mensuel
+                                </h1>
+                                <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
+                                    ${ctx.get('month_year', 'Période non spécifiée')}
+                                </p>
+                            </div>
+
+                            <div style="padding: 30px;">
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 20px;">
+                                    Bonjour <strong>${object.name}</strong>,
+                                </p>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 25px;">
+                                    Voici votre rapport d'activité mensuel récapitulant l'état de votre dossier
+                                    et les collaborations réalisées.
+                                </p>
+
+                                <!-- Statistiques -->
+                                % if ctx.get('stats'):
+                                <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+                                    <h3 style="color: #166534; margin: 0 0 15px 0; font-size: 18px;">
+                                        📈 Vos statistiques
+                                    </h3>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                                        <div style="text-align: center; padding: 15px; background: white; border-radius: 6px;">
+                                            <div style="font-size: 24px; font-weight: 700; color: #059669; margin-bottom: 5px;">
+                                                ${ctx.get('stats', {}).get('completion_rate', 0)}%
+                                            </div>
+                                            <div style="font-size: 12px; color: #6b7280; text-transform: uppercase;">
+                                                Complétude documents
+                                            </div>
+                                        </div>
+                                        <div style="text-align: center; padding: 15px; background: white; border-radius: 6px;">
+                                            <div style="font-size: 24px; font-weight: 700; color: #059669; margin-bottom: 5px;">
+                                                ${ctx.get('stats', {}).get('projects_count', 0)}
+                                            </div>
+                                            <div style="font-size: 12px; color: #6b7280; text-transform: uppercase;">
+                                                Projets actifs
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                % endif
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-top: 25px;">
+                                    Merci pour votre collaboration continue et la qualité de votre travail.
+                                </p>
+
+                                <p style="font-size: 16px; color: #374151; line-height: 1.6; margin-bottom: 0;">
+                                    Cordialement,<br/>
+                                    <strong>L'équipe BLG Groupe</strong>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ]]></field>
+        </record>
+
+    </data>
+</odoo>

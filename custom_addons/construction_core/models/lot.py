@@ -71,6 +71,11 @@ class Lot(models.Model):
         help="Sous-traitant principal pour ce lot (Sous-Traitance uniquement)"
     )
     
+    # Note: Subcontractor compliance fields (subcontractor_compliance_state, 
+    # subcontractor_alert_level, subcontractor_doc_warning) are defined in 
+    # construction_subcontractor module as they depend on fields from that module.
+    
+    
     # Note: hr.employee requires 'hr' module - use res.users as fallback
     internal_team_user_ids = fields.Many2many(
         'res.users',
@@ -240,6 +245,9 @@ class Lot(models.Model):
         """Count attached documents."""
         for record in self:
             record.document_count = len(record.document_ids)
+
+    # Note: _compute_subcontractor_doc_warning is defined in construction_subcontractor module
+
 
     # ============= Onchange ============= #
     @api.onchange('category_id')

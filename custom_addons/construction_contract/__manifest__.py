@@ -59,7 +59,9 @@
         'data/contract_variables.xml',
         'data/email_templates.xml',
         'data/sms_templates.xml',
-        'data/default_contract_template.xml',
+        'data/email_templates.xml',
+        'data/sms_templates.xml',
+        'data/default_contract_template_data.xml',
         'data/urssaf_codes.xml',
 
         # Views (template views first - defines actions referenced by contract_views)

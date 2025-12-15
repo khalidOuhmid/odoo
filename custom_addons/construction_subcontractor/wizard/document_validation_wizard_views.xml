@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============= ACTIONS (must be defined first) ============= -->
+    
+    <!-- Action to open validation wizard -->
+    <record id="action_document_validation_wizard" model="ir.actions.act_window">
+        <field name="name">Validation Document</field>
+        <field name="res_model">document.validation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    
+    <!-- Action to open rejection wizard (sub-wizard) -->
+    <record id="action_document_rejection_wizard" model="ir.actions.act_window">
+        <field name="name">Rejeter le Document</field>
+        <field name="res_model">document.validation.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+    
+    <!-- ============= VIEWS ============= -->
+    
+    <!-- Document Validation Wizard Form View -->
+    <record id="view_document_validation_wizard_form" model="ir.ui.view">
+        <field name="name">document.validation.wizard.form</field>
+        <field name="model">document.validation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Validation Document">
+                <sheet>
+                    <!-- Header Info -->
+                    <div class="oe_title mb-3">
+                        <h2>
+                            <field name="doc_type" readonly="1"/>
+                        </h2>
+                        <div class="text-muted">
+                            Sous-traitant: <field name="partner_id" readonly="1" class="oe_inline"/>
+                        </div>
+                    </div>
+                    
+                    <!-- Status Banner -->
+                    <div class="alert alert-info mb-3" role="alert" invisible="current_status != 'to_check'">
+                        <i class="fa fa-clock-o me-2"/>
+                        <strong>En attente de validation</strong> - Ce document nécessite votre vérification.
+                    </div>
+                    
+                    <div class="alert alert-success mb-3" role="alert" invisible="current_status != 'valid'">
+                        <i class="fa fa-check-circle me-2"/>
+                        <strong>Document déjà validé</strong>
+                    </div>
+                    
+                    <!-- Document Preview Section -->
+                    <group string="📄 Aperçu du Document">
+                        <field name="doc_filename" readonly="1"/>
+                        <field name="doc_mimetype" invisible="1"/>
+                        <field name="current_status" invisible="1"/>
+                        
+                        <!-- PDF Preview (for PDF files) -->
+                        <div colspan="2" invisible="doc_mimetype != 'application/pdf'">
+                            <field name="doc_content" widget="pdf_viewer" 
+                                   readonly="1" filename="doc_filename"/>
+                        </div>
+                        
+                        <!-- Image Preview (for images) -->
+                        <div colspan="2" invisible="doc_mimetype not in ['image/jpeg', 'image/png']">
+                            <field name="doc_content" widget="image" 
+                                   readonly="1" class="img-fluid"/>
+                        </div>
+                        
+                        <!-- Download Button for other types -->
+                        <div colspan="2" invisible="doc_mimetype in ['application/pdf', 'image/jpeg', 'image/png']">
+                            <button name="action_download" type="object" 
+                                    string="📥 Télécharger le Document" 
+                                    class="btn btn-secondary"/>
+                        </div>
+                    </group>
+                    
+                    <!-- Rejection Reason (hidden, used in rejection wizard) -->
+                    <group string="❌ Motif de Rejet" invisible="1">
+                        <field name="rejection_reason" nolabel="1" colspan="2"
+                               placeholder="Décrivez pourquoi ce document est rejeté. Ce message sera envoyé au sous-traitant."/>
+                    </group>
+                </sheet>
+                
+                <footer>
+                    <button name="action_validate" 
+                            string="✓ Valider le Document" 
+                            type="object" 
+                            class="btn-primary me-2"
+                            invisible="current_status == 'valid'"/>
+                    <button name="%(construction_subcontractor.action_document_rejection_wizard)d" 
+                            string="✗ Rejeter..." 
+                            type="action"
+                            class="btn-danger me-2"
+                            context="{'default_partner_id': partner_id, 'default_doc_type': doc_type}"
+                            invisible="not doc_content"/>
+                    <button name="action_download" 
+                            string="📥 Télécharger" 
+                            type="object" 
+                            class="btn-secondary me-2"/>
+                    <button string="Fermer" special="cancel" class="btn-light"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Rejection Sub-Wizard (for requiring reason) -->
+    <record id="view_document_rejection_wizard_form" model="ir.ui.view">
+        <field name="name">document.validation.wizard.reject.form</field>
+        <field name="model">document.validation.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Rejeter le Document">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <strong>Attention</strong> - Le sous-traitant sera notifié par email de ce rejet.
+                    </div>
+                    
+                    <group>
+                        <field name="partner_id" invisible="1"/>
+                        <field name="doc_type" invisible="1"/>
+                        <field name="rejection_reason" nolabel="1" colspan="2"
+                               placeholder="Décrivez la raison du rejet (obligatoire)..." 
+                               required="1"/>
+                    </group>
+                </sheet>
+                <footer>
+                    <button name="action_reject" 
+                            string="Confirmer le Rejet" 
+                            type="object" 
+                            class="btn-danger"/>
+                    <button string="Annuler" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Update actions with proper view_ids now that views are defined -->
+    <record id="action_document_validation_wizard" model="ir.actions.act_window">
+        <field name="view_id" ref="view_document_validation_wizard_form"/>
+    </record>
+    
+    <record id="action_document_rejection_wizard" model="ir.actions.act_window">
+        <field name="view_id" ref="view_document_rejection_wizard_form"/>
+    </record>
+</odoo>

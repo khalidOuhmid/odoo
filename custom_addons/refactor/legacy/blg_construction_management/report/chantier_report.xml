@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_chantier_document">
+        <t t-call="web.external_layout">
+            <t t-set="doc" t-value="doc.with_context(lang=doc.client_id.lang)"/>
+            <div class="page">
+                <div class="oe_structure"/>
+
+                <h2>
+                    <span t-field="doc.name"/>
+                </h2>
+
+                <div class="row mt-4 mb-4">
+                    <div class="col-6">
+                        <strong>Client:</strong>
+                        <p t-field="doc.client_id"/>
+                        <strong>Adresse du chantier:</strong>
+                        <p t-field="doc.address"/>
+                    </div>
+                    <div class="col-6">
+                        <strong>État:</strong>
+                        <p t-field="doc.stage_id"/>
+                        <strong>Progression:</strong>
+                        <div class="progress">
+                            <div class="progress-bar" role="progressbar"
+                                 t-att-aria-valuenow="doc.progress" aria-valuemin="0"
+                                 aria-valuemax="100" t-att-style="'width: ' + str(doc.progress) + '%'">
+                                <t t-esc="doc.progress"/>%
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Dates</th>
+                            <th>Contractuelle</th>
+                            <th>Interne</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Début</td>
+                            <td><span t-field="doc.date_start_contract"/></td>
+                            <td><span t-field="doc.date_start_internal"/></td>
+                        </tr>
+                        <tr>
+                            <td>Fin</td>
+                            <td><span t-field="doc.date_end_contract"/></td>
+                            <td><span t-field="doc.date_end_internal"/></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h3>Lots de travaux</h3>
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Sous-traitant</th>
+                            <th>Coût</th>
+                            <th>Progression</th>
+                            <th>Début</th>
+                            <th>Fin</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <t t-foreach="doc.lot_ids" t-as="lot">
+                            <tr>
+                                <td><span t-field="lot.lot_type_id"/></td>
+                                <td><span t-field="lot.subcontractor_id"/></td>
+                                <td><span t-field="lot.cost"/></td>
+                                <td><span t-field="lot.progress"/>%</td>
+                                <td><span t-field="lot.start_date"/></td>
+                                <td><span t-field="lot.end_date"/></td>
+                            </tr>
+                        </t>
+                    </tbody>
+                </table>
+
+                <div class="oe_structure"/>
+            </div>
+        </t>
+    </template>
+
+    <template id="report_chantier">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="doc">
+                <t t-call="blg_construction_management.report_chantier_document"/>
+            </t>
+        </t>
+    </template>
+
+    <record id="action_report_chantier" model="ir.actions.report">
+        <field name="name">Fiche Chantier</field>
+        <field name="model">blg.chantier</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">blg_construction_management.report_chantier</field>
+        <field name="report_file">blg_construction_management.report_chantier</field>
+        <field name="binding_model_id" ref="model_blg_chantier"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

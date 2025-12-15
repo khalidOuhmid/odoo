@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_planning_task_tree" model="ir.ui.view">
+        <field name="name">construction.planning.task.tree</field>
+        <field name="model">construction.planning.task</field>
+        <field name="arch" type="xml">
+            <list string="Tâches Planning" editable="bottom">
+                <field name="sequence" widget="handle"/>
+                <field name="name"/>
+                <field name="chantier_id" optional="hide"/>
+                <field name="lot_id"/>
+                <field name="subcontractor_id"/>
+                <field name="date_start"/>
+                <field name="date_end"/>
+                <field name="duration"/>
+                <field name="progress" widget="progressbar"/>
+                <field name="constraint_type" optional="hide"/>
+                <field name="predecessor_ids" widget="many2many_tags" optional="hide"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_construction_planning_task_search" model="ir.ui.view">
+        <field name="name">construction.planning.task.search</field>
+        <field name="model">construction.planning.task</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="chantier_id"/>
+                <field name="lot_id"/>
+                <field name="subcontractor_id"/>
+                <filter string="En retard" name="late" domain="[('is_late', '=', True)]"/>
+                <group expand="0" string="Grouper par">
+                    <filter string="Chantier" name="group_by_chantier" context="{'group_by': 'chantier_id'}"/>
+                    <filter string="Lot" name="group_by_lot" context="{'group_by': 'lot_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_construction_planning_task" model="ir.actions.act_window">
+        <field name="name">Liste des Tâches</field>
+        <field name="res_model">construction.planning.task</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_by_chantier': 1}</field>
+    </record>
+
+    <menuitem id="menu_planning_task_list"
+              name="Toutes les Tâches"
+              parent="menu_planning_root"
+              action="action_construction_planning_task"
+              sequence="10"/>
+</odoo>

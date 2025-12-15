@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_report_construction_visit" model="ir.actions.report">
+        <field name="name">Rapport de Visite</field>
+        <field name="model">construction.visit</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_visit.report_visit</field>
+        <field name="report_file">construction_visit.report_visit</field>
+        <field name="print_report_name">'Rapport - %s' % (object.name)</field>
+        <field name="binding_model_id" ref="model_construction_visit"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>
