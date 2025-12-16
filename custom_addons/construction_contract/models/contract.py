@@ -104,14 +104,11 @@ class ConstructionContract(models.Model):
         help="Subcontractor company (from construction_subcontractor)"
     )
 
-    lot_ids = fields.Many2many(
+    lot_ids = fields.One2many(
         'construction.lot',
-        'construction_contract_lot_rel',
-        'contract_id',
-        'lot_id',
+        'contract_id',  # Inverse field on construction.lot (defined in lot_extension.py)
         string='Lots',
-        domain="[('chantier_id', '=', chantier_id)]",
-        help="Construction lots included in this contract"
+        help="Construction lots included in this contract (a lot belongs to ONE contract only)"
     )
 
     # ============================================================
@@ -297,6 +294,20 @@ class ConstructionContract(models.Model):
     gpa_duration = fields.Integer(string='Durée GPA (Mois)', default=12)
     signatory_contractor = fields.Char(string='Signataire Contractant (BLG)', default='Direction BLG')
     signatory_subcontractor = fields.Char(string='Signataire Sous-traitant')
+
+    # ============= SAP-GRADE: SIGNATURE PROOF FILE ============= #
+    
+    signature_proof_json = fields.Text(
+        string='Signature Proof (JSON)',
+        readonly=True,
+        help="SAP-grade legal proof file - JSON containing complete audit trail"
+    )
+    
+    signature_proof_generated = fields.Boolean(
+        string='Proof File Generated',
+        default=False,
+        readonly=True,
+    )
 
     # ============= LOGIC: DATA INJECTION ============= #
 
@@ -1107,6 +1118,174 @@ class ConstructionContract(models.Model):
                 'type': 'info',
             }
         }
+
+    # ============================================================
+    # SAP-GRADE: PROOF FILE GENERATION
+    # ============================================================
+
+    def _generate_proof_file(self):
+        """
+        SAP S/4HANA Grade: Generate a comprehensive JSON proof file.
+        This file serves as legal evidence of the signature process.
+        
+        Returns:
+            str: JSON string containing complete audit trail
+        """
+        import json
+        from datetime import datetime
+        
+        self.ensure_one()
+        
+        # Get all page validations
+        page_validations = self.page_validation_ids.sorted('validated_date')
+        validation_logs = []
+        for pv in page_validations:
+            validation_logs.append({
+                'page_number': pv.page_number,
+                'validated_at': pv.validated_date.isoformat() if pv.validated_date else None,
+                'time_spent_seconds': pv.time_spent,
+                'scroll_percentage': pv.scroll_percentage,
+                'validation_method': pv.validation_method,
+                'ip_address': pv.ip_address,
+                'user_agent': pv.user_agent[:200] if pv.user_agent else None,  # Truncate
+            })
+        
+        # Get signature details
+        signature_data = None
+        if self.signature_id:
+            sig = self.signature_id
+            signature_data = {
+                'signed_at': sig.signature_date.isoformat() if sig.signature_date else None,
+                'ip_address': sig.ip_address,
+                'user_agent': sig.user_agent[:200] if sig.user_agent else None,
+                'device_type': sig.device_type,
+                'signer_name': sig.signer_name,
+                'signature_size_bytes': len(sig.signature_image) if sig.signature_image else 0,
+            }
+        
+        # Build proof file structure
+        proof_document = {
+            'version': '1.0',
+            'generated_at': datetime.utcnow().isoformat() + 'Z',
+            'generator': 'BLG Contract Builder / SAP-Grade Module',
+            
+            'contract': {
+                'reference': self.name,
+                'created_at': self.create_date.isoformat() if self.create_date else None,
+                'chantier_name': self.chantier_id.name if self.chantier_id else None,
+                'subcontractor_name': self.subcontractor_id.name if self.subcontractor_id else None,
+                'subcontractor_siret': self.subcontractor_id.siren if self.subcontractor_id else None,
+                'total_amount_ttc': float(self.total_amount_ttc),
+                'currency': self.currency_id.name if self.currency_id else 'EUR',
+            },
+            
+            'document_integrity': {
+                'algorithm': 'SHA-256',
+                'hash_before_signature': self.pdf_hash_before_signature,
+                'hash_after_signature': self.pdf_hash_after_signature,
+                'page_count': self.pdf_page_count,
+            },
+            
+            'reading_audit_trail': {
+                'total_pages_validated': len(validation_logs),
+                'total_reading_time_seconds': sum(v['time_spent_seconds'] for v in validation_logs),
+                'page_validations': validation_logs,
+            },
+            
+            'signature': signature_data,
+            
+            'legal_notice': (
+                "Ce document constitue une preuve de signature électronique. "
+                "Il atteste que le signataire a lu l'intégralité du contrat "
+                "et a apposé sa signature électronique de manière volontaire. "
+                "L'empreinte SHA-256 garantit l'intégrité du document."
+            ),
+        }
+        
+        # Serialize to JSON
+        proof_json = json.dumps(proof_document, indent=2, ensure_ascii=False)
+        
+        # Store in contract
+        self.write({
+            'signature_proof_json': proof_json,
+            'signature_proof_generated': True,
+        })
+        
+        _logger.info(
+            f"[SAP-PROOF] Generated proof file for contract {self.name}: "
+            f"{len(validation_logs)} page validations, signature={'Yes' if signature_data else 'No'}"
+        )
+        
+        return proof_json
+
+    def action_merge_and_send(self):
+        """
+        SAP-Grade Unified Workflow:
+        1. Generate PDF from template
+        2. Merge with annexes (Planning, CCTP, PO)
+        3. Send for signature
+        
+        Returns:
+            dict: Action result with notification
+        """
+        self.ensure_one()
+        
+        if self.state == 'signed':
+            raise UserError(_("Le contrat est déjà signé."))
+        
+        try:
+            # Step 1: Generate PDF if not exists
+            if not self.pdf_document or not self.contract_template_html:
+                _logger.info(f"[WORKFLOW] Generating PDF for contract {self.name}")
+                self.action_generate_contract()
+                self.action_generate_pdf()
+            
+            # Step 2: Merge with annexes
+            merger_service = self.env['construction.contract.pdf.merger']
+            merge_result = merger_service.merge_contract_package(self)
+            
+            if merge_result and merge_result.get('pdf_data'):
+                # Update with merged PDF
+                self.write({
+                    'pdf_document': base64.b64encode(merge_result['pdf_data']),
+                    'pdf_hash_before_signature': merge_result['hash_after'],
+                })
+                _logger.info(
+                    f"[WORKFLOW] Merged PDF for contract {self.name}: "
+                    f"{merge_result['section_count']} sections, {merge_result['total_pages']} pages"
+                )
+            
+            # Step 3: Send for signature
+            notification_service = self.env['construction.contract.notification']
+            notification_service.send_contract_invitation(self)
+            
+            # Update state
+            self.write({
+                'state': 'sent',
+                'sent_date': fields.Datetime.now(),
+            })
+            
+            self.message_post(
+                body=_(
+                    "Contrat fusionné (%d sections) et envoyé à %s pour signature."
+                ) % (merge_result.get('section_count', 1), self.subcontractor_id.name),
+                message_type='notification'
+            )
+            
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _("Succès"),
+                    'message': _("Le contrat a été fusionné avec les annexes et envoyé pour signature."),
+                    'type': 'success',
+                    'sticky': False,
+                }
+            }
+            
+        except Exception as e:
+            _logger.error(f"[WORKFLOW] Error in merge_and_send for contract {self.name}: {e}", exc_info=True)
+            raise UserError(_("Erreur lors du workflow: %s") % str(e))
 
     def action_mark_in_progress(self):
         """Mark contract as signature in progress (when subcontractor starts reading)"""

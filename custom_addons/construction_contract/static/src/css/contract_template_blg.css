@@ -1,0 +1,384 @@
+/**
+ * BLG Contract Template Styles
+ * Charte Graphique 2025 - Bordeaux/Terracotta & Beige Rosé
+ * 
+ * Usage: Embedded in contract PDF via WeasyPrint
+ */
+
+/* ============================================================
+   CSS VARIABLES - CHARTE BLG 2025
+   ============================================================ */
+:root {
+    /* Palette BLG - Charte 2025 */
+    --blanc: #FFFFFF;
+    --gris-tres-clair: #E5E3E2;
+    /* Fond secondaire / séparateurs */
+    --beige-rose: #D4C5BC;
+    /* Ton neutre "chaud" (aplats, encarts) */
+    --gris-moyen: #AEADAB;
+    /* Texte secondaire / traits */
+    --gris-fonce: #978A86;
+    /* Texte fort / éléments discrets */
+    --bordeaux-terracotta: #92564C;
+    /* Accent (titres, encadrements, logo) */
+
+    /* Mappings fonctionnels */
+    --blg-bg-primary: var(--blanc);
+    --blg-bg-secondary: var(--gris-tres-clair);
+    --blg-accent-warm: var(--beige-rose);
+    --blg-text-secondary: var(--gris-moyen);
+    --blg-text-primary: var(--gris-fonce);
+    --blg-brand-color: var(--bordeaux-terracotta);
+    --blg-border-color: var(--gris-moyen);
+}
+
+/* ============================================================
+   PAGE SETUP (WeasyPrint / Print)
+   ============================================================ */
+@page {
+    size: A4;
+    margin: 20mm 15mm 25mm 15mm;
+
+    @bottom-center {
+        content: "Page " counter(page) " sur " counter(pages);
+        font-size: 9pt;
+        color: var(--gris-moyen);
+    }
+}
+
+/* ============================================================
+   BASE TYPOGRAPHY
+   ============================================================ */
+body,
+.contract-container {
+    font-family: "Times New Roman", Times, "Liberation Serif", serif;
+    font-size: 11pt;
+    line-height: 1.45;
+    color: #2B2B2B;
+    background-color: var(--blg-bg-primary);
+}
+
+/* ============================================================
+   HEADINGS - Serif Classique with Bordeaux Accent
+   ============================================================ */
+h1,
+h2,
+h3,
+h4 {
+    font-family: Georgia, "Times New Roman", Times, serif;
+    color: var(--blg-brand-color);
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    page-break-after: avoid;
+}
+
+h1 {
+    font-size: 22pt;
+    text-align: center;
+    text-transform: uppercase;
+    border-bottom: 2px solid var(--blg-brand-color);
+    padding-bottom: 12px;
+    margin: 30px 0 25px 0;
+}
+
+h2 {
+    font-size: 14pt;
+    margin-top: 25px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--blg-border-color);
+    padding-bottom: 5px;
+}
+
+h3 {
+    font-size: 12pt;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+
+h4 {
+    font-size: 11pt;
+    margin-top: 12px;
+    margin-bottom: 6px;
+}
+
+/* ============================================================
+   PARAGRAPHS & TEXT
+   ============================================================ */
+p {
+    text-align: justify;
+    margin-bottom: 10px;
+    orphans: 3;
+    widows: 3;
+}
+
+strong {
+    color: var(--gris-fonce);
+}
+
+/* ============================================================
+   TABLES
+   ============================================================ */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+    page-break-inside: avoid;
+}
+
+table th {
+    background-color: var(--blg-brand-color);
+    color: var(--blanc);
+    padding: 10px 12px;
+    font-family: Georgia, serif;
+    font-weight: 600;
+    text-align: left;
+    border: 1px solid var(--blg-brand-color);
+}
+
+table td {
+    padding: 8px 12px;
+    border: 1px solid var(--gris-tres-clair);
+    vertical-align: top;
+}
+
+table tr:nth-child(even) {
+    background-color: rgba(212, 197, 188, 0.15);
+    /* Beige rosé très léger */
+}
+
+/* Payment Schedule Table */
+.payment-table {
+    text-align: center;
+}
+
+.payment-table .total-row {
+    font-weight: bold;
+    background-color: var(--beige-rose) !important;
+}
+
+/* Penalty Table */
+.penalty-table td:last-child {
+    background-color: rgba(146, 86, 76, 0.1);
+    font-weight: bold;
+    color: var(--blg-brand-color);
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* ============================================================
+   PRICE BOX
+   ============================================================ */
+.price-box {
+    border: 2px solid var(--blg-brand-color);
+    padding: 15px 20px;
+    text-align: center;
+    margin: 25px auto;
+    max-width: 350px;
+    background-color: rgba(212, 197, 188, 0.1);
+}
+
+.price-box .amount {
+    font-size: 18pt;
+    font-weight: 700;
+    color: var(--blg-brand-color);
+    font-family: Georgia, serif;
+}
+
+/* ============================================================
+   PARTIES SECTION (Two Columns)
+   ============================================================ */
+.parties-container {
+    display: flex;
+    justify-content: space-between;
+    margin: 20px 0;
+    gap: 30px;
+}
+
+.party {
+    flex: 1;
+}
+
+.party-title {
+    font-weight: bold;
+    text-decoration: underline;
+    margin-bottom: 10px;
+    color: var(--blg-brand-color);
+}
+
+.party-name {
+    font-weight: bold;
+    font-size: 12pt;
+    margin-bottom: 5px;
+}
+
+/* ============================================================
+   SIGNATURE SECTION
+   ============================================================ */
+.signature-section {
+    margin-top: 50px;
+    page-break-inside: avoid;
+}
+
+.signature-grid {
+    display: flex;
+    justify-content: space-between;
+    gap: 40px;
+}
+
+.signature-column {
+    flex: 1;
+    text-align: center;
+}
+
+.signature-column h4 {
+    color: var(--blg-brand-color);
+    margin-bottom: 15px;
+    text-decoration: none;
+}
+
+.signature-box {
+    border: 1px solid var(--gris-moyen);
+    min-height: 120px;
+    padding: 10px;
+    background-color: #FAFAFA;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.signature-img {
+    max-width: 100%;
+    max-height: 100px;
+}
+
+.signature-placeholder {
+    color: var(--gris-moyen);
+    font-style: italic;
+}
+
+.signature-info {
+    font-size: 9pt;
+    color: var(--gris-fonce);
+    margin-top: 8px;
+    text-align: left;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.contract-footer {
+    margin-top: 40px;
+    padding-top: 15px;
+    border-top: 1px solid var(--gris-tres-clair);
+    font-size: 8pt;
+    color: var(--gris-moyen);
+    text-align: center;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   LISTS
+   ============================================================ */
+ul,
+ol {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+li {
+    margin-bottom: 6px;
+}
+
+/* ============================================================
+   PAGE BREAKS
+   ============================================================ */
+.page-break {
+    page-break-before: always;
+}
+
+.no-break {
+    page-break-inside: avoid;
+}
+
+/* ============================================================
+   HEADER WITH LOGO
+   ============================================================ */
+.contract-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid var(--blg-brand-color);
+}
+
+.logo-left {
+    width: 80px;
+    height: auto;
+}
+
+.logo-right {
+    text-align: right;
+}
+
+.logo-right img {
+    max-width: 180px;
+    height: auto;
+}
+
+.company-info {
+    font-size: 9pt;
+    color: var(--gris-fonce);
+    margin-top: 5px;
+}
+
+/* ============================================================
+   PRINT OPTIMIZATIONS
+   ============================================================ */
+@media print {
+    body {
+        background: white;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    a {
+        text-decoration: none;
+        color: inherit;
+    }
+}
+
+/* ============================================================
+   ARTICLE/CLAUSE NUMBERS
+   ============================================================ */
+.clause-number {
+    color: var(--blg-brand-color);
+    font-weight: bold;
+    margin-right: 8px;
+}
+
+/* ============================================================
+   LEGAL TEXT STYLING
+   ============================================================ */
+.legal-text {
+    font-size: 10pt;
+    text-align: justify;
+    line-height: 1.35;
+}
+
+.legal-text p {
+    margin-bottom: 8px;
+}
+
+/* Important clause highlight */
+.clause-important {
+    background-color: rgba(212, 197, 188, 0.2);
+    padding: 10px 15px;
+    border-left: 3px solid var(--blg-brand-color);
+    margin: 15px 0;
+}

@@ -434,6 +434,64 @@ class SignaturePortalController(http.Controller):
             return self._render_error_page('contract_not_found', str(e))
 
     # ============================================================
+    # SIGNATURE SUCCESS PAGE (SAP-GRADE)
+    # ============================================================
+
+    @http.route('/my/contract/<int:contract_id>/success', type='http', auth='public', website=True)
+    def signature_success(self, contract_id, access_token=None, **kwargs):
+        """
+        Signature success page with download option and audit summary.
+        
+        SAP-grade: Shows all audit trail information for legal proof.
+        
+        Args:
+            contract_id (int): Contract ID
+            access_token (str): Access token
+            
+        Returns:
+            Rendered success page with download button
+        """
+        try:
+            contract = self._validate_access(contract_id, access_token)
+            
+            if contract.state != 'signed':
+                # Redirect to main portal if not signed yet
+                return request.redirect(f'/my/contract/{contract_id}/sign?access_token={access_token}')
+            
+            # Get signature record
+            signature = contract.signature_id
+            
+            # Build audit summary
+            page_validations = contract.page_validation_ids.sorted('validated_at')
+            
+            values = {
+                'contract': contract,
+                'access_token': access_token,
+                'signature': signature,
+                'page_validations': page_validations,
+                'total_pages': contract.pdf_page_count,
+                'download_url': f'/my/contract/{contract_id}/download_signed?access_token={access_token}',
+                'certificate_url': f'/my/contract/{contract_id}/download_certificate?access_token={access_token}',
+                'audit_summary': {
+                    'signed_at': signature.signed_at if signature else None,
+                    'ip_address': signature.ip_address if signature else None,
+                    'pdf_hash': contract.pdf_hash_after_signature[:16] + '...' if contract.pdf_hash_after_signature else None,
+                    'pages_validated': len(page_validations),
+                    'total_time_spent': sum(v.time_spent for v in page_validations) if page_validations else 0,
+                },
+            }
+            
+            _logger.info(
+                f"[AUDIT] Showing success page for contract {contract.name}, "
+                f"signature IP: {signature.ip_address if signature else 'N/A'}"
+            )
+            
+            return request.render('construction_contract.signature_success_template', values)
+            
+        except (NotFound, Forbidden, AccessError) as e:
+            return self._render_error_page('contract_not_found', str(e))
+
+    # ============================================================
     # HELPER METHODS
     # ============================================================
 

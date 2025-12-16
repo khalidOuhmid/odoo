@@ -473,23 +473,44 @@ class SubcontractorPortalController(http.Controller):
                 }, status=200)
         
         # ============= SERVER-SIDE VALIDATION GUARD ============= #
-        # Verify all REQUIRED documents are present before allowing submit
+        # Verify all REQUIRED documents are present AND valid before allowing submit
         REQUIRED_DOCS = ['kbis', 'urssaf', 'insurance_dec', 'cni']
+        VALID_STATUSES = ['valid', 'to_check']  # Acceptable statuses
         
-        # Check which required docs are being submitted OR already exist on partner
-        missing_required = []
+        # Check which required docs are being submitted OR already valid on partner
+        missing_or_invalid = []
         for doc_key in REQUIRED_DOCS:
             is_in_staged = doc_key in staged_docs
-            has_on_partner = bool(getattr(partner, f'doc_{doc_key}', None))
             
-            if not is_in_staged and not has_on_partner:
-                missing_required.append(doc_key.upper())
+            # If being submitted now, it's OK
+            if is_in_staged:
+                continue
+            
+            # Check if exists on partner with valid status
+            has_on_partner = bool(getattr(partner, f'doc_{doc_key}', None))
+            doc_status = getattr(partner, f'doc_{doc_key}_status', 'missing')
+            
+            if not has_on_partner:
+                missing_or_invalid.append(f"{doc_key.upper()} (manquant)")
+            elif doc_status not in VALID_STATUSES:
+                # Document exists but is expired/expiring/rejected
+                status_labels = {
+                    'expired': 'expiré',
+                    'expiring': 'expire bientôt',
+                    'rejected': 'rejeté',
+                    'missing': 'manquant'
+                }
+                label = status_labels.get(doc_status, doc_status)
+                missing_or_invalid.append(f"{doc_key.upper()} ({label})")
         
-        if missing_required:
+        if missing_or_invalid:
             return request.make_json_response({
-                'error': _("Documents obligatoires manquants: %s. Veuillez les ajouter avant de soumettre.") % ', '.join(missing_required),
+                'error': _(
+                    "Documents invalides ou manquants: %s. "
+                    "Veuillez les mettre à jour avant de soumettre."
+                ) % ', '.join(missing_or_invalid),
                 'success': False,
-                'missing_docs': missing_required
+                'missing_docs': missing_or_invalid
             }, status=200)
         
         # Document prefixes for consistent naming

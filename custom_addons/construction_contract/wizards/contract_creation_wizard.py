@@ -56,7 +56,7 @@ class ContractCreationWizard(models.TransientModel):
     )
 
     # ============================================================
-    # STEP 2: LOTS SELECTION
+    # STEP 2: LOTS SELECTION (with Multi-Lot Auto-Detection)
     # ============================================================
 
     lot_ids = fields.Many2many(
@@ -65,15 +65,31 @@ class ContractCreationWizard(models.TransientModel):
         'wizard_id',
         'lot_id',
         string='Lots',
-        domain="[('chantier_id', '=', chantier_id)]",
-        help="Select the lots for this contract"
+        domain="[('chantier_id', '=', chantier_id), ('contract_id', '=', False)]",
+        help="Select the lots for this contract (only lots without existing contract)"
     )
 
     available_lot_ids = fields.Many2many(
         'construction.lot',
         compute='_compute_available_lots',
         string='Available Lots',
-        help="Lots available for this chantier"
+        help="Lots available for this chantier (without contract)"
+    )
+
+    # Multi-lot aggregation fields
+    show_aggregation_warning = fields.Boolean(
+        compute='_compute_related_lots',
+        string='Show Aggregation Warning'
+    )
+    
+    related_lot_count = fields.Integer(
+        compute='_compute_related_lots',
+        string='Related Lots Count'
+    )
+    
+    aggregation_message = fields.Text(
+        compute='_compute_related_lots',
+        string='Aggregation Message'
     )
 
     # ============================================================
@@ -142,12 +158,63 @@ class ContractCreationWizard(models.TransientModel):
 
     @api.depends('chantier_id')
     def _compute_available_lots(self):
-        """Get available lots for selected chantier"""
+        """Get available lots for selected chantier (without existing contract)"""
         for wizard in self:
             if wizard.chantier_id:
-                wizard.available_lot_ids = wizard.chantier_id.lots_ids
+                # Filter: lots on this chantier WITHOUT a contract yet
+                wizard.available_lot_ids = wizard.chantier_id.lots_ids.filtered(
+                    lambda l: not l.contract_id
+                )
             else:
                 wizard.available_lot_ids = False
+
+    @api.depends('chantier_id', 'subcontractor_id')
+    def _compute_related_lots(self):
+        """
+        Detect other lots on same chantier for same subcontractor.
+        Used for multi-lot aggregation warning.
+        """
+        for wizard in self:
+            if wizard.chantier_id and wizard.subcontractor_id:
+                # Find ALL lots for this subcontractor on this chantier (without contract)
+                related_lots = self.env['construction.lot'].search([
+                    ('chantier_id', '=', wizard.chantier_id.id),
+                    ('subcontractor_id', '=', wizard.subcontractor_id.id),
+                    ('execution_type', '=', 'external'),
+                    ('contract_id', '=', False),
+                ])
+                
+                wizard.related_lot_count = len(related_lots)
+                wizard.show_aggregation_warning = len(related_lots) > 1
+                
+                if wizard.show_aggregation_warning:
+                    lot_names = ', '.join(related_lots.mapped('name'))
+                    wizard.aggregation_message = _(
+                        "⚠️ Ce sous-traitant a %d lots sans contrat sur ce chantier :\n%s\n\n"
+                        "Tous ces lots seront automatiquement inclus dans le contrat."
+                    ) % (len(related_lots), lot_names)
+                else:
+                    wizard.aggregation_message = ''
+            else:
+                wizard.related_lot_count = 0
+                wizard.show_aggregation_warning = False
+                wizard.aggregation_message = ''
+
+    @api.onchange('chantier_id', 'subcontractor_id')
+    def _onchange_auto_select_related_lots(self):
+        """
+        When chantier and subcontractor are selected, auto-select ALL related lots.
+        This implements multi-lot aggregation.
+        """
+        if self.chantier_id and self.subcontractor_id:
+            # Find all lots for this subcontractor on this chantier (without contract)
+            related_lots = self.env['construction.lot'].search([
+                ('chantier_id', '=', self.chantier_id.id),
+                ('subcontractor_id', '=', self.subcontractor_id.id),
+                ('execution_type', '=', 'external'),
+                ('contract_id', '=', False),
+            ])
+            self.lot_ids = [(6, 0, related_lots.ids)]
 
     @api.depends('subcontractor_id')
     def _compute_subcontractor_status(self):
@@ -221,23 +288,29 @@ class ContractCreationWizard(models.TransientModel):
                 "Cannot create contract:\n%s"
             ) % self.subcontractor_warning)
 
+        # Check lots don't already have a contract
+        lots_with_contract = self.lot_ids.filtered(lambda l: l.contract_id)
+        if lots_with_contract:
+            raise ValidationError(_(
+                "Les lots suivants ont déjà un contrat : %s"
+            ) % ', '.join(lots_with_contract.mapped('name')))
+
         # Validate with service
         validation_service = self.env['construction.contract.validation.service']
         validation_service.validate_contract_data({
             'chantier_id': self.chantier_id.id,
             'subcontractor_id': self.subcontractor_id.id,
-            'lot_ids': [(6, 0, self.lot_ids.ids)],
+            'lot_ids': self.lot_ids.ids,  # Just IDs for validation
             'start_date': self.start_date,
             'end_date': self.end_date,
             'date': self.contract_date,
             'retention_rate': self.retention_rate,
         })
 
-        # Create contract
+        # Create contract (without lot_ids - they are One2many inverse)
         contract = self.env['construction.contract'].create({
             'chantier_id': self.chantier_id.id,
             'subcontractor_id': self.subcontractor_id.id,
-            'lot_ids': [(6, 0, self.lot_ids.ids)],
             'date': self.contract_date,
             'start_date': self.start_date,
             'end_date': self.end_date,
@@ -245,28 +318,30 @@ class ContractCreationWizard(models.TransientModel):
             'retention_rate': self.retention_rate,
         })
 
+        # Assign contract_id to selected lots (One2many inverse)
+        self.lot_ids.write({'contract_id': contract.id})
+
         # Generate deliverables if requested
         if self.generate_deliverables:
             self._generate_deliverables(contract)
 
-        # Always generate PDF
-        contract.action_generate_pdf()
-        
-        # Send immediately if requested
-        if self.send_immediately:
-            contract.action_send_for_signature()
-
         _logger.info(f"Contract {contract.name} created via wizard by user {self.env.user.name}")
 
-        # Open created contract
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Contract Created'),
-            'res_model': 'construction.contract',
-            'res_id': contract.id,
-            'view_mode': 'form',
-            'target': 'current',
-        }
+        # Generate contract template (prefill with data) and open interactive editor
+        try:
+            contract.action_generate_contract()  # Prefill HTML template with contract data
+            return contract.action_open_contract_editor()  # Open GrapeJS editor
+        except Exception as e:
+            _logger.warning(f"Could not open editor: {e}, falling back to form view")
+            # Fallback to contract form view
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Contract Created'),
+                'res_model': 'construction.contract',
+                'res_id': contract.id,
+                'view_mode': 'form',
+                'target': 'current',
+            }
 
     def _generate_deliverables(self, contract):
         """

@@ -577,4 +577,222 @@
         </t>
     </template>
 
+    <!-- ========================================================== -->
+    <!-- SIGNATURE SUCCESS TEMPLATE (SAP-GRADE AUDIT TRAIL)        -->
+    <!-- ========================================================== -->
+
+    <template id="signature_success_template" name="Signature Success">
+        <t t-call="portal.portal_layout">
+            <t t-set="additional_title">Signature Confirmée</t>
+
+            <style>
+                :root {
+                    --blg-bordeaux: #92564C;
+                    --blg-beige: #D4C5BC;
+                    --blg-gris: #978A86;
+                }
+                .success-header {
+                    background: linear-gradient(135deg, var(--blg-bordeaux) 0%, #7a4840 100%);
+                    color: white;
+                    padding: 40px 0;
+                    text-align: center;
+                }
+                .success-icon-large {
+                    font-size: 80px;
+                    color: #10B981;
+                    margin-bottom: 20px;
+                }
+                .audit-card {
+                    border-left: 4px solid var(--blg-bordeaux);
+                    background: rgba(212, 197, 188, 0.1);
+                }
+                .audit-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 12px 0;
+                    border-bottom: 1px solid #eee;
+                }
+                .audit-row:last-child { border-bottom: none; }
+                .audit-label { 
+                    color: var(--blg-gris);
+                    font-weight: 500;
+                }
+                .audit-value { 
+                    font-weight: 600;
+                    color: #333;
+                }
+                .download-btn-primary {
+                    background: var(--blg-bordeaux);
+                    border-color: var(--blg-bordeaux);
+                    color: white;
+                    padding: 15px 30px;
+                    font-size: 16px;
+                }
+                .download-btn-primary:hover {
+                    background: #7a4840;
+                    border-color: #7a4840;
+                }
+                .hash-display {
+                    font-family: monospace;
+                    background: #f8f9fa;
+                    padding: 8px 12px;
+                    border-radius: 4px;
+                    font-size: 12px;
+                    word-break: break-all;
+                }
+            </style>
+
+            <div class="signature-portal-wrapper">
+                <!-- Success Header -->
+                <div class="success-header">
+                    <div class="container">
+                        <i class="fa fa-check-circle success-icon-large"/>
+                        <h1>Contrat Signé avec Succès</h1>
+                        <p class="lead mb-0">
+                            <t t-esc="contract.name"/>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="container py-5">
+                    <div class="row">
+                        <!-- Main Content -->
+                        <div class="col-lg-8">
+                            <!-- Contract Summary Card -->
+                            <div class="card mb-4">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-file-text-o text-primary"/> Résumé du Contrat
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <p><strong>Chantier:</strong> <t t-esc="contract.chantier_id.name"/></p>
+                                            <p><strong>Sous-traitant:</strong> <t t-esc="contract.subcontractor_id.name"/></p>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <p><strong>Montant TTC:</strong> 
+                                                <span class="text-success font-weight-bold">
+                                                    <t t-esc="'{:,.2f}'.format(contract.total_amount_ttc)"/> €
+                                                </span>
+                                            </p>
+                                            <p><strong>Période:</strong> 
+                                                <t t-esc="contract.start_date.strftime('%d/%m/%Y')"/> - 
+                                                <t t-esc="contract.end_date.strftime('%d/%m/%Y')"/>
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Audit Trail Card (SAP-Grade) -->
+                            <div class="card audit-card mb-4">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-shield text-warning"/> Preuve Légale - Audit Trail
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="audit-row">
+                                        <span class="audit-label"><i class="fa fa-calendar"/> Date de signature</span>
+                                        <span class="audit-value">
+                                            <t t-if="audit_summary.get('signed_at')">
+                                                <t t-esc="audit_summary['signed_at'].strftime('%d/%m/%Y à %H:%M:%S')"/>
+                                            </t>
+                                        </span>
+                                    </div>
+                                    <div class="audit-row">
+                                        <span class="audit-label"><i class="fa fa-globe"/> Adresse IP</span>
+                                        <span class="audit-value">
+                                            <t t-esc="audit_summary.get('ip_address', 'N/A')"/>
+                                        </span>
+                                    </div>
+                                    <div class="audit-row">
+                                        <span class="audit-label"><i class="fa fa-check-square-o"/> Pages validées</span>
+                                        <span class="audit-value">
+                                            <t t-esc="audit_summary.get('pages_validated', 0)"/> / <t t-esc="total_pages or 0"/>
+                                        </span>
+                                    </div>
+                                    <div class="audit-row">
+                                        <span class="audit-label"><i class="fa fa-clock-o"/> Temps total de lecture</span>
+                                        <span class="audit-value">
+                                            <t t-esc="(audit_summary.get('total_time_spent', 0) // 60)"/> min 
+                                            <t t-esc="(audit_summary.get('total_time_spent', 0) % 60)"/> sec
+                                        </span>
+                                    </div>
+                                    <t t-if="audit_summary.get('pdf_hash')">
+                                        <div class="audit-row">
+                                            <span class="audit-label"><i class="fa fa-lock"/> Empreinte SHA-256</span>
+                                            <span class="audit-value hash-display">
+                                                <t t-esc="audit_summary['pdf_hash']"/>
+                                            </span>
+                                        </div>
+                                    </t>
+                                </div>
+                            </div>
+
+                            <!-- Next Steps -->
+                            <div class="alert alert-info">
+                                <h5><i class="fa fa-info-circle"/> Prochaines étapes</h5>
+                                <ul class="mb-0">
+                                    <li>Un email de confirmation avec le contrat signé vous sera envoyé</li>
+                                    <li>Le certificat de preuve légale est disponible en téléchargement</li>
+                                    <li>Notre équipe vous contactera pour coordonner le démarrage des travaux</li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar - Download Actions -->
+                        <div class="col-lg-4">
+                            <div class="card shadow-sm">
+                                <div class="card-header bg-white">
+                                    <h5 class="mb-0">
+                                        <i class="fa fa-download"/> Téléchargements
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <a t-att-href="download_url" 
+                                       class="btn btn-primary btn-lg btn-block download-btn-primary mb-3">
+                                        <i class="fa fa-file-pdf-o"/> Contrat Signé (PDF)
+                                    </a>
+                                    <a t-att-href="certificate_url" 
+                                       class="btn btn-outline-secondary btn-block">
+                                        <i class="fa fa-certificate"/> Certificat de Preuve
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Signature Preview -->
+                            <t t-if="signature and signature.signature_image">
+                                <div class="card mt-4">
+                                    <div class="card-header bg-white">
+                                        <h6 class="mb-0">
+                                            <i class="fa fa-pencil"/> Votre Signature
+                                        </h6>
+                                    </div>
+                                    <div class="card-body text-center">
+                                        <img t-att-src="'data:image/png;base64,' + signature.signature_image.decode('utf-8')" 
+                                             alt="Signature"
+                                             style="max-width: 100%; max-height: 100px; border: 1px solid #ddd; padding: 10px;"/>
+                                    </div>
+                                </div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="portal-footer bg-light py-4">
+                    <div class="container text-center">
+                        <p class="mb-0 text-muted">
+                            <i class="fa fa-question-circle"/> Besoin d'aide ? 
+                            <a href="mailto:support@blggroupe.com">Contactez-nous</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </t>
+    </template>
+
 </odoo>

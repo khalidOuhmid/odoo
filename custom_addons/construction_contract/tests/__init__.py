@@ -7,4 +7,6 @@ from . import test_contract_backend
 from . import test_contract_portal
 from . import test_contract_security
 from . import test_contract_performance
+from . import test_multi_lot_aggregation
 # from . import test_contract_builder # File appears missing in file system
+

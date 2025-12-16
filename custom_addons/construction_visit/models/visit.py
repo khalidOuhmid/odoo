@@ -218,10 +218,27 @@ class Visit(models.Model):
             _logger.info("Visit notification sent to %s", participant.email)
         
         self.notification_sent = True
+        
+        # Post to visit chatter
         self.message_post(
-            body=_("Notification envoyée à %d participants") % len(self.participant_ids),
+            body=_("Notification de visite envoyée à %d participants") % len(self.participant_ids),
             message_type='notification'
         )
+        
+        # Also post to chantier chatter for visibility
+        if self.chantier_id:
+            participant_names = ', '.join(self.participant_ids.mapped('name')[:5])
+            if len(self.participant_ids) > 5:
+                participant_names += f" (+{len(self.participant_ids) - 5} autres)"
+            self.chantier_id.message_post(
+                body=_(
+                    "<b>Visite planifiée</b>: %s<br/>"
+                    "<b>Date</b>: %s<br/>"
+                    "<b>Participants notifiés</b>: %s"
+                ) % (self.name, self.date.strftime('%d/%m/%Y à %H:%M'), participant_names),
+                message_type='notification',
+                subtype_xmlid='mail.mt_note'
+            )
         
         return {
             'type': 'ir.actions.client',

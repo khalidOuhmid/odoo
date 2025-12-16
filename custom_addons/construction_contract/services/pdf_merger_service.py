@@ -30,10 +30,146 @@ class ContractPDFMerger(models.AbstractModel):
     - Validating PDF format of attachments
     - Generating table of contents
     - Adding page numbers to merged document
+    - SAP-grade integrity verification (SHA-256)
     """
 
     _name = 'construction.contract.pdf.merger'
     _description = 'Contract PDF Merger Service'
+
+    # ============================================================
+    # SAP-GRADE: STRICT MERGE PACKAGE
+    # ============================================================
+
+    @api.model
+    def merge_contract_package(self, contract):
+        """
+        Merge contract with all annexes in STRICT legal order.
+        SAP S/4HANA style: Integrity verification, audit logging.
+
+        ORDER:
+        1. Contrat Principal (7 pages BLG)
+        2. Annexe A: Planning Chantier
+        3. Annexe B: Planning Lot(s)
+        4. Annexe C: CCTP
+        5. Annexe D: Bon(s) de Commande
+
+        Args:
+            contract: construction.contract record
+
+        Returns:
+            dict: {
+                'pdf_data': bytes,
+                'hash_before': str (SHA-256),
+                'hash_after': str (SHA-256),
+                'section_count': int,
+                'total_pages': int
+            }
+        """
+        import hashlib
+
+        if not PYPDF2_AVAILABLE:
+            raise UserError(_("PyPDF2 non installé."))
+
+        if not contract.pdf_document:
+            raise UserError(_("Le PDF du contrat principal doit d'abord être généré."))
+
+        _logger.info(f"[SAP-MERGE] Starting strict merge for contract {contract.name}")
+
+        sections = []
+        
+        # 1. CONTRAT PRINCIPAL
+        main_pdf = base64.b64decode(contract.pdf_document)
+        if not self.validate_pdf_format(main_pdf):
+            raise UserError(_("Le PDF du contrat principal est invalide."))
+        
+        hash_before = hashlib.sha256(main_pdf).hexdigest()
+        sections.append({
+            'name': _('Contrat de Sous-Traitance'),
+            'data': main_pdf,
+            'order': 0,
+        })
+
+        # 2-5. ANNEXES FROM LOTS (in order)
+        for lot in contract.lot_ids:
+            # Annexe A: Planning Chantier
+            if lot.document_planning_chantier:
+                doc_data = base64.b64decode(lot.document_planning_chantier)
+                if self.validate_pdf_format(doc_data):
+                    sections.append({
+                        'name': _('Annexe A: Planning Chantier - %s') % lot.name,
+                        'data': doc_data,
+                        'order': 1,
+                    })
+
+            # Annexe B: Planning Lot
+            if lot.document_planning_sous_traitant:
+                doc_data = base64.b64decode(lot.document_planning_sous_traitant)
+                if self.validate_pdf_format(doc_data):
+                    sections.append({
+                        'name': _('Annexe B: Planning Lot - %s') % lot.name,
+                        'data': doc_data,
+                        'order': 2,
+                    })
+
+            # Annexe C: CCTP
+            if lot.document_cctp:
+                doc_data = base64.b64decode(lot.document_cctp)
+                if self.validate_pdf_format(doc_data):
+                    sections.append({
+                        'name': _('Annexe C: CCTP - %s') % lot.name,
+                        'data': doc_data,
+                        'order': 3,
+                    })
+
+        # Annexe D: Purchase Orders
+        for po in contract.purchase_order_ids:
+            po_pdf = self._generate_po_pdf(po)
+            if po_pdf:
+                sections.append({
+                    'name': _('Annexe D: Bon de Commande %s') % po.name,
+                    'data': po_pdf,
+                    'order': 4,
+                })
+
+        # Sort by order then merge
+        sections.sort(key=lambda s: s.get('order', 99))
+        
+        # Merge all PDFs
+        merged_pdf = self._merge_pdfs(sections)
+        
+        # Add Table of Contents
+        final_pdf = self._add_table_of_contents(merged_pdf, sections)
+        
+        # Calculate final hash
+        hash_after = hashlib.sha256(final_pdf).hexdigest()
+        
+        total_pages = sum(s.get('page_count', 0) for s in sections)
+        
+        _logger.info(
+            f"[SAP-MERGE] Complete: {len(sections)} sections, {total_pages} pages, "
+            f"hash_before={hash_before[:12]}... hash_after={hash_after[:12]}..."
+        )
+
+        return {
+            'pdf_data': final_pdf,
+            'hash_before': hash_before,
+            'hash_after': hash_after,
+            'section_count': len(sections),
+            'total_pages': total_pages,
+        }
+
+    def _generate_po_pdf(self, purchase_order):
+        """Generate PDF for a purchase order using Odoo's report engine."""
+        try:
+            report = self.env.ref('purchase.action_report_purchase_order')
+            pdf_content, _ = report._render_qweb_pdf(
+                'purchase.report_purchaseorder',
+                [purchase_order.id]
+            )
+            return pdf_content
+        except Exception as e:
+            _logger.warning(f"Could not generate PDF for PO {purchase_order.name}: {e}")
+            return None
 
     # ============================================================
     # MAIN MERGE METHOD

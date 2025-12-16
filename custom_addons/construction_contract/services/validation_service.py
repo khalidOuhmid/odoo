@@ -123,8 +123,22 @@ class ContractValidationService(models.AbstractModel):
                 "Veuillez sélectionner un sous-traitant dans le champ 'Sous-traitant'."
             ))
 
-        lot_command = values.get('lot_ids', [])
-        lot_ids = set(lot_command[0][2]) if lot_command and lot_command[0][0] == 6 else set()
+        # Parse lot_ids (can be: list of ints, recordset, or Many2many command)
+        lot_value = values.get('lot_ids', [])
+        lot_ids = set()
+        
+        if hasattr(lot_value, 'ids'):
+            # It's a recordset
+            lot_ids = set(lot_value.ids)
+        elif isinstance(lot_value, (list, tuple)):
+            if lot_value and isinstance(lot_value[0], int):
+                # Direct list of IDs: [1, 2, 3]
+                lot_ids = set(lot_value)
+            elif lot_value and isinstance(lot_value[0], (list, tuple)) and len(lot_value[0]) >= 3:
+                # Many2many command: [(6, 0, [1, 2, 3])]
+                if lot_value[0][0] == 6:
+                    lot_ids = set(lot_value[0][2])
+        
         if not lot_ids:
             _logger.error("✗ Contract validation failed: no lots selected")
             raise ValidationError(_(

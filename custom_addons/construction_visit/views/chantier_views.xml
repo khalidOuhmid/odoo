@@ -23,51 +23,51 @@
             
             <!-- Replace existing Visits Tab in notebook -->
             <xpath expr="//page[@name='visits']" position="replace">
-                <page string="📅 Visites" name="visits" invisible="not show_visits">
+                <page string="Visites" name="visits" invisible="not show_visits">
                     <div class="alert alert-info mb-3">
                         <div class="d-flex align-items-center">
                             <i class="fa fa-info-circle me-3"/>
                             <div>
                                 <strong>Nota Bene :</strong> 
                                 Cet onglet permet de planifier et suivre les visites techniques (initiales, contrôles, réceptions) 
-                                directement depuis le chantier. Vous pouvez voir l'avancement et les statuts en un coup d'œil.
+                                directement depuis le chantier.
                             </div>
                         </div>
                     </div>
                     
-                    <!-- Inline Visits List -->
-                    <field name="visit_ids" nolabel="1">
-                        <list editable="bottom" 
-                              decoration-info="state == 'planned'"
+                    <!-- Planifier Button ABOVE the table -->
+                    <div class="mb-3">
+                        <button name="action_plan_visit" type="object" string="Planifier une visite"
+                                class="btn btn-primary" icon="fa-plus"/>
+                    </div>
+                    
+                    <!-- Inline Visits List - READONLY, Clickable rows -->
+                    <field name="visit_ids" nolabel="1" readonly="1">
+                        <list decoration-info="state == 'planned'"
                               decoration-warning="state == 'confirmed'"
                               decoration-success="state == 'completed'"
-                              decoration-muted="state == 'cancelled'">
+                              decoration-muted="state == 'cancelled'"
+                              open_form_view="True">
                             <field name="date" widget="datetime"/>
                             <field name="name"/>
                             <field name="visit_type" widget="badge"/>
                             <field name="participant_ids" widget="many2many_tags"/>
-                            <field name="notification_sent" widget="boolean_toggle" readonly="1"/>
+                            <field name="notification_sent" widget="boolean" readonly="1"/>
                             <field name="state" widget="badge"/>
-                            <button name="action_confirm" string="✅" type="object" 
+                            <button name="action_confirm" type="object" 
                                     invisible="state not in ['draft', 'planned']"
-                                    title="Confirmer"/>
-                            <button name="action_send_notification" string="📧" type="object" 
+                                    title="Confirmer" icon="fa-check" class="text-success"/>
+                            <button name="action_send_notification" type="object" 
                                     invisible="state != 'confirmed' or notification_sent"
-                                    title="Envoyer notification"/>
-                            <button name="action_generate_report" string="📝" type="object" 
+                                    title="Envoyer notification" icon="fa-envelope" class="text-info"/>
+                            <button name="action_generate_report" type="object" 
                                     invisible="state != 'completed' or report_generated"
-                                    title="Générer Rapport"/>
-                             <button name="action_send_report" string="📤" type="object" 
+                                    title="Générer Rapport" icon="fa-file-text" class="text-primary"/>
+                             <button name="action_send_report" type="object" 
                                     invisible="not report_generated or report_sent"
-                                    title="Envoyer Rapport"/>
+                                    title="Envoyer Rapport" icon="fa-paper-plane" class="text-success"/>
                         </list>
                     </field>
-                    
-                    <!-- Add Visit Button -->
-                    <div class="mt-3">
-                        <button name="action_plan_visit" type="object" string="➕ Planifier une visite"
-                                class="btn btn-primary"/>
-                    </div>
                 </page>
             </xpath>
         </field>

@@ -5,14 +5,28 @@
         <field name="model">construction.lot</field>
         <field name="inherit_id" ref="construction_core.view_construction_lot_form"/>
         <field name="arch" type="xml">
-             <!-- Add Generate Contract button in Documents tab -->
-             <xpath expr="//page[@name='documents']/group[1]" position="before">
+            <!-- Add Smart Button for existing contract -->
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="action_view_contract"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-file-text-o"
+                        invisible="not has_contract">
+                    <span class="o_stat_text">Contrat</span>
+                </button>
+            </xpath>
+
+            <!-- Add Generate Contract button in Documents tab -->
+            <xpath expr="//page[@name='documents']/group[1]" position="before">
                 <div class="mb-3">
                      <button name="action_generate_contract_wizard" 
                             type="object" 
                             string="📄 Générer Contrat Sous-traitance"
                             class="btn btn-primary"
-                            invisible="execution_type != 'external' or not subcontractor_id"/>
+                            invisible="execution_type != 'external' or not subcontractor_id or has_contract"/>
+                     <span invisible="not has_contract" class="text-success ms-2">
+                         ✓ Contrat déjà généré
+                     </span>
                 </div>
             </xpath>
         </field>
