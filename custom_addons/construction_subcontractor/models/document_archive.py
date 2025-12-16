@@ -70,6 +70,8 @@ class SubcontractorDocumentArchive(models.Model):
         ('deleted', 'Supprimé'),
         ('requested', 'Re-demandé'),
         ('rejected', 'Rejeté'),
+        ('expired_cron', 'Expiré (Auto)'),
+        ('expiring_cron', 'Expire bientôt (Auto)'),
     ], string='Raison', default='replaced', required=True, index=True)
     
     replaced_by_filename = fields.Char(

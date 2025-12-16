@@ -38,11 +38,11 @@
                 <button name="action_view_archives" type="object" class="oe_stat_button" icon="fa-archive" invisible="not is_subcontractor or archive_count == 0">
                     <field name="archive_count" widget="statinfo" string="Archives"/>
                 </button>
-                <button name="action_check_document_expiry" type="object" class="oe_stat_button" icon="fa-clock-o" 
+                <button name="action_manual_cron_trigger" type="object" class="oe_stat_button" icon="fa-bell-o" 
                         invisible="not is_subcontractor"
                         groups="base.group_system"
-                        title="Executer le cron de verification d'expiration (admin seulement)">
-                    <span class="o_stat_text">Check Expiry</span>
+                        title="Vérifier expirations et envoyer rappels (Manuel)">
+                    <span class="o_stat_text">Rappels</span>
                 </button>
             </div>
             
@@ -57,6 +57,7 @@
                         <group string="Conformité &amp; Portail">
                             <field name="compliance_state" widget="badge" readonly="1"/>
                             <field name="alert_level" widget="badge" decoration-success="alert_level == 'green'" decoration-warning="alert_level == 'yellow'" decoration-danger="alert_level == 'red'"/>
+                            <field name="reminder_count" readonly="1" string="Nb Rappels"/>
                             
                             <label for="upload_url" string="Lien Portail"/>
                             <div class="o_row">
@@ -65,6 +66,16 @@
                                 <button name="action_send_upload_request" icon="fa-envelope" type="object" class="btn-link" title="Envoyer par email"/>
                                 <button name="action_send_upload_sms" icon="fa-mobile" type="object" class="btn-link" title="Envoyer par SMS"/>
                             </div>
+                            
+                            <label for="action_validate_all_documents" string="Actions"/>
+                            <div>
+                                <button name="action_validate_all_documents" 
+                                        type="object" 
+                                        string="✅ Tout Valider" 
+                                        class="btn btn-outline-success btn-sm"
+                                        confirm="Voulez-vous valider tous les documents présents ?"
+                                        title="Valider tous les documents 'À vérifier'"/>
+                            </div>
                         </group>
                     </group>
                     
@@ -72,6 +83,7 @@
                         <page string="Documents Requis" name="documents">
                             <group>
                                 <group string="Identité &amp; Juridique">
+                                    <field name="company_registry" string="SIRET" placeholder="123 456 789 00012"/>
                                     <field name="doc_kbis" filename="doc_kbis_filename"/>
                                     <field name="doc_kbis_filename" invisible="1"/>
                                     <field name="doc_kbis_expiry"/>
@@ -92,7 +104,7 @@
                                                 class="btn btn-warning btn-sm ms-2"
                                                 title="Redemander ce document"
                                                 confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
-                                                invisible="doc_kbis_status not in ['valid', 'expired']"
+                                                invisible="doc_kbis_status not in ['valid', 'expired', 'expiring']"
                                                 context="{'doc_type': 'kbis'}"/>
                                     </div>
                                     
@@ -118,7 +130,7 @@
                                                 class="btn btn-warning btn-sm ms-2"
                                                 title="Redemander ce document"
                                                 confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
-                                                invisible="doc_cni_status not in ['valid', 'expired']"
+                                                invisible="doc_cni_status not in ['valid', 'expired', 'expiring']"
                                                 context="{'doc_type': 'cni'}"/>
                                     </div>
                                 </group>
@@ -143,7 +155,7 @@
                                                 class="btn btn-warning btn-sm ms-2"
                                                 title="Redemander ce document"
                                                 confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
-                                                invisible="doc_insurance_dec_status not in ['valid', 'expired']"
+                                                invisible="doc_insurance_dec_status not in ['valid', 'expired', 'expiring']"
                                                 context="{'doc_type': 'insurance_dec'}"/>
                                     </div>
                                     
@@ -169,7 +181,7 @@
                                                 class="btn btn-warning btn-sm ms-2"
                                                 title="Redemander ce document"
                                                 confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
-                                                invisible="doc_urssaf_status not in ['valid', 'expired']"
+                                                invisible="doc_urssaf_status not in ['valid', 'expired', 'expiring']"
                                                 context="{'doc_type': 'urssaf'}"/>
                                     </div>
                                 </group>

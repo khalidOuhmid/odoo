@@ -5,105 +5,105 @@
         
         <record id="lot_category_01_gros_oeuvre" model="construction.lot.category">
             <field name="name">Gros Œuvre</field>
-            <field name="code">01</field>
+            <field name="code">GO</field>
             <field name="urssaf_code">01</field>
             <field name="color">3</field>
         </record>
 
         <record id="lot_category_02_electricite" model="construction.lot.category">
             <field name="name">Électricité</field>
-            <field name="code">02</field>
+            <field name="code">ELEC</field>
             <field name="urssaf_code">02</field>
             <field name="color">5</field>
         </record>
 
         <record id="lot_category_03_plomberie" model="construction.lot.category">
             <field name="name">Plomberie</field>
-            <field name="code">03</field>
+            <field name="code">PLOM</field>
             <field name="urssaf_code">03</field>
             <field name="color">1</field>
         </record>
 
         <record id="lot_category_04_chauffage" model="construction.lot.category">
             <field name="name">Chauffage / Climatisation</field>
-            <field name="code">04</field>
+            <field name="code">CVC</field>
             <field name="urssaf_code">04</field>
             <field name="color">9</field>
         </record>
 
         <record id="lot_category_05_menuiserie_ext" model="construction.lot.category">
             <field name="name">Menuiseries Extérieures</field>
-            <field name="code">05</field>
+            <field name="code">MEN-EXT</field>
             <field name="urssaf_code">05</field>
             <field name="color">7</field>
         </record>
 
         <record id="lot_category_06_menuiserie_int" model="construction.lot.category">
             <field name="name">Menuiseries Intérieures</field>
-            <field name="code">06</field>
+            <field name="code">MEN-INT</field>
             <field name="urssaf_code">06</field>
             <field name="color">6</field>
         </record>
 
         <record id="lot_category_07_peinture" model="construction.lot.category">
             <field name="name">Peinture / Revêtements</field>
-            <field name="code">07</field>
+            <field name="code">PEINT</field>
             <field name="urssaf_code">07</field>
             <field name="color">2</field>
         </record>
 
         <record id="lot_category_08_carrelage" model="construction.lot.category">
             <field name="name">Carrelage / Faïence</field>
-            <field name="code">08</field>
+            <field name="code">CARR</field>
             <field name="urssaf_code">08</field>
             <field name="color">4</field>
         </record>
 
         <record id="lot_category_09_etancheite" model="construction.lot.category">
             <field name="name">Étanchéité</field>
-            <field name="code">09</field>
+            <field name="code">ETANCH</field>
             <field name="urssaf_code">09</field>
             <field name="color">8</field>
         </record>
 
         <record id="lot_category_10_couverture" model="construction.lot.category">
             <field name="name">Couverture / Zinguerie</field>
-            <field name="code">10</field>
+            <field name="code">COUV</field>
             <field name="urssaf_code">10</field>
             <field name="color">10</field>
         </record>
 
         <record id="lot_category_11_isolation" model="construction.lot.category">
             <field name="name">Isolation</field>
-            <field name="code">11</field>
+            <field name="code">ISO</field>
             <field name="urssaf_code">11</field>
             <field name="color">3</field>
         </record>
 
         <record id="lot_category_12_platrerie" model="construction.lot.category">
             <field name="name">Plâtrerie / Cloisons</field>
-            <field name="code">12</field>
+            <field name="code">PLAT</field>
             <field name="urssaf_code">12</field>
             <field name="color">5</field>
         </record>
 
         <record id="lot_category_13_vrd" model="construction.lot.category">
             <field name="name">VRD (Voirie et Réseaux Divers)</field>
-            <field name="code">13</field>
+            <field name="code">VRD</field>
             <field name="urssaf_code">13</field>
             <field name="color">1</field>
         </record>
 
         <record id="lot_category_14_metallerie" model="construction.lot.category">
             <field name="name">Métallerie / Serrurerie</field>
-            <field name="code">14</field>
+            <field name="code">METAL</field>
             <field name="urssaf_code">14</field>
             <field name="color">9</field>
         </record>
 
         <record id="lot_category_99_divers" model="construction.lot.category">
             <field name="name">Divers</field>
-            <field name="code">99</field>
+            <field name="code">DIV</field>
             <field name="urssaf_code">99</field>
             <field name="color">0</field>
         </record>

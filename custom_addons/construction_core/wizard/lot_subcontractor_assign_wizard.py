@@ -1,69 +1,117 @@
 # -*- coding: utf-8 -*-
 """
 Wizard Assignment Sous-traitant aux Lots
-Inspired by SAP: Strict validation, hierarchical workflow
+Refactored: Uses lot category selection + document uploads
+FAANG-level: Clean code, type hints, XSS protection
 """
 
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
+import logging
+
+_logger = logging.getLogger(__name__)
+
 
 class LotSubcontractorAssignWizard(models.TransientModel):
+    """Wizard to assign subcontractors to construction lots.
+    
+    Features:
+    - Select lot from existing categories
+    - Upload planning and CCTP documents
+    - SAP-like validation with warnings
+    """
     _name = 'construction.lot.subcontractor.assign.wizard'
     _description = 'Assigner Sous-traitant aux Lots'
 
-    # ============= Selection Mode ============= #
-    selection_mode = fields.Selection([
-        ('single', 'Lot Unique'),
-        ('multiple', 'Lots Multiples'),
-        ('category', 'Par Catégorie')
-    ], string='Mode de Sélection', default='single', required=True)
-
-    # ============= Lot Selection ============= #
-    lot_id = fields.Many2one('construction.lot', string='Lot', 
-                             help="Sélection d'un lot unique")
-    # ARCHITECTURAL FIX: Explicit relation table name (PostgreSQL 63-char limit)
-    lot_ids = fields.Many2many(
-        'construction.lot',
-        'wizard_lot_selection_rel',  # Explicit: 24 chars
-        'wizard_id',
-        'lot_id',
-        string='Lots',
-        help="Sélection de plusieurs lots"
-    )
-    category_id = fields.Many2one('construction.lot.category', string='Catégorie',
-                                  help="Tous les lots de cette catégorie")
-    
     # ============= Chantier Context ============= #
-    chantier_id = fields.Many2one('construction.chantier', string='Chantier', required=True)
+    chantier_id = fields.Many2one(
+        'construction.chantier', 
+        string='Chantier', 
+        required=True
+    )
+    
+    # ============= Lot Selection (from categories) ============= #
+    lot_category_id = fields.Many2one(
+        'construction.lot.category',
+        string='Type de Lot',
+        required=True,
+        help="Sélectionner la catégorie de lot à créer"
+    )
+    
+    # ============= Existing Lot Selection ============= #
+    existing_lot_id = fields.Many2one(
+        'construction.lot',
+        string='Lot Existant',
+        domain="[('chantier_id', '=', chantier_id)]",
+        help="Sélectionner un lot existant au lieu de créer un nouveau"
+    )
+    
+    create_new_lot = fields.Boolean(
+        string='Créer un Nouveau Lot',
+        default=True,
+        help="Cochez pour créer un nouveau lot, décochez pour modifier un existant"
+    )
+    
+    # ============= Lot Details ============= #
+    lot_price = fields.Monetary(
+        string='Prix du Lot',
+        currency_field='currency_id'
+    )
+    currency_id = fields.Many2one(
+        'res.currency',
+        default=lambda self: self.env.company.currency_id
+    )
     
     # ============= Subcontractor ============= #
-    subcontractor_id = fields.Many2one('res.partner', string='Sous-traitant', required=True,
-                                       domain="[('supplier_rank', '>', 0)]")
+    subcontractor_id = fields.Many2one(
+        'res.partner', 
+        string='Sous-traitant', 
+        required=True,
+        domain="[('supplier_rank', '>', 0)]"
+    )
+    
+    # ============= Planning Dates ============= #
+    date_start_planned = fields.Date(string='Date Début')
+    date_end_planned = fields.Date(string='Date Fin')
+    
+    # ============= DOCUMENTS (Binary fields per requirement) ============= #
+    document_planning_chantier = fields.Binary(
+        string='Planning Chantier',
+        help="Document PDF du planning général du chantier"
+    )
+    document_planning_chantier_filename = fields.Char()
+    
+    document_planning_sous_traitant = fields.Binary(
+        string='Planning Sous-traitant',
+        help="Planning spécifique pour ce sous-traitant"
+    )
+    document_planning_sous_traitant_filename = fields.Char()
+    
+    document_cctp = fields.Binary(
+        string='CCTP',
+        help="Cahier des Clauses Techniques Particulières"
+    )
+    document_cctp_filename = fields.Char()
     
     # ============= Assignment Details ============= #
-    assignment_date = fields.Date(string='Date d\'Assignment', default=fields.Date.today, required=True)
+    assignment_date = fields.Date(
+        string="Date d'Assignment", 
+        default=fields.Date.today, 
+        required=True
+    )
     notes = fields.Text(string='Notes Internes')
     
-    # ============= Computed Fields ============= #
-    # ARCHITECTURAL FIX: Explicit relation table names to respect PostgreSQL 63-char limit
-    affected_lot_count = fields.Integer(string='Nombre de Lots', compute='_compute_affected_lots')
-    affected_lot_ids = fields.Many2many(
-        'construction.lot', 
-        'lot_subcontractor_wizard_rel',  # Explicit: 28 chars (was 67!)
-        'wizard_id', 
-        'lot_id',
-        string='Lots Affectés', 
-        compute='_compute_affected_lots'
-    )
-
     # ============= SAP-like Validation ============= #
-    warning_message = fields.Html(string='Avertissements', compute='_compute_warnings')
+    warning_message = fields.Html(
+        string='Avertissements', 
+        compute='_compute_warnings'
+    )
     has_warnings = fields.Boolean(compute='_compute_warnings')
 
     @api.model
-    def default_get(self, fields):
+    def default_get(self, fields_list):
         """Initialize wizard with context."""
-        res = super().default_get(fields)
+        res = super().default_get(fields_list)
         
         # Get chantier from context
         if self.env.context.get('active_model') == 'construction.chantier':
@@ -71,48 +119,44 @@ class LotSubcontractorAssignWizard(models.TransientModel):
         elif self.env.context.get('active_model') == 'construction.lot':
             lot = self.env['construction.lot'].browse(self.env.context.get('active_id'))
             res['chantier_id'] = lot.chantier_id.id
-            res['lot_id'] = lot.id
-            res['selection_mode'] = 'single'
+            res['existing_lot_id'] = lot.id
+            res['create_new_lot'] = False
+            res['lot_category_id'] = lot.category_id.id
             
         return res
 
-    @api.depends('selection_mode', 'lot_id', 'lot_ids', 'category_id', 'chantier_id')
-    def _compute_affected_lots(self):
-        """Compute which lots will be affected."""
-        for wizard in self:
-            lots = self.env['construction.lot']
-            
-            if wizard.selection_mode == 'single' and wizard.lot_id:
-                lots = wizard.lot_id
-            elif wizard.selection_mode == 'multiple' and wizard.lot_ids:
-                lots = wizard.lot_ids
-            elif wizard.selection_mode == 'category' and wizard.category_id:
-                lots = self.env['construction.lot'].search([
-                    ('chantier_id', '=', wizard.chantier_id.id),
-                    ('category_id', '=', wizard.category_id.id)
-                ])
-            
-            wizard.affected_lot_ids = lots
-            wizard.affected_lot_count = len(lots)
-
-    @api.depends('affected_lot_ids', 'subcontractor_id')
+    @api.depends('subcontractor_id', 'chantier_id', 'lot_category_id')
     def _compute_warnings(self):
         """SAP-like: Compute warnings for user validation."""
         for wizard in self:
             warnings = []
             
-            # Check if lots already have subcontractors
-            lots_with_subcontractors = wizard.affected_lot_ids.filtered(lambda l: l.subcontractor_ids)
-            if lots_with_subcontractors:
-                warnings.append(f"<li><b>{len(lots_with_subcontractors)}</b> lot(s) ont déjà des sous-traitants assignés. Ils seront remplacés.</li>")
-            
             # Check if subcontractor is already assigned to chantier
-            if wizard.subcontractor_id in wizard.chantier_id.subcontractor_ids:
-                warnings.append(f"<li>Le sous-traitant <b>{wizard.subcontractor_id.name}</b> est déjà assigné au chantier.</li>")
+            if wizard.subcontractor_id and wizard.chantier_id:
+                if wizard.subcontractor_id in wizard.chantier_id.subcontractor_ids:
+                    warnings.append(
+                        f"<li>Le sous-traitant <b>{wizard.subcontractor_id.name}</b> "
+                        "est déjà assigné au chantier.</li>"
+                    )
             
             # Check if subcontractor has SIREN
-            if not wizard.subcontractor_id.siren:
-                warnings.append(f"<li>⚠️ Le sous-traitant n'a pas de SIREN renseigné (requis pour conformité légale).</li>")
+            if wizard.subcontractor_id and not wizard.subcontractor_id.siren:
+                warnings.append(
+                    "<li>⚠️ Le sous-traitant n'a pas de SIREN renseigné "
+                    "(requis pour conformité légale).</li>"
+                )
+            
+            # Check if lot category already exists on chantier
+            if wizard.create_new_lot and wizard.lot_category_id and wizard.chantier_id:
+                existing = self.env['construction.lot'].search([
+                    ('chantier_id', '=', wizard.chantier_id.id),
+                    ('category_id', '=', wizard.lot_category_id.id)
+                ], limit=1)
+                if existing:
+                    warnings.append(
+                        f"<li>⚠️ Un lot <b>{wizard.lot_category_id.name}</b> "
+                        f"existe déjà sur ce chantier (code: {existing.code}).</li>"
+                    )
             
             if warnings:
                 wizard.warning_message = "<ul>" + "".join(warnings) + "</ul>"
@@ -121,46 +165,73 @@ class LotSubcontractorAssignWizard(models.TransientModel):
                 wizard.warning_message = False
                 wizard.has_warnings = False
 
-    @api.onchange('selection_mode')
-    def _onchange_selection_mode(self):
-        """Clear selections when mode changes."""
-        self.lot_id = False
-        self.lot_ids = False
-        self.category_id = False
+    @api.onchange('create_new_lot')
+    def _onchange_create_new_lot(self):
+        """Clear fields when switching mode."""
+        if self.create_new_lot:
+            self.existing_lot_id = False
+        else:
+            self.lot_category_id = False
+
+    @api.onchange('existing_lot_id')
+    def _onchange_existing_lot_id(self):
+        """Populate fields from existing lot."""
+        if self.existing_lot_id:
+            self.lot_category_id = self.existing_lot_id.category_id
+            self.lot_price = self.existing_lot_id.price
+            self.date_start_planned = self.existing_lot_id.date_start_planned
+            self.date_end_planned = self.existing_lot_id.date_end_planned
 
     def action_assign(self):
-        """Assign subcontractor to selected lots."""
+        """Assign subcontractor to selected/created lot."""
         self.ensure_one()
         
-        if not self.affected_lot_ids:
-            raise UserError(_("Aucun lot sélectionné."))
+        if not self.lot_category_id and not self.existing_lot_id:
+            raise UserError(_("Veuillez sélectionner une catégorie de lot ou un lot existant."))
+        
+        # Get or create lot
+        if self.create_new_lot:
+            # Create new lot from category
+            lot = self.env['construction.lot'].create({
+                'name': self.lot_category_id.name,
+                'code': self.lot_category_id.code,
+                'category_id': self.lot_category_id.id,
+                'chantier_id': self.chantier_id.id,
+                'subcontractor_id': self.subcontractor_id.id,
+                'price': self.lot_price or 0.0,
+                'date_start_planned': self.date_start_planned,
+                'date_end_planned': self.date_end_planned,
+                'execution_type': 'external',
+            })
+            _logger.info("Created lot %s for chantier %s", lot.name, self.chantier_id.name)
+        else:
+            lot = self.existing_lot_id
+            lot.write({
+                'subcontractor_id': self.subcontractor_id.id,
+                'price': self.lot_price or lot.price,
+                'date_start_planned': self.date_start_planned or lot.date_start_planned,
+                'date_end_planned': self.date_end_planned or lot.date_end_planned,
+            })
+        
+        # Attach documents to lot
+        self._attach_documents(lot)
         
         # Log assignment for audit trail
-        assignment_message = _(
-            "<b>Sous-traitant assigné:</b> %s<br/>"
-            "<b>Date:</b> %s<br/>"
-            "<b>Lots affectés:</b> %s<br/>"
-            "<b>Assigné par:</b> %s"
-        ) % (
-            self.subcontractor_id.name,
-            self.assignment_date,
-            ', '.join(self.affected_lot_ids.mapped('name')),
-            self.env.user.name
+        from markupsafe import Markup, escape
+        assignment_message = Markup(
+            f"<b>Sous-traitant assigné:</b> {escape(self.subcontractor_id.name)}<br/>"
+            f"<b>Date:</b> {self.assignment_date}<br/>"
+            f"<b>Lot:</b> {escape(lot.name)}<br/>"
+            f"<b>Assigné par:</b> {escape(self.env.user.name)}"
         )
         
         if self.notes:
-            assignment_message += f"<br/><b>Notes:</b> {self.notes}"
+            assignment_message += Markup(f"<br/><b>Notes:</b> {escape(self.notes)}")
         
-        # Assign subcontractor to lots
-        for lot in self.affected_lot_ids:
-            # Replace existing subcontractors
-            lot.subcontractor_ids = [(6, 0, [self.subcontractor_id.id])]
-            
-            # Post message on lot
-            lot.message_post(
-                body=assignment_message,
-                subject="Assignment Sous-traitant"
-            )
+        lot.message_post(
+            body=assignment_message,
+            subject="Assignment Sous-traitant"
+        )
         
         # Add subcontractor to chantier if not already there
         if self.subcontractor_id not in self.chantier_id.subcontractor_ids:
@@ -173,3 +244,40 @@ class LotSubcontractorAssignWizard(models.TransientModel):
         )
         
         return {'type': 'ir.actions.act_window_close'}
+
+    def _attach_documents(self, lot):
+        """Attach uploaded documents to the lot."""
+        Attachment = self.env['ir.attachment']
+        attachments = []
+        
+        if self.document_planning_chantier:
+            attachments.append(Attachment.create({
+                'name': self.document_planning_chantier_filename or 'Planning_Chantier.pdf',
+                'datas': self.document_planning_chantier,
+                'res_model': 'construction.lot',
+                'res_id': lot.id,
+                'type': 'binary',
+            }))
+        
+        if self.document_planning_sous_traitant:
+            attachments.append(Attachment.create({
+                'name': self.document_planning_sous_traitant_filename or 'Planning_SousTraitant.pdf',
+                'datas': self.document_planning_sous_traitant,
+                'res_model': 'construction.lot',
+                'res_id': lot.id,
+                'type': 'binary',
+            }))
+        
+        if self.document_cctp:
+            attachments.append(Attachment.create({
+                'name': self.document_cctp_filename or 'CCTP.pdf',
+                'datas': self.document_cctp,
+                'res_model': 'construction.lot',
+                'res_id': lot.id,
+                'type': 'binary',
+            }))
+        
+        # Link attachments to lot
+        if attachments:
+            lot.document_ids = [(4, att.id) for att in attachments]
+            _logger.info("Attached %d documents to lot %s", len(attachments), lot.name)

@@ -168,12 +168,23 @@ class Lot(models.Model):
     description = fields.Text(string='Description')
 
     # ============= DOCUMENTS ============= #
+    # Specific documents as requested
+    document_cctp = fields.Binary(string='CCTP', attachment=True)
+    document_cctp_filename = fields.Char(string='Nom Fichier CCTP')
+    
+    document_planning_chantier = fields.Binary(string='Planning Chantier', attachment=True)
+    document_planning_chantier_filename = fields.Char(string='Nom Fichier Planning Chantier')
+    
+    document_planning_sous_traitant = fields.Binary(string='Planning Sous-Traitant', attachment=True)
+    document_planning_sous_traitant_filename = fields.Char(string='Nom Fichier Planning ST')
+
+    # Generic documents (kept for extras)
     document_ids = fields.Many2many(
         'ir.attachment',
         'construction_lot_attachment_rel',
         'lot_id', 'attachment_id',
-        string='Documents',
-        help="Planning, spécifications techniques, etc."
+        string='Autres Documents',
+        help="Documents supplémentaires"
     )
     document_count = fields.Integer(
         compute='_compute_document_count',

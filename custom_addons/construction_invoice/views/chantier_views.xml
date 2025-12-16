@@ -14,14 +14,9 @@
                 </button>
             </div>
             
-            <!-- Add invoice fields using xpath to be safe -->
-            <xpath expr="//sheet" position="inside">
-                <group string="Facturation" name="invoice_config">
-                    <field name="invoice_type_id"/>
-                    <field name="main_quote_id" domain="[('chantier_id', '=', id)]"/>
-                    <button name="action_generate_invoice_schedule" string="Générer planning" type="object" class="btn-secondary" icon="fa-calendar"/>
-                </group>
-            </xpath>
+            <data>
+                <!-- Add invoice fields using xpath (Future Use) -->
+            </data>
         </field>
     </record>
 

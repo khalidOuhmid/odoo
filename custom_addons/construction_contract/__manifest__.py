@@ -71,6 +71,7 @@
         'views/urssaf_code_views.xml',
         'views/menus.xml',
         'views/purchase_order_views.xml',
+        'views/lot_extension_views.xml',
 
         # Wizards
         'wizards/views/contract_creation_wizard_views.xml',

@@ -8,137 +8,200 @@
         <field name="report_type">qweb-pdf</field>
         <field name="report_name">construction_visit.report_visit_document</field>
         <field name="report_file">construction_visit.report_visit_document</field>
-        <field name="print_report_name">'Visite_%s_%s' % (object.chantier_id.reference, object.date.strftime('%Y%m%d'))</field>
+        <field name="print_report_name">'Visite_%s_%s' % (object.chantier_id.reference or 'REF', object.date.strftime('%Y%m%d'))</field>
         <field name="binding_model_id" ref="model_construction_visit"/>
         <field name="binding_type">report</field>
     </record>
 
-    <!-- Visit Report Template -->
+    <!-- Visit Report Template - BLG Charte (Mission 4) -->
     <template id="report_visit_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
-                    <div class="page">
-                        <!-- Header -->
-                        <div class="row">
-                            <div class="col-12 text-center">
-                                <h1>COMPTE-RENDU DE VISITE</h1>
-                                <h3 t-out="doc.name">Visite</h3>
+                    <div class="page" style="font-family: 'Segoe UI', Arial, sans-serif;">
+                        
+                        <!-- BLG Header with Gradient -->
+                        <div style="background: linear-gradient(135deg, #92564C, #D4C5BC); 
+                                    padding: 25px 30px; margin: -20px -20px 30px -20px; border-radius: 0 0 10px 10px;">
+                            <div class="row">
+                                <div class="col-8">
+                                    <h1 style="color: #FFFFFF; margin: 0; font-size: 28px; font-weight: 600;">
+                                        COMPTE-RENDU DE VISITE
+                                    </h1>
+                                    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
+                                        <t t-out="doc.name">Visite</t>
+                                    </p>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div style="background: #FFFFFF; display: inline-block; padding: 10px 20px; border-radius: 6px;">
+                                        <span style="color: #92564C; font-weight: 600; font-size: 14px;">
+                                            BLG GROUPE
+                                        </span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         
-                        <br/>
-                        
-                        <!-- Visit Info -->
-                        <div class="row">
+                        <!-- Visit Info Cards -->
+                        <div class="row" style="margin-bottom: 25px;">
                             <div class="col-6">
-                                <table class="table table-sm table-bordered">
-                                    <tr>
-                                        <th class="bg-light" style="width: 40%">Chantier</th>
-                                        <td><t t-out="doc.chantier_id.name">Chantier</t></td>
-                                    </tr>
-                                    <tr>
-                                        <th class="bg-light">Référence</th>
-                                        <td><t t-out="doc.chantier_id.reference">Ref</t></td>
-                                    </tr>
-                                    <tr>
-                                        <th class="bg-light">Client</th>
-                                        <td><t t-out="doc.chantier_id.client.name or '-'">Client</t></td>
-                                    </tr>
-                                    <tr>
-                                        <th class="bg-light">Adresse</th>
-                                        <td><t t-out="doc.chantier_id.address or '-'">Adresse</t></td>
-                                    </tr>
-                                </table>
+                                <div style="background: #F9F8F7; border-left: 4px solid #92564C; padding: 20px; border-radius: 0 8px 8px 0;">
+                                    <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                        Informations Chantier
+                                    </h4>
+                                    <table style="width: 100%;">
+                                        <tr>
+                                            <td style="color: #AEADAB; padding: 5px 0; width: 40%;">Chantier</td>
+                                            <td style="color: #978A86; font-weight: 500;">
+                                                <t t-out="doc.chantier_id.name">Chantier</t>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #AEADAB; padding: 5px 0;">Référence</td>
+                                            <td style="color: #978A86;">
+                                                <t t-out="doc.chantier_id.reference or '-'">Ref</t>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #AEADAB; padding: 5px 0;">Client</td>
+                                            <td style="color: #978A86;">
+                                                <t t-out="doc.chantier_id.client.name or '-'">Client</t>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #AEADAB; padding: 5px 0;">Adresse</td>
+                                            <td style="color: #978A86;">
+                                                <t t-out="doc.chantier_id.address or '-'">Adresse</t>
+                                                <t t-if="doc.chantier_id.city">
+                                                    <br/><t t-out="doc.chantier_id.city"/>
+                                                </t>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
                             </div>
                             <div class="col-6">
-                                <table class="table table-sm table-bordered">
-                                    <tr>
-                                        <th class="bg-light" style="width: 40%">Date</th>
-                                        <td><t t-out="doc.date.strftime('%d/%m/%Y %H:%M')">Date</t></td>
-                                    </tr>
-                                    <tr>
-                                        <th class="bg-light">Durée</th>
-                                        <td><t t-out="doc.duration"/> h</td>
-                                    </tr>
-                                    <tr>
-                                        <th class="bg-light">Type</th>
-                                        <td>
-                                            <t t-if="doc.visit_type == 'initial'">Visite Initiale</t>
-                                            <t t-if="doc.visit_type == 'progress'">Suivi de Chantier</t>
-                                            <t t-if="doc.visit_type == 'quality'">Contrôle Qualité</t>
-                                            <t t-if="doc.visit_type == 'final'">Réception</t>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <th class="bg-light">État</th>
-                                        <td><t t-out="doc.state">État</t></td>
-                                    </tr>
-                                </table>
+                                <div style="background: #F9F8F7; border-left: 4px solid #D4C5BC; padding: 20px; border-radius: 0 8px 8px 0;">
+                                    <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                        Informations Visite
+                                    </h4>
+                                    <table style="width: 100%;">
+                                        <tr>
+                                            <td style="color: #AEADAB; padding: 5px 0; width: 40%;">Date</td>
+                                            <td style="color: #978A86; font-weight: 500;">
+                                                <t t-out="doc.date.strftime('%d/%m/%Y à %H:%M')">Date</t>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #AEADAB; padding: 5px 0;">Durée</td>
+                                            <td style="color: #978A86;">
+                                                <t t-out="doc.duration"/>h
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #AEADAB; padding: 5px 0;">Type</td>
+                                            <td style="color: #978A86;">
+                                                <t t-if="doc.visit_type == 'initial'">Visite Initiale</t>
+                                                <t t-if="doc.visit_type == 'progress'">Suivi de Chantier</t>
+                                                <t t-if="doc.visit_type == 'quality'">Contrôle Qualité</t>
+                                                <t t-if="doc.visit_type == 'final'">Réception</t>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td style="color: #AEADAB; padding: 5px 0;">État</td>
+                                            <td>
+                                                <span style="background: #92564C; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">
+                                                    <t t-if="doc.state == 'completed'">Terminée</t>
+                                                    <t t-else=""><t t-out="doc.state"/></t>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                         
-                        <!-- Participants -->
-                        <div class="row mt-3">
-                            <div class="col-6">
-                                <h5>Intervenants internes</h5>
-                                <ul>
-                                    <t t-foreach="doc.user_ids" t-as="user">
-                                        <li><t t-out="user.name">Utilisateur</t></li>
-                                    </t>
-                                    <t t-if="not doc.user_ids">
-                                        <li class="text-muted">Aucun</li>
-                                    </t>
-                                </ul>
-                            </div>
-                            <div class="col-6">
-                                <h5>Participants externes</h5>
-                                <ul>
-                                    <t t-foreach="doc.partner_ids" t-as="partner">
-                                        <li><t t-out="partner.name">Partenaire</t></li>
-                                    </t>
-                                    <t t-if="not doc.partner_ids">
-                                        <li class="text-muted">Aucun</li>
-                                    </t>
-                                </ul>
+                        <!-- Participants (Unified - Mission 1) -->
+                        <div style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                👥 Participants
+                            </h4>
+                            <div class="row">
+                                <t t-foreach="doc.participant_ids" t-as="participant">
+                                    <div class="col-4" style="margin-bottom: 10px;">
+                                        <div style="display: flex; align-items: center;">
+                                            <div style="width: 35px; height: 35px; background: #D4C5BC; border-radius: 50%; 
+                                                        display: flex; align-items: center; justify-content: center; margin-right: 10px;">
+                                                <span style="color: #92564C; font-weight: 600; font-size: 14px;">
+                                                    <t t-out="participant.name[:2].upper()">XX</t>
+                                                </span>
+                                            </div>
+                                            <div>
+                                                <span style="color: #978A86; font-weight: 500;">
+                                                    <t t-out="participant.name">Participant</t>
+                                                </span>
+                                                <br/>
+                                                <span style="color: #AEADAB; font-size: 11px;">
+                                                    <t t-out="participant.function or participant.email or ''"/>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </t>
+                                <t t-if="not doc.participant_ids">
+                                    <div class="col-12">
+                                        <p style="color: #AEADAB; font-style: italic;">Aucun participant enregistré</p>
+                                    </div>
+                                </t>
                             </div>
                         </div>
                         
-                        <!-- Notes -->
-                        <div class="row mt-4" t-if="doc.notes">
-                            <div class="col-12">
-                                <h5>Notes et Observations</h5>
-                                <div class="border p-2" t-raw="doc.notes"/>
-                            </div>
+                        <!-- Notes & Observations -->
+                        <div t-if="doc.notes" style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                📝 Notes et Observations
+                            </h4>
+                            <div style="color: #978A86; line-height: 1.6;" t-raw="doc.notes"/>
                         </div>
                         
-                        <!-- Report -->
-                        <div class="row mt-4" t-if="doc.report">
-                            <div class="col-12">
-                                <h5>Compte-rendu détaillé</h5>
-                                <div class="border p-2" t-raw="doc.report"/>
-                            </div>
+                        <!-- Compte Rendu -->
+                        <div t-if="doc.report" style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                📄 Compte-Rendu Détaillé
+                            </h4>
+                            <div style="color: #978A86; line-height: 1.6;" t-raw="doc.report"/>
+                        </div>
+                        
+                        <!-- Photos Section -->
+                        <div t-if="doc.photo_ids" style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
+                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                📷 Photos
+                            </h4>
+                            <p style="color: #AEADAB; font-size: 12px;">
+                                <t t-out="len(doc.photo_ids)"/> photo(s) jointe(s) à ce rapport
+                            </p>
                         </div>
                         
                         <!-- Signatures -->
-                        <div class="row mt-5">
+                        <div class="row" style="margin-top: 50px; page-break-inside: avoid;">
                             <div class="col-6 text-center">
-                                <p>Signature entreprise</p>
-                                <br/><br/><br/>
-                                <hr style="width: 80%"/>
+                                <div style="border-top: 2px solid #E5E3E2; padding-top: 10px; margin: 0 30px;">
+                                    <p style="color: #AEADAB; margin: 0; font-size: 12px;">Signature BLG Groupe</p>
+                                </div>
                             </div>
                             <div class="col-6 text-center">
-                                <p>Signature client</p>
-                                <br/><br/><br/>
-                                <hr style="width: 80%"/>
+                                <div style="border-top: 2px solid #E5E3E2; padding-top: 10px; margin: 0 30px;">
+                                    <p style="color: #AEADAB; margin: 0; font-size: 12px;">Signature Client</p>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- Footer -->
-                        <div class="row mt-4">
-                            <div class="col-12 text-center text-muted small">
-                                <p>Document généré le <t t-out="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')"/></p>
-                            </div>
+                        <div style="border-top: 1px solid #E5E3E2; padding-top: 20px; margin-top: 40px; text-align: center;">
+                            <p style="color: #AEADAB; font-size: 11px; margin: 0;">
+                                Document généré le <t t-out="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')"/>
+                                — BLG Groupe © Tous droits réservés
+                            </p>
                         </div>
                     </div>
                 </t>

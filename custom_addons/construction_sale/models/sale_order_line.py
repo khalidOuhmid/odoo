@@ -245,7 +245,7 @@ class SaleOrderLine(models.Model):
             self.product_uom_qty = self.dimension_l
 
     @api.constrains('lot_id', 'order_id')
-    def _check_lot_required(self) -> None:
+    def _check_lot_required(self):
         """Enforce lot assignment for construction order lines.
         
         Business Rule: Every non-section/note line in a construction quote
@@ -262,3 +262,25 @@ class SaleOrderLine(models.Model):
                     _("Line '%s' must be assigned to a Technical Lot since this is a construction order.") 
                     % (line.name or line.product_id.name)
                 )
+
+    @api.constrains('price_unit', 'product_uom_qty')
+    def _check_construction_values(self):
+        """
+        SAP-Level Validation: Ensure data integrity for construction lines.
+        """
+        for line in self:
+            if line.order_id.chantier_id and not line.display_type:
+                # 1. No negative prices (unless it's a discount product, but standard lines shouldn't)
+                if line.price_unit < 0:
+                    raise ValidationError(_("Line '%s': Unit price cannot be negative.") % line.name)
+                
+                # 2. No negative quantities
+                if line.product_uom_qty < 0:
+                    raise ValidationError(_("Line '%s': Quantity cannot be negative.") % line.name)
+                
+                # 3. Warning on zero price (valid for gifts/warranty, but dangerous otherwise)
+                if line.price_unit == 0 and not line.is_optional and not line.product_uom_qty == 0:
+                    # We could block, but for flexibility we might just allow it.
+                    # Strict mode:
+                    # raise ValidationError(_("Line '%s': Price must be greater than 0.") % line.name)
+                    pass

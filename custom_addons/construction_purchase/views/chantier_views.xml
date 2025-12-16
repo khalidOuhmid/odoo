@@ -6,18 +6,22 @@
         <field name="model">construction.chantier</field>
         <field name="inherit_id" ref="construction_core.view_construction_chantier_form"/>
         <field name="arch" type="xml">
-            <!-- Add Purchase tab with actions only (no fields that don't exist yet) -->
-            <xpath expr="//notebook" position="inside">
-                <page string="💰 Achats" name="purchases">
-                    <group>
-                        <group string="Actions Achats">
-                            <button name="action_create_purchase_orders" type="object"
-                                    string="🛒 Créer Commandes Groupées"
-                                    class="btn-primary"/>
+            <data>
+                <!-- Add Purchase tab with actions only (no fields that don't exist yet) -->
+                <!-- 
+                <xpath expr="//notebook" position="inside">
+                    <page string="💰 Achats" name="purchases">
+                        <group>
+                            <group string="Actions Achats">
+                                <button name="action_create_purchase_orders" type="object"
+                                        string="🛒 Créer Commandes Groupées"
+                                        class="btn-primary"/>
+                            </group>
                         </group>
-                    </group>
-                </page>
-            </xpath>
+                    </page>
+                </xpath>
+                -->
+            </data>
         </field>
     </record>
 </odoo>

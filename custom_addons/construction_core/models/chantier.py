@@ -51,11 +51,19 @@ class Chantier(models.Model):
     and subcontractor management. Refactored for SOLID principles.
     
     State Machine Pattern implemented for strict stage transitions.
+    
+    Mail Integration:
+    - Supports chantier creation via email (catchall_domain)
+    - Email subject becomes chantier name
+    - Email body becomes description
     """
     _name = 'construction.chantier'
     _description = 'Gestion de Chantier'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'id desc'
+    
+    # ============= Mail Alias Configuration ============= #
+    _mail_post_access = 'read'
 
     # ============= Identification ============= #
     name = fields.Char(string='Nom du Chantier', required=True, tracking=True)
@@ -368,7 +376,14 @@ class Chantier(models.Model):
             # Invoicing visible from FD (Finalisation dossier) onwards
             record.show_invoicing = is_at_or_after(stage_fd)
 
-    @api.depends('stage_id')
+    @api.depends(
+        'stage_id', 
+        'client', 'address', 'description', 'phone',       # REC
+        'lots_ids', 'quotation_ids.state', 'quotation_count', # DE
+        'subcontractor_ids', 'date_start_contract', 'date_end_contract', # DA
+        'date_start_internal', 'date_end_internal',        # DA
+        'progress',                        # TRAV
+    )
     def _compute_validation_conditions_html(self):
         """Generate professional SAP/ONAYA style validation cockpit HTML."""
         for record in self:
@@ -549,6 +564,82 @@ class Chantier(models.Model):
                 raise ValidationError(_("La date de fin ne peut pas être avant la date de début."))
 
         return super().write(vals)
+
+    # ============= MAIL HANDLING: message_new ============= #
+    @api.model
+    def message_new(self, msg_dict, custom_values=None):
+        """Create a new chantier from an incoming email.
+        
+        Called when an email is sent to the chantier alias/catchall.
+        
+        Args:
+            msg_dict: Dictionary containing email data:
+                - subject: Email subject (becomes chantier name)
+                - body: HTML body (becomes description)
+                - from: Sender email address
+                - author_id: res.partner ID of sender
+            custom_values: Additional values to merge
+            
+        Returns:
+            Created chantier record
+        """
+        # Default stage is the first reception stage
+        first_stage = self.env['construction.stage'].search(
+            [], order='chapter_id, sequence', limit=1
+        )
+        
+        # Strip HTML from email body for description
+        import re
+        body = msg_dict.get('body', '')
+        if body:
+            # Remove HTML tags for plain text description
+            clean_body = re.sub(r'<[^>]+>', '', body)
+            clean_body = clean_body.strip()
+        else:
+            clean_body = ''
+        
+        # Find or create partner from email
+        email_from = msg_dict.get('from', '')
+        author_id = msg_dict.get('author_id')
+        partner = False
+        
+        if author_id:
+            partner = self.env['res.partner'].browse(author_id)
+        elif email_from:
+            partner = self.env['res.partner'].search([
+                ('email', 'ilike', email_from)
+            ], limit=1)
+            if not partner:
+                # Create partner from email
+                partner = self.env['res.partner'].create({
+                    'name': email_from.split('@')[0].replace('.', ' ').title(),
+                    'email': email_from,
+                })
+        
+        # Prepare chantier values
+        defaults = {
+            'name': msg_dict.get('subject', '') or _('Nouveau Chantier (via email)'),
+            'description': clean_body or _('À REMPLIR'),
+            'stage_id': first_stage.id if first_stage else False,
+            'address': _('À REMPLIR'),
+            'phone': _('À REMPLIR'),
+        }
+        
+        if partner:
+            defaults['client'] = partner.id
+        
+        # Merge with custom values
+        if custom_values:
+            defaults.update(custom_values)
+        
+        # Log incoming email creation
+        _logger.info(
+            "Creating chantier from email. Subject: %s, From: %s",
+            msg_dict.get('subject', 'No Subject'),
+            email_from
+        )
+        
+        return super().message_new(msg_dict, custom_values=defaults)
 
     # ============= STATE MACHINE: Validators ============= #
     def check_reception_stage(self):

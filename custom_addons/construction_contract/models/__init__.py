@@ -16,6 +16,7 @@ from . import urssaf_code
 from . import chantier_extension
 from . import res_partner_extension
 from . import purchase_order
+from . import lot_extension
 
 # Mixins (if needed)
 # from .mixins import legal_compliance_mixin

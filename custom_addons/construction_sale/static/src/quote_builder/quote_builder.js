@@ -798,6 +798,8 @@ export class QuoteBuilder extends Component {
         }));
     }
 
+    // Methods moved to use the improved versions below
+
     getCartStoreKey() {
         // CRITICAL: Each order has its own storage key to prevent data pollution
         const orderId = this.state.orderId;

@@ -53,18 +53,16 @@
                     
                     <!-- Title Section -->
                     <div class="oe_title">
-                        <label for="name"/>
+                        <label for="category_id" string="Type de Lot"/>
                         <h1>
-                            <field name="name" placeholder="Nom du Lot" class="text-break"/>
+                            <field name="category_id" placeholder="Sélectionnez une catégorie (ex: Électricité)" 
+                                   options="{'no_create': True, 'no_open': True}"/>
                         </h1>
                         <div class="o_row">
+                            <field name="name" invisible="1"/> <!-- Hidden but keeps value -->
                             <span class="badge bg-secondary me-2">
                                 <field name="code" placeholder="01" nolabel="1" class="oe_inline"/>
                             </span>
-                            <field name="category_id" placeholder="Catégorie" class="oe_inline" 
-                                   options="{'no_create': True, 'no_open': True}"/>
-                            <span class="mx-2">|</span>
-                            <field name="chantier_id" options="{'no_create': True}" readonly="1"/>
                         </div>
                     </div>
                     
@@ -135,15 +133,15 @@
                         
                         <!-- TAB 2: DOCUMENTS (📂) -->
                         <page string="📂 Documents" name="documents">
-                            <group string="Documents du Lot">
+                            <group string="Documents Contractuels">
+                                <field name="document_cctp" widget="binary" filename="document_cctp_filename"/>
+                                <field name="document_planning_chantier" widget="binary" filename="document_planning_chantier_filename"/>
+                                <field name="document_planning_sous_traitant" widget="binary" filename="document_planning_sous_traitant_filename"/>
+                            </group>
+                            <group string="Autres Documents">
                                 <field name="document_ids" widget="many2many_binary" 
                                        nolabel="1" colspan="2"/>
                             </group>
-                            <div class="alert alert-secondary" role="alert">
-                                <i class="fa fa-folder-open me-2"/>
-                                Joignez ici: planning du lot, spécifications techniques, 
-                                bons de commande (auto-liés après génération).
-                            </div>
                         </page>
                         
                         <!-- TAB 3: NOTES (📝) -->

@@ -274,6 +274,9 @@ class ResPartner(models.Model):
         string='Nombre d\'archives'
     )
     
+    # ============= REMINDER TRACKING ============= #
+    reminder_count = fields.Integer(string='Nombre de rappels envoyés', default=0, copy=False)
+    
     @api.depends('archive_ids')
     def _compute_archive_count(self):
         for partner in self:
@@ -555,10 +558,40 @@ class ResPartner(models.Model):
     # ============= DOCUMENT VALIDATION ACTIONS ============= #
     
     def action_validate_all_documents(self):
-        """Mark all 'to_check' documents as valid."""
+        """Mark all present documents as valid."""
         self.ensure_one()
-        # This is a manual action - just posts notification
-        self.message_post(body=_("✅ Documents validés par %s") % self.env.user.name)
+        
+        vals = {}
+        validated_docs = []
+        
+        for doc_key, config in DOCUMENT_TYPES.items():
+            field_name = config['field']
+            validation_field = config.get('validation_field')
+            
+            # Skip if no validation field configured
+            if not validation_field:
+                continue
+                
+            # Check if document exists
+            if getattr(self, field_name):
+                vals[validation_field] = True
+                vals[f'{field_name}_validated_by'] = self.env.user.id
+                vals[f'{field_name}_validated_at'] = fields.Datetime.now()
+                validated_docs.append(config['name'])
+        
+        if vals:
+            self.write(vals)
+            # Log successful bulk validation
+            self.message_post(
+                body=_("✅ Documents validés en masse par %s : %s") % (
+                    self.env.user.name, 
+                    ", ".join(validated_docs)
+                ),
+                message_type='notification'
+            )
+        else:
+            raise UserError(_("Aucun document présent à valider."))
+            
         return True
     
     def action_request_missing_documents(self):
@@ -815,6 +848,9 @@ class ResPartner(models.Model):
                     # Auto-advance to compliant if ready
                     if partner.compliance_state == 'compliant' and partner.subcontractor_stage != 'compliant':
                         partner.subcontractor_stage = 'compliant'
+                        # Reset reminders
+                        partner.reminder_count = 0
+                    # Fallback if became incomplete
                     # Fallback if became incomplete
                     elif partner.compliance_state != 'compliant' and partner.subcontractor_stage in ['compliant', 'bloque']:
                         partner.subcontractor_stage = 'incomplete'
@@ -823,48 +859,154 @@ class ResPartner(models.Model):
 
     # ============= CRON: EXPIRY CHECK ============= #
     
+    
     @api.model
     def cron_check_document_expiry(self):
         """
         Scheduled action to check document expiry and send notifications.
+        Can be triggered manually on specific records (self).
         
         Strategy: Use chatter activities instead of emails to avoid spam.
+        Logic:
+        - Tier 1 (Warning): Mail notification
+        - Tier 2 (Expired/Critical): Mail + SMS (if reminder_count >= 1)
         """
         today = date.today()
         warning_threshold = today + timedelta(days=EXPIRY_WARNING_DAYS)
         
-        # Find subcontractors with expiring or expired documents
-        subcontractors = self.search([
-            ('is_subcontractor', '=', True),
-            ('compliance_state', 'in', ['expired', 'incomplete']),
-        ])
+        # If triggered manually on records, use self. Otherwise search.
+        subcontractors = self
+        if not subcontractors:
+            # Find subcontractors with expiring or expired documents
+            # Or those who are incomplete (to chase them)
+            subcontractors = self.search([
+                ('is_subcontractor', '=', True),
+                ('compliance_state', 'in', ['expired', 'incomplete', 'compliant']), # Check everyone for expiring
+            ])
         
         for partner in subcontractors:
-            # Check for expired docs
-            expired_docs = []
-            expiring_docs = []
+            # Check for expired docs AND expiring docs
+            # User wants automatic "Request" action (Archive + Clear) for expiring docs too
+            
+            docs_to_request = []
+            docs_expiring = [] # Just warning logic if we didn't auto-archive (but we do now)
+            
+            # Logic:
+            # If cron auto-archives -> it generates a 'request' need.
+            # If doc is missing -> we might want to remind.
+            
+            # Since we modify state in loop, re-read status carefully
+            # Actually, the previous logic archived expiring docs.
+            # So they effectively become MISSING.
+            
+            # So the reminder logic should run AFTER the archive logic.
+            # Or simply check "missing_documents" computed field?
+            
+            # Let's keep the archive logic first.
+            has_actioned_expiry = False
             
             for doc_key, config in DOCUMENT_TYPES.items():
                 status = getattr(partner, config['status_field'], 'missing')
-                if status == 'expired':
-                    expired_docs.append(config['name'])
-                elif status == 'expiring':
-                    expiring_docs.append(config['name'])
+                
+                # Check if we need to request renewal
+                # Trigered by 'expired' or 'expiring' status
+                if status in ['expired', 'expiring']:
+                    field_name = config['field']
+                    current_file = getattr(partner, field_name)
+                    
+                    if current_file:
+                        # 1. Archive current document
+                        self._archive_document(
+                            partner, 
+                            doc_key, 
+                            config, 
+                            reason='expired_cron' if status == 'expired' else 'expiring_cron'
+                        )
+                        
+                        # 2. Clear document to set status to 'missing' (User's "Requested" state)
+                        partner.write({
+                            field_name: False,
+                            config.get('validation_field'): False
+                        })
+                        
+                        docs_to_request.append(config['name'])
+                        has_actioned_expiry = True
             
-            # Create activity instead of email (less spam)
-            if expired_docs:
-                self.env['mail.activity'].create({
-                    'activity_type_id': self.env.ref('mail.mail_activity_data_warning').id,
-                    'res_model_id': self.env['ir.model']._get('res.partner').id,
-                    'res_id': partner.id,
-                    'summary': _('Documents expirés'),
-                    'note': _('Documents expirés: %s') % ', '.join(expired_docs),
-                    'date_deadline': today,
-                    'user_id': partner.user_id.id if partner.user_id else self.env.user.id,
-                })
+            # ============= REMINDER LOGIC ============= #
+            # If we actioned something (archived) OR if partner is incomplete/missing
+            # We should send reminders based on count.
+            
+            should_remind = False
+            if has_actioned_expiry:
+                should_remind = True
+            elif partner.compliance_state in ['incomplete', 'missing', 'expired']:
+                # Only remind periodically? 
+                # For manual trigger: always remind.
+                # For cron: maybe check last reminder date? (Not implemented yet, assume daily/weekly cron frequency handles it)
+                should_remind = True
+            
+            if should_remind:
+                partner.reminder_count += 1
+                
+                # Notification Content
+                triggered_docs = ", ".join(docs_to_request) if docs_to_request else partner.missing_documents
+                
+                # CHANNEL SELECTION based on count
+                send_email = True
+                send_sms = False
+                
+                if partner.reminder_count >= 2:
+                    send_sms = True
+                
+                # 1. SEND EMAIL
+                if send_email:
+                    partner._send_request_notification(triggered_docs or "Dossier Incomplet")
+                
+                # 2. SEND SMS (if count high)
+                if send_sms and partner.mobile:
+                    sms_content = _("BLG: Rappel #%s. Documents manquants: %s. Merci de regulariser sur votre espace: %s") % (
+                        partner.reminder_count, 
+                        triggered_docs or "Dossier incomplet",
+                        partner.upload_url
+                    )
+                    partner._send_sms_notification(sms_content) # Helper needed
+                
+                # Log activity
+                partner.activity_schedule(
+                    'mail.mail_activity_data_todo',
+                    summary=_("Rappel conformité #%s") % partner.reminder_count,
+                    note=_("Rappel envoyé (Email=%s, SMS=%s). Docs: %s") % (send_email, send_sms, triggered_docs),
+                    user_id=partner.env.user.id
+                )
         
-        _logger.info("Document expiry check completed for %d subcontractors", len(subcontractors))
+        # Only log info if running globally (not single manual trigger)
+        if len(subcontractors) > 1:
+            _logger.info("Document expiry check completed for %d subcontractors", len(subcontractors))
         return True
+
+    def action_manual_cron_trigger(self):
+        """Button action to trigger expiry check manually."""
+        result = self.cron_check_document_expiry()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _("Vérification terminée"),
+                'message': _("La vérification des expirations et l'envoi des rappels ont été effectués."),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def _send_sms_notification(self, content):
+        """Helper to send SMS."""
+        self.ensure_one()
+        if self.mobile:
+             self.env['sms.sms'].create({
+                'partner_id': self.id,
+                'number': self.mobile,
+                'body': content
+            }).send()
     
     # ============= HELPER METHODS ============= #
     

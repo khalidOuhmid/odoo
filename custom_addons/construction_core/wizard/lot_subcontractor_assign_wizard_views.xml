@@ -1,49 +1,107 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
+    <!-- FAANG-Level Wizard Form with Bootstrap Cards -->
     <record id="view_lot_subcontractor_assign_wizard_form" model="ir.ui.view">
         <field name="name">construction.lot.subcontractor.assign.wizard.form</field>
         <field name="model">construction.lot.subcontractor.assign.wizard</field>
         <field name="arch" type="xml">
-            <form string="Assigner Sous-traitant">
+            <form string="Assigner Sous-traitant au Lot">
                 <sheet>
-                    <group>
-                        <group>
-                            <field name="chantier_id" readonly="1"/>
-                            <field name="selection_mode" widget="radio"/>
-                        </group>
-                        <group>
-                            <field name="subcontractor_id" options="{'no_create': True}"/>
-                            <field name="assignment_date"/>
-                        </group>
-                    </group>
+                    <!-- Hidden context field -->
+                    <field name="chantier_id" invisible="1"/>
+                    <field name="currency_id" invisible="1"/>
+                    <field name="has_warnings" invisible="1"/>
+                    
+                    <!-- Header Banner -->
+                    <div class="alert alert-info mb-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fa fa-user-plus fa-2x me-3"/>
+                            <div>
+                                <strong>Assistant d'assignation</strong><br/>
+                                Sélectionnez un type de lot et un sous-traitant
+                            </div>
+                        </div>
+                    </div>
 
-                    <group string="Sélection des Lots">
-                        <field name="lot_id" invisible="selection_mode != 'single'" 
-                               domain="[('chantier_id', '=', chantier_id)]"/>
-                        <field name="lot_ids" widget="many2many_tags" 
-                               invisible="selection_mode != 'multiple'"
-                               domain="[('chantier_id', '=', chantier_id)]"/>
-                        <field name="category_id" invisible="selection_mode != 'category'"/>
-                    </group>
+                    <!-- Main Content in responsive grid -->
+                    <div class="row">
+                        <!-- Left Column: Lot Selection -->
+                        <div class="col-md-6">
+                            <group string="📦 Type de Lot">
+                                <field name="create_new_lot" widget="boolean_toggle"/>
+                                
+                                <!-- New lot mode -->
+                                <field name="lot_category_id" 
+                                       invisible="not create_new_lot"
+                                       placeholder="Sélectionner une catégorie..."
+                                       options="{'no_create': True}"/>
+                                
+                                <!-- Existing lot mode -->
+                                <field name="existing_lot_id"
+                                       invisible="create_new_lot"
+                                       placeholder="Sélectionner un lot existant..."
+                                       options="{'no_create': True, 'no_open': True}"/>
+                                
+                                <field name="lot_price" placeholder="0.00 €"/>
+                            </group>
+                            
+                            <group string="📅 Planning">
+                                <field name="date_start_planned"/>
+                                <field name="date_end_planned"/>
+                                <field name="assignment_date"/>
+                            </group>
+                        </div>
+                        
+                        <!-- Right Column: Subcontractor & Documents -->
+                        <div class="col-md-6">
+                            <group string="👷 Sous-traitant">
+                                <field name="subcontractor_id" 
+                                       placeholder="Rechercher un sous-traitant..."
+                                       options="{'no_create': True}"/>
+                            </group>
+                            
+                            <group string="📄 Documents">
+                                <field name="document_planning_chantier" 
+                                       filename="document_planning_chantier_filename"
+                                       widget="binary"/>
+                                <field name="document_planning_sous_traitant" 
+                                       filename="document_planning_sous_traitant_filename"
+                                       widget="binary"/>
+                                <field name="document_cctp" 
+                                       filename="document_cctp_filename"
+                                       widget="binary"/>
+                            </group>
+                        </div>
+                    </div>
 
-                    <group string="Récapitulatif">
-                        <field name="affected_lot_count" readonly="1"/>
-                        <field name="affected_lot_ids" widget="many2many_tags" readonly="1"/>
-                    </group>
+                    <!-- Warnings Section -->
+                    <div class="alert alert-warning mt-3" invisible="not has_warnings">
+                        <div class="d-flex">
+                            <i class="fa fa-exclamation-triangle fa-lg me-3 mt-1"/>
+                            <div>
+                                <strong>Avertissements</strong>
+                                <field name="warning_message" nolabel="1" widget="html"/>
+                            </div>
+                        </div>
+                    </div>
 
-                    <group string="Avertissements" invisible="not has_warnings">
-                        <field name="has_warnings" invisible="1"/>
-                        <field name="warning_message" nolabel="1" widget="html"/>
-                    </group>
-
-                    <group>
-                        <field name="notes" placeholder="Notes internes (optionnel)..."/>
+                    <!-- Notes Section -->
+                    <group string="📝 Notes" class="mt-3">
+                        <field name="notes" 
+                               placeholder="Notes internes (optionnel)..."
+                               nolabel="1"
+                               colspan="2"/>
                     </group>
                 </sheet>
 
                 <footer>
-                    <button name="action_assign" string="Assigner" type="object" class="btn-primary"/>
-                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                    <button name="action_assign" 
+                            string="✅ Assigner" 
+                            type="object" 
+                            class="btn-primary"/>
+                    <button string="Annuler" 
+                            class="btn-secondary" 
+                            special="cancel"/>
                 </footer>
             </form>
         </field>

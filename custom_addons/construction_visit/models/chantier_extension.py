@@ -25,6 +25,21 @@ class Chantier(models.Model):
             'context': {'default_chantier_id': self.id}
         }
 
+    def action_plan_visit(self):
+        """Open form to create a new visit for this chantier."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Nouvelle Visite',
+            'res_model': 'construction.visit',
+            'view_mode': 'form',
+            'target': 'new',
+            'context': {
+                'default_chantier_id': self.id,
+                'default_state': 'draft',
+            }
+        }
+
     # ============= Validation Hooks ============= #
     def check_visit_stage(self):
         """

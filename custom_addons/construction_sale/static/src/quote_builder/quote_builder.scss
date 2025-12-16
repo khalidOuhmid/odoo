@@ -1,19 +1,330 @@
 /* ============================================= */
-/* QUOTE BUILDER                                 */
+/* QUOTE BUILDER - SAP STYLE                     */
 /* ============================================= */
 
-/* Variables */
+/* Variables - SAP & Premium Palette */
 :root {
-    --qb-primary: #875A7B;
-    /* Odoo Purple */
-    --qb-success: #28A745;
-    /* Green */
-    --qb-warning: #FFC107;
-    /* Yellow */
-    --qb-border: #dee2e6;
-    --qb-bg-light: #f8f9fa;
-    --qb-text: #212529;
-    --qb-text-muted: #6c757d;
+    /* Requested Palette */
+    --qb-blanc: #FFFFFF;
+    --qb-gris-tres-clair: #E5E3E2;
+    --qb-beige-rose: #D4C5BC;
+    --qb-gris-moyen: #AEADAB;
+    --qb-gris-fonce: #978A86;
+    --qb-bordeaux-terracotta: #92564C;
+
+    /* Semantic Mappings */
+    --qb-primary: var(--qb-bordeaux-terracotta);
+    --qb-secondary: var(--qb-beige-rose);
+    --qb-success: #2E5F46;
+    /* Deep Professional Green */
+    --qb-warning: #D9A032;
+    /* Muted Gold */
+    --qb-danger: #A63434;
+    /* Deep Red */
+
+    --qb-bg-app: var(--qb-blanc);
+    --qb-bg-panel: var(--qb-gris-tres-clair);
+    --qb-border: var(--qb-gris-moyen);
+
+    --qb-text-main: #2C2C2C;
+    /* Almost Black */
+    --qb-text-muted: #666666;
+    --qb-text-light: #F8F9FA;
+
+    --qb-font-serif: "Georgia", "Times New Roman", serif;
+    --qb-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+/* Main Container */
+.o_construction_quote_builder {
+    background: var(--qb-bg-app);
+    font-family: var(--qb-font-sans);
+    color: var(--qb-text-main);
+}
+
+/* Header - Premium & Serif */
+.o_quote_header {
+    background: white;
+    padding: 16px 32px;
+    border-bottom: 2px solid var(--qb-primary);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.o_quote_header h4 {
+    font-family: var(--qb-font-serif);
+    color: var(--qb-primary);
+    font-size: 1.4rem;
+    letter-spacing: 0.5px;
+    margin: 0;
+    text-transform: uppercase;
+}
+
+.o_quote_header .badge {
+    background: var(--qb-secondary);
+    color: white;
+    font-weight: 500;
+    border-radius: 2px;
+    padding: 6px 12px;
+    font-family: var(--qb-font-sans);
+}
+
+/* Buttons - Sharp & Professional */
+.btn {
+    border-radius: 2px !important;
+    /* SAP Style: Square/Sharp */
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    box-shadow: none !important;
+    text-transform: uppercase;
+    font-size: 0.8rem !important;
+}
+
+.o_btn_create_quote {
+    background: var(--qb-primary) !important;
+    border: 1px solid var(--qb-primary) !important;
+    color: white !important;
+    padding: 10px 24px;
+}
+
+.o_btn_create_quote:hover {
+    background: #7a463d !important;
+    /* Darker Terracotta */
+    border-color: #7a463d !important;
+}
+
+/* Summary Bar - Clean & Structured */
+.o_summary_bar {
+    background: var(--qb-bg-panel);
+    border-bottom: 1px solid var(--qb-border);
+    padding: 20px 32px;
+}
+
+.o_summary_bar small {
+    font-family: var(--qb-font-sans);
+    color: var(--qb-text-muted);
+    font-weight: 600;
+    letter-spacing: 0.8px;
+}
+
+.o_summary_bar .fs-4 {
+    font-family: var(--qb-font-serif);
+    color: var(--qb-text-main) !important;
+    /* Override standard text colors */
+}
+
+/* Lot Sidebar - Hierarchical */
+.o_lot_sidebar {
+    background: var(--qb-gris-tres-clair);
+    border-right: 1px solid var(--qb-border);
+    min-width: 220px;
+}
+
+.o_lot_sidebar_header {
+    background: #E0DEDD;
+    color: var(--qb-text-main);
+    font-family: var(--qb-font-serif);
+    font-weight: bold;
+    border-bottom: 1px solid var(--qb-border);
+    padding: 16px;
+}
+
+.o_lot_button {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    border-radius: 0;
+    padding: 12px 16px;
+    color: var(--qb-text-main);
+    font-size: 0.9rem;
+}
+
+.o_lot_button:hover {
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.o_lot_button.active {
+    background: white !important;
+    color: var(--qb-primary) !important;
+    border-left: 4px solid var(--qb-primary);
+    font-weight: 600;
+}
+
+.o_lot_button .badge {
+    background: var(--qb-gris-moyen);
+    color: white;
+}
+
+.o_lot_button.active .badge {
+    background: var(--qb-primary);
+}
+
+.o_btn_add_product {
+    background: var(--qb-gris-fonce) !important;
+    color: white !important;
+    padding: 12px;
+}
+
+/* Catalog Panel */
+.o_catalog_panel {
+    background: white;
+    border-right: 1px solid var(--qb-border);
+}
+
+.o_catalog_header {
+    background: var(--qb-bg-panel);
+    padding: 16px;
+    border-bottom: 1px solid var(--qb-border);
+}
+
+.o_product_card {
+    border: 1px solid var(--qb-border);
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+}
+
+.o_product_card:hover {
+    border-color: var(--qb-primary);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.08);
+}
+
+.o_price {
+    color: var(--qb-text-main);
+    font-family: var(--qb-font-serif);
+}
+
+/* Estimator Panel - The Contract */
+.o_estimator_panel {
+    background: white;
+}
+
+.o_estimator_header {
+    background: white;
+    padding: 16px 24px;
+    border-bottom: 2px solid var(--qb-bg-panel);
+}
+
+.o_estimator_header h5 {
+    font-family: var(--qb-font-serif);
+    color: var(--qb-primary);
+    font-size: 1.1rem;
+    text-transform: uppercase;
+}
+
+/* Quote Table - Strict & Readable */
+.o_quote_section_header {
+    background: var(--qb-bg-panel);
+    color: var(--qb-primary);
+    border-bottom: 2px solid var(--qb-primary);
+    /* Underline style */
+    padding: 10px 16px;
+    margin-top: 24px;
+    font-family: var(--qb-font-serif);
+    font-weight: bold;
+    border-radius: 0;
+}
+
+.o_quote_table {
+    border: 1px solid var(--qb-border);
+}
+
+.o_quote_table thead {
+    background: white;
+    border-bottom: 2px solid var(--qb-text-main);
+}
+
+.o_quote_table th {
+    font-family: var(--qb-font-sans);
+    color: var(--qb-text-main);
+    font-weight: bold;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border: none;
+    padding: 12px;
+}
+
+.o_quote_table td {
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    font-size: 0.9rem;
+    color: #444;
+}
+
+.o_quote_table input {
+    border: 1px solid #ccc;
+    background: #fcfcfc;
+    color: #333;
+    border-radius: 2px;
+    padding: 6px;
+    font-family: "Consolas", monospace;
+    /* Technical feel for numbers */
+}
+
+.o_quote_table input:focus {
+    border-color: var(--qb-primary);
+    background: white;
+    box-shadow: none;
+}
+
+/* Margin & Optional */
+.o_margin_cell {
+    background: #FAF8F6 !important;
+    /* Very light beige */
+    border-left: 1px dashed var(--qb-gris-moyen);
+}
+
+.o_quote_line_optional {
+    opacity: 0.6;
+    background: #f9f9f9 !important;
+}
+
+.o_quote_line_optional td {
+    text-decoration: none;
+    /* Removed italic */
+    color: var(--qb-text-muted);
+}
+
+/* Footer - Grand Total */
+.o_quote_footer {
+    background: var(--qb-bg-panel);
+    border-top: 2px solid var(--qb-text-main);
+    padding: 24px 32px;
+}
+
+.o_quote_total_badge {
+    background: transparent !important;
+    color: var(--qb-primary) !important;
+    font-family: var(--qb-font-serif);
+    font-size: 1.5rem;
+    font-weight: bold;
+    padding: 0;
+    border-bottom: 3px double var(--qb-primary);
+}
+
+/* Modals - Clean Overlays */
+.o_quote_wizard .modal-content {
+    border-radius: 2px;
+    border: 1px solid var(--qb-border);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+}
+
+.o_quote_wizard .modal-header {
+    background: var(--qb-primary);
+    border-radius: 0;
+    padding: 20px 24px;
+}
+
+.o_quote_wizard .modal-title {
+    font-family: var(--qb-font-serif);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.o_quote_wizard .modal-footer {
+    background: var(--qb-bg-panel);
+    border-top: 1px solid var(--qb-border);
 }
 
 /* Main Container */

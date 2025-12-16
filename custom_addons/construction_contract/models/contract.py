@@ -17,16 +17,16 @@ _logger = logging.getLogger(__name__)
 
 COMPLIANT_DOCUMENT_STATUSES = {'valid', 'expiring'}
 REQUIRED_DOCUMENTS = [
-    ('document_URSSAF_status', 'document_URSSAF', _("URSSAF certificate")),
-    ('document_KBIS_status', 'document_KBIS', _("KBIS extract")),
-    ('document_insurance_status', 'document_insurance', _("Insurance certificate")),
+    ('doc_urssaf_status', 'doc_urssaf', _("Attestation URSSAF")),
+    ('doc_kbis_status', 'doc_kbis', _("Extrait KBIS")),
+    ('doc_insurance_dec_status', 'doc_insurance_dec', _("Assurance Décennale")),
 ]
 GLOBAL_STATUS_FIELDS = [
-    'document_identity_card_status',
-    'document_URSSAF_status',
-    'document_KBIS_status',
-    'document_insurance_status',
-    'document_RIB_status',
+    'doc_cni_status',
+    'doc_urssaf_status',
+    'doc_kbis_status',
+    'doc_insurance_dec_status',
+    'doc_rib_status',
 ]
 
 # Import constants
@@ -939,16 +939,8 @@ class ConstructionContract(models.Model):
                 'state': 'generated' if self.state == 'draft' else self.state
             })
             
-            # 5. Return Action to open Editor
-            return {
-                'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _("Succès"),
-                    'message': _("Contrat généré avec succès. Ouverture de l'éditeur..."),
-                    'type': 'success',
-                }
-            }
+            # 5. Return Action to open Editor (Directly)
+            return self.action_open_contract_editor()
             
         except Exception as e:
             raise UserError(_("Erreur lors de la génération du contrat: %s") % str(e))

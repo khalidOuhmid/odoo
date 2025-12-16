@@ -529,11 +529,13 @@
                                                     </td>
                                                     <td>
                                                         <!-- Status Badge -->
-                                                        <span t-attf-class="status-badge badge rounded-pill {{doc['status'] == 'valid' and 'bg-success' or doc['status'] == 'expired' and 'bg-danger' or 'bg-warning text-dark'}}">
+                                                        <span t-attf-class="status-badge badge rounded-pill {{doc['status'] == 'valid' and 'bg-success' or doc['status'] == 'expired' and 'bg-danger' or doc['status'] == 'rejected' and 'bg-danger' or doc['status'] == 'expiring' and 'bg-warning text-dark' or doc['status'] == 'missing' and 'bg-warning text-dark' or 'bg-info text-dark'}}">
                                                             <t t-if="doc['status'] == 'valid'">Valide</t>
                                                             <t t-elif="doc['status'] == 'expired'">Expiré</t>
+                                                            <t t-elif="doc['status'] == 'expiring'">Expire bientôt</t>
+                                                            <t t-elif="doc['status'] == 'rejected'">Rejeté</t>
                                                             <t t-elif="doc['status'] == 'missing'">Manquant</t>
-                                                            <t t-else="">Non vérifié</t>
+                                                            <t t-else="">En attente</t>
                                                         </span>
                                                         <span class="staged-indicator badge rounded-pill bg-info text-white ms-1 d-none">📎 Prêt</span>
                                                         <div class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
@@ -558,9 +560,9 @@
                                                     </td>
                                                     <td>
                                                         <div class="file-upload-wrapper d-flex gap-2">
-                                                            <label class="btn btn-sm btn-select position-relative rounded-pill flex-grow-1" style="border: 1px solid #92564C; color: #92564C;">
-                                                                <span class="text-truncate d-block file-label-text" style="max-width: 150px;">
-                                                                    <i class="fa fa-folder-open me-1"/> 
+                                                            <label class="btn btn-sm btn-select position-relative rounded-pill px-4" style="border: 1px solid #92564C; color: #92564C; min-width: 140px;">
+                                                                <span class="d-block file-label-text text-truncate" style="max-width: 130px;">
+                                                                    <i class="fa fa-folder-open me-2"/> 
                                                                     <t t-if="doc['has_file']">Remplacer</t>
                                                                     <t t-else="">Choisir</t>
                                                                 </span>
@@ -591,11 +593,13 @@
                                                         <small t-if="doc.get('required')" class="text-danger fw-bold" style="font-size: 0.7rem;">* OBLIGATOIRE</small>
                                                         <small t-else="" class="text-muted" style="font-size: 0.7rem;">OPTIONNEL</small>
                                                     </div>
-                                                    <span t-attf-class="status-badge badge rounded-pill {{doc['status'] == 'valid' and 'bg-success' or doc['status'] == 'expired' and 'bg-danger' or 'bg-warning text-dark'}}">
+                                                    <span t-attf-class="status-badge badge rounded-pill {{doc['status'] == 'valid' and 'bg-success' or doc['status'] == 'expired' and 'bg-danger' or doc['status'] == 'rejected' and 'bg-danger' or doc['status'] == 'expiring' and 'bg-warning text-dark' or doc['status'] == 'missing' and 'bg-warning text-dark' or 'bg-info text-dark'}}">
                                                         <t t-if="doc['status'] == 'valid'">Valide</t>
                                                         <t t-elif="doc['status'] == 'expired'">Expiré</t>
+                                                        <t t-elif="doc['status'] == 'expiring'">Expire bientôt</t>
+                                                        <t t-elif="doc['status'] == 'rejected'">Rejeté</t>
                                                         <t t-elif="doc['status'] == 'missing'">Manquant</t>
-                                                        <t t-else="">Statut</t>
+                                                        <t t-else="">En attente</t>
                                                     </span>
                                                     <span class="staged-indicator badge rounded-pill bg-info text-white ms-1 d-none">📎 Prêt</span>
                                                     <div class="spinner-border spinner-border-sm text-primary d-none" role="status"></div>
@@ -614,8 +618,8 @@
                                                     </t>
                                                 </div>
 
-                                                <label class="btn btn-select w-100 position-relative rounded-3 py-2" style="border: 1px solid #92564C; color: #92564C;">
-                                                    <span class="d-block fw-bold file-label-text">
+                                                <label class="btn btn-select w-100 position-relative rounded-3 py-2 px-3" style="border: 1px solid #92564C; color: #92564C;">
+                                                    <span class="d-block fw-bold file-label-text text-truncate">
                                                         <i class="fa fa-folder-open me-2"/> 
                                                         <t t-if="doc['has_file']">Remplacer</t>
                                                         <t t-else="">Choisir</t>

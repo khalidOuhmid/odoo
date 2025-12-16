@@ -44,11 +44,12 @@ class ContractValidationService(models.AbstractModel):
         _logger.info(f"Validating subcontractor eligibility for {partner.name} (ID: {partner.id})")
         warnings = []
 
-        # These document fields come from blg_contacts_extension
+        # Document checks mapping: (status_field, file_field, label)
+        # Using fields from construction_subcontractor module
         doc_checks = [
-            ('document_URSSAF_status', 'document_URSSAF', _("URSSAF certificate")),
-            ('document_KBIS_status', 'document_KBIS', _("KBIS extract")),
-            ('document_insurance_status', 'document_insurance', _("Insurance certificate")),
+            ('doc_urssaf_status', 'doc_urssaf', _("Attestation URSSAF")),
+            ('doc_kbis_status', 'doc_kbis', _("Extrait KBIS")),
+            ('doc_insurance_dec_status', 'doc_insurance_dec', _("Assurance Décennale")),
         ]
 
         for status_field, file_field, label in doc_checks:

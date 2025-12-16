@@ -8,8 +8,8 @@
             <kanban default_group_by="stage_id"
                     class="o_kanban_small_column o_construction_kanban"
                     group_expand="_read_group_stage_id"
-                    quick_create="false"
-                    on_create="construction_core.action_construction_chantier"
+                    quick_create="true"
+                    quick_create_view="construction_core.view_construction_chantier_form_quick_create"
                     group_create="false"
                     group_delete="false"
                     group_edit="false"
@@ -260,7 +260,6 @@
 
                             <field name="lots_ids">
                                 <list create="false"
-                                      editable="bottom" 
                                       decoration-success="is_finished == True"
                                       decoration-warning="completion_percentage > 0 and completion_percentage &lt; 100"
                                       decoration-muted="completion_percentage == 0">
@@ -284,9 +283,6 @@
                                            decoration-warning="margin_percent > 0 and margin_percent &lt;= 20"
                                            decoration-danger="margin_percent &lt;= 0"/>
                                     <field name="is_finished" widget="boolean_toggle"/>
-                                    <button name="action_open_lot_cockpit" type="object"
-                                            icon="fa-cog" title="Gérer ce lot"
-                                            class="btn btn-link"/>
                                 </list>
                             </field>
                         </page>
@@ -428,39 +424,7 @@
                             </div>
                         </page>
 
-                        <!-- Tab 8: Facturation (STRICTLY Conditional) -->
-                         <page string="🧾 Facturation" name="invoicing" invisible="stage_id != %(construction_core.stage_finalisation_dossier)d and not show_invoicing">
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h4 class="mb-0">
-                                            <i class="fa fa-money me-2"/>Cycle de Facturation
-                                        </h4>
-                                        <div class="btn-group">
-                                            <button name="action_create_invoice_schedule" 
-                                                    type="object" 
-                                                    string="➕ Nouveau Planning"
-                                                    class="btn btn-primary btn-sm"/>
-                                            <button name="action_view_invoices" 
-                                                    type="object" 
-                                                    string="📋 Voir Factures"
-                                                    class="btn btn-outline-secondary btn-sm"/>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="alert alert-success mb-3">
-                                <h5><i class="fa fa-check-circle me-2"/>Gestion de Facturation</h5>
-                                <p class="mb-0">
-                                    Configurez les échéances de facturation selon les cycles prédéfinis
-                                    (30/30/40, Quartiles, etc.) ou créez un planning personnalisé.
-                                </p>
-                            </div>
-                            <!-- Placeholder for actual fields that would normally be here -->
-                            <group>
-                                <field name="company_id" groups="base.group_multi_company"/>
-                            </group>
-                        </page>
+                        <!-- Note: Facturation tab removed from core - managed by construction_invoice module -->
                     </notebook>
                 </sheet>
                 <chatter/>
@@ -552,6 +516,26 @@
                 <field name="progress"/>
                 <field name="tag_ids" widget="many2many_tags"/>
             </calendar>
+        </field>
+    </record>
+
+    <!-- QUICK CREATE FORM for Kanban -->
+    <record id="view_construction_chantier_form_quick_create" model="ir.ui.view">
+        <field name="name">construction.chantier.form.quick_create</field>
+        <field name="model">construction.chantier</field>
+        <field name="priority">999</field>
+        <field name="arch" type="xml">
+            <form string="Nouveau Chantier">
+                <group>
+                    <field name="name" placeholder="Nom du chantier" required="1"/>
+                    <field name="client" placeholder="Client" required="1" 
+                           options="{'no_create': True, 'no_open': True}"/>
+                    <field name="address" placeholder="Adresse"/>
+                    <field name="city" placeholder="Ville"/>
+                    <field name="phone" placeholder="Téléphone"/>
+                    <field name="description" placeholder="Description des travaux..."/>
+                </group>
+            </form>
         </field>
     </record>
 

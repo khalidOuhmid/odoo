@@ -34,39 +34,39 @@ class ForceStageWizard(models.TransientModel):
         if not self.env.user.has_group('construction_core.group_construction_admin'):
             raise UserError(_("Seuls les Directeurs et Administrateurs peuvent forcer un changement d'étape."))
 
-        # Log the forced change with proper HTML
-        from markupsafe import Markup
-        message = Markup(
-            """<div style="padding: 12px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
+        # Log the forced change with proper HTML (using f-string to avoid % formatting issues)
+        from markupsafe import Markup, escape
+        
+        # Escape user input to prevent XSS
+        from_stage = escape(self.current_stage_id.name or '')
+        to_stage = escape(self.new_stage_id.name or '')
+        user_name = escape(self.env.user.name or '')
+        reason_text = escape(self.reason or '')
+        
+        message = Markup(f"""<div style="padding: 12px; background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
                         border-radius: 8px; border-left: 4px solid #ed8936;">
                 <p style="margin: 0 0 8px 0; font-weight: 600; color: #c05621;">
                     ⚠️ Changement d'étape forcé
                 </p>
-                <table style="width: 100%%; font-size: 13px;">
+                <table style="width: 100%; font-size: 13px;">
                     <tr>
                         <td style="color: #718096; width: 80px;">De:</td>
-                        <td style="font-weight: 500;">%(from_stage)s</td>
+                        <td style="font-weight: 500;">{from_stage}</td>
                     </tr>
                     <tr>
                         <td style="color: #718096;">Vers:</td>
-                        <td style="font-weight: 500;">%(to_stage)s</td>
+                        <td style="font-weight: 500;">{to_stage}</td>
                     </tr>
                     <tr>
                         <td style="color: #718096;">Par:</td>
-                        <td>%(user)s</td>
+                        <td>{user_name}</td>
                     </tr>
                     <tr>
                         <td style="color: #718096; vertical-align: top;">Raison:</td>
-                        <td style="font-style: italic;">%(reason)s</td>
+                        <td style="font-style: italic;">{reason_text}</td>
                     </tr>
                 </table>
-            </div>"""
-        ) % {
-            'from_stage': self.current_stage_id.name,
-            'to_stage': self.new_stage_id.name,
-            'user': self.env.user.name,
-            'reason': self.reason,
-        }
+            </div>""")
         
         self.chantier_id.message_post(
             body=message,

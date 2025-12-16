@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_lot_form_contract" model="ir.ui.view">
+        <field name="name">construction.lot.form.contract</field>
+        <field name="model">construction.lot</field>
+        <field name="inherit_id" ref="construction_core.view_construction_lot_form"/>
+        <field name="arch" type="xml">
+             <!-- Add Generate Contract button in Documents tab -->
+             <xpath expr="//page[@name='documents']/group[1]" position="before">
+                <div class="mb-3">
+                     <button name="action_generate_contract_wizard" 
+                            type="object" 
+                            string="📄 Générer Contrat Sous-traitance"
+                            class="btn btn-primary"
+                            invisible="execution_type != 'external' or not subcontractor_id"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

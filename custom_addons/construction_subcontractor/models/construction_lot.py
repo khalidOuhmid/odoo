@@ -13,6 +13,12 @@ class ConstructionLot(models.Model):
     """Extend construction.lot with subcontractor compliance fields."""
     _inherit = 'construction.lot'
     
+    # ============= SUBCONTRACTOR SELECTION ============= #
+    subcontractor_id = fields.Many2one(
+        'res.partner',
+        domain="['|', ('is_subcontractor', '=', True), ('supplier_rank', '>', 0)]"
+    )
+
     # ============= SUBCONTRACTOR COMPLIANCE (Computed) ============= #
     subcontractor_compliance_state = fields.Selection(
         related='subcontractor_id.compliance_state',

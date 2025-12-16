@@ -16,4 +16,13 @@
         </record>
 
     </data>
+    
+    <!-- Mail Alias for automatic Chantier creation -->
+    <data noupdate="1">
+        <record id="mail_alias_chantier" model="mail.alias">
+            <field name="alias_name">chantier</field>
+            <field name="alias_model_id" ref="model_construction_chantier"/>
+            <field name="alias_contact">everyone</field>
+        </record>
+    </data>
 </odoo>

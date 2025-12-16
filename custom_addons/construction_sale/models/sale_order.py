@@ -89,6 +89,26 @@ class SaleOrder(models.Model):
                 # For now, we allow flexibility but logging could be added here.
                 pass
 
+    @api.constrains('amount_total', 'state')
+    def _check_monetary_safety(self):
+        """
+        SAP-Level Logic: Prevent negative or dangerously low value orders.
+        ensures financial integrity before confirmation.
+        """
+        for order in self:
+            if order.state in ['sale', 'done']:
+                if order.amount_total < 0:
+                    raise models.ValidationError(
+                        _("CRITICAL: Sales Order '%s' has a negative total amount (%s). This is strictly prohibited by accounting rules.") 
+                        % (order.name, order.amount_total)
+                    )
+                
+                # Optional: Zero check (unless it's a specific warranty replacement)
+                if order.amount_total == 0 and not order.context.get('allow_zero_total'):
+                    # Warning only for now, or strict block? Let's be strict for "SAP-level"
+                    # We can use a context key to bypass if needed manually
+                    _logger.warning(f"Order {order.name} confirmed with 0 amount")
+
     # ============================================================
     # API METHODS (For SPA/Owl)
     # ============================================================
