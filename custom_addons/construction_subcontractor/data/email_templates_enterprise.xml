@@ -54,5 +54,106 @@
                 </div>
             </field>
         </record>
+        
+        <!-- Document Rejection Email Template (BLG Branding) -->
+        <record id="email_template_document_rejected" model="mail.template">
+            <field name="name">Sous-traitant: Document Rejeté</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">[Document Rejeté] {{ ctx.get('doc_name', 'Document') }} - Action Requise</field>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.id }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; border: 1px solid #E5E3E2; background-color: #FFFFFF;">
+                    <!-- Header BLG Style: Bordeaux/Terracotta -->
+                    <div style="background-color: #92564C; color: white; padding: 25px; text-align: center;">
+                        <h2 style="margin:0; font-family: 'Times New Roman', Times, serif; letter-spacing: 1px; text-transform: uppercase;">BLG GROUPE</h2>
+                    </div>
+
+                    <div style="padding: 30px; background-color: #FFFFFF; color: #978A86;">
+                        <p style="font-size: 16px; margin-bottom: 20px;">Bonjour,</p>
+                        
+                        <p style="font-size: 15px; line-height: 1.5; color: #978A86;">
+                            Nous vous informons que le document suivant a été rejeté et nécessite une correction de votre part.
+                        </p>
+                        
+                        <!-- Document Status Card -->
+                        <div style="background-color: #F8D7DA; border-left: 4px solid #92564C; padding: 15px; margin: 25px 0;">
+                            <strong style="color: #92564C; font-family: 'Times New Roman', Times, serif; font-size: 16px;">
+                                Document rejeté : <t t-out="ctx.get('doc_name', 'Document')"/>
+                            </strong>
+                            <t t-if="ctx.get('rejection_reason')">
+                                <p style="font-size: 14px; margin-top: 10px; color: #505050;">
+                                    <strong>Motif :</strong> <t t-out="ctx.get('rejection_reason')"/>
+                                </p>
+                            </t>
+                        </div>
+                        
+                        <p style="font-size: 14px; line-height: 1.5; color: #978A86;">
+                            Veuillez vous connecter à votre espace partenaire pour soumettre un nouveau document conforme.
+                        </p>
+
+                        <!-- Action Button (Bordeaux) -->
+                        <div style="text-align: center; margin-top: 35px; margin-bottom: 20px;">
+                            <a t-att-href="object.upload_url" style="background-color: #92564C; color: white; padding: 12px 30px; text-decoration: none; border-radius: 2px; font-weight: bold; font-family: 'Times New Roman', Times, serif; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Soumettre un nouveau document
+                            </a>
+                        </div>
+                        
+                        <div style="font-size: 12px; color: #AEADAB; margin-top: 40px; border-top: 1px solid #E5E3E2; padding-top: 15px; text-align: center;">
+                            <p>BLG GROUPE - Service Administratif</p>
+                            <p><em>Ce message est automatique. Merci de ne pas y répondre directement.</em></p>
+                        </div>
+                    </div>
+                </div>
+            </field>
+        </record>
+        
+        <!-- Document Re-Request Email Template (BLG Branding) -->
+        <record id="email_template_document_request" model="mail.template">
+            <field name="name">Sous-traitant: Demande de Document</field>
+            <field name="model_id" ref="base.model_res_partner"/>
+            <field name="subject">[Action Requise] Nouveau document demandé : {{ ctx.get('doc_name', 'Document') }}</field>
+            <field name="email_from">{{ (object.user_id.email_formatted or user.email_formatted) }}</field>
+            <field name="partner_to">{{ object.id }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; border: 1px solid #E5E3E2; background-color: #FFFFFF;">
+                    <!-- Header BLG Style -->
+                    <div style="background-color: #92564C; color: white; padding: 25px; text-align: center;">
+                        <h2 style="margin:0; font-family: 'Times New Roman', Times, serif; letter-spacing: 1px; text-transform: uppercase;">BLG GROUPE</h2>
+                    </div>
+
+                    <div style="padding: 30px; background-color: #FFFFFF; color: #978A86;">
+                        <p style="font-size: 16px; margin-bottom: 20px;">Bonjour,</p>
+                        
+                        <p style="font-size: 15px; line-height: 1.5; color: #978A86;">
+                            Nous vous demandons de soumettre à nouveau le document suivant :
+                        </p>
+                        
+                        <!-- Document Request Card -->
+                        <div style="background-color: #FFF3CD; border-left: 4px solid #92564C; padding: 15px; margin: 25px 0;">
+                            <strong style="color: #92564C; font-family: 'Times New Roman', Times, serif; font-size: 16px;">
+                                Document demandé : <t t-out="ctx.get('doc_name', 'Document')"/>
+                            </strong>
+                        </div>
+                        
+                        <p style="font-size: 14px; line-height: 1.5; color: #978A86;">
+                            Veuillez vous connecter à votre espace partenaire pour soumettre ce document.
+                        </p>
+
+                        <!-- Action Button -->
+                        <div style="text-align: center; margin-top: 35px; margin-bottom: 20px;">
+                            <a t-att-href="object.upload_url" style="background-color: #92564C; color: white; padding: 12px 30px; text-decoration: none; border-radius: 2px; font-weight: bold; font-family: 'Times New Roman', Times, serif; text-transform: uppercase; letter-spacing: 0.5px;">
+                                Acceder a mon Espace Partenaire
+                            </a>
+                        </div>
+                        
+                        <div style="font-size: 12px; color: #AEADAB; margin-top: 40px; border-top: 1px solid #E5E3E2; padding-top: 15px; text-align: center;">
+                            <p>BLG GROUPE - Service Administratif</p>
+                            <p><em>Ce message est automatique. Merci de ne pas y repondre directement.</em></p>
+                        </div>
+                    </div>
+                </div>
+            </field>
+        </record>
     </data>
 </odoo>

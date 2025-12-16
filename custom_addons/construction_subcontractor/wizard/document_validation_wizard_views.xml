@@ -54,23 +54,22 @@
                         <field name="doc_mimetype" invisible="1"/>
                         <field name="current_status" invisible="1"/>
                         
-                        <!-- PDF Preview (for PDF files) -->
-                        <div colspan="2" invisible="doc_mimetype != 'application/pdf'">
-                            <field name="doc_content" widget="pdf_viewer" 
-                                   readonly="1" filename="doc_filename"/>
-                        </div>
-                        
                         <!-- Image Preview (for images) -->
                         <div colspan="2" invisible="doc_mimetype not in ['image/jpeg', 'image/png']">
                             <field name="doc_content" widget="image" 
-                                   readonly="1" class="img-fluid"/>
+                                   readonly="1" class="img-fluid" style="max-height: 400px;"/>
                         </div>
                         
-                        <!-- Download Button for other types -->
-                        <div colspan="2" invisible="doc_mimetype in ['application/pdf', 'image/jpeg', 'image/png']">
-                            <button name="action_download" type="object" 
-                                    string="📥 Télécharger le Document" 
-                                    class="btn btn-secondary"/>
+                        <!-- PDF info (use Preview button instead) -->
+                        <div colspan="2" invisible="doc_mimetype != 'application/pdf'" class="alert alert-info">
+                            <i class="fa fa-file-pdf-o me-2"/>
+                            <span>Ce document est un <b>PDF</b>. Cliquez sur <b>👁 Prévisualiser</b> pour l'ouvrir dans un nouvel onglet.</span>
+                        </div>
+                        
+                        <!-- Other file types info -->
+                        <div colspan="2" invisible="doc_mimetype in ['application/pdf', 'image/jpeg', 'image/png']" class="alert alert-secondary">
+                            <i class="fa fa-file-o me-2"/>
+                            <span>Type de fichier: <field name="doc_mimetype" class="oe_inline" readonly="1"/>. Utilisez Télécharger pour voir le document.</span>
                         </div>
                     </group>
                     
@@ -79,24 +78,64 @@
                         <field name="rejection_reason" nolabel="1" colspan="2"
                                placeholder="Décrivez pourquoi ce document est rejeté. Ce message sera envoyé au sous-traitant."/>
                     </group>
+                    
+                    <!-- Preview Required Alert -->
+                    <div class="alert alert-warning mb-3" role="alert" invisible="has_previewed or current_status == 'valid'">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <strong>Action requise:</strong> Vous devez prévisualiser le document avant de pouvoir le valider.
+                    </div>
+                    
+                    <!-- Preview Confirmed -->
+                    <div class="alert alert-success mb-3" role="alert" invisible="not has_previewed or current_status == 'valid'">
+                        <i class="fa fa-eye me-2"/>
+                        <strong>Document consulté</strong> - Vous pouvez maintenant valider ou rejeter ce document.
+                    </div>
+                    
+                    <field name="has_previewed" invisible="1"/>
                 </sheet>
                 
                 <footer>
-                    <button name="action_validate" 
-                            string="✓ Valider le Document" 
+                    <!-- Preview Button (PDF only - images have inline preview) -->
+                    <button name="action_preview" 
+                            string="Previsualiser" 
                             type="object" 
-                            class="btn-primary me-2"
-                            invisible="current_status == 'valid'"/>
+                            class="btn-info me-2"
+                            invisible="current_status == 'valid' or doc_mimetype in ['image/jpeg', 'image/png']"/>
+                    
+                    <!-- Validate Button for PDFs (need preview first) -->
+                    <button name="action_validate" 
+                            string="Valider le Document" 
+                            type="object" 
+                            class="btn-success me-2"
+                            invisible="current_status == 'valid' or not doc_content or (doc_mimetype == 'application/pdf' and not has_previewed)"/>
+                    
+                    <!-- Validate disabled state (show when preview needed for PDFs only) -->
+                    <button string="Valider (previsualiser d'abord)" 
+                            class="btn-secondary me-2"
+                            disabled="1"
+                            invisible="has_previewed or current_status == 'valid' or doc_mimetype != 'application/pdf'"/>
+                    
                     <button name="%(construction_subcontractor.action_document_rejection_wizard)d" 
-                            string="✗ Rejeter..." 
+                            string="Rejeter..." 
                             type="action"
                             class="btn-danger me-2"
                             context="{'default_partner_id': partner_id, 'default_doc_type': doc_type}"
                             invisible="not doc_content"/>
+                    
                     <button name="action_download" 
-                            string="📥 Télécharger" 
+                            string="Telecharger" 
                             type="object" 
-                            class="btn-secondary me-2"/>
+                            class="btn-secondary me-2"
+                            invisible="not doc_content"/>
+                    
+                    <!-- Request button (for validated/expired docs) -->
+                    <button name="action_request" 
+                            string="Redemander" 
+                            type="object" 
+                            class="btn-warning me-2"
+                            confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
+                            invisible="current_status not in ['valid', 'expired']"/>
+                    
                     <button string="Fermer" special="cancel" class="btn-light"/>
                 </footer>
             </form>

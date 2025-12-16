@@ -25,6 +25,7 @@ DOCUMENT_TYPES = {
         'field': 'doc_kbis',
         'expiry_field': 'doc_kbis_expiry',
         'status_field': 'doc_kbis_status',
+        'validation_field': 'doc_kbis_is_validated',
         'has_expiry': True,
         'required': True,
         'validity_months': 2,  # Validité 2 mois
@@ -35,6 +36,7 @@ DOCUMENT_TYPES = {
         'field': 'doc_urssaf',
         'expiry_field': 'doc_urssaf_expiry',
         'status_field': 'doc_urssaf_status',
+        'validation_field': 'doc_urssaf_is_validated',
         'has_expiry': True,
         'required': True,
         'validity_months': 2,  # Validité 2 mois
@@ -45,6 +47,7 @@ DOCUMENT_TYPES = {
         'field': 'doc_insurance_dec',
         'expiry_field': 'doc_insurance_dec_expiry',
         'status_field': 'doc_insurance_dec_status',
+        'validation_field': 'doc_insurance_dec_is_validated',
         'has_expiry': True,
         'required': True,  # BLOQUANT
         'sequence': 30,
@@ -54,6 +57,7 @@ DOCUMENT_TYPES = {
         'field': 'doc_cni',
         'expiry_field': 'doc_cni_expiry',
         'status_field': 'doc_cni_status',
+        'validation_field': 'doc_cni_is_validated',
         'has_expiry': True,
         'required': True,
         'sequence': 35,
@@ -63,6 +67,7 @@ DOCUMENT_TYPES = {
         'field': 'doc_insurance_pro',
         'expiry_field': 'doc_insurance_pro_expiry',
         'status_field': 'doc_insurance_pro_status',
+        'validation_field': 'doc_insurance_pro_is_validated',
         'has_expiry': True,
         'required': False,  # NON BLOQUANT
         'sequence': 40,
@@ -72,6 +77,7 @@ DOCUMENT_TYPES = {
         'field': 'doc_rib',
         'expiry_field': False,
         'status_field': 'doc_rib_status',
+        'validation_field': 'doc_rib_is_validated',
         'has_expiry': False,
         'required': False,  # NON BLOQUANT
         'sequence': 50,
@@ -130,6 +136,16 @@ class ResPartner(models.Model):
         ('expired', 'Expiré'),
         ('rejected', 'Rejeté'),
     ], string='Statut KBIS', compute='_compute_doc_statuses', store=True)
+    doc_kbis_is_validated = fields.Boolean(
+        string='KBIS Validé', default=False, copy=False,
+        help="Coché une fois le document vérifié et validé par un administrateur"
+    )
+    doc_kbis_validated_by = fields.Many2one(
+        'res.users', string='KBIS Validé par', readonly=True, copy=False
+    )
+    doc_kbis_validated_at = fields.Datetime(
+        string='KBIS Validé le', readonly=True, copy=False
+    )
     
     # ============= DOCUMENTS: URSSAF ============= #
     doc_urssaf = fields.Binary(string='Attestation URSSAF', attachment=True)
@@ -143,6 +159,9 @@ class ResPartner(models.Model):
         ('expired', 'Expiré'),
         ('rejected', 'Rejeté'),
     ], string='Statut URSSAF', compute='_compute_doc_statuses', store=True)
+    doc_urssaf_is_validated = fields.Boolean(string='URSSAF Validé', default=False, copy=False)
+    doc_urssaf_validated_by = fields.Many2one('res.users', string='URSSAF Validé par', readonly=True, copy=False)
+    doc_urssaf_validated_at = fields.Datetime(string='URSSAF Validé le', readonly=True, copy=False)
     
     # ============= DOCUMENTS: ASSURANCE DÉCENNALE ============= #
     doc_insurance_dec = fields.Binary(string='Assurance Décennale', attachment=True)
@@ -156,6 +175,9 @@ class ResPartner(models.Model):
         ('expired', 'Expiré'),
         ('rejected', 'Rejeté'),
     ], string='Statut Assurance Déc.', compute='_compute_doc_statuses', store=True)
+    doc_insurance_dec_is_validated = fields.Boolean(string='Assurance Déc. Validée', default=False, copy=False)
+    doc_insurance_dec_validated_by = fields.Many2one('res.users', string='Assurance Déc. Validée par', readonly=True, copy=False)
+    doc_insurance_dec_validated_at = fields.Datetime(string='Assurance Déc. Validée le', readonly=True, copy=False)
     
     # ============= DOCUMENTS: ASSURANCE RC PRO ============= #
     doc_insurance_pro = fields.Binary(string='Assurance RC Pro', attachment=True)
@@ -169,6 +191,9 @@ class ResPartner(models.Model):
         ('expired', 'Expiré'),
         ('rejected', 'Rejeté'),
     ], string='Statut RC Pro', compute='_compute_doc_statuses', store=True)
+    doc_insurance_pro_is_validated = fields.Boolean(string='RC Pro Validée', default=False, copy=False)
+    doc_insurance_pro_validated_by = fields.Many2one('res.users', string='RC Pro Validée par', readonly=True, copy=False)
+    doc_insurance_pro_validated_at = fields.Datetime(string='RC Pro Validée le', readonly=True, copy=False)
     
     # ============= DOCUMENTS: RIB ============= #
     doc_rib = fields.Binary(string='RIB', attachment=True)
@@ -179,6 +204,9 @@ class ResPartner(models.Model):
         ('valid', 'Valide'),
         ('rejected', 'Rejeté'),
     ], string='Statut RIB', compute='_compute_doc_statuses', store=True)
+    doc_rib_is_validated = fields.Boolean(string='RIB Validé', default=False, copy=False)
+    doc_rib_validated_by = fields.Many2one('res.users', string='RIB Validé par', readonly=True, copy=False)
+    doc_rib_validated_at = fields.Datetime(string='RIB Validé le', readonly=True, copy=False)
     
     # ============= DOCUMENTS: CNI (Carte d'Identité) ============= #
     doc_cni = fields.Binary(string='Carte d\'Identité', attachment=True)
@@ -192,12 +220,16 @@ class ResPartner(models.Model):
         ('expired', 'Expiré'),
         ('rejected', 'Rejeté'),
     ], string='Statut CNI', compute='_compute_doc_statuses', store=True)
+    doc_cni_is_validated = fields.Boolean(string='CNI Validé', default=False, copy=False)
+    doc_cni_validated_by = fields.Many2one('res.users', string='CNI Validé par', readonly=True, copy=False)
+    doc_cni_validated_at = fields.Datetime(string='CNI Validé le', readonly=True, copy=False)
     
     # ============= COMPLIANCE STATE ============= #
     compliance_state = fields.Selection([
         ('compliant', 'Conforme'),
         ('incomplete', 'Incomplet'),
         ('expired', 'Documents expirés'),
+        ('missing', 'Dossier Vierge'),
     ], string='État de conformité', compute='_compute_compliance_state', store=True)
     
     missing_documents = fields.Text(
@@ -232,18 +264,42 @@ class ResPartner(models.Model):
         string='Lots Assignés'
     )
     
+    # ============= DOCUMENT ARCHIVES ============= #
+    archive_ids = fields.One2many(
+        'subcontractor.document.archive', 'partner_id',
+        string='Documents Archivés'
+    )
+    archive_count = fields.Integer(
+        compute='_compute_archive_count',
+        string='Nombre d\'archives'
+    )
+    
+    @api.depends('archive_ids')
+    def _compute_archive_count(self):
+        for partner in self:
+            partner.archive_count = len(partner.archive_ids)
+    
     # ============= COMPUTED METHODS ============= #
     
     @api.depends(
-        'doc_kbis', 'doc_kbis_expiry',
-        'doc_urssaf', 'doc_urssaf_expiry',
-        'doc_insurance_dec', 'doc_insurance_dec_expiry',
-        'doc_insurance_pro', 'doc_insurance_pro_expiry',
-        'doc_cni', 'doc_cni_expiry',
-        'doc_rib'
+        'doc_kbis', 'doc_kbis_expiry', 'doc_kbis_is_validated',
+        'doc_urssaf', 'doc_urssaf_expiry', 'doc_urssaf_is_validated',
+        'doc_insurance_dec', 'doc_insurance_dec_expiry', 'doc_insurance_dec_is_validated',
+        'doc_insurance_pro', 'doc_insurance_pro_expiry', 'doc_insurance_pro_is_validated',
+        'doc_cni', 'doc_cni_expiry', 'doc_cni_is_validated',
+        'doc_rib', 'doc_rib_is_validated'
     )
     def _compute_doc_statuses(self):
-        """Compute individual document statuses based on content and expiry."""
+        """Compute individual document statuses based on content, expiry, and validation state.
+        
+        State Machine (SAP-style):
+        - missing: No file uploaded
+        - to_check: File present but not validated by admin
+        - valid: Validated by admin AND not expired
+        - expiring: Validated but expiring within 30 days
+        - expired: Past expiry date (overrides validation)
+        - rejected: Not used in compute, set manually via wizard
+        """
         today = date.today()
         warning_threshold = today + timedelta(days=EXPIRY_WARNING_DAYS)
         
@@ -252,27 +308,41 @@ class ResPartner(models.Model):
                 doc_field = config['field']
                 status_field = config['status_field']
                 expiry_field = config.get('expiry_field')
+                validation_field = config.get('validation_field')
                 
                 doc_content = getattr(partner, doc_field, None)
                 
+                # STATE: No document = missing
                 if not doc_content:
                     setattr(partner, status_field, 'missing')
                     continue
                 
+                # STATE: Check validation flag first
+                is_validated = getattr(partner, validation_field, False) if validation_field else False
+                
                 # If document has expiry, check it
                 if expiry_field:
                     expiry_date = getattr(partner, expiry_field, None)
-                    if not expiry_date:
-                        setattr(partner, status_field, 'to_check')
-                    elif expiry_date < today:
+                    
+                    # Expiry checks (override validation if expired)
+                    if expiry_date and expiry_date < today:
                         setattr(partner, status_field, 'expired')
-                    elif expiry_date <= warning_threshold:
+                    elif not is_validated:
+                        # Not validated yet = to_check
+                        setattr(partner, status_field, 'to_check')
+                    elif expiry_date and expiry_date <= warning_threshold:
                         setattr(partner, status_field, 'expiring')
+                    elif not expiry_date:
+                        # Validated but no expiry date = to_check (need date)
+                        setattr(partner, status_field, 'to_check')
                     else:
                         setattr(partner, status_field, 'valid')
                 else:
-                    # No expiry = valid if present
-                    setattr(partner, status_field, 'valid')
+                    # No expiry field (e.g., RIB): valid only if validated
+                    if is_validated:
+                        setattr(partner, status_field, 'valid')
+                    else:
+                        setattr(partner, status_field, 'to_check')
     
     @api.depends(
         'doc_kbis_status', 'doc_urssaf_status',
@@ -296,6 +366,8 @@ class ResPartner(models.Model):
             
             if 'expired' in statuses:
                 partner.compliance_state = 'expired'
+            elif all(s == 'missing' for s in statuses):
+                partner.compliance_state = 'missing'
             elif 'missing' in statuses or 'rejected' in statuses or 'to_check' in statuses:
                 partner.compliance_state = 'incomplete'
             else:
@@ -542,6 +614,151 @@ class ResPartner(models.Model):
             'context': {'default_partner_id': self.id},
         }
     
+    def action_view_archives(self):
+        """Open archived documents for this subcontractor."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Documents Archivés - %s') % self.name,
+            'res_model': 'subcontractor.document.archive',
+            'view_mode': 'list,form',
+            'domain': [('partner_id', '=', self.id)],
+            'context': {'default_partner_id': self.id},
+        }
+    
+    def action_check_document_expiry(self):
+        """Manually trigger document expiration check (admin only)."""
+        self.ensure_one()
+        # Recompute status fields (they check expiry dates)
+        self._compute_document_statuses()
+        self._compute_compliance_state()
+        
+        # Log the manual check
+        self.message_post(
+            body=_("Verification manuelle des expirations declenchee par %s") % self.env.user.name,
+            message_type='notification'
+        )
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Verification effectuee'),
+                'message': _('Etat de conformite: %s') % dict(self._fields['compliance_state'].selection).get(self.compliance_state, 'Inconnu'),
+                'type': 'info',
+                'sticky': False,
+            }
+        }
+    
+    def action_request_document(self):
+        """Re-request a document based on context 'doc_type'.
+        
+        Archives current document, clears field, and sends notification.
+        """
+        self.ensure_one()
+        doc_type = self.env.context.get('doc_type')
+        if not doc_type or doc_type not in DOCUMENT_TYPES:
+            raise UserError(_("Type de document non spécifié ou invalide."))
+            
+        config = DOCUMENT_TYPES[doc_type]
+        field_name = config['field']
+        doc_name = config['name']
+        
+        # Archive current document using the helper
+        self._archive_document(self, doc_type, config, 'requested', None)
+        
+        # Clear the document fields
+        self.write({
+            field_name: False,
+            f'{field_name}_filename': False,
+            f'{field_name}_is_validated': False,
+            f'{field_name}_validated_by': False,
+            f'{field_name}_validated_at': False,
+        })
+        
+        # Log in chatter
+        self.message_post(
+            body=_("🔄 Document <b>%s</b> redemandé par %s. En attente de nouveau document.") % (
+                doc_name,
+                self.env.user.name
+            ),
+            message_type='notification'
+        )
+        
+        # Send notification email
+        self._send_request_notification(doc_name)
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Document Redemandé'),
+                'message': _('Le sous-traitant a été notifié.'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def _send_request_notification(self, doc_name):
+        """Send email notification to subcontractor about document re-request."""
+        if not self.email:
+            return
+        
+        template = self.env.ref('construction_subcontractor.email_template_document_request', raise_if_not_found=False)
+        if template:
+            template.with_context(doc_name=doc_name).send_mail(self.id, force_send=True)
+        else:
+            # Fallback activity
+            self.env['mail.activity'].create({
+                'res_model_id': self.env['ir.model']._get('res.partner').id,
+                'res_id': self.id,
+                'activity_type_id': self.env.ref('mail.mail_activity_data_todo').id,
+                'summary': _("Envoyer demande: %s") % doc_name,
+                'note': _("Envoyer email manuel pour demander: %s") % doc_name,
+                'user_id': self.env.user.id,
+            })
+
+    # ============= DOCUMENT ARCHIVING HELPER ============= #
+    
+    def _archive_document(self, partner, doc_key, config, reason, replaced_by_filename=None):
+        """Helper to archive a document.
+        
+        Args:
+            partner: The res.partner record
+            doc_key: Document type key (kbis, urssaf, etc.)
+            config: Document type configuration from DOCUMENT_TYPES
+            reason: Archive reason (replaced, deleted, requested, rejected)
+            replaced_by_filename: Filename of replacement doc if applicable
+        """
+        field_name = config['field']
+        validation_field = config.get('validation_field')
+        
+        current_file = getattr(partner, field_name)
+        if not current_file:
+            return
+        
+        filename = getattr(partner, f'{field_name}_filename') or config['name']
+        expiry_date = getattr(partner, config['expiry_field']) if config.get('expiry_field') else False
+        
+        # Capture validation state
+        was_validated = getattr(partner, validation_field, False) if validation_field else False
+        validated_by = getattr(partner, f'{field_name}_validated_by', False)
+        validated_at = getattr(partner, f'{field_name}_validated_at', False)
+        
+        self.env['subcontractor.document.archive'].create({
+            'partner_id': partner.id,
+            'document_type': doc_key,
+            'file_data': current_file,
+            'filename': filename,
+            'expiry_date': expiry_date,
+            'replaced_by_user_id': self.env.user.id,
+            'reason': reason,
+            'replaced_by_filename': replaced_by_filename,
+            'was_validated': was_validated,
+            'validated_by_name': validated_by.name if validated_by else False,
+            'original_validated_at': validated_at,
+        })
+    
     # ============= WRITE OVERRIDE (Archiving & Automation) ============= #
     
     def write(self, vals):
@@ -550,35 +767,48 @@ class ResPartner(models.Model):
         1. Archive old documents before they are replaced.
         2. Auto-update stage based on compliance after changes.
         """
-        # 1. Archive old documents
+        # 1. Archive old documents and RESET VALIDATION on new upload
         if any(cfg['field'] in vals for cfg in DOCUMENT_TYPES.values()):
             for partner in self:
                 for doc_key, config in DOCUMENT_TYPES.items():
                     field_name = config['field']
+                    validation_field = config.get('validation_field')
                     
-                    # If this field is being updated and has a value (uploading new file)
-                    if field_name in vals and vals[field_name]:
+                    # Check if this field is being updated
+                    if field_name in vals:
                         current_file = getattr(partner, field_name)
-                        # If there was a file before, archive it
-                        if current_file and current_file != vals[field_name]:
-                            filename = getattr(partner, field_name + '_filename') or config['name']
-                            expiry_date = getattr(partner, config['expiry_field']) if config.get('expiry_field') else False
+                        new_file = vals[field_name]
+                        
+                        # Case 1: Uploading new file (replace)
+                        if new_file:
+                            # CRITICAL: Reset validation state for new uploads
+                            if validation_field:
+                                vals[validation_field] = False
+                                vals[f'{field_name}_validated_by'] = False
+                                vals[f'{field_name}_validated_at'] = False
                             
-                            self.env['subcontractor.document.archive'].create({
-                                'partner_id': partner.id,
-                                'document_type': doc_key,
-                                'file_data': current_file,
-                                'filename': f"{filename.split('.')[0]}_ARCHIVE_{fields.Date.today().strftime('%Y%m%d')}.pdf",
-                                'expiry_date': expiry_date,
-                                'replaced_by_user_id': self.env.user.id,
-                            })
+                            # Archive old file if exists and different
+                            if current_file and current_file != new_file:
+                                self._archive_document(partner, doc_key, config, 'replaced', 
+                                                       vals.get(f'{field_name}_filename', 'Nouveau document'))
+                        
+                        # Case 2: Clearing file (delete)
+                        elif current_file and not new_file:
+                            self._archive_document(partner, doc_key, config, 'deleted', None)
+
 
         # 2. Execute Write
         res = super(ResPartner, self).write(vals)
         
         # 3. Stage Automation
         # Trigger if compliance or docs changed
-        trigger_fields = ['compliance_state'] + [cfg['field'] for cfg in DOCUMENT_TYPES.values()]
+        # Trigger if compliance or docs changed (including validation)
+        trigger_fields = ['compliance_state'] 
+        for cfg in DOCUMENT_TYPES.values():
+            trigger_fields.append(cfg['field'])
+            if 'validation_field' in cfg:
+                trigger_fields.append(cfg['validation_field'])
+                
         if any(f in vals for f in trigger_fields):
             for partner in self:
                 if partner.is_subcontractor:

@@ -75,7 +75,7 @@ class TestPortalController(HttpCase):
         """Stage endpoint should require doc_key parameter."""
         response = self.url_open(
             f'/subcontractor/upload/{self.token}/stage',
-            data={},
+            data={'dummy': 'force_post'},
         )
         
         result = json.loads(response.content)
@@ -110,28 +110,57 @@ class TestPortalController(HttpCase):
     
     def test_submit_single_with_invalid_token_fails(self):
         """Submit single should fail with invalid token."""
-        response = self.url_open(
-            '/subcontractor/upload/invalid_token/submit-single',
-            data=json.dumps({
+        # Note: submit-single is type='json', so we must send JSON-RPC or Odoo wraps response
+        # When using url_open with json data, it's treated as raw body, but endpoint expects params?
+        # Actually for type='json', Odoo expects {"params": ...} usually.
+        # But let's check the result structure.
+        
+        # Proper JSON-RPC call
+        payload = {
+            "jsonrpc": "2.0",
+            "method": "call",
+            "params": {
                 'doc_key': 'kbis',
                 'file_base64': base64.b64encode(b'test').decode(),
                 'filename': 'test.pdf'
-            }),
+            },
+            "id": 1
+        }
+        
+        response = self.url_open(
+            '/subcontractor/upload/invalid_token/submit-single',
+            data=json.dumps(payload),
             headers={'Content-Type': 'application/json'},
         )
         
         result = json.loads(response.content)
-        self.assertFalse(result.get('success', True))
+        # Odoo JSON-RPC response: {'jsonrpc': '2.0', 'id': ..., 'result': ...}
+        # If the endpoint returns a dict, it's in 'result'.
+        
+        response_data = result.get('result', {})
+        # If there was an error (Odoo exception), it might be in 'error' key of top level
+        # But our controller returns a dict {success: False, error: ...}
+        
+        self.assertFalse(response_data.get('success', True), "Should return success: False")
+        self.assertIn('error', response_data, "Should return error message")
     
     # ============= CLEAR STAGED TESTS ============= #
     
     def test_clear_staged_succeeds(self):
         """Clear staged should succeed even with empty session."""
+        payload = {
+            "jsonrpc": "2.0",
+            "method": "call",
+            "params": {},
+            "id": 1
+        }
+        
         response = self.url_open(
             f'/subcontractor/upload/{self.token}/clear-staged',
-            data=json.dumps({}),
+            data=json.dumps(payload),
             headers={'Content-Type': 'application/json'},
         )
         
         result = json.loads(response.content)
-        self.assertTrue(result.get('success'))
+        data = result.get('result', {})
+        self.assertTrue(data.get('success'))

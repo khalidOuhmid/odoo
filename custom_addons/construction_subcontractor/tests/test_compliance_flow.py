@@ -30,12 +30,22 @@ class TestComplianceFlow(TransactionCase):
             'email': 'mario@plomberie.test',
         })
         
+        # Create a generic client partner for chantier
+        cls.client_partner = cls.Partner.create({
+            'name': 'Test Client',
+            'is_company': True,
+            'email': 'client@test.com',
+        })
+        
         # Create chantier and lot for assignment tests
         cls.Chantier = cls.env['construction.chantier']
         cls.Lot = cls.env['construction.lot']
         
         cls.chantier = cls.Chantier.create({
             'name': 'Test Chantier',
+            'client': cls.client_partner.id,
+            'address': '123 Test St',
+            'company_id': cls.env.company.id,
         })
         
         category = cls.env['construction.lot.category'].create({
@@ -45,16 +55,26 @@ class TestComplianceFlow(TransactionCase):
         
         cls.lot = cls.Lot.create({
             'name': 'Lot Plomberie',
-            'chantier_id': cls.chantier.id,
+            'code': 'LOT-PLOMB-01',
             'category_id': category.id,
+            'chantier_id': cls.chantier.id,
             'execution_type': 'external',
+            'sequence': 10,
         })
         
-        # Sample document content (base64)
         cls.sample_doc = base64.b64encode(b'Test PDF Content')
         cls.future_date = date.today() + timedelta(days=90)
         cls.expired_date = date.today() - timedelta(days=1)
         cls.expiring_soon_date = date.today() + timedelta(days=15)
+
+    def _validate_all_docs(self):
+        """Helper to validate all uploaded documents for plumber."""
+        vals = {}
+        for key in ['kbis', 'urssaf', 'insurance_dec', 'insurance_pro', 'cni', 'rib']:
+            if getattr(self.plumber, f'doc_{key}'):
+                vals[f'doc_{key}_is_validated'] = True
+        if vals:
+            self.plumber.write(vals)
     
     # ============= DOCUMENT STATUS TESTS ============= #
     
@@ -71,6 +91,7 @@ class TestComplianceFlow(TransactionCase):
             'doc_kbis': self.sample_doc,
             'doc_kbis_expiry': self.future_date,
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.doc_kbis_status, 'valid',
             "Status should be 'valid' with future expiry"
@@ -82,6 +103,7 @@ class TestComplianceFlow(TransactionCase):
             'doc_kbis': self.sample_doc,
             'doc_kbis_expiry': self.expired_date,
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.doc_kbis_status, 'expired',
             "Status should be 'expired' with past expiry date"
@@ -93,6 +115,7 @@ class TestComplianceFlow(TransactionCase):
             'doc_kbis': self.sample_doc,
             'doc_kbis_expiry': self.expiring_soon_date,
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.doc_kbis_status, 'expiring',
             "Status should be 'expiring' when expiry is within 30 days"
@@ -119,6 +142,7 @@ class TestComplianceFlow(TransactionCase):
             'doc_cni': self.sample_doc,
             'doc_cni_expiry': self.future_date,
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.compliance_state, 'compliant',
             "Compliance should be 'compliant' with all valid required docs"
@@ -131,6 +155,7 @@ class TestComplianceFlow(TransactionCase):
             'doc_kbis_expiry': self.future_date,
             # Missing other required docs
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.compliance_state, 'incomplete',
             "Compliance should be 'incomplete' with partial documents"
@@ -145,9 +170,9 @@ class TestComplianceFlow(TransactionCase):
             'doc_urssaf_expiry': self.future_date,
             'doc_insurance_dec': self.sample_doc,
             'doc_insurance_dec_expiry': self.future_date,
-            'doc_cni': self.sample_doc,
             'doc_cni_expiry': self.future_date,
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.compliance_state, 'expired',
             "Compliance should be 'expired' when any required doc is expired"
@@ -171,9 +196,9 @@ class TestComplianceFlow(TransactionCase):
             'doc_urssaf_expiry': date.today() + timedelta(days=60),
             'doc_insurance_dec': self.sample_doc,
             'doc_insurance_dec_expiry': date.today() + timedelta(days=60),
-            'doc_cni': self.sample_doc,
             'doc_cni_expiry': date.today() + timedelta(days=60),
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.alert_level, 'green',
             "Alert level should be 'green' with all valid docs >30 days"
@@ -188,9 +213,9 @@ class TestComplianceFlow(TransactionCase):
             'doc_urssaf_expiry': date.today() + timedelta(days=60),
             'doc_insurance_dec': self.sample_doc,
             'doc_insurance_dec_expiry': date.today() + timedelta(days=60),
-            'doc_cni': self.sample_doc,
             'doc_cni_expiry': date.today() + timedelta(days=60),
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.alert_level, 'yellow',
             "Alert level should be 'yellow' when any doc expires within 30 days"
@@ -205,9 +230,9 @@ class TestComplianceFlow(TransactionCase):
             'doc_urssaf_expiry': self.future_date,
             'doc_insurance_dec': self.sample_doc,
             'doc_insurance_dec_expiry': self.future_date,
-            'doc_cni': self.sample_doc,
             'doc_cni_expiry': self.future_date,
         })
+        self._validate_all_docs()
         self.assertEqual(
             self.plumber.alert_level, 'red',
             "Alert level should be 'red' with any expired document"
@@ -278,9 +303,9 @@ class TestComplianceFlow(TransactionCase):
             'doc_urssaf_expiry': self.future_date,
             'doc_insurance_dec': self.sample_doc,
             'doc_insurance_dec_expiry': self.future_date,
-            'doc_cni': self.sample_doc,
             'doc_cni_expiry': self.future_date,
         })
+        self._validate_all_docs()
         
         wizard = self.Wizard.create({
             'lot_id': self.lot.id,
@@ -313,9 +338,9 @@ class TestComplianceFlow(TransactionCase):
             'doc_urssaf_expiry': self.future_date,
             'doc_insurance_dec': self.sample_doc,
             'doc_insurance_dec_expiry': self.future_date,
-            'doc_cni': self.sample_doc,
             'doc_cni_expiry': self.future_date,
         })
+        self._validate_all_docs()
         
         self.assertEqual(
             self.plumber.subcontractor_stage, 'compliant',
@@ -333,9 +358,9 @@ class TestComplianceFlow(TransactionCase):
             'doc_urssaf_expiry': self.future_date,
             'doc_insurance_dec': self.sample_doc,
             'doc_insurance_dec_expiry': self.future_date,
-            'doc_cni': self.sample_doc,
             'doc_cni_expiry': self.future_date,
         })
+        self._validate_all_docs()
         
         # Run cron
         self.Partner.cron_check_document_expiry()

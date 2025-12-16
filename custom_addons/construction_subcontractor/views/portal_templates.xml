@@ -10,6 +10,121 @@
                 <t t-call-assets="web.assets_common" t-js="false"/>
                 <t t-call-assets="web.assets_frontend" t-js="false"/>
                 <t t-call-assets="web.assets_common" t-css="false"/>
+                
+                <!-- Mobile Responsive Styles -->
+                <style type="text/css">
+                    /* ============= MOBILE RESPONSIVE ============= */
+                    
+                    /* Touch-friendly targets (48px minimum) */
+                    .btn, .form-control, .file-input-wrapper {
+                        min-height: 48px;
+                    }
+                    
+                    /* Mobile layout adjustments */
+                    @media (max-width: 767.98px) {
+                        /* Stack document rows vertically */
+                        .doc-row-container {
+                            flex-direction: column !important;
+                            align-items: stretch !important;
+                        }
+                        
+                        .doc-row-container > * {
+                            margin-bottom: 0.5rem;
+                        }
+                        
+                        /* Larger buttons on mobile */
+                        .btn {
+                            padding: 0.75rem 1rem;
+                            font-size: 1rem;
+                            width: 100%;
+                            margin-bottom: 0.5rem;
+                        }
+                        
+                        /* Better spacing for cards */
+                        .card-body {
+                            padding: 1rem;
+                        }
+                        
+                        /* Readable text */
+                        body {
+                            font-size: 16px;
+                        }
+                        
+                        /* Header adjustments */
+                        .fixed-top .container {
+                            padding-left: 0.75rem;
+                            padding-right: 0.75rem;
+                        }
+                        
+                        /* Better file label display */
+                        .file-label-text {
+                            max-width: 100%;
+                            overflow: hidden;
+                            text-overflow: ellipsis;
+                            white-space: nowrap;
+                            display: block;
+                        }
+                        
+                        /* Status badges */
+                        .badge {
+                            font-size: 0.85rem;
+                            padding: 0.5em 0.75em;
+                        }
+                        
+                        /* Main container */
+                        .container {
+                            padding-left: 1rem;
+                            padding-right: 1rem;
+                        }
+                        
+                        /* Submit button full width */
+                        #global-submit-btn {
+                            width: 100%;
+                            padding: 1rem;
+                            font-size: 1.1rem;
+                        }
+                    }
+                    
+                    /* Very small screens (phones portrait) */
+                    @media (max-width: 575.98px) {
+                        .card-header h5 {
+                            font-size: 1.1rem;
+                        }
+                        
+                        /* Hide less important columns */
+                        .d-sm-hide {
+                            display: none !important;
+                        }
+                    }
+                    
+                    /* Prevent horizontal scroll */
+                    html, body {
+                        overflow-x: hidden;
+                        max-width: 100vw;
+                    }
+                    
+                    /* Loading spinner for buttons */
+                    .btn.loading {
+                        pointer-events: none;
+                        opacity: 0.7;
+                    }
+                    
+                    .btn.loading::after {
+                        content: '';
+                        display: inline-block;
+                        width: 1rem;
+                        height: 1rem;
+                        border: 2px solid transparent;
+                        border-top-color: currentColor;
+                        border-radius: 50%;
+                        animation: spin 0.75s linear infinite;
+                        margin-left: 0.5rem;
+                    }
+                    
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                </style>
                 <script type="text/javascript">
                     // ============================================
                     // PORTAL DOCUMENT STAGING WORKFLOW
@@ -47,6 +162,9 @@
                         
                         switch(state) {
                             case DocState.STAGED:
+                                // Hide initial server status badge (e.g., "Manquant")
+                                if (statusBadge) statusBadge.classList.add('d-none');
+                                
                                 if (stagedIndicator) {
                                     stagedIndicator.classList.remove('d-none');
                                     stagedIndicator.textContent = '📎 En attente';
@@ -60,6 +178,9 @@
                                 }
                                 break;
                             case DocState.SUBMITTED:
+                                // Hide initial server status badge
+                                if (statusBadge) statusBadge.classList.add('d-none');
+                                
                                 if (stagedIndicator) {
                                     stagedIndicator.classList.remove('d-none');
                                     stagedIndicator.textContent = '✓ Envoyé';
@@ -71,6 +192,9 @@
                                 break;
                             case DocState.EMPTY:
                             default:
+                                // Show initial server status badge
+                                if (statusBadge) statusBadge.classList.remove('d-none');
+                                
                                 if (selectBtn) {
                                     selectBtn.classList.remove('btn-warning', 'border-warning');
                                 }
@@ -111,13 +235,14 @@
                         const autoExpireDocs = ['kbis', 'urssaf'];
                         
                         // For docs requiring date input, check the date
+                        // NOTE: We allow file upload even without date - date can be added later
+                        // This provides better UX than blocking the upload
                         if (!autoExpireDocs.includes(docKey)) {
                             const expiryDateInput = container.querySelector('.input-expiry-date');
-                            if (expiryDateInput &amp;&amp; !expiryDateInput.value) {
-                                if (element === fileInput) {
-                                    alert("Veuillez renseigner la date d'expiration avant de choisir le fichier.");
-                                }
-                                return; // Stop if date missing for non-auto docs
+                            if (expiryDateInput &amp;&amp; !expiryDateInput.value &amp;&amp; element === fileInput) {
+                                // Show non-blocking warning - user can add date after file selection
+                                console.warn(`Date d'expiration manquante pour ${docKey}. L'utilisateur peut l'ajouter après.`);
+                                // Don't return - allow upload to proceed
                             }
                         }
 
@@ -151,8 +276,11 @@
                             const result = await response.json();
                             
                             if (result.success) {
-                                // Update local cache
-                                stagedDocsCache[docKey] = { filename: result.filename };
+                                // Update local cache with expiry returned by server
+                                stagedDocsCache[docKey] = { 
+                                    filename: result.filename,
+                                    expiry_date: result.expiry_date 
+                                };
                                 
                                 // Update UI
                                 updateUIState(container, DocState.STAGED, result.filename);
@@ -175,6 +303,34 @@
                             alert('Aucun document en attente.');
                             return;
                         }
+
+                        // CLIENT-SIDE VALIDATION FOR EXPIRY
+                        const REQUIRED_EXPIRY_DOCS = ['cni', 'insurance_dec'];
+                        const DOC_NAMES = {'cni': "Carte d'identité", 'insurance_dec': 'Assurance Décennale'};
+                        
+                        for (const [docKey, docData] of Object.entries(stagedDocsCache)) {
+                            if (REQUIRED_EXPIRY_DOCS.includes(docKey)) {
+                                if (!docData.expiry_date) {
+                                    // Try to get from input fallback
+                                    const container = document.querySelector(`[data-doc-key="${docKey}"]`);
+                                    const input = container ? container.querySelector('.input-expiry-date') : null;
+                                    
+                                    if (!input || !input.value) {
+                                        alert(`Veuillez renseigner la date d'expiration pour : ${DOC_NAMES[docKey] || docKey}`);
+                                        // Highlight the missing field
+                                        if (input) {
+                                            input.style.border = "2px solid red";
+                                            input.scrollIntoView({behavior: "smooth", block: "center"});
+                                        }
+                                        return; // Stop submission
+                                    } else {
+                                        // Update cache if found in input but lost in cache (unlikely but safe)
+                                        stagedDocsCache[docKey].expiry_date = input.value;
+                                    }
+                                }
+                            }
+                        }
+
                         
                         const submitBtn = document.getElementById('global-submit-btn');
                         if (submitBtn) {
@@ -226,16 +382,60 @@
                         await submitAllDocuments();
                     }
                     
+                    // ============= REQUIRED DOCUMENTS ============= //
+                    // Dynamic calculation based on rendered elements
+                    
                     function updateGlobalSubmitButton() {
-                        const count = Object.keys(stagedDocsCache).length;
+                        const stagedKeys = Object.keys(stagedDocsCache);
                         const btn = document.getElementById('global-submit-btn');
                         const badge = document.getElementById('staged-count-badge');
                         
-                        if (btn) btn.disabled = count === 0;
-                        if (badge) {
-                            badge.textContent = count;
-                            badge.classList.toggle('d-none', count === 0);
+                        // Calculate required docs DYNAMICALLY from visible elements
+                        // Only documents rendered on the page (filtered by controller) are candidates for requirement
+                        const visibleRequiredDocs = [];
+                        document.querySelectorAll('.doc-row-container').forEach(container => {
+                            // If marked required in DOM (dataset.required) and visible
+                            if (container.dataset.required === 'True') {
+                                visibleRequiredDocs.push(container.dataset.docKey);
+                            }
+                        });
+                        
+                        // Check if ALL visible required documents are staged
+                        const allRequiredStaged = visibleRequiredDocs.every(k => stagedKeys.includes(k));
+                        const missingRequired = visibleRequiredDocs.filter(k => !stagedKeys.includes(k));
+                        
+                        if (btn) {
+                            btn.disabled = !allRequiredStaged;
+                            
+                            // Update button text to show what's missing
+                            if (missingRequired.length > 0) {
+                                btn.innerHTML = `<i class="fa fa-exclamation-triangle me-2"></i>Documents requis manquants (${missingRequired.length})`;
+                                btn.classList.remove('btn-success');
+                                btn.classList.add('btn-secondary');
+                            } else {
+                                btn.innerHTML = `<i class="fa fa-paper-plane me-2"></i>SOUMETTRE <span id="staged-count-badge" class="badge bg-light text-dark ms-2">${stagedKeys.length}</span>`;
+                                btn.classList.remove('btn-secondary');
+                                btn.classList.add('btn-success');
+                            }
                         }
+                        
+                        // Highlight missing required docs in the UI
+                        updateMissingDocsIndicators(missingRequired);
+                    }
+                    
+                    function updateMissingDocsIndicators(missingKeys) {
+                        // Add visual indicator to required but missing docs
+                        document.querySelectorAll('.doc-row-container').forEach(container => {
+                            const docKey = container.dataset.docKey;
+                            const isRequired = container.dataset.required === 'True';
+                            const isMissing = missingKeys.includes(docKey);
+                            
+                            if (isRequired &amp;&amp; isMissing) {
+                                container.classList.add('border-start', 'border-danger', 'border-3');
+                            } else {
+                                container.classList.remove('border-start', 'border-danger', 'border-3');
+                            }
+                        });
                     }
                     
                     // ============= PAGE LOAD: Recover from server session ============= //
@@ -296,7 +496,7 @@
                             <!-- Helper Banner -->
                             <div class="alert border-0 shadow-sm mb-4 rounded-3" style="background-color: #D4C5BC; color: #505050;">
                                 <i class="fa fa-info-circle me-2" style="color: #92564C;"/> 
-                                <strong>Mode Brouillon :</strong> Sélectionnez vos documents, puis cliquez sur "Soumettre" pour les envoyer.
+                                <strong>Documents obligatoires :</strong> KBIS, URSSAF, Assurance Decennale et Carte d'identite du gerant. Une fois tous les documents selectionnes, cliquez sur le bouton vert "Soumettre" en bas de page.
                             </div>
 
                             <div class="card shadow-sm border-0 rounded-4 overflow-hidden" style="box-shadow: 0 10px 40px rgba(0,0,0,0.03) !important;">
@@ -480,30 +680,69 @@
         </t>
     </template>
 
-    <!-- ==================== ERROR PAGE ==================== -->
+    <!-- ==================== ERROR PAGE (MINIMAL - No Header/Footer) ==================== -->
     <template id="upload_error" name="Upload Error">
-        <t t-call="web.frontend_layout">
-            <div class="container py-5">
-                <div class="row justify-content-center">
-                    <div class="col-lg-6 text-center">
-                        <div class="card shadow-lg border-0">
-                            <div class="card-body py-5">
-                                <div class="mb-4">
-                                    <i class="fa fa-exclamation-triangle text-warning" style="font-size: 80px;"/>
-                                </div>
-                                <h2 class="text-warning mb-3"><t t-esc="error_title"/></h2>
-                                <p class="lead text-muted mb-4">
-                                    <t t-esc="error_message"/>
-                                </p>
-                                <p class="text-muted">
-                                    Contactez l'entreprise pour obtenir un nouveau lien d'upload.
-                                </p>
+        <html>
+            <head>
+                <meta charset="utf-8"/>
+                <meta name="viewport" content="width=device-width, initial-scale=1"/>
+                <title>Lien Invalide - BLG Groupe</title>
+                <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+                <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet"/>
+                <style>
+                    body { 
+                        background: linear-gradient(135deg, #f5f7fa 0%, #e4e8eb 100%); 
+                        min-height: 100vh; 
+                        font-family: 'Times New Roman', Times, serif;
+                    }
+                    .error-card { border-radius: 20px; }
+                    .blg-color { color: #92564C; }
+                    .blg-bg { background-color: #92564C; }
+                </style>
+            </head>
+            <body class="d-flex align-items-center justify-content-center">
+                <div class="container py-5">
+                    <div class="row justify-content-center">
+                        <div class="col-lg-6 col-md-8">
+                            <!-- BLG Header -->
+                            <div class="text-center mb-4">
+                                <h4 class="blg-color text-uppercase" style="letter-spacing: 2px;">BLG Groupe</h4>
                             </div>
+                            
+                            <div class="card error-card shadow-lg border-0">
+                                <div class="card-body text-center py-5">
+                                    <div class="mb-4">
+                                        <i class="fa-solid fa-triangle-exclamation blg-color" style="font-size: 80px;"></i>
+                                    </div>
+                                    <h2 class="blg-color mb-3"><t t-esc="error_title"/></h2>
+                                    <p class="lead text-muted mb-4">
+                                        <t t-esc="error_message"/>
+                                    </p>
+                                    
+                                    <div class="alert alert-light border text-start mb-4" role="alert">
+                                        <h6 class="alert-heading"><i class="fa-solid fa-info-circle me-2 blg-color"></i>Que faire ?</h6>
+                                        <hr/>
+                                        <ul class="mb-0 text-muted">
+                                            <li>Ce lien est peut-etre expire ou invalide.</li>
+                                            <li>Contactez le <strong>service administratif</strong> de BLG Groupe pour obtenir un nouveau lien.</li>
+                                            <li>Verifiez que vous avez copie l'integralite du lien.</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <p class="text-muted small">
+                                        Si vous pensez qu'il s'agit d'une erreur, veuillez contacter votre interlocuteur habituel.
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <p class="text-center text-muted mt-4 small">
+                                <i class="fa-solid fa-building me-1"></i> BLG Groupe - Service Administratif
+                            </p>
                         </div>
                     </div>
                 </div>
-            </div>
-        </t>
+            </body>
+        </html>
     </template>
 
     <!-- ==================== SUCCESS PAGE ==================== -->

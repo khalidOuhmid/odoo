@@ -35,6 +35,15 @@
                 <button name="action_view_contracts" type="object" class="oe_stat_button" icon="fa-file-text-o" invisible="not is_subcontractor">
                     <field name="contract_count" widget="statinfo" string="Contrats"/>
                 </button>
+                <button name="action_view_archives" type="object" class="oe_stat_button" icon="fa-archive" invisible="not is_subcontractor or archive_count == 0">
+                    <field name="archive_count" widget="statinfo" string="Archives"/>
+                </button>
+                <button name="action_check_document_expiry" type="object" class="oe_stat_button" icon="fa-clock-o" 
+                        invisible="not is_subcontractor"
+                        groups="base.group_system"
+                        title="Executer le cron de verification d'expiration (admin seulement)">
+                    <span class="o_stat_text">Check Expiry</span>
+                </button>
             </div>
             
             <!-- Add Subcontractor tab -->
@@ -70,12 +79,21 @@
                                         <field name="doc_kbis_status" widget="badge"/>
                                         <button name="action_open_validation_wizard" 
                                                 type="object" 
-                                                string="Vérifier"
+                                                string="Verifier"
                                                 icon="fa-check-circle"
                                                 class="btn btn-primary btn-sm ms-2"
                                                 title="Vérifier ce document"
                                                 invisible="doc_kbis_status != 'to_check'"
                                                 context="{'default_doc_type': 'kbis'}"/>
+                                        <button name="action_request_document" 
+                                                type="object" 
+                                                string="Redemander"
+                                                icon="fa-refresh"
+                                                class="btn btn-warning btn-sm ms-2"
+                                                title="Redemander ce document"
+                                                confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
+                                                invisible="doc_kbis_status not in ['valid', 'expired']"
+                                                context="{'doc_type': 'kbis'}"/>
                                     </div>
                                     
                                     <separator/>
@@ -87,15 +105,24 @@
                                         <field name="doc_cni_status" widget="badge"/>
                                         <button name="action_open_validation_wizard" 
                                                 type="object" 
-                                                string="Vérifier"
+                                                string="Verifier"
                                                 icon="fa-check-circle"
                                                 class="btn btn-primary btn-sm ms-2"
                                                 title="Vérifier ce document"
                                                 invisible="doc_cni_status != 'to_check'"
                                                 context="{'default_doc_type': 'cni'}"/>
+                                        <button name="action_request_document" 
+                                                type="object" 
+                                                string="Redemander"
+                                                icon="fa-refresh"
+                                                class="btn btn-warning btn-sm ms-2"
+                                                title="Redemander ce document"
+                                                confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
+                                                invisible="doc_cni_status not in ['valid', 'expired']"
+                                                context="{'doc_type': 'cni'}"/>
                                     </div>
                                 </group>
-                                <group string="Assurances &amp; Social">
+                                <group string="Assurances &amp; Fiscal">
                                     <field name="doc_insurance_dec" filename="doc_insurance_dec_filename"/>
                                     <field name="doc_insurance_dec_filename" invisible="1"/>
                                     <field name="doc_insurance_dec_expiry"/>
@@ -103,12 +130,21 @@
                                         <field name="doc_insurance_dec_status" widget="badge"/>
                                         <button name="action_open_validation_wizard" 
                                                 type="object" 
-                                                string="Vérifier"
+                                                string="Verifier"
                                                 icon="fa-check-circle"
                                                 class="btn btn-primary btn-sm ms-2"
                                                 title="Vérifier ce document"
                                                 invisible="doc_insurance_dec_status != 'to_check'"
                                                 context="{'default_doc_type': 'insurance_dec'}"/>
+                                        <button name="action_request_document" 
+                                                type="object" 
+                                                string="Redemander"
+                                                icon="fa-refresh"
+                                                class="btn btn-warning btn-sm ms-2"
+                                                title="Redemander ce document"
+                                                confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
+                                                invisible="doc_insurance_dec_status not in ['valid', 'expired']"
+                                                context="{'doc_type': 'insurance_dec'}"/>
                                     </div>
                                     
                                     <separator/>
@@ -120,12 +156,21 @@
                                         <field name="doc_urssaf_status" widget="badge"/>
                                         <button name="action_open_validation_wizard" 
                                                 type="object" 
-                                                string="Vérifier"
+                                                string="Verifier"
                                                 icon="fa-check-circle"
                                                 class="btn btn-primary btn-sm ms-2"
                                                 title="Vérifier ce document"
                                                 invisible="doc_urssaf_status != 'to_check'"
                                                 context="{'default_doc_type': 'urssaf'}"/>
+                                        <button name="action_request_document" 
+                                                type="object" 
+                                                string="Redemander"
+                                                icon="fa-refresh"
+                                                class="btn btn-warning btn-sm ms-2"
+                                                title="Redemander ce document"
+                                                confirm="Voulez-vous vraiment redemander ce document ? Le document actuel sera archive."
+                                                invisible="doc_urssaf_status not in ['valid', 'expired']"
+                                                context="{'doc_type': 'urssaf'}"/>
                                     </div>
                                 </group>
                             </group>
@@ -146,6 +191,24 @@
                                     </div>
                                 </group>
                             </group>
+                        </page>
+                        
+                        <!-- Archives Tab -->
+                        <page string="📁 Archives" name="archives">
+                            <field name="archive_ids" readonly="1">
+                                <list string="Documents Archivés" decoration-info="reason == 'requested'" decoration-muted="reason == 'deleted'">
+                                    <field name="document_type_display" string="Type"/>
+                                    <field name="filename"/>
+                                    <field name="expiry_date"/>
+                                    <field name="archived_date"/>
+                                    <field name="reason" widget="badge"/>
+                                    <field name="replaced_by_filename" optional="show"/>
+                                    <field name="was_validated" widget="boolean"/>
+                                    <field name="validated_by_name" optional="hide"/>
+                                    <field name="replaced_by_user_id" string="Archivé par"/>
+                                    <button name="action_download" type="object" icon="fa-download" title="Télécharger"/>
+                                </list>
+                            </field>
                         </page>
                     </notebook>
                 </page>

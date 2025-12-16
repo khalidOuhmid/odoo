@@ -21,6 +21,7 @@ class TestDocumentValidation(TransactionCase):
         cls.Partner = cls.env['res.partner']
         cls.Wizard = cls.env['document.validation.wizard']
         
+
         cls.subcontractor = cls.Partner.create({
             'name': 'Test Sous-traitant',
             'is_subcontractor': True,
@@ -54,6 +55,7 @@ class TestDocumentValidation(TransactionCase):
         self.assertTrue(wizard.doc_content, "Wizard should load document content")
         
         # Validate should succeed
+        wizard.action_preview() # Must preview first
         result = wizard.action_validate()
         self.assertEqual(result.get('type'), 'ir.actions.act_window_close')
     
@@ -210,3 +212,93 @@ class TestDocumentValidation(TransactionCase):
         """Opening wizard without doc_type should raise UserError."""
         with self.assertRaises(UserError):
             self.subcontractor.action_open_validation_wizard()
+    
+    # ============= NEW VALIDATION STATE MACHINE TESTS ============= #
+    
+    def test_upload_sets_status_to_check(self):
+        """Uploading a document should set status to 'to_check', NOT 'valid'."""
+        self.subcontractor.write({
+            'doc_kbis': self.sample_doc,
+            'doc_kbis_expiry': self.future_date,
+        })
+        
+        # Status should be to_check because is_validated is False
+        self.assertEqual(
+            self.subcontractor.doc_kbis_status,
+            'to_check',
+            "New upload should set status to 'to_check', not 'valid'"
+        )
+        self.assertFalse(
+            self.subcontractor.doc_kbis_is_validated,
+            "New upload should have is_validated=False"
+        )
+    
+    def test_validation_requires_preview(self):
+        """Validation should fail if document was not previewed."""
+        self.subcontractor.write({
+            'doc_kbis': self.sample_doc,
+            'doc_kbis_expiry': self.future_date,
+        })
+        
+        wizard = self._create_wizard('kbis')
+        
+        # has_previewed should be False by default
+        self.assertFalse(wizard.has_previewed)
+        
+        # Trying to validate without preview should raise error
+        with self.assertRaises(UserError) as context:
+            wizard.action_validate()
+        
+        self.assertIn('prévisualiser', str(context.exception).lower())
+    
+    def test_validation_after_preview_succeeds(self):
+        """Validation should succeed after preview and set correct fields."""
+        self.subcontractor.write({
+            'doc_kbis': self.sample_doc,
+            'doc_kbis_expiry': self.future_date,
+        })
+        
+        wizard = self._create_wizard('kbis')
+        
+        # Preview first
+        wizard.action_preview()
+        self.assertTrue(wizard.has_previewed, "action_preview should set has_previewed=True")
+        
+        # Now validate
+        wizard.action_validate()
+        
+        # Check validation fields are set
+        self.assertTrue(self.subcontractor.doc_kbis_is_validated)
+        self.assertEqual(self.subcontractor.doc_kbis_validated_by, self.env.user)
+        self.assertIsNotNone(self.subcontractor.doc_kbis_validated_at)
+        
+        # Check status is now valid
+        self.assertEqual(self.subcontractor.doc_kbis_status, 'valid')
+    
+    def test_new_upload_resets_validation(self):
+        """Re-uploading a document should reset validation state."""
+        # First validate
+        self.subcontractor.doc_kbis = self.sample_doc
+        self.subcontractor.doc_kbis_expiry = self.future_date
+        self.subcontractor.doc_kbis_is_validated = True
+        
+        # Verify initial state
+        self.assertEqual(self.subcontractor.doc_kbis_status, 'valid')
+        
+        # Now simulating a NEW upload by the user
+        # This writes the file field again
+        new_doc = base64.b64encode(b'New Document Content')
+        self.subcontractor.write({
+            'doc_kbis': new_doc,
+        })
+        
+        # Validation should be reset
+        self.assertFalse(
+            self.subcontractor.doc_kbis_is_validated,
+            "New upload should reset is_validated to False"
+        )
+        self.assertEqual(
+            self.subcontractor.doc_kbis_status,
+            'to_check',
+            "New upload should reset status to 'to_check'"
+        )

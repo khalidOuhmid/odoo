@@ -6,7 +6,7 @@
             <field name="name">Contrat Sous-Traitance Standard (BLG)</field>
             <field name="is_default">True</field>
             <field name="active">True</field>
-            <field name="body_html"><![CDATA[
+            <field name="grapesjs_html"><![CDATA[
 <!-- BLG CONTRACT TEMPLATE -->
 <style>
     .contract-container {

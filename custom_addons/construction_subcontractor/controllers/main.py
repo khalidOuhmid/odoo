@@ -43,7 +43,7 @@ class SubcontractorPortalController(http.Controller):
             })
         
         # Get document types dynamically from model config if possible, or hardcoded for safety based on user request
-        doc_types = [
+        all_doc_types = [
             {
                 'key': 'kbis',
                 'name': 'KBIS (Extrait Kbis)',
@@ -89,6 +89,16 @@ class SubcontractorPortalController(http.Controller):
                 'required': False,
             },
         ]
+
+        # FILTER: Show only documents requiring action (Missing, Rejected, Expired, Expiring)
+        # Always show RIB (optional but editable)
+        # Hide 'valid' and 'to_check' (pending validation)
+        doc_types = []
+        for doc in all_doc_types:
+            if doc['key'] == 'rib':
+                doc_types.append(doc)
+            elif doc['status'] not in ['valid', 'to_check']:
+                doc_types.append(doc)
         
         return request.render('construction_subcontractor.upload_page', {
             'partner': partner,
@@ -324,21 +334,26 @@ class SubcontractorPortalController(http.Controller):
         
         partner, error = self._validate_token(token)
         if error:
-            return request.make_json_response(error, status=400)
+            return request.make_json_response(error, status=200)
         
         doc_key = post.get('doc_key')
         if not doc_key:
             return request.make_json_response(
                 {'error': _("Type de document manquant."), 'success': False}, 
-                status=400
+                status=200
             )
         
         # Get or create staging area in session
         session_key = self._get_session_key(token)
-        if session_key not in request.session:
-            request.session[session_key] = {}
         
-        staged_docs = request.session[session_key]
+        # DEBUG: Log session state
+        session_id = getattr(request.session, 'sid', 'NO_SID')
+        _logger.info(f"STAGE DEBUG: session_id={session_id}, session_key={session_key}")
+        _logger.info(f"STAGE DEBUG: current session keys={list(request.session.keys())}")
+        
+        # Get existing staged docs or create new dict
+        staged_docs = dict(request.session.get(session_key, {}))
+        _logger.info(f"STAGE DEBUG: existing staged_docs BEFORE add = {list(staged_docs.keys())}")
         
         # Process uploaded file
         if 'file' in request.httprequest.files:
@@ -368,9 +383,13 @@ class SubcontractorPortalController(http.Controller):
                     'timestamp': datetime.now().isoformat()
                 }
                 
-                # Update session and mark as modified to ensure persistence
+                # Explicit reassignment and modification flag
                 request.session[session_key] = staged_docs
                 request.session.modified = True
+                
+                # DEBUG: Verify what's in session after update
+                verify_docs = request.session.get(session_key, {})
+                _logger.info(f"STAGE DEBUG: staged_docs AFTER add = {list(verify_docs.keys())}")
                 
                 _logger.info(f"Staged {doc_key} for token {token[:10]}..., session key: {session_key}, count: {len(staged_docs)}")
                 
@@ -378,7 +397,8 @@ class SubcontractorPortalController(http.Controller):
                     'success': True,
                     'doc_key': doc_key,
                     'filename': file.filename,
-                    'staged_count': len(staged_docs)
+                    'staged_count': len(staged_docs),
+                    'expiry_date': final_expiry
                 })
         
         # Handle date update only? (Not used in current flow but kept for safety)
@@ -388,7 +408,7 @@ class SubcontractorPortalController(http.Controller):
         
         return request.make_json_response(
             {'error': _("Aucun fichier fourni."), 'success': False}, 
-            status=400
+            status=200
         )
 
     @http.route('/subcontractor/upload/<string:token>/session-state', type='http', 
@@ -438,7 +458,39 @@ class SubcontractorPortalController(http.Controller):
         _logger.info(f"Submit-all for token {token[:10]}..., session key: {session_key}, staged_docs keys: {list(staged_docs.keys()) if staged_docs else 'EMPTY'}")
         
         if not staged_docs:
-            return request.make_json_response({'error': _("Aucun document en attente. Veuillez d'abord sélectionner des fichiers."), 'success': False}, status=400)
+            return request.make_json_response({'error': _("Aucun document en attente. Veuillez d'abord sélectionner des fichiers."), 'success': False}, status=200)
+
+        # VALIDATION: Check expiry dates for required docs
+        REQUIRED_EXPIRY_DOCS = ['cni', 'insurance_dec']
+        DOC_NAMES = {'cni': "Carte d'identité", 'insurance_dec': 'Assurance Décennale'}
+        
+        for key, doc_data in staged_docs.items():
+            if key in REQUIRED_EXPIRY_DOCS and not doc_data.get('expiry_date'):
+                doc_name = DOC_NAMES.get(key, key)
+                return request.make_json_response({
+                    'error': _("La date d'expiration est manquante pour : %s") % doc_name, 
+                    'success': False
+                }, status=200)
+        
+        # ============= SERVER-SIDE VALIDATION GUARD ============= #
+        # Verify all REQUIRED documents are present before allowing submit
+        REQUIRED_DOCS = ['kbis', 'urssaf', 'insurance_dec', 'cni']
+        
+        # Check which required docs are being submitted OR already exist on partner
+        missing_required = []
+        for doc_key in REQUIRED_DOCS:
+            is_in_staged = doc_key in staged_docs
+            has_on_partner = bool(getattr(partner, f'doc_{doc_key}', None))
+            
+            if not is_in_staged and not has_on_partner:
+                missing_required.append(doc_key.upper())
+        
+        if missing_required:
+            return request.make_json_response({
+                'error': _("Documents obligatoires manquants: %s. Veuillez les ajouter avant de soumettre.") % ', '.join(missing_required),
+                'success': False,
+                'missing_docs': missing_required
+            }, status=200)
         
         # Document prefixes for consistent naming
         DOC_PREFIXES = {
