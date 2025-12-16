@@ -23,7 +23,9 @@ const customContentKanbanLikeWidget = {
 };
 
 // Only register if not already registered
-const viewWidgets = registry.category("view_widgets");
-if (!viewWidgets.contains("customContentKanbanLikeWidget")) {
-    viewWidgets.add("customContentKanbanLikeWidget", customContentKanbanLikeWidget);
-}
+// CONFLICT FIX: Module sale_pdf_quote_builder is installed and registers this widget.
+// We must not register it again to avoid "key already exists" registry error.
+// const viewWidgets = registry.category("view_widgets");
+// if (!viewWidgets.contains("customContentKanbanLikeWidget")) {
+//     viewWidgets.add("customContentKanbanLikeWidget", customContentKanbanLikeWidget);
+// }
