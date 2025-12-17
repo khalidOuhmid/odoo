@@ -15,6 +15,14 @@ export class ContractEditor extends Component {
         this.state = useState({
             loading: true,
             saving: false,
+            // Contract metadata for sidebar
+            contractName: '',
+            subcontractor: '',
+            chantier: '',
+            chantierId: null,
+            amount: '',
+            status: 'draft',
+            statusLabel: 'Brouillon',
         });
 
         // Context from the action
@@ -22,20 +30,64 @@ export class ContractEditor extends Component {
         this.resModel = this.props.action.context.active_model || 'construction.contract';
 
         onMounted(async () => {
+            await this.loadMetadata();
             await loadBundle("construction_contract.assets_template_editor");
             this.initializeEditor();
         });
     }
 
+    async loadMetadata() {
+        /**
+         * Load contract metadata for sidebar display.
+         */
+        if (!this.resId) return;
+
+        try {
+            const result = await this.orm.read(this.resModel, [this.resId], [
+                'name', 'subcontractor_id', 'chantier_id', 'total_amount_ht', 'state', 'currency_id'
+            ]);
+
+            if (result && result[0]) {
+                const contract = result[0];
+                this.state.contractName = contract.name || 'Nouveau Contrat';
+                this.state.subcontractor = contract.subcontractor_id ? contract.subcontractor_id[1] : '';
+                this.state.chantier = contract.chantier_id ? contract.chantier_id[1] : '';
+                this.state.chantierId = contract.chantier_id ? contract.chantier_id[0] : null;
+                this.state.amount = this.formatCurrency(contract.total_amount_ht || 0);
+                this.state.status = contract.state || 'draft';
+                this.state.statusLabel = this.getStatusLabel(contract.state);
+            }
+        } catch (e) {
+            console.error("Error loading contract metadata:", e);
+        }
+    }
+
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(amount);
+    }
+
+    getStatusLabel(state) {
+        const labels = {
+            'draft': 'Brouillon',
+            'generated': 'Généré',
+            'sent': 'Envoyé',
+            'signed': 'Signé',
+            'validated': 'Validé',
+            'cancelled': 'Annulé',
+        };
+        return labels[state] || state;
+    }
+
     initializeEditor() {
         const editor = grapesjs.init({
             container: this.editorRef.el,
-            height: '100vh',
+            height: '100%',
             width: '100%',
             fromElement: false,
             storageManager: false,
-            // Disable default panels to build custom ones if needed, 
-            // but for now keeping defaults and adding ours.
             plugins: ['gjs-preset-webpage', this.customPlugin.bind(this)],
             pluginsOpts: {
                 'gjs-preset-webpage': {
@@ -44,7 +96,6 @@ export class ContractEditor extends Component {
                     modalImportContent: '',
                 }
             },
-            // BLG Palette Configuration
             colorPicker: {
                 appendTo: 'parent',
                 palette: [
@@ -55,7 +106,6 @@ export class ContractEditor extends Component {
                     { name: 'BLG Blanc', color: '#FFFFFF' },
                 ],
             },
-            // Prevent some dangerous edits if needed
             allowScripts: 0,
         });
 
@@ -81,21 +131,12 @@ export class ContractEditor extends Component {
             command: 'save-db',
             attributes: { title: 'Sauvegarder le Contrat' }
         });
-
-        // Add Close Button
-        editor.Panels.addButton('options', {
-            id: 'close-editor',
-            className: 'fa fa-times',
-            command: () => this.actionService.doAction({ type: 'ir.actions.act_window_close' }),
-            attributes: { title: 'Fermer' }
-        });
     }
 
     customPlugin(editor) {
         const blockManager = editor.BlockManager;
 
-        // 1. Injectable Fields (Matching _get_contract_data_context keys)
-        // Only {{variable}} allowed via simplified blocks
+        // Injectable Fields
         const fields = [
             { id: 'partner_name', label: 'Nom Sous-Traitant', content: '{{partner_name}}' },
             { id: 'partner_address', label: 'Adresse Sous-Traitant', content: '{{partner_street}} {{partner_zip}} {{partner_city}}' },
@@ -114,7 +155,7 @@ export class ContractEditor extends Component {
             });
         });
 
-        // 2. Penalties
+        // Penalties
         const penalties = [
             { id: 'penalty_delay', label: 'Pénalité Retard Doc', content: '{{penalty_docs_delay}}' },
             { id: 'penalty_safety', label: 'Pénalité Sécurité', content: '{{penalty_safety}}' },
@@ -130,7 +171,7 @@ export class ContractEditor extends Component {
             });
         });
 
-        // 3. Signature Blocks
+        // Signatures
         blockManager.add('signature_blg', {
             label: 'Signature BLG',
             content: '<div class="signature-box" style="text-align: center; margin: 10px;"><img src="{{signature_blg_image}}" style="max-height: 80px;" alt="Signature BLG"/></div>',
@@ -152,11 +193,6 @@ export class ContractEditor extends Component {
             const result = await this.orm.read(this.resModel, [this.resId], [fieldName]);
             if (result && result[0] && result[0][fieldName]) {
                 this.editor.setComponents(result[0][fieldName]);
-                // Ensure CSS is injected if it was separated? 
-                // In our model we store full HTML including <style>, so setComponents should handle it if passed as string.
-                // However, GrapesJS setComponents expects Body content usually. 
-                // If the stored content is a full HTML page, we might need to parse.
-                // But for now, let's assume the stored content is what we want.
             }
         } catch (e) {
             this.notification.add("Erreur chargement contenu", { type: "danger" });
@@ -167,36 +203,63 @@ export class ContractEditor extends Component {
 
     async saveContent() {
         this.state.saving = true;
-        // Get HTML and CSS
-        // Note: We want to store the Full Page Logic if possible, or just the body + css style.
-        // Since we generate a full HTML doc in backend, we should respect that structure.
-        // GrapesJS `getHtml()` returns BODY innerHTML. `getCss()` returns CSS.
-        // We will construct a wrapper similar to the template if we want to preserve <head>.
-        // BUT, our `action_generate_contract_html` generates a WHOLE HTML doc.
-        // If we save only body+css, we might lose the <head> scripts/meta if strictly relying on GrapesJS export.
-
-        // Strategy: We store the HTML as GrapesJS gives it (Body + Style block). 
-        // When generating PDF (WeasyPrint), `contract_template_html` will be the source. 
-        // WeasyPrint handles a string with <style> blocks inside body fine.
-
         const html = this.editor.getHtml();
         const css = this.editor.getCss();
 
-        // We wrap it to ensure styles are applied
         const fullContent = `<style>${css}</style>\n<div id="contract_root" class="contract-container">${html}</div>`;
 
         try {
             await this.orm.write(this.resModel, [this.resId], {
                 contract_template_html: fullContent,
-                // Optional: Update status or hash?
             });
-
             this.notification.add("Contrat sauvegardé avec succès", { type: "success" });
         } catch (e) {
             console.error(e);
             this.notification.add("Erreur lors de la sauvegarde", { type: "danger" });
         } finally {
             this.state.saving = false;
+        }
+    }
+
+    async onGenerateAndSend() {
+        /**
+         * Save current content, generate PDF, then open send wizard.
+         */
+        this.state.saving = true;
+
+        try {
+            // 1. Save content first
+            await this.saveContent();
+
+            // 2. Call generate PDF and send method on backend
+            const result = await this.orm.call(this.resModel, 'action_generate_pdf_and_open_send_wizard', [[this.resId]]);
+
+            // 3. Execute returned action (should open wizard)
+            if (result) {
+                await this.actionService.doAction(result);
+            }
+        } catch (e) {
+            console.error("Generate and send error:", e);
+            this.notification.add("Erreur lors de la génération", { type: "danger" });
+        } finally {
+            this.state.saving = false;
+        }
+    }
+
+    onClose() {
+        /**
+         * Return to the chantier form view.
+         */
+        if (this.state.chantierId) {
+            this.actionService.doAction({
+                type: 'ir.actions.act_window',
+                res_model: 'construction.chantier',
+                res_id: this.state.chantierId,
+                views: [[false, 'form']],
+                target: 'current',
+            });
+        } else {
+            this.actionService.doAction({ type: 'ir.actions.act_window_close' });
         }
     }
 }

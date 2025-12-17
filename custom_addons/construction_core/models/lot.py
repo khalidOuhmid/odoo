@@ -252,10 +252,205 @@ class Lot(models.Model):
             else:
                 record.margin_percent = 0.0
 
+    # ============= Cockpit / Wizard Logic Merged ============= #
+    
+    planned_cost = fields.Monetary(
+        string='Coût Prévu',
+        compute='_compute_planned_financials',
+        currency_field='currency_id',
+        help="Coût théorique calculé depuis les produits du devis"
+    )
+    planned_margin = fields.Monetary(
+        string='Marge Prévue',
+        compute='_compute_planned_financials',
+        currency_field='currency_id'
+    )
+    
+    purchase_order_id = fields.Many2one(
+        'purchase.order',
+        string='Bon de Commande Principal',
+        compute='_compute_related_single_records',
+        help="Dernier BC validé pour ce lot"
+    )
+    contract_id = fields.Many2one(
+        'construction.contract',
+        string='Contrat Actif',
+        compute='_compute_related_single_records',
+        help="Contrat principal lié à ce lot"
+    )
+    
+    prerequisites_html = fields.Html(
+        string='Prérequis Contrat',
+        compute='_compute_prerequisites',
+        help="Checklist pour la génération du contrat"
+    )
+    can_generate_contract = fields.Boolean(
+        compute='_compute_prerequisites'
+    )
+    
+    @api.depends('price')
+    def _compute_planned_financials(self):
+        """Compute theoretical cost/margin from Sale Order lines."""
+        SaleOrderLine = self.env['sale.order.line']
+        for lot in self:
+            cost = 0.0
+            # Logic from Wizard: Find SO lines for this lot
+            if lot.chantier_id:
+                # Find confirmed orders
+                sale_orders = self.env['sale.order'].search([
+                    ('chantier_id', '=', lot.chantier_id.id),
+                    ('state', '=', 'sale')
+                ])
+                if sale_orders:
+                    domain = [('order_id', 'in', sale_orders.ids)]
+                    # Try to match by name/code if explicit link missing
+                    if 'lot_id' in SaleOrderLine._fields:
+                        lines = SaleOrderLine.search(domain + [('lot_id', '=', lot.id)])
+                    else:
+                        all_lines = SaleOrderLine.search(domain)
+                        lines = all_lines.filtered(
+                            lambda l: lot.name.lower() in (l.name or '').lower() or 
+                                      lot.code in (l.name or '')
+                        )
+                    
+                    for line in lines:
+                        if line.product_id:
+                            cost += line.product_id.standard_price * line.product_uom_qty
+            
+            lot.planned_cost = cost
+            lot.planned_margin = (lot.price or 0.0) - cost
+
+    def _compute_related_single_records(self):
+        """Compute single PO/Contract for Cockpit view convenience."""
+        for lot in self:
+            # PO
+            # PO
+            po = self.env['purchase.order']
+            if hasattr(lot, 'purchase_order_ids') and lot.purchase_order_ids:
+                po = lot.purchase_order_ids.filtered(lambda p: p.state in ['purchase', 'done'])
+                if not po:
+                    po = lot.purchase_order_ids
+            elif self.env['ir.module.module'].search_count([('name', '=', 'purchase'), ('state', '=', 'installed')]):
+                 # Fallback search
+                 po = self.env['purchase.order'].search([
+                    ('lot_ids', 'in', [lot.id]),
+                    ('state', 'in', ['purchase', 'done'])
+                 ], limit=1)
+            
+            lot.purchase_order_id = po[0] if po else False
+            
+            # Contract
+            contract = False
+            if 'construction.contract' in self.env:
+                Contract = self.env['construction.contract']
+                if 'lot_ids' in Contract._fields:
+                    contract = Contract.search([('lot_ids', 'in', [lot.id])], limit=1)
+            lot.contract_id = contract.id if contract else False
+
+    @api.depends('subcontractor_id', 'document_cctp')
+    def _compute_prerequisites(self):
+        """Checklist logic from Wizard."""
+        for lot in self:
+            if lot.execution_type != 'external':
+                lot.prerequisites_html = ''
+                lot.can_generate_contract = False
+                continue
+            
+            checks = []
+            all_passed = True
+            
+            # 1. Subcontractor
+            if lot.subcontractor_id:
+                checks.append('✅ Sous-traitant assigné')
+            else:
+                checks.append('❌ Sous-traitant assigné')
+                all_passed = False
+            
+            # 2. PO generated
+            has_po = False
+            if hasattr(lot, 'purchase_order_ids') and lot.purchase_order_ids:
+                has_po = True
+            else:
+                # Fallback search if field not available/visible
+                if self.env['ir.module.module'].search_count([('name', '=', 'purchase'), ('state', '=', 'installed')]):
+                    has_po = bool(self.env['purchase.order'].search_count([
+                        ('lot_ids', 'in', [lot.id]),
+                        ('state', 'in', ['purchase', 'done'])
+                    ]))
+            
+            if has_po:
+                checks.append('✅ Bon de commande généré')
+            else:
+                checks.append('❌ Bon de commande généré')
+                all_passed = False
+            
+            # 3. CCTP
+            if lot.document_cctp:
+                checks.append('✅ CCTP chargé')
+            else:
+                checks.append('❌ CCTP chargé')
+                all_passed = False
+            
+            # 4. Planning (Optional/Warning)
+            if lot.document_planning_chantier or lot.document_planning_sous_traitant:
+                checks.append('✅ Planning chargé')
+            else:
+                checks.append('⚠️ Planning non chargé (optionnel)')
+            
+            lot.prerequisites_html = '<br/>'.join(checks)
+            lot.can_generate_contract = all_passed
+
+
     def _compute_document_count(self):
         """Count attached documents."""
         for record in self:
             record.document_count = len(record.document_ids)
+
+    @api.depends('weighted_value', 'price')
+    def _compute_remaining_value(self):
+        for record in self:
+            record.remaining_value = (record.price or 0.0) - (record.weighted_value or 0.0)
+
+    remaining_value = fields.Monetary(
+        string='Valeur Restante',
+        compute='_compute_remaining_value',
+        store=False,
+        currency_field='currency_id',
+        help="Prix - Valeur pondérée"
+    )
+
+    # ============= Safe Actions for View ============= #
+
+    def action_generate_po_safe(self):
+        """Call generation method if available."""
+        self.ensure_one()
+        if hasattr(self, 'action_generate_purchase_order'):
+            return self.action_generate_purchase_order()
+        else:
+            raise UserError(_("La génération de bon de commande nécessite le module d'achats."))
+
+    def action_generate_contract_safe(self):
+        """Call generation method or open wizard."""
+        self.ensure_one()
+        if hasattr(self, 'action_generate_contract_wizard'):
+            return self.action_generate_contract_wizard()
+        
+        # Fallback if method not found but model might exist
+        if 'contract.creation.wizard' in self.env:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Créer Contrat'),
+                'res_model': 'contract.creation.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_lot_ids': [(4, self.id)],
+                    'default_chantier_id': self.chantier_id.id,
+                    'default_subcontractor_id': self.subcontractor_id.id,
+                },
+            }
+        raise UserError(_("La génération de contrat nécessite le module de contrats."))
+
 
     # Note: _compute_subcontractor_doc_warning is defined in construction_subcontractor module
 
@@ -370,6 +565,20 @@ class Lot(models.Model):
         self.completion_percentage = 100.0
         return True
 
+    def action_open_contract(self):
+        """Open the related contract form view."""
+        self.ensure_one()
+        if not self.contract_id:
+            raise UserError(_("Aucun contrat lié à ce lot."))
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Contrat - %s') % self.contract_id.name,
+            'res_model': 'construction.contract',
+            'res_id': self.contract_id.id,
+            'view_mode': 'form',
+            'target': 'current',
+        }
+
     def action_view_purchase_orders(self):
         """Smart button: View Purchase Orders for this lot."""
         self.ensure_one()
@@ -411,3 +620,5 @@ class Lot(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+

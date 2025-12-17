@@ -420,7 +420,6 @@
                             <field name="purchase_order_ids" readonly="1" nolabel="1">
                                 <list>
                                     <field name="name" string="Référence"/>
-                                    <field name="partner_id" string="Fournisseur"/>
                                     <field name="date_order" string="Date"/>
                                     <field name="amount_total" string="Montant" sum="Total"/>
                                     <field name="state" string="Statut" widget="badge"/>

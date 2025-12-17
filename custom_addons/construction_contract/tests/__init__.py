@@ -9,4 +9,4 @@ from . import test_contract_security
 from . import test_contract_performance
 from . import test_multi_lot_aggregation
 # from . import test_contract_builder # File appears missing in file system
-
+from . import test_purchase_generation

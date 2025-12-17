@@ -26,6 +26,42 @@ class SignaturePortalController(http.Controller):
     """
 
     # ============================================================
+    # TOKEN-BASED ENTRY POINT (from SMS/Email link)
+    # ============================================================
+
+    @http.route('/contract/sign/<string:token>', type='http', auth='public', website=True)
+    def contract_sign_entry(self, token, **kwargs):
+        """
+        Entry point for contract signing via signing_token (from SMS/Email).
+        
+        Validates signing_token and redirects to main signature portal with access_token.
+        Following construction_subcontractor pattern.
+        
+        Args:
+            token (str): Signing token from contract.signing_token
+            
+        Returns:
+            Redirect to signature portal or error page
+        """
+        contract = request.env['construction.contract'].sudo().search([
+            ('signing_token', '=', token),
+        ], limit=1)
+        
+        if not contract:
+            return request.render('construction_contract.token_expired', {
+                'error_title': _("Lien invalide"),
+                'error_message': _("Ce lien de signature n'est pas valide ou a été révoqué."),
+            })
+        
+        # Redirect to existing portal with access_token
+        if contract.access_token:
+            return request.redirect(f'/my/contract/{contract.id}/sign?access_token={contract.access_token}')
+        else:
+            # Generate access_token if missing
+            contract._portal_ensure_token()
+            return request.redirect(f'/my/contract/{contract.id}/sign?access_token={contract.access_token}')
+
+    # ============================================================
     # MAIN SIGNATURE PORTAL
     # ============================================================
 

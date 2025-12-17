@@ -55,3 +55,27 @@ class PurchaseOrder(models.Model):
                 'field_name': 'contract_template_html'
             }
         }
+
+    def write(self, vals):
+        """
+        Override write to trigger lot financial recomputation when PO state changes.
+        
+        SAP-Level Pipeline: Ensure cost_total and margin update on PO confirmation.
+        """
+        res = super().write(vals)
+        
+        # Trigger lot financial recompute if state changed to confirmed
+        if 'state' in vals and vals['state'] in ('purchase', 'done'):
+            lots_to_update = self.env['construction.lot']
+            for po in self:
+                # Get lots linked via lot_ids on PO or via PO lines
+                if hasattr(po, 'lot_ids') and po.lot_ids:
+                    lots_to_update |= po.lot_ids
+                for line in po.order_line:
+                    if hasattr(line, 'lot_id') and line.lot_id:
+                        lots_to_update |= line.lot_id
+            
+            if lots_to_update:
+                lots_to_update._compute_lot_financials()
+        
+        return res

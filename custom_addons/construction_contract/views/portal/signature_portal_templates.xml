@@ -6,7 +6,11 @@
     <!-- ========================================================== -->
 
     <template id="signature_portal_template" name="Contract Signature Portal">
-        <t t-call="portal.portal_layout">
+        <!-- Use frontend_layout for minimal/no Odoo header-footer -->
+        <t t-call="web.frontend_layout">
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
+            
             <!-- Load PDF.js directly from CDN -->
             <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
             
@@ -23,16 +27,29 @@
                  t-att-data-contract-id="contract.id"
                  t-att-data-access-token="access_token">
                 
-                <!-- Professional Header with Logo and Progress -->
+                <!-- Professional Header with BLG Branding and Progress -->
                 <div class="portal-header">
                     <div class="container">
                         <div class="row align-items-center">
-                            <div class="col-md-4">
-                                <h1 class="portal-title">
-                                    <i class="fa fa-file-signature"/> Signature de Contrat
-                                </h1>
+                            <div class="col-12 col-md-4">
+                                <div class="logo-container">
+                                    <!-- BLG Logo: Try company logo, fallback to text -->
+                                    <t t-if="request.env.company.logo">
+                                        <img t-att-src="'/web/binary/company_logo?company_id=%s' % request.env.company.id"
+                                             alt="BLG Groupe"
+                                             class="blg-logo"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span class="blg-logo-text">BLG</span>
+                                    </t>
+                                    <div>
+                                        <h1 class="portal-title">
+                                            <i class="fa fa-file-signature"/> Signature de Contrat
+                                        </h1>
+                                    </div>
+                                </div>
                             </div>
-                            <div class="col-md-8">
+                            <div class="col-12 col-md-8">
                                 <div class="progress-steps">
                                     <div t-attf-class="progress-step #{validation_status.get('completion_rate', 0) > 0 and 'active' or ''}">
                                         <div class="step-number">1</div>

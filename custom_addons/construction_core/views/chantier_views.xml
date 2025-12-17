@@ -173,7 +173,7 @@
                     </div>
 
                     <!-- ==================== VALIDATION CONDITIONS PANEL (SAP/Salesforce Style) ==================== -->
-                    <group string="📋 Conditions de Validation" name="validation_panel">
+                    <group string="Conditions de Validation" name="validation_panel">
                         <field name="validation_conditions_html" 
                                readonly="1" 
                                nolabel="1"
@@ -184,16 +184,16 @@
                     <!-- Main Content -->
                     <notebook>
                         <!-- Tab 1: General Info (Always visible) -->
-                        <page string="📋 Général" name="general">
+                        <page string="Général" name="general">
                             <group>
-                                <group string="📍 Localisation">
+                                <group string="Localisation">
                                     <field name="address" placeholder="Adresse complète"/>
                                     <field name="city"/>
                                     <field name="zip_code"/>
                                     <field name="country_id"/>
                                     <field name="phone"/>
                                 </group>
-                                <group string="📊 Avancement">
+                                <group string="Avancement">
                                     <field name="chapter_name" readonly="1"/>
                                     <field name="progress" widget="progressbar"/>
                                     <field name="state"/>
@@ -201,13 +201,13 @@
                                 </group>
                             </group>
                             <group>
-                                <group string="🏗️ Technique">
+                                <group string="Technique">
                                     <field name="surface_m2" string="Surface (m²)"/>
                                     <field name="nb_levels"/>
                                     <field name="permit_number"/>
                                     <field name="permit_date"/>
                                 </group>
-                                <group string="📅 Planning">
+                                <group string="Planning">
                                     <label for="date_start_contract"/>
                                     <div class="o_row">
                                         <field name="date_start_contract" class="oe_inline"/>
@@ -230,14 +230,14 @@
                         </page>
 
                         <!-- Tab 2: Lots (Always visible, editable from stage_devis_envoye) -->
-                        <page string="🔧 Lots" name="lots">
+                        <page string="Lots" name="lots">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="mb-0">
                                     <i class="fa fa-cubes me-2"/>Gestion des Lots
                                 </h4>
                                 <button name="action_add_lot" 
                                         type="object" 
-                                        string="➕ Ajouter un Lot"
+                                        string="Ajouter un Lot"
                                         class="btn btn-primary btn-sm"/>
                             </div>
                             
@@ -288,7 +288,7 @@
                         </page>
 
                         <!-- Tab 3: Visites Techniques (Visible from stage_visite_technique) -->
-                        <page string="🔍 Visites" name="visits" invisible="not show_visits">
+                        <page string="Visites" name="visits" invisible="not show_visits">
                             <div class="row mb-4">
                                 <div class="col-12">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
@@ -298,15 +298,15 @@
                                         <div class="btn-group">
                                             <button name="action_create_visit" 
                                                     type="object" 
-                                                    string="➕ Nouvelle Visite"
+                                            string="Nouvelle Visite"
                                                     class="btn btn-primary btn-sm"/>
                                             <button name="action_view_all_visits" 
                                                     type="object" 
-                                                    string="📋 Toutes les Visites"
+                                                    string="Toutes les Visites"
                                                     class="btn btn-outline-secondary btn-sm"/>
                                             <button name="action_view_planning_visits" 
                                                     type="object" 
-                                                    string="📅 Planning Global"
+                                                    string="Planning Global"
                                                     class="btn btn-outline-info btn-sm"/>
                                         </div>
                                     </div>
@@ -320,7 +320,7 @@
                         </page>
 
                         <!-- Tab 4: Team/Subcontractors (Visible from stage_devis_accepte) -->
-                        <page string="👥 Équipe" name="team" invisible="not show_subcontractors">
+                        <page string="Équipe" name="team" invisible="not show_subcontractors">
                             <!-- Hidden field for contract generation visibility -->
                             <field name="show_contract_generation" invisible="1"/>
                             <field name="project_subcontractor_ids" invisible="1"/>
@@ -333,7 +333,7 @@
                             </group>
                             
                             <!-- Subcontractors from Lots Section -->
-                            <group string="👷 Sous-traitants du Projet">
+                            <group string="Sous-traitants du Projet">
                                 <div class="o_horizontal_separator mb-3">
                                     <span class="text-muted">
                                         Liste des sous-traitants assignés aux lots de ce chantier
@@ -377,12 +377,12 @@
                         </page>
 
                         <!-- Tab 5: Devis (Visible from stage_devis_envoye) -->
-                        <page string="💰 Devis" name="quotations" invisible="not show_quotes">
+                        <page string="Devis" name="quotations" invisible="not show_quotes">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="mb-0">Devis liés au chantier</h4>
                                 <button name="action_create_quotation" 
                                         type="object" 
-                                        string="➕ Créer un Devis"
+                                        string="Créer un Devis"
                                         class="btn btn-success btn-sm"/>
                             </div>
                             <field name="quotation_ids">
@@ -401,7 +401,7 @@
 
 
                         <!-- Tab 7: Documents (Always visible) -->
-                        <page string="📄 Documents" name="documents">
+                        <page string="Documents" name="documents">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="mb-0">
                                     <i class="fa fa-folder-open me-2"/>Documents du Chantier
@@ -409,11 +409,11 @@
                                 <div class="btn-group">
                                     <button name="action_upload_document" 
                                             type="object" 
-                                            string="📤 Ajouter Document"
+                                            string="Ajouter Document"
                                             class="btn btn-primary btn-sm"/>
                                     <button name="action_view_all_documents" 
                                             type="object" 
-                                            string="📁 Tous les Documents"
+                                            string="Tous les Documents"
                                             class="btn btn-outline-secondary btn-sm"/>
                                 </div>
                             </div>

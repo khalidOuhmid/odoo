@@ -65,8 +65,8 @@ class ContractCreationWizard(models.TransientModel):
         'wizard_id',
         'lot_id',
         string='Lots',
-        domain="[('chantier_id', '=', chantier_id), ('contract_id', '=', False)]",
-        help="Select the lots for this contract (only lots without existing contract)"
+        domain="[('chantier_id', '=', chantier_id)]",
+        help="Select the lots for this contract"
     )
 
     available_lot_ids = fields.Many2many(

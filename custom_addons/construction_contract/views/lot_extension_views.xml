@@ -16,6 +16,17 @@
                 </button>
             </xpath>
 
+            <!-- Add Generate PO button in Header -->
+            <xpath expr="//header" position="inside">
+                 <button name="action_generate_purchase_order"
+                        type="object"
+                        string="Générer Bon de Commande"
+                        class="btn-secondary"
+                        invisible="execution_type != 'external' or not subcontractor_id"/>
+            </xpath>
+
+
+
             <!-- Add Generate Contract button in Documents tab -->
             <xpath expr="//page[@name='documents']/group[1]" position="before">
                 <div class="mb-3">
@@ -29,6 +40,18 @@
                      </span>
                 </div>
             </xpath>
+        </field>
+    </record>
+
+    <!-- Server Action for PO Generation -->
+    <record id="action_server_generate_po_subcontractor" model="ir.actions.server">
+        <field name="name">Générer Bon de Commande Sous-Traitant</field>
+        <field name="model_id" ref="construction_core.model_construction_lot"/>
+        <field name="binding_model_id" ref="construction_core.model_construction_lot"/>
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = records.action_generate_purchase_order()
         </field>
     </record>
 </odoo>

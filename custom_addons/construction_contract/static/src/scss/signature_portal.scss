@@ -1,208 +1,430 @@
-/* Signature Portal Styles */
+/* ================================================== */
+/* BLG GROUPE - Signature Portal Styles               */
+/* Mobile-First Responsive Design                     */
+/* ================================================== */
+
+/* BLG Brand Colors */
+$blg-bordeaux: #92564C;
+$blg-bordeaux-dark: #7a4840;
+$blg-beige: #D4C5BC;
+$blg-beige-light: #EDE8E4;
+$blg-gris: #978A86;
+$blg-gris-dark: #6b6360;
+
+/* Status Colors */
+$success-green: #10B981;
+$warning-amber: #F59E0B;
+$danger-red: #EF4444;
+$info-blue: #3B82F6;
 
 .signature-portal-wrapper {
-    font-family: 'Inter', 'Helvetica Neue', Arial, sans-serif;
-    background-color: #f8f9fa;
+    font-family: 'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: linear-gradient(180deg, $blg-beige-light 0%, #f8f9fa 100%);
     min-height: 100vh;
-    padding-bottom: 50px;
+    padding-bottom: 30px;
 
-    /* Header */
+    /* ===== HEADER ===== */
     .portal-header {
-        background-color: #ffffff;
-        border-bottom: 1px solid #e9ecef;
-        padding: 20px 0;
-        margin-bottom: 30px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        background: linear-gradient(135deg, $blg-bordeaux 0%, $blg-bordeaux-dark 100%);
+        color: white;
+        padding: 16px 0;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 12px rgba(146, 86, 76, 0.25);
+
+        /* Mobile first */
+        @media (min-width: 768px) {
+            padding: 24px 0;
+            margin-bottom: 30px;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+
+            @media (min-width: 768px) {
+                margin-bottom: 0;
+            }
+
+            .blg-logo {
+                height: 40px;
+                width: auto;
+                margin-right: 12px;
+
+                @media (min-width: 768px) {
+                    height: 50px;
+                    margin-right: 16px;
+                }
+            }
+
+            .blg-logo-text {
+                font-size: 22px;
+                font-weight: 700;
+                letter-spacing: 1px;
+
+                @media (min-width: 768px) {
+                    font-size: 28px;
+                }
+            }
+        }
 
         .portal-title {
-            font-size: 24px;
+            font-size: 18px;
             font-weight: 600;
-            color: #212529;
+            color: white;
             margin: 0;
+            display: flex;
+            align-items: center;
+
+            @media (min-width: 768px) {
+                font-size: 22px;
+            }
 
             i {
-                color: #B22222; /* BLG Red/Bordeauxish */
+                color: rgba(255, 255, 255, 0.9);
                 margin-right: 10px;
+                font-size: 20px;
+
+                @media (min-width: 768px) {
+                    font-size: 24px;
+                }
             }
         }
     }
 
-    /* Progress Steps */
+    /* ===== PROGRESS STEPS ===== */
     .progress-steps {
         display: flex;
-        justify-content: flex-end;
+        justify-content: center;
         align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
 
-        @media (max-width: 768px) {
-            justify-content: center;
-            margin-top: 15px;
+        @media (min-width: 768px) {
+            justify-content: flex-end;
+            margin-top: 0;
+            gap: 0;
         }
 
         .progress-step {
             display: flex;
             align-items: center;
-            margin-left: 30px;
-            opacity: 0.5;
+            opacity: 0.6;
             transition: all 0.3s ease;
+            margin: 0 4px;
 
-            @media (max-width: 768px) {
-                margin: 0 10px;
+            @media (min-width: 768px) {
+                margin-left: 24px;
+                margin-right: 0;
             }
 
             &.active {
                 opacity: 1;
                 font-weight: 600;
-                
+
                 .step-number {
-                    background-color: #B22222;
-                    border-color: #B22222;
-                    color: white;
+                    background: white;
+                    border-color: white;
+                    color: $blg-bordeaux;
+                    box-shadow: 0 2px 8px rgba(255, 255, 255, 0.4);
                 }
-                
+
                 .step-label {
-                    color: #B22222;
+                    color: white;
                 }
             }
 
             &.completed {
                 opacity: 1;
-                
+
                 .step-number {
-                    background-color: #28a745;
-                    border-color: #28a745;
+                    background: $success-green;
+                    border-color: $success-green;
                     color: white;
                 }
-                
+
                 .step-label {
-                    color: #28a745;
+                    color: rgba(255, 255, 255, 0.9);
                 }
             }
 
             .step-number {
-                width: 30px;
-                height: 30px;
+                width: 28px;
+                height: 28px;
                 border-radius: 50%;
-                border: 2px solid #adb5bd;
+                border: 2px solid rgba(255, 255, 255, 0.5);
                 display: flex;
                 align-items: center;
                 justify-content: center;
                 font-weight: 700;
-                margin-right: 10px;
-                color: #6c757d;
-                font-size: 14px;
+                margin-right: 6px;
+                color: rgba(255, 255, 255, 0.7);
+                font-size: 12px;
+                transition: all 0.3s ease;
+
+                @media (min-width: 768px) {
+                    width: 32px;
+                    height: 32px;
+                    font-size: 14px;
+                    margin-right: 8px;
+                }
             }
 
             .step-label {
-                font-size: 14px;
-                color: #6c757d;
+                font-size: 12px;
+                color: rgba(255, 255, 255, 0.7);
+                display: none;
+
+                @media (min-width: 576px) {
+                    display: inline;
+                    font-size: 13px;
+                }
+
+                @media (min-width: 768px) {
+                    font-size: 14px;
+                }
             }
         }
     }
 
-    /* Cards */
+    /* ===== CARDS ===== */
     .card {
         border: none;
-        border-radius: 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-        margin-bottom: 25px;
+        border-radius: 12px;
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        margin-bottom: 16px;
         overflow: hidden;
+        background: white;
+
+        @media (min-width: 768px) {
+            margin-bottom: 24px;
+            border-radius: 16px;
+        }
 
         .card-header {
-            background-color: #ffffff;
-            border-bottom: 1px solid #f1f3f5;
-            padding: 15px 20px;
-            
+            background: white;
+            border-bottom: 1px solid $blg-beige;
+            padding: 14px 16px;
+
+            @media (min-width: 768px) {
+                padding: 16px 24px;
+            }
+
             h5 {
                 font-weight: 600;
-                color: #495057;
+                color: $blg-bordeaux-dark;
+                font-size: 15px;
+                margin: 0;
+
+                @media (min-width: 768px) {
+                    font-size: 17px;
+                }
+
+                i {
+                    margin-right: 8px;
+                    color: $blg-bordeaux;
+                }
+            }
+        }
+
+        .card-body {
+            padding: 16px;
+
+            @media (min-width: 768px) {
+                padding: 24px;
+            }
+        }
+
+        .card-footer {
+            padding: 12px 16px;
+
+            @media (min-width: 768px) {
+                padding: 16px 24px;
             }
         }
     }
 
-    /* Contract Info */
+    /* ===== CONTRACT INFO CARD ===== */
     .contract-info-card {
+        border-left: 4px solid $blg-bordeaux;
+
         .contract-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: 700;
             color: #212529;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
+
+            @media (min-width: 768px) {
+                font-size: 22px;
+                margin-bottom: 16px;
+            }
+
+            i {
+                color: $blg-bordeaux;
+                margin-right: 8px;
+            }
         }
 
         .contract-details {
             .detail-item {
                 margin-bottom: 8px;
-                font-size: 15px;
+                font-size: 14px;
                 color: #495057;
+                display: flex;
+                align-items: flex-start;
+
+                @media (min-width: 768px) {
+                    font-size: 15px;
+                    margin-bottom: 10px;
+                }
 
                 i {
                     width: 20px;
-                    color: #adb5bd;
+                    color: $blg-gris;
                     text-align: center;
                     margin-right: 10px;
+                    margin-top: 2px;
+                    flex-shrink: 0;
+                }
+
+                strong {
+                    color: $blg-gris-dark;
+                    margin-right: 6px;
                 }
             }
         }
 
         .contract-amount {
-            background-color: #f8f9fa;
-            padding: 15px;
-            border-radius: 6px;
-            text-align: right;
-            border-left: 4px solid #B22222;
+            background: linear-gradient(135deg, $blg-beige-light 0%, $blg-beige 100%);
+            padding: 16px;
+            border-radius: 10px;
+            text-align: center;
+            border-left: 4px solid $blg-bordeaux;
+            margin-top: 16px;
 
-            @media (max-width: 768px) {
-                text-align: left;
-                margin-top: 20px;
+            @media (min-width: 768px) {
+                text-align: right;
+                margin-top: 0;
+                padding: 20px;
             }
 
             .amount-label {
-                font-size: 13px;
+                font-size: 11px;
                 text-transform: uppercase;
-                letter-spacing: 0.5px;
-                color: #6c757d;
-                margin-bottom: 5px;
+                letter-spacing: 1px;
+                color: $blg-gris;
+                margin-bottom: 4px;
+                font-weight: 600;
+
+                @media (min-width: 768px) {
+                    font-size: 12px;
+                }
             }
 
             .amount-value {
                 font-size: 24px;
-                font-weight: 700;
-                color: #212529;
+                font-weight: 800;
+                color: $blg-bordeaux;
+
+                @media (min-width: 768px) {
+                    font-size: 28px;
+                }
             }
         }
     }
 
-    /* PDF Viewer */
+    /* ===== PROGRESS CARD ===== */
+    .progress-card {
+        .progress-modern {
+            height: 12px;
+            border-radius: 6px;
+            background: $blg-beige-light;
+            overflow: visible;
+
+            .progress-bar {
+                background: linear-gradient(90deg, $blg-bordeaux 0%, $blg-bordeaux-dark 100%);
+                border-radius: 6px;
+                position: relative;
+                transition: width 0.5s ease;
+
+                .progress-text {
+                    position: absolute;
+                    right: -10px;
+                    top: -24px;
+                    background: $blg-bordeaux;
+                    color: white;
+                    font-size: 11px;
+                    font-weight: 700;
+                    padding: 2px 8px;
+                    border-radius: 4px;
+                    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+                }
+            }
+        }
+
+        .badge-primary,
+        .badge-lg {
+            background: $blg-bordeaux !important;
+            color: white;
+            font-size: 13px;
+            padding: 6px 12px;
+            border-radius: 20px;
+        }
+
+        .progress-info {
+            font-size: 13px;
+            color: $blg-gris;
+
+            strong {
+                color: $blg-bordeaux;
+            }
+        }
+    }
+
+    /* ===== PDF VIEWER ===== */
     .pdf-viewer-card {
         .pdf-controls {
+            display: flex;
+            gap: 4px;
+
             .btn {
-                padding: 4px 8px;
-                border: 1px solid #dee2e6;
-                color: #495057;
-                
+                padding: 6px 10px;
+                border: 1px solid $blg-beige;
+                color: $blg-gris-dark;
+                background: white;
+                border-radius: 6px;
+
                 &:hover {
-                    background-color: #f1f3f5;
+                    background: $blg-beige-light;
+                    border-color: $blg-bordeaux;
+                    color: $blg-bordeaux;
                 }
             }
         }
 
         .pdf-viewer-body {
-            background-color: #525659;
-            padding: 30px;
-            min-height: 500px;
+            background: linear-gradient(135deg, #4a4d50 0%, #2d2f31 100%);
+            padding: 16px;
+            min-height: 350px;
             display: flex;
             justify-content: center;
+            align-items: flex-start;
             overflow: auto;
+            -webkit-overflow-scrolling: touch;
 
-            @media (max-width: 768px) {
-                padding: 10px;
+            @media (min-width: 768px) {
+                padding: 30px;
+                min-height: 500px;
             }
         }
 
         .pdf-canvas-wrapper {
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
             max-width: 100%;
-            background-color: white;
-            
+            background: white;
+            border-radius: 4px;
+
             canvas {
                 display: block;
                 max-width: 100%;
@@ -212,75 +434,214 @@
             .pdf-loading {
                 color: white;
                 text-align: center;
-                padding-top: 100px;
+                padding: 60px 20px;
+
+                @media (min-width: 768px) {
+                    padding: 100px 20px;
+                }
+
+                p {
+                    margin-top: 16px;
+                    font-size: 14px;
+                }
             }
         }
 
         .pdf-footer {
-            background-color: #343a40;
+            background: linear-gradient(135deg, $blg-bordeaux 0%, $blg-bordeaux-dark 100%);
             color: white;
-            padding: 15px 20px;
+            padding: 12px 16px;
             border-top: none;
+
+            @media (min-width: 768px) {
+                padding: 16px 24px;
+            }
 
             .pdf-navigation {
                 display: flex;
                 align-items: center;
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 8px;
+
+                @media (min-width: 768px) {
+                    justify-content: flex-start;
+                }
+
+                .btn-secondary {
+                    background: rgba(255, 255, 255, 0.15);
+                    border: 1px solid rgba(255, 255, 255, 0.3);
+                    color: white;
+                    padding: 8px 12px;
+                    font-size: 13px;
+
+                    &:hover {
+                        background: rgba(255, 255, 255, 0.25);
+                    }
+
+                    @media (min-width: 768px) {
+                        padding: 8px 16px;
+                        font-size: 14px;
+                    }
+                }
 
                 .page-indicator {
-                    margin: 0 20px;
-                    font-weight: 500;
+                    font-weight: 600;
                     white-space: nowrap;
+                    font-size: 14px;
+                    padding: 0 12px;
+                }
+            }
+
+            .btn-validate {
+                background: $success-green;
+                border-color: $success-green;
+                color: white;
+                font-weight: 600;
+                padding: 10px 16px;
+                border-radius: 8px;
+                font-size: 14px;
+                width: 100%;
+                margin-top: 12px;
+
+                @media (min-width: 768px) {
+                    width: auto;
+                    margin-top: 0;
+                    padding: 10px 20px;
+                }
+
+                &:hover {
+                    background: darken($success-green, 8%);
+                }
+
+                i {
+                    margin-right: 6px;
                 }
             }
         }
     }
 
-    /* Signature Section */
+    /* ===== SIGNATURE SECTION ===== */
     .signature-card {
         .card-header {
             &.signature-ready {
-                background-color: #d4edda;
-                h5 { color: #155724; }
+                background: linear-gradient(135deg, rgba($success-green, 0.1) 0%, rgba($success-green, 0.05) 100%);
+                border-left: 4px solid $success-green;
+
+                h5 {
+                    color: darken($success-green, 10%);
+
+                    i {
+                        color: $success-green;
+                    }
+                }
+            }
+        }
+
+        .signature-ready-alert {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, rgba($success-green, 0.1) 0%, rgba($success-green, 0.05) 100%);
+            border: 1px solid rgba($success-green, 0.3);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+
+            i {
+                color: $success-green;
+                margin-right: 16px;
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+
+            strong {
+                color: darken($success-green, 10%);
+                font-size: 16px;
+            }
+
+            p {
+                color: $blg-gris-dark;
+                margin: 4px 0 0;
+                font-size: 14px;
+            }
+        }
+
+        .signature-locked-alert {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(135deg, rgba($warning-amber, 0.1) 0%, rgba($warning-amber, 0.05) 100%);
+            border: 1px solid rgba($warning-amber, 0.3);
+            border-radius: 10px;
+            padding: 16px;
+
+            i {
+                color: $warning-amber;
+                margin-right: 16px;
+                font-size: 32px;
+                flex-shrink: 0;
+            }
+
+            strong {
+                color: darken($warning-amber, 10%);
             }
         }
 
         .signature-instructions {
-            background-color: #f8f9fa;
-            border-radius: 6px;
-            padding: 15px;
+            background: $blg-beige-light;
+            border-radius: 10px;
+            padding: 16px;
             margin-bottom: 20px;
-            
+            border-left: 4px solid $blg-bordeaux;
+
             h6 {
                 font-weight: 600;
-                margin-bottom: 5px;
+                margin-bottom: 8px;
+                color: $blg-bordeaux;
+                font-size: 14px;
+
+                i {
+                    margin-right: 6px;
+                }
             }
+
             p {
                 margin: 0;
-                font-size: 14px;
-                color: #6c757d;
+                font-size: 13px;
+                color: $blg-gris-dark;
+                line-height: 1.5;
             }
         }
 
         .signature-pad-wrapper {
-            border: 2px dashed #ced4da;
-            background-color: #ffffff;
-            border-radius: 8px;
+            border: 2px dashed $blg-gris;
+            background: white;
+            border-radius: 12px;
             position: relative;
-            height: 250px;
+            height: 180px;
             margin-bottom: 20px;
             cursor: crosshair;
-            transition: border-color 0.3s;
+            transition: all 0.3s ease;
+            touch-action: none;
+            /* Critical for mobile drawing */
 
-            &:hover {
-                border-color: #B22222;
+            @media (min-width: 768px) {
+                height: 250px;
+            }
+
+            &:hover,
+            &:focus-within {
+                border-color: $blg-bordeaux;
+                box-shadow: 0 0 0 3px rgba($blg-bordeaux, 0.1);
             }
 
             canvas {
                 width: 100%;
                 height: 100%;
                 display: block;
-                border-radius: 6px;
-                
+                border-radius: 10px;
+                touch-action: none;
+                /* Prevent page scroll while drawing */
+
                 &.drawing {
                     cursor: crosshair;
                 }
@@ -292,112 +653,466 @@
                 left: 50%;
                 transform: translate(-50%, -50%);
                 pointer-events: none;
-                color: #dee2e6;
-                font-size: 30px;
+                color: $blg-beige;
+                font-size: 20px;
                 font-weight: 700;
                 text-transform: uppercase;
                 letter-spacing: 2px;
+                white-space: nowrap;
+
+                @media (min-width: 768px) {
+                    font-size: 28px;
+                }
             }
         }
 
         .signature-actions {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            flex-direction: column-reverse;
+            gap: 12px;
 
-            @media (max-width: 576px) {
-                flex-direction: column-reverse;
-                
-                button {
-                    width: 100%;
-                    margin-bottom: 10px;
+            @media (min-width: 576px) {
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .btn-outline-secondary {
+                color: $blg-gris;
+                border-color: $blg-gris;
+                padding: 10px 20px;
+                border-radius: 8px;
+
+                &:hover {
+                    background: $blg-beige-light;
+                    color: $blg-gris-dark;
+                }
+            }
+
+            .btn-sign {
+                background: linear-gradient(135deg, $success-green 0%, darken($success-green, 8%) 100%);
+                border: none;
+                color: white;
+                font-weight: 700;
+                padding: 14px 24px;
+                border-radius: 10px;
+                font-size: 16px;
+                box-shadow: 0 4px 12px rgba($success-green, 0.35);
+                transition: all 0.3s ease;
+
+                &:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 16px rgba($success-green, 0.45);
+                }
+
+                i {
+                    margin-right: 8px;
                 }
             }
         }
 
-        .signature-locked-alert {
-            display: flex;
-            align-items: center;
-            
-            i {
-                margin-right: 15px;
+        .signature-help {
+            background: $blg-beige-light;
+            border-radius: 8px;
+            padding: 14px;
+            margin-top: 16px;
+
+            p {
+                margin: 0;
+                font-size: 13px;
+                color: $blg-gris-dark;
+
+                i {
+                    color: $warning-amber;
+                    margin-right: 6px;
+                }
+
+                strong {
+                    color: $blg-bordeaux;
+                }
             }
         }
     }
 
-    /* Confirmation Page */
-    .confirmation-card {
+    /* ===== ERROR CARDS ===== */
+    .error-card {
         text-align: center;
         padding: 40px 20px;
 
+        @media (min-width: 768px) {
+            padding: 60px 40px;
+        }
+
+        .error-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+
+            @media (min-width: 768px) {
+                font-size: 80px;
+            }
+
+            &.error-danger {
+                color: $danger-red;
+            }
+
+            &.error-warning {
+                color: $warning-amber;
+            }
+
+            &.error-info {
+                color: $info-blue;
+            }
+        }
+
+        .error-title {
+            font-weight: 700;
+            color: #212529;
+            margin-bottom: 16px;
+            font-size: 20px;
+
+            @media (min-width: 768px) {
+                font-size: 24px;
+            }
+        }
+
+        .error-message {
+            color: $blg-gris;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .error-help {
+            font-size: 14px;
+            color: $blg-gris;
+            margin-top: 12px;
+
+            i {
+                color: $info-blue;
+                margin-right: 6px;
+            }
+        }
+
+        .btn-primary {
+            background: $blg-bordeaux;
+            border-color: $blg-bordeaux;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+
+            &:hover {
+                background: $blg-bordeaux-dark;
+                border-color: $blg-bordeaux-dark;
+            }
+        }
+    }
+
+    /* ===== CONFIRMATION CARD ===== */
+    .confirmation-card {
+        text-align: center;
+        padding: 30px 16px;
+
+        @media (min-width: 768px) {
+            padding: 50px 30px;
+        }
+
         .confirmation-header {
-            background-color: transparent;
+            background: transparent;
             border: none;
-            
+
             .success-icon {
-                color: #28a745;
-                font-size: 60px;
-                margin-bottom: 20px;
+                color: $success-green;
+                font-size: 50px;
+                margin-bottom: 16px;
+
+                @media (min-width: 768px) {
+                    font-size: 70px;
+                    margin-bottom: 24px;
+                }
             }
 
             .confirmation-title {
                 font-weight: 700;
-                color: #28a745;
+                color: $success-green;
                 margin-bottom: 0;
+                font-size: 22px;
+
+                @media (min-width: 768px) {
+                    font-size: 28px;
+                }
             }
         }
 
         .signature-details-table {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 15px;
+            background: $blg-beige-light;
+            border-radius: 12px;
+            padding: 16px;
             text-align: left;
+            margin-top: 24px;
+
+            @media (min-width: 768px) {
+                padding: 20px;
+            }
 
             .detail-row {
                 display: flex;
-                justify-content: space-between;
+                flex-direction: column;
                 padding: 10px 0;
-                border-bottom: 1px solid #e9ecef;
+                border-bottom: 1px solid rgba($blg-gris, 0.2);
+
+                @media (min-width: 576px) {
+                    flex-direction: row;
+                    justify-content: space-between;
+                }
 
                 &:last-child {
                     border-bottom: none;
                 }
 
                 .detail-label {
-                    color: #6c757d;
+                    color: $blg-gris;
                     font-weight: 500;
-                    
+                    font-size: 13px;
+                    margin-bottom: 4px;
+
+                    @media (min-width: 576px) {
+                        margin-bottom: 0;
+                    }
+
                     i {
                         width: 20px;
                         text-align: center;
-                        margin-right: 5px;
+                        margin-right: 8px;
                     }
                 }
 
                 .detail-value {
                     font-weight: 600;
                     color: #343a40;
-                    text-align: right;
+                    font-size: 14px;
+
+                    @media (min-width: 576px) {
+                        text-align: right;
+                    }
                 }
+            }
+        }
+
+        .download-btn {
+            padding: 14px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 14px;
+
+            @media (min-width: 768px) {
+                padding: 16px 24px;
+                font-size: 15px;
+            }
+
+            i {
+                margin-right: 8px;
             }
         }
     }
 
-    /* Footer */
+    /* ===== FOOTER ===== */
     .portal-footer {
         text-align: center;
-        color: #6c757d;
+        color: $blg-gris;
         margin-top: 30px;
-        font-size: 14px;
+        padding: 20px 16px;
+        font-size: 13px;
+        background: rgba(white, 0.5);
+
+        @media (min-width: 768px) {
+            font-size: 14px;
+            padding: 24px;
+        }
 
         a {
-            color: #B22222;
+            color: $blg-bordeaux;
             text-decoration: none;
             font-weight: 600;
-            
+
             &:hover {
                 text-decoration: underline;
             }
         }
+    }
+
+    /* ===== BUTTONS GLOBAL ===== */
+    .btn-primary {
+        background: $blg-bordeaux;
+        border-color: $blg-bordeaux;
+
+        &:hover,
+        &:focus {
+            background: $blg-bordeaux-dark;
+            border-color: $blg-bordeaux-dark;
+        }
+    }
+
+    .btn-success {
+        background: $success-green;
+        border-color: $success-green;
+
+        &:hover,
+        &:focus {
+            background: darken($success-green, 8%);
+            border-color: darken($success-green, 8%);
+        }
+    }
+
+    /* ===== ALERTS ===== */
+    .alert-info {
+        background: linear-gradient(135deg, rgba($info-blue, 0.1) 0%, rgba($info-blue, 0.05) 100%);
+        border: 1px solid rgba($info-blue, 0.2);
+        color: darken($info-blue, 15%);
+        border-radius: 10px;
+
+        h5 {
+            color: darken($info-blue, 10%);
+
+            i {
+                margin-right: 8px;
+            }
+        }
+    }
+
+    .alert-warning {
+        background: linear-gradient(135deg, rgba($warning-amber, 0.1) 0%, rgba($warning-amber, 0.05) 100%);
+        border: 1px solid rgba($warning-amber, 0.2);
+        color: darken($warning-amber, 20%);
+        border-radius: 10px;
+    }
+
+    .alert-success {
+        background: linear-gradient(135deg, rgba($success-green, 0.1) 0%, rgba($success-green, 0.05) 100%);
+        border: 1px solid rgba($success-green, 0.2);
+        color: darken($success-green, 15%);
+        border-radius: 10px;
+    }
+}
+
+/* ===== GLOBAL SUCCESS HEADER (used in signature_success_template) ===== */
+.success-header {
+    background: linear-gradient(135deg, $blg-bordeaux 0%, $blg-bordeaux-dark 100%);
+    color: white;
+    padding: 30px 0;
+    text-align: center;
+
+    @media (min-width: 768px) {
+        padding: 50px 0;
+    }
+
+    .success-icon-large {
+        font-size: 60px;
+        color: $success-green;
+        margin-bottom: 16px;
+
+        @media (min-width: 768px) {
+            font-size: 80px;
+            margin-bottom: 24px;
+        }
+    }
+
+    h1 {
+        font-size: 24px;
+        font-weight: 700;
+        margin-bottom: 8px;
+
+        @media (min-width: 768px) {
+            font-size: 32px;
+        }
+    }
+
+    .lead {
+        font-size: 16px;
+        opacity: 0.9;
+
+        @media (min-width: 768px) {
+            font-size: 18px;
+        }
+    }
+}
+
+/* ===== AUDIT CARD (SAP-Grade) ===== */
+.audit-card {
+    border-left: 4px solid $blg-bordeaux;
+    background: rgba($blg-beige, 0.15);
+
+    .audit-row {
+        display: flex;
+        flex-direction: column;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba($blg-gris, 0.15);
+
+        @media (min-width: 576px) {
+            flex-direction: row;
+            justify-content: space-between;
+        }
+
+        &:last-child {
+            border-bottom: none;
+        }
+
+        .audit-label {
+            color: $blg-gris;
+            font-weight: 500;
+            font-size: 13px;
+            margin-bottom: 4px;
+
+            @media (min-width: 576px) {
+                margin-bottom: 0;
+            }
+
+            i {
+                width: 18px;
+                margin-right: 8px;
+            }
+        }
+
+        .audit-value {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+    }
+
+    .hash-display {
+        font-family: 'Monaco', 'Consolas', monospace;
+        background: #f8f9fa;
+        padding: 8px 12px;
+        border-radius: 6px;
+        font-size: 11px;
+        word-break: break-all;
+        margin-top: 4px;
+
+        @media (min-width: 576px) {
+            margin-top: 0;
+            font-size: 12px;
+        }
+    }
+}
+
+/* ===== DOWNLOAD BUTTONS ===== */
+.download-btn-primary {
+    background: linear-gradient(135deg, $blg-bordeaux 0%, $blg-bordeaux-dark 100%);
+    border: none;
+    color: white;
+    padding: 14px 24px;
+    font-size: 15px;
+    font-weight: 600;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba($blg-bordeaux, 0.3);
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba($blg-bordeaux, 0.4);
+        color: white;
+    }
+
+    i {
+        margin-right: 8px;
     }
 }

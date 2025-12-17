@@ -165,6 +165,14 @@ class Chantier(models.Model):
     # NOTE: quotation_ids is added by construction_sale module via _inherit
     # Defining One2many here causes KeyError because sale_order.py loads after chantier.py
     quotation_count = fields.Integer(compute='_compute_quotation_count')
+
+    # Explicit selection of validated quotes for PO generation
+    devis_ids = fields.Many2many(
+        'sale.order',
+        string='Devis Validés',
+        domain="[('state', '=', 'sale')]",
+        help="Sélectionner les devis validés pour la génération des commandes"
+    )
     
     subcontractor_ids = fields.Many2many(
         'res.partner',
@@ -699,7 +707,8 @@ class Chantier(models.Model):
         if not self.lots_ids:
             return False, "Aucun lot défini"
         
-        lots_without_subcontractor = self.lots_ids.filtered(lambda l: not l.subcontractor_ids)
+        lots_to_check = self.lots_ids.filtered(lambda l: l.execution_type == 'external')
+        lots_without_subcontractor = lots_to_check.filtered(lambda l: not l.subcontractor_id)
         if lots_without_subcontractor:
             names = ", ".join(lots_without_subcontractor.mapped('name'))
             return False, f"Lots sans sous-traitant: {names}"

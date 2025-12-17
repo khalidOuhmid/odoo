@@ -1,8 +1,52 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="construction_contract.ContractEditor" owl="1">
-        <div class="o_contract_editor_container" style="height: 100vh; width: 100%;">
-            <div t-ref="editor"></div>
+        <div class="o_contract_editor_wrapper d-flex" style="height: 100vh; width: 100%; background: #f5f5f5;">
+            <!-- SAP-Style Sidebar -->
+            <div class="o_contract_sidebar" style="width: 280px; background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); color: #fff; flex-shrink: 0; display: flex; flex-direction: column;">
+                <!-- Header -->
+                <div style="padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.1);">
+                    <h5 style="margin: 0; font-weight: 600;"><i class="fa fa-file-text-o me-2"/>Contrat</h5>
+                    <small class="text-muted" style="color: rgba(255,255,255,0.6) !important;" t-esc="state.contractName || 'Chargement...'"/>
+                </div>
+                
+                <!-- Metadata -->
+                <div style="padding: 20px; flex: 1; overflow-y: auto;">
+                    <div class="mb-4" t-if="state.subcontractor">
+                        <label style="font-size: 11px; text-transform: uppercase; color: rgba(255,255,255,0.5);">Sous-traitant</label>
+                        <div style="font-size: 14px; font-weight: 500;" t-esc="state.subcontractor"/>
+                    </div>
+                    <div class="mb-4" t-if="state.chantier">
+                        <label style="font-size: 11px; text-transform: uppercase; color: rgba(255,255,255,0.5);">Chantier</label>
+                        <div style="font-size: 14px; font-weight: 500;" t-esc="state.chantier"/>
+                    </div>
+                    <div class="mb-4" t-if="state.amount">
+                        <label style="font-size: 11px; text-transform: uppercase; color: rgba(255,255,255,0.5);">Montant HT</label>
+                        <div style="font-size: 18px; font-weight: 700; color: #4ade80;" t-esc="state.amount"/>
+                    </div>
+                    <div class="mb-4" t-if="state.status">
+                        <label style="font-size: 11px; text-transform: uppercase; color: rgba(255,255,255,0.5);">Statut</label>
+                        <div>
+                            <span class="badge" t-att-class="{'bg-secondary': state.status === 'draft', 'bg-info': state.status === 'generated', 'bg-warning': state.status === 'sent', 'bg-success': state.status === 'signed'}" t-esc="state.statusLabel"/>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Actions -->
+                <div style="padding: 20px; border-top: 1px solid rgba(255,255,255,0.1);">
+                    <button class="btn btn-success w-100 mb-2" t-on-click="onGenerateAndSend" t-att-disabled="state.saving">
+                        <i class="fa fa-paper-plane me-2"/>Générer &amp; Envoyer
+                    </button>
+                    <button class="btn btn-outline-light w-100" t-on-click="onClose">
+                        <i class="fa fa-arrow-left me-2"/>Retour au Chantier
+                    </button>
+                </div>
+            </div>
+            
+            <!-- GrapeJS Editor Area -->
+            <div class="o_contract_editor_main" style="flex: 1; overflow: hidden;">
+                <div t-ref="editor" style="height: 100%; width: 100%;"/>
+            </div>
         </div>
     </t>
 </templates>
