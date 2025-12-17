@@ -1,0 +1,12 @@
+﻿docker-compose :  Container docker-db-1  Running
+Au caractère Ligne:1 : 1
++ docker-compose run --rm odoo_web odoo -d odoo 
+-u construction_visit - ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: ( Con 
+   tainer docker-db-1  Running:String) [], Remot  
+  eException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Warn: Can't find .pfb for face 'Courier'

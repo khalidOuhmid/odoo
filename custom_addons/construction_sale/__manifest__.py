@@ -14,7 +14,7 @@
     - Construction-specific line details (Location, Dimensions, Color)
     - Construction Site integration
     """,
-    'author': 'Antigravity',
+    'author': 'Khalid Ouhmid',
     'depends': ['sale', 'construction_core', 'web', 'purchase'],
     'data': [
         'wizards/sale_to_purchase_views.xml',

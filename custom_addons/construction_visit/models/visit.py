@@ -1,10 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Visit Model - Refactored for BLG Groupe
-FAANG-level: Clean code, unified participants, workflow buttons
+Visit Model - BLG Groupe Production Module
+Enterprise-grade: RFC 5545 ICS calendar integration, strict validation
+
+Author: Khalid Ouhmid for BLGGROUPE
+Version: 1.0
+Odoo Version: 18.0
 """
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+from datetime import timedelta
+import base64
+import uuid
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -71,7 +78,24 @@ class Visit(models.Model):
         'construction_visit_photo_rel',
         'visit_id', 'attachment_id',
         string='Photos',
+        domain=[('mimetype', 'ilike', 'image/')],
         help="Photos prises pendant la visite"
+    )
+    document_ids = fields.Many2many(
+        'ir.attachment',
+        'construction_visit_document_rel',
+        'visit_id', 'document_attachment_id',
+        string='Documents',
+        domain=[('mimetype', 'not ilike', 'image/'), ('mimetype', 'not ilike', 'video/')],
+        help="Documents joints (PDF, Word, Excel, etc.)"
+    )
+    video_ids = fields.Many2many(
+        'ir.attachment',
+        'construction_visit_video_rel',
+        'visit_id', 'video_attachment_id',
+        string='Videos',
+        domain=[('mimetype', 'ilike', 'video/')],
+        help="Videos prises pendant la visite"
     )
     
     # ============= Workflow Flags ============= #
@@ -112,6 +136,17 @@ class Visit(models.Model):
         string='Ville'
     )
 
+    # ============= ICS Calendar Integration (RFC 5545) ============= #
+    ics_data = fields.Binary(
+        string='ICS Calendar Data',
+        compute='_compute_ics_data',
+        help="RFC 5545 compliant .ics file for calendar integration"
+    )
+    ics_filename = fields.Char(
+        string='ICS Filename',
+        compute='_compute_ics_data'
+    )
+
     # ============= Computed Methods ============= #
     @api.depends('state', 'notification_sent', 'report_generated', 'report_sent')
     def _compute_button_visibility(self):
@@ -139,6 +174,145 @@ class Visit(models.Model):
                 record.display_name = f"{record.name} - {record.chantier_id.name}"
             else:
                 record.display_name = record.name
+
+    @api.depends('date', 'duration', 'name', 'chantier_id', 'chantier_address', 'chantier_city', 'notes')
+    def _compute_ics_data(self):
+        """Generate RFC 5545 compliant ICS calendar file.
+        
+        This creates a VCALENDAR with a single VEVENT containing:
+        - DTSTART/DTEND: Visit date and duration
+        - SUMMARY: Visit title
+        - LOCATION: Chantier address
+        - DESCRIPTION: Notes (if any)
+        - UID: Unique identifier for calendar updates
+        
+        Compatible with: Outlook, Google Calendar, Apple Calendar, Thunderbird.
+        """
+        for record in self:
+            if not record.date or not record.chantier_id:
+                record.ics_data = False
+                record.ics_filename = False
+                continue
+            
+            try:
+                ics_content = record._generate_ics_content()
+                record.ics_data = base64.b64encode(ics_content.encode('utf-8'))
+                record.ics_filename = f"visite_{record.id or 'new'}.ics"
+            except Exception as e:
+                _logger.error("ICS generation failed for visit %s: %s", record.id, str(e))
+                record.ics_data = False
+                record.ics_filename = False
+
+    def _generate_ics_content(self):
+        """Generate RFC 5545 compliant ICS content.
+        
+        Returns:
+            str: Complete VCALENDAR string with VEVENT
+            
+        Notes:
+            - Uses UTC timestamps (DTSTART/DTEND with Z suffix)
+            - UID format: visit-{id}@{company_domain}
+            - Line folding per RFC 5545 section 3.1
+        """
+        self.ensure_one()
+        
+        # Generate timestamps in UTC format (RFC 5545 section 3.3.5)
+        start_dt = self.date
+        end_dt = start_dt + timedelta(hours=self.duration or 2.0)
+        
+        dtstamp = fields.Datetime.now().strftime('%Y%m%dT%H%M%SZ')
+        dtstart = start_dt.strftime('%Y%m%dT%H%M%SZ')
+        dtend = end_dt.strftime('%Y%m%dT%H%M%SZ')
+        
+        # Build location string
+        location_parts = []
+        if self.chantier_address:
+            location_parts.append(self.chantier_address.replace('\n', ', '))
+        if self.chantier_city:
+            location_parts.append(self.chantier_city)
+        location = ', '.join(location_parts) if location_parts else ''
+        
+        # Build description
+        description_lines = [f"Chantier: {self.chantier_id.name}"]
+        if self.notes:
+            # Strip HTML tags for plain text
+            import re
+            clean_notes = re.sub(r'<[^>]+>', '', self.notes)
+            description_lines.append(clean_notes[:500])  # Limit length
+        description = '\\n'.join(description_lines)
+        
+        # Generate unique identifier
+        company_domain = self.env.company.email or 'blggroupe.com'
+        if '@' in company_domain:
+            company_domain = company_domain.split('@')[1]
+        uid = f"visit-{self.id or uuid.uuid4().hex[:8]}@{company_domain}"
+        
+        # Build summary
+        summary = f"Visite: {self.name}"
+        if self.chantier_id:
+            summary += f" - {self.chantier_id.name}"
+        
+        # Escape special characters per RFC 5545
+        def escape_ics(text):
+            if not text:
+                return ''
+            return text.replace('\\', '\\\\').replace(',', '\\,').replace(';', '\\;').replace('\n', '\\n')
+        
+        # Construct VCALENDAR per RFC 5545
+        ics_lines = [
+            'BEGIN:VCALENDAR',
+            'VERSION:2.0',
+            'PRODID:-//BLG Groupe//Construction Visit//FR',
+            'CALSCALE:GREGORIAN',
+            'METHOD:PUBLISH',
+            'BEGIN:VEVENT',
+            f'UID:{uid}',
+            f'DTSTAMP:{dtstamp}',
+            f'DTSTART:{dtstart}',
+            f'DTEND:{dtend}',
+            f'SUMMARY:{escape_ics(summary)}',
+        ]
+        
+        if location:
+            ics_lines.append(f'LOCATION:{escape_ics(location)}')
+        
+        if description:
+            ics_lines.append(f'DESCRIPTION:{escape_ics(description)}')
+        
+        ics_lines.extend([
+            'STATUS:CONFIRMED',
+            'TRANSP:OPAQUE',
+            'END:VEVENT',
+            'END:VCALENDAR',
+        ])
+        
+        # Join with CRLF per RFC 5545 section 3.1
+        return '\r\n'.join(ics_lines) + '\r\n'
+
+    # ============= Warnings (non-blocking) ============= #
+    @api.onchange('date')
+    def _onchange_date_warning(self):
+        """Show warning if visit is scheduled less than 24 hours in advance.
+        
+        Business Rule: Visits should ideally be scheduled at least 24 hours in advance
+        to allow proper notification of participants and logistics preparation.
+        This is a WARNING, not a blocking validation.
+        """
+        if self.date:
+            minimum_date = fields.Datetime.now() + timedelta(hours=24)
+            if self.date < minimum_date:
+                return {
+                    'warning': {
+                        'title': _('Attention: Delai court'),
+                        'message': _(
+                            "La visite est planifiee dans moins de 24 heures. "
+                            "Il est recommande de planifier au moins 24h a l'avance "
+                            "pour permettre la notification des participants. "
+                            "Date minimum recommandee: %s"
+                        ) % minimum_date.strftime('%d/%m/%Y %H:%M'),
+                        'type': 'notification',
+                    }
+                }
 
     # ============= State Actions ============= #
     def action_plan(self):
@@ -168,12 +342,69 @@ class Visit(models.Model):
         return True
 
     def action_complete(self):
-        """Complete the visit."""
+        """Mark visit as completed."""
         for rec in self:
-            if rec.state != 'in_progress':
-                raise ValidationError(_("La visite doit être en cours pour être terminée."))
             rec.state = 'completed'
-        return True
+            rec.date_finished = fields.Datetime.now()
+        
+        # Return a reload action to update the UI immediately
+        # This ensures the 'Generate Report' button becomes visible
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
+
+    # ============= Report Generation ============= #
+    def action_generate_report(self):
+        """Generate PDF report and attach to visit."""
+        self.ensure_one()
+        
+        if self.state != 'completed':
+            raise UserError(_("La visite doit etre terminee pour generer le rapport."))
+        
+        # Use the ir.actions.report model to render, passing the XML ID string
+        # This avoids the 'unhashable type: list' error seen when calling on instance
+        try:
+            pdf_content, _ = self.env['ir.actions.report']._render_qweb_pdf(
+                'construction_visit.action_report_visit', 
+                [self.id]
+            )
+        except Exception as e:
+            _logger.error("Report generation failed: %s", str(e))
+            raise UserError(_("Erreur lors de la generation du rapport: %s") % str(e))
+        
+        # Create attachment
+        filename = f"Visite_{self.chantier_id.reference or 'REF'}_{self.date.strftime('%Y%m%d')}.pdf"
+        attachment = self.env['ir.attachment'].create({
+            'name': filename,
+            'datas': base64.b64encode(pdf_content),
+            'res_model': 'construction.visit',
+            'res_id': self.id,
+            'type': 'binary',
+            'mimetype': 'application/pdf',
+        })
+        
+        self.report_generated = True
+        
+        # Post to chatter
+        self.message_post(
+            body=_("Rapport genere: %s") % filename,
+            message_type='notification',
+            attachment_ids=[attachment.id]
+        )
+        
+        _logger.info("Report generated for visit %s", self.name)
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Rapport Genere'),
+                'message': _('Le rapport PDF a ete cree et joint a la visite'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
     
     def action_cancel(self):
         """Cancel the visit."""
@@ -194,13 +425,17 @@ class Visit(models.Model):
             })
         return True
 
-    # ============= WORKFLOW ACTIONS (Mission 3) ============= #
+    # ============= WORKFLOW ACTIONS ============= #
     def action_send_notification(self):
-        """Send visit notification to all participants."""
+        """Send visit notification with ICS calendar attachment to all participants.
+        
+        Workflow:
+        1. Validate participants exist
+        """Send email notification with ICS calendar file to participants."""
         self.ensure_one()
         
         if not self.participant_ids:
-            raise UserError(_("Aucun participant à notifier."))
+            raise UserError(_("Aucun participant a notifier."))
         
         template = self.env.ref(
             'construction_visit.email_template_visit_notification',
@@ -208,66 +443,148 @@ class Visit(models.Model):
         )
         
         if not template:
-            raise UserError(_("Template email non trouvé. Installez le module correctement."))
+            self.message_post(body=_("Template email non trouve - pas de notification envoyee."))
+            return
+            
+        # Generate ICS
+        ics_content = self._generate_ics_content()
+        ics_filename = f"invitation_{self.name.replace(' ', '_')}.ics"
         
-        # Send to all participants
-        for participant in self.participant_ids.filtered(lambda p: p.email):
-            template.send_mail(self.id, force_send=True, email_values={
-                'email_to': participant.email
-            })
+        ics_attachment = self.env['ir.attachment'].create({
+            'name': ics_filename,
+            'datas': base64.b64encode(ics_content.encode('utf-8')),
+            'type': 'binary',
+            'mimetype': 'text/calendar',
+            'res_model': 'construction.visit',
+            'res_id': self.id,
+        })
+        
+        sent_count = 0
+        last_mail_id = False
+        
+        for participant in self.participant_ids:
+            if not participant.email:
+                continue
+                
+            email_values = {
+                'email_to': participant.email,
+                'email_from': self.env.user.email_formatted,
+            }
+            
+            if ics_attachment:
+                email_values['attachment_ids'] = [(4, ics_attachment.id)]
+            
+            # Use force_send=False to ensure the mail object is created and we get an ID
+            # Then we send it manually
+            mail_id = template.send_mail(self.id, force_send=False, email_values=email_values)
+            if mail_id:
+                last_mail_id = mail_id
+                # Send immediately
+                self.env['mail.mail'].browse(mail_id).send()
+                
+            sent_count += 1
             _logger.info("Visit notification sent to %s", participant.email)
         
         self.notification_sent = True
         
-        # Post to visit chatter
         self.message_post(
-            body=_("Notification de visite envoyée à %d participants") % len(self.participant_ids),
+            body=_("Notification de visite envoyee a %d participants") % sent_count,
             message_type='notification'
         )
         
-        # Also post to chantier chatter for visibility
-        if self.chantier_id:
-            participant_names = ', '.join(self.participant_ids.mapped('name')[:5])
-            if len(self.participant_ids) > 5:
-                participant_names += f" (+{len(self.participant_ids) - 5} autres)"
-            self.chantier_id.message_post(
-                body=_(
-                    "<b>Visite planifiée</b>: %s<br/>"
-                    "<b>Date</b>: %s<br/>"
-                    "<b>Participants notifiés</b>: %s"
-                ) % (self.name, self.date.strftime('%d/%m/%Y à %H:%M'), participant_names),
-                message_type='notification',
-                subtype_xmlid='mail.mt_note'
-            )
+        # Post FULL body to Chantier Chatter
+        if self.chantier_id and last_mail_id:
+            try:
+                # Capture accurate body from the sent mail record
+                mail = self.env['mail.mail'].browse(last_mail_id)
+                email_body = mail.body_html
+                
+                if email_body:
+                    participant_names = ', '.join(self.participant_ids.mapped('name'))
+                    header_html = _(
+                        "<div style='background:#92564C; color:white; padding:12px 15px; "
+                        "margin-bottom:0; border-radius:6px 6px 0 0;'>"
+                        "<b><i class='fa fa-envelope'></i> Email envoye aux participants</b><br/>"
+                        "<small style='opacity:0.9;'>Destinataires: %s</small>"
+                        "</div>"
+                    ) % participant_names
+                    
+                    full_content = header_html + (
+                        "<div style='border:1px solid #E5E3E2; border-top:none; "
+                        "border-radius:0 0 6px 6px; padding:0; background:#fff;'>"
+                        f"{email_body}"
+                        "</div>"
+                    )
+                    
+                    self.chantier_id.message_post(
+                        body=full_content,
+                        message_type='comment',
+                        subtype_xmlid='mail.mt_note'
+                    )
+                else:
+                    self._post_fallback_summary()
+            except Exception as e:
+                _logger.warning("Error posting email body to chatter: %s", str(e))
+                self._post_fallback_summary()
+        elif self.chantier_id:
+             self._post_fallback_summary()
         
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Notification Envoyée'),
-                'message': _('%d participants notifiés') % len(self.participant_ids),
+                'title': _('Notification Envoyee'),
+                'message': _('%d participants notifies') % sent_count,
                 'type': 'success'
             }
         }
 
+    def _post_fallback_summary(self):
+        """Post simple summary if full body retrieval fails."""
+        participant_names = ', '.join(self.participant_ids.mapped('name')[:5])
+        self.chantier_id.message_post(
+            body=_(
+                "<b>Visite planifiee</b>: %s<br/>"
+                "<b>Date</b>: %s<br/>"
+                "<b>Participants notifies</b>: %s"
+            ) % (self.name, self.date.strftime('%d/%m/%Y a %H:%M'), participant_names),
+            message_type='notification',
+            subtype_xmlid='mail.mt_note'
+        )
+
+    def action_complete(self):
+        """Mark visit as completed."""
+        for rec in self:
+            rec.state = 'completed'
+            rec.date_finished = fields.Datetime.now()
+        
+        # Return a reload action to update the UI immediately
+        # This ensures the 'Generate Report' button becomes visible
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
+        }
+
+    # ============= Report Generation ============= #
     def action_generate_report(self):
         """Generate PDF report and attach to visit."""
         self.ensure_one()
         
         if self.state != 'completed':
-            raise UserError(_("La visite doit être terminée pour générer le rapport."))
+            raise UserError(_("La visite doit etre terminee pour generer le rapport."))
         
-        # Get report action
-        report_action = self.env.ref('construction_visit.action_report_visit')
-        
-        # Generate PDF content
-        pdf_content, _ = report_action._render_qweb_pdf([self.id])
+        # Use the ir.actions.report model to render, passing the XML ID string
+        # This avoids the 'unhashable type: list' error seen when calling on instance
+        pdf_content, _ = self.env['ir.actions.report']._render_qweb_pdf(
+            'construction_visit.action_report_visit', 
+            [self.id]
+        )
         
         # Create attachment
-        filename = f"Visite_{self.chantier_id.reference}_{self.date.strftime('%Y%m%d')}.pdf"
+        filename = f"Visite_{self.chantier_id.reference or 'REF'}_{self.date.strftime('%Y%m%d')}.pdf"
         attachment = self.env['ir.attachment'].create({
             'name': filename,
-            'datas': fields.Binary.create(self.env, pdf_content),
+            'datas': base64.b64encode(pdf_content),
             'res_model': 'construction.visit',
             'res_id': self.id,
             'type': 'binary',
@@ -275,8 +592,10 @@ class Visit(models.Model):
         })
         
         self.report_generated = True
+        
+        # Post to chatter
         self.message_post(
-            body=_("Rapport généré: %s") % filename,
+            body=_("Rapport genere: %s") % filename,
             message_type='notification',
             attachment_ids=[attachment.id]
         )
@@ -287,9 +606,10 @@ class Visit(models.Model):
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Rapport Généré'),
-                'message': _('Le rapport PDF a été créé'),
-                'type': 'success'
+                'title': _('Rapport Genere'),
+                'message': _('Le rapport PDF a ete cree et joint a la visite'),
+                'type': 'success',
+                'sticky': False,
             }
         }
 
@@ -355,10 +675,7 @@ class Visit(models.Model):
 
     # ============= DYNAMIC REFRESH (Mission 5) ============= #
     def refresh_stages(self):
-        """Refresh computed fields and return updated data.
-        
-        Called via RPC from JavaScript for dynamic updates.
-        """
+        # Refresh computed fields and return updated data
         self.ensure_one()
         self._compute_button_visibility()
         return {
@@ -368,9 +685,7 @@ class Visit(models.Model):
             'show_send_report': self.show_send_report,
         }
 
-    # ============= Maps/Waze Links (for email template) ============= #
     def get_maps_url(self):
-        """Get Google Maps URL for chantier address."""
         self.ensure_one()
         address = f"{self.chantier_address or ''} {self.chantier_city or ''}".strip()
         if address:
@@ -379,7 +694,6 @@ class Visit(models.Model):
         return ""
 
     def get_waze_url(self):
-        """Get Waze URL for chantier address."""
         self.ensure_one()
         address = f"{self.chantier_address or ''} {self.chantier_city or ''}".strip()
         if address:

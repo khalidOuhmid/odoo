@@ -1,0 +1,11 @@
+﻿docker : Warn: Can't find .pfb for face 'Courier'
+Au caractère Ligne:1 : 1
++ docker logs docker-odoo_web-1 --tail 200 2>&1 | 
+Out-File -FilePath s: ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Warn 
+   : Can't find .pfb for face 'Courier':String)   
+  [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+Warn: Can't find .pfb for face 'Courier'

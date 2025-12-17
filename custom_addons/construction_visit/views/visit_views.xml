@@ -58,26 +58,26 @@
             <form string="Visite de Chantier">
                 <header>
                     <!-- State Transition Buttons -->
-                    <button name="action_plan" string="📅 Planifier" type="object" 
-                            class="btn-secondary" invisible="state != 'draft'"/>
-                    <button name="action_confirm" string="✅ Confirmer" type="object" 
-                            class="oe_highlight" invisible="state not in ['draft', 'planned']"/>
-                    <button name="action_start" string="▶️ Démarrer" type="object" 
-                            class="oe_highlight" invisible="state != 'confirmed'"/>
-                    <button name="action_complete" string="🏁 Terminer" type="object" 
-                            class="oe_highlight" invisible="state != 'in_progress'"/>
-                    <button name="action_cancel" string="❌ Annuler" type="object" 
-                            class="btn-secondary" invisible="state in ['completed', 'cancelled']"/>
+                    <button name="action_plan" string="Planifier" type="object" 
+                            class="btn-secondary" icon="fa-calendar" invisible="state != 'draft'"/>
+                    <button name="action_confirm" string="Confirmer" type="object" 
+                            class="oe_highlight" icon="fa-check" invisible="state not in ['draft', 'planned']"/>
+                    <button name="action_start" string="Demarrer" type="object" 
+                            class="oe_highlight" icon="fa-play" invisible="state != 'confirmed'"/>
+                    <button name="action_complete" string="Terminer" type="object" 
+                            class="oe_highlight" icon="fa-flag-checkered" invisible="state != 'in_progress'"/>
+                    <button name="action_cancel" string="Annuler" type="object" 
+                            class="btn-secondary" icon="fa-times" invisible="state in ['completed', 'cancelled']"/>
                     
-                    <!-- Workflow Buttons (Mission 3) -->
-                    <button name="action_send_notification" string="📧 Envoyer Notification" 
-                            type="object" class="btn-primary"
+                    <!-- Workflow Buttons -->
+                    <button name="action_send_notification" string="Envoyer Notification" 
+                            type="object" class="btn-primary" icon="fa-envelope-o"
                             invisible="not show_send_notification"/>
-                    <button name="action_generate_report" string="📄 Générer Rapport" 
-                            type="object" class="btn-success"
+                    <button name="action_generate_report" string="Generer Rapport" 
+                            type="object" class="btn-success" icon="fa-file-pdf-o"
                             invisible="not show_generate_report"/>
-                    <button name="action_send_report" string="📨 Envoyer Rapport" 
-                            type="object" class="btn-warning"
+                    <button name="action_send_report" string="Envoyer Rapport" 
+                            type="object" class="btn-warning" icon="fa-send"
                             invisible="not show_send_report"/>
                     
                     <field name="state" widget="statusbar" 
@@ -117,13 +117,13 @@
                     
                     <!-- Main Info -->
                     <group>
-                        <group string="📍 Informations">
+                        <group string="Informations">
                             <field name="chantier_id" options="{'no_create': True}"/>
                             <field name="visit_type"/>
                             <field name="date"/>
                             <field name="duration" widget="float_time"/>
                         </group>
-                        <group string="👥 Participants">
+                        <group string="Participants">
                             <field name="participant_ids" widget="many2many_tags"
                                    options="{'color_field': 'color'}"
                                    placeholder="Ajouter des participants..."/>
@@ -131,32 +131,43 @@
                     </group>
                     
                     <!-- Chantier Address (Read-only info) -->
-                    <group string="📍 Adresse du Chantier" invisible="not chantier_id">
+                    <group string="Adresse du Chantier" invisible="not chantier_id">
                         <field name="chantier_address" readonly="1"/>
                         <field name="chantier_city" readonly="1"/>
                     </group>
                     
                     <notebook>
                         <!-- Tab 1: Notes & Observations -->
-                        <page string="📝 Observations" name="observations">
+                        <page string="Observations" name="observations">
                             <field name="notes" placeholder="Notez vos observations pendant la visite..."/>
                         </page>
                         
-                        <!-- Tab 2: Photos (Post-visit) -->
-                        <page string="📷 Photos" name="photos" invisible="state in ['draft', 'planned']">
-                            <field name="photo_ids" widget="many2many_binary"/>
-                            <div class="alert alert-info" invisible="photo_ids">
-                                <i class="fa fa-camera me-2"/>
-                                Ajoutez des photos prises pendant la visite pour les inclure dans le rapport.
+                        <!-- Tab 2: Media (Photos, Videos, Documents) - Available when visit started -->
+                        <page string="Media" name="media" invisible="state in ['draft', 'planned', 'confirmed']">
+                            <separator string="Photos"/>
+                            <field name="photo_ids" widget="many2many_binary" options="{'accepted_file_extensions': 'image/*'}"/>
+                            
+                            <separator string="Videos"/>
+                            <field name="video_ids" widget="many2many_binary" options="{'accepted_file_extensions': 'video/*'}"/>
+                            
+                            <separator string="Documents"/>
+                            <field name="document_ids" widget="many2many_binary"/>
+                            
+                            <div class="alert alert-info" invisible="photo_ids or video_ids or document_ids">
+                                <i class="fa fa-info-circle me-2"/>
+                                Ajoutez des photos, videos et documents pour les inclure dans le rapport.
                             </div>
                         </page>
                         
-                        <!-- Tab 3: Report -->
-                        <page string="📄 Compte Rendu" name="report" invisible="state not in ['completed', 'cancelled']">
-                            <field name="report" placeholder="Rédigez le compte-rendu détaillé..."/>
+                        <!-- Tab 3: Report (visible after completion) -->
+                        <page string="Compte Rendu" name="report" invisible="state not in ['completed', 'cancelled']">
+                            <field name="report" placeholder="Redigez le compte-rendu detaille..."/>
                         </page>
                     </notebook>
                 </sheet>
+                
+                <!-- Empty footer hides default Save/Discard in modal dialog -->
+                <footer invisible="1"/>
                 
                 <chatter/>
             </form>
