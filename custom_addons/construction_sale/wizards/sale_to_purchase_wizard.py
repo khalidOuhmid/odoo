@@ -133,7 +133,7 @@ class SaleToPurchaseWizard(models.TransientModel):
                     'order_id': po.id,
                     'product_id': sale_line.product_id.id,
                     'name': sale_line.name + (f"\nLocation: {sale_line.room_location}" if sale_line.room_location else ""),
-                    'product_qty': sale_line.product_uom_qty,
+                    'product_qty': sale_line.product_uom_qty or 1.0,  # FIX: Mandatory field
                     'price_unit': cost_price,  # COST, not selling price!
                     'date_planned': fields.Datetime.now(),
                     'product_uom': sale_line.product_uom.id,

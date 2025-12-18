@@ -1717,8 +1717,12 @@ class Chantier(models.Model):
     def get_main_quotation(self):
         """Get the main sale quotation for this chantier."""
         self.ensure_one()
-        # Garder la logique du devis principal en sale.order
-        main_quote = self.sale_order_ids.filtered(lambda so: so.is_main_quote and so.state in ['draft', 'sent'])
+        # Search for sale orders linked to this chantier
+        sale_orders = self.env['sale.order'].search([
+            ('chantier_id', '=', self.id),
+            ('state', 'in', ['draft', 'sent'])
+        ])
+        main_quote = sale_orders.filtered(lambda so: so.is_main_quote)
         return main_quote[0] if main_quote else False
 
     def _compute_purchase_order_count(self):

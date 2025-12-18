@@ -728,11 +728,26 @@ export class QuoteBuilder extends Component {
         }
     }
 
+    onLineCostChange(ev, index) {
+        const line = this.state.cart[index];
+        if (line) {
+            const cost = parseFloat(ev.target.value);
+            if (cost <= 0) {
+                this.notification.add("Le coût doit être supérieur à 0", { type: "danger" });
+                // Reset to previous value logic is hard without tracking, but UI will show invalid
+                return;
+            }
+            line.price_buy = cost;
+            // Recalculate selling price to maintain margin
+            line.price_unit = this.calculatePriceFromMargin(cost, line.target_margin_percent);
+        }
+    }
+
     onLineMarginChange(ev, index) {
         const line = this.state.cart[index];
         if (line) {
             const margin = parseFloat(ev.target.value) || 50;
-            if (margin >= 0 && margin < 100) {
+            if (margin >= 0 && margin < 500) {
                 line.target_margin_percent = margin;
                 line.price_unit = this.calculatePriceFromMargin(line.price_buy, margin);
             }

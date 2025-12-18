@@ -1097,19 +1097,16 @@ class ConstructionContract(models.Model):
         """
         CHAIN_4: Génération PDF Final
         Uses WeasyPrint to generate PDF from contract_template_html
+        Then merges with CCTP, Planning, and PO PDFs
         """
+        import gc
+        
         self.ensure_one()
         if not self.contract_template_html:
             raise UserError(_("Veuillez d'abord générer le contrat."))
 
         try:
             # 1. Inject Signatures (Final check before PDF)
-            # We already injected placeholders, but if they changed or we want to ensure latest signature:
-            # Re-inject signature images if they are placeholders in the stored HTML?
-            # The HTML already contains base64 images from the first generation.
-            # If we want live updates, we might need to re-replace.
-            # For now, assume HTML is up to date or user updated it.
-            
             html_content = self.contract_template_html
             
             # 2. Generate PDF using WeasyPrint
@@ -1119,47 +1116,59 @@ class ConstructionContract(models.Model):
             # Base URL for local resources (images) if needed
             base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
             
+            _logger.info(f"[PDF] Starting generation for contract {self.name}")
+            
             pdf_file = io.BytesIO()
             HTML(string=html_content, base_url=base_url).write_pdf(
                 pdf_file,
-                # Stylesheets can be passed here if separated, but we included <style> in HTML
                 optimize_size=('fonts',)
             )
             
             pdf_bytes = pdf_file.getvalue()
+            _logger.info(f"[PDF] Base contract generated: {len(pdf_bytes)/1024:.1f} KB")
             
-            # 3. Store Attachment
+            # 3. MERGE: Fusion with CCTP, Planning, PO
+            pdf_generator = self.env['construction.contract.pdf.generator']
+            merged_pdf_bytes = pdf_generator.merge_contract_bundle(self, pdf_bytes)
+            
+            # 4. Store Attachment
             attachment_name = f"Contrat_{self.name}_{self.subcontractor_id.name}.pdf".replace(' ', '_')
             attachment = self.env['ir.attachment'].create({
                 'name': attachment_name,
                 'type': 'binary',
-                'datas': base64.b64encode(pdf_bytes),
+                'datas': base64.b64encode(merged_pdf_bytes),
                 'res_model': 'construction.contract',
                 'res_id': self.id,
                 'mimetype': 'application/pdf'
             })
             
-            # 4. Compute Hash
-            pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
+            # 5. Compute Hash
+            pdf_hash = hashlib.sha256(merged_pdf_bytes).hexdigest()
             
             self.write({
-                'pdf_document': base64.b64encode(pdf_bytes),
+                'pdf_document': base64.b64encode(merged_pdf_bytes),
                 'pdf_hash_before_signature': pdf_hash,
-                'state': 'sent' # Ready for signature
+                'state': 'sent'  # Ready for signature
             })
+            
+            # 6. Memory cleanup
+            gc.collect()
+            
+            _logger.info(f"[PDF] Complete for {self.name}: {len(merged_pdf_bytes)/1024:.1f} KB, hash={pdf_hash[:16]}...")
             
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': _("PDF Généré"),
-                    'message': _("Le PDF a été généré et attaché au contrat."),
+                    'message': _("Le PDF fusionné a été généré et attaché au contrat."),
                     'type': 'success',
                 }
             }
             
         except Exception as e:
-            _logger.error("WeasyPrint Error: %s", e)
+            _logger.error("WeasyPrint/Merge Error: %s", e, exc_info=True)
+            gc.collect()  # Cleanup on error too
             raise UserError(_("Erreur lors de la génération PDF: %s") % str(e))
 
     def action_regenerate_pdf(self):

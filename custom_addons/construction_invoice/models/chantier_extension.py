@@ -55,7 +55,7 @@ class Chantier(models.Model):
         currency_field='currency_id'
     )
 
-    @api.depends('invoice_ids.state', 'invoice_ids.payment_state')
+    @api.depends('business_provider_id', 'reference')
     def _compute_commission_totals(self):
         for chantier in self:
             # Placeholder logic - refined in Account Move trigger usually

@@ -77,6 +77,8 @@
         'wizards/views/contract_creation_wizard_views.xml',
         'wizards/views/deliverable_selector_wizard_views.xml',
         'wizards/views/contract_send_wizard_views.xml',
+        'wizards/views/lot_grouping_wizard_views.xml',
+        'wizards/views/contract_validation_wizard_views.xml',
 
         # Reports
         'reports/contract_report.xml',

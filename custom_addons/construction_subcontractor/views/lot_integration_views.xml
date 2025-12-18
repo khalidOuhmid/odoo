@@ -24,10 +24,13 @@
                        invisible="not subcontractor_id"
                        string="Conformité"/>
                 <div class="o_row" invisible="not subcontractor_id">
-                    <field name="subcontractor_compliance_state" widget="badge"
-                           decoration-success="subcontractor_compliance_state == 'compliant'"
-                           decoration-warning="subcontractor_compliance_state == 'incomplete'"
-                           decoration-danger="subcontractor_compliance_state == 'expired'"/>
+                    <!-- FIX: Use document_status with strict R/O/G logic -->
+                    <field name="document_status" widget="badge"
+                           decoration-success="document_status == 'success'"
+                           decoration-warning="document_status == 'warning'"
+                           decoration-danger="document_status == 'danger'"/>
+                    
+                    <field name="subcontractor_compliance_state" invisible="1"/> <!-- Hide old one -->
                     <field name="subcontractor_alert_level" widget="badge"
                            decoration-success="subcontractor_alert_level == 'green'"
                            decoration-warning="subcontractor_alert_level == 'yellow'"

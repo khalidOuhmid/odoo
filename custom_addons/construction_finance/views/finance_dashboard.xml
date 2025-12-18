@@ -10,7 +10,7 @@
                 <field name="chantier_id"/>
                 <field name="partner_id"/>
                 <field name="company_id"/>
-                <filter string="Marge Faible (< 15%)" name="low_margin" domain="[('margin', '&lt;', 0.15 * invoiced_revenue), ('invoiced_revenue', '>', 0)]"/>
+                <filter string="Marge Faible (&lt; 15%)" name="low_margin" domain="[('margin', '&lt;', 0.15 * invoiced_revenue), ('invoiced_revenue', '&gt;', 0)]"/>
                 <filter string="Chantiers à Perte" name="negative_margin" domain="[('margin', '&lt;', 0)]"/>
                 <group expand="1" string="Regrouper par">
                     <filter string="Chantier" name="group_chantier" context="{'group_by':'chantier_id'}"/>

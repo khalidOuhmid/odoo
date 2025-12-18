@@ -27,7 +27,7 @@ class BillingCycle(models.Model):
         ('over_billed', 'Over Billed')
     ], compute='_compute_billing_status', store=True, string="Billing Status")
 
-    @api.depends('chantier_id.sale_order_ids.state', 'chantier_id.sale_order_ids.amount_total')
+    @api.depends('chantier_id')
     def _compute_total_amount_confirmed(self):
         for cycle in self:
             confirmed_orders = self.env['sale.order'].search([

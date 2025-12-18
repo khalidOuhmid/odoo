@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_lot_grouping_wizard_form" model="ir.ui.view">
+        <field name="name">construction.lot.grouping.wizard.form</field>
+        <field name="model">construction.lot.grouping.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Regroupement de Lots">
+                <group>
+                    <div class="alert alert-info" role="alert">
+                        D'autres lots sont assignés à ce sous-traitant sur ce chantier.<br/>
+                        Voulez-vous les grouper dans un seul Bon de Commande ?
+                    </div>
+                </group>
+                <group>
+                    <field name="lot_ids" widget="many2many_tags" readonly="0"/>
+                </group>
+                <footer>
+                    <button name="action_group_po" 
+                            string="Grouper dans un seul BC" 
+                            type="object" 
+                            class="btn-primary"/>
+                    <button name="action_separate_po_only" 
+                            string="Créer BC Séparé (Actuel uniquement)" 
+                            type="object" 
+                            class="btn-secondary"/>
+                    <button string="Annuler" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

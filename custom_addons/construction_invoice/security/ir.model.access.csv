@@ -9,3 +9,4 @@ access_billing_cycle_accountant,construction.billing.cycle.accountant,model_cons
 access_billing_cycle_manager,construction.billing.cycle.manager,model_construction_billing_cycle,construction_core.group_construction_user,1,1,1,1
 access_billing_step_accountant,construction.billing.step.accountant,model_construction_billing_step,construction_core.group_construction_accountant,1,0,0,0
 access_billing_step_manager,construction.billing.step.manager,model_construction_billing_step,construction_core.group_construction_user,1,1,1,1
+access_billing_cycle_wizard,construction.billing.cycle.wizard.all,model_construction_billing_cycle_wizard,construction_core.group_construction_user,1,1,1,1

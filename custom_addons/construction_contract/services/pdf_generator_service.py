@@ -602,3 +602,165 @@ class ContractPDFGenerator(models.AbstractModel):
             _logger.error(f"WeasyPrint test failed: {e}")
 
         return results
+
+    # ============================================================
+    # PDF MERGE (FUSION NUCLEAIRE)
+    # ============================================================
+
+    @api.model
+    def merge_contract_bundle(self, contract, contract_pdf_bytes):
+        """
+        Merge Contract PDF with annexes in strict order:
+        1. Contract (HTML-generated)
+        2. CCTP (Specs)
+        3. Planning Chantier
+        4. Planning Sous-traitant
+        5. Bon de Commande (PO)
+
+        Args:
+            contract: construction.contract record
+            contract_pdf_bytes: bytes of the base contract PDF
+
+        Returns:
+            bytes: Merged PDF content
+
+        Raises:
+            UserError: Only if ALL merging fails
+        """
+        import gc
+        
+        if not PYPDF2_AVAILABLE:
+            _logger.warning("PyPDF2 not available, skipping PDF merge")
+            return contract_pdf_bytes
+
+        _logger.info(f"[MERGE] Starting PDF bundle merge for contract {contract.name}")
+        
+        merger = PdfWriter()
+        skipped_files = []
+        merged_count = 0
+
+        try:
+            # 1. Add base contract PDF
+            try:
+                contract_reader = PdfReader(io.BytesIO(contract_pdf_bytes))
+                for page in contract_reader.pages:
+                    merger.add_page(page)
+                merged_count += 1
+                _logger.info(f"[MERGE] Added contract: {len(contract_reader.pages)} pages")
+            except Exception as e:
+                _logger.error(f"[MERGE] CRITICAL: Base contract PDF is corrupted: {e}")
+                raise UserError(_("Le PDF du contrat de base est corrompu : %s") % str(e))
+
+            # 2. CCTP (Specs) - from chantier documents
+            cctp_docs = self.env['construction.document'].search([
+                ('chantier_id', '=', contract.chantier_id.id),
+                ('document_type', '=', 'specs')
+            ], limit=1)
+            
+            if cctp_docs and cctp_docs.file_data:
+                try:
+                    cctp_bytes = base64.b64decode(cctp_docs.file_data)
+                    cctp_reader = PdfReader(io.BytesIO(cctp_bytes))
+                    for page in cctp_reader.pages:
+                        merger.add_page(page)
+                    merged_count += 1
+                    _logger.info(f"[MERGE] Added CCTP: {len(cctp_reader.pages)} pages")
+                except Exception as e:
+                    skipped_files.append(f"CCTP: {e}")
+                    _logger.warning(f"[MERGE] Skipped CCTP (corrupted): {e}")
+            else:
+                _logger.info("[MERGE] No CCTP found, skipping")
+
+            # 3. Planning Chantier - from chantier documents (schedule without partner)
+            planning_docs = self.env['construction.document'].search([
+                ('chantier_id', '=', contract.chantier_id.id),
+                ('document_type', '=', 'schedule'),
+                ('partner_id', '=', False)
+            ], limit=1)
+            
+            if planning_docs and planning_docs.file_data:
+                try:
+                    planning_bytes = base64.b64decode(planning_docs.file_data)
+                    planning_reader = PdfReader(io.BytesIO(planning_bytes))
+                    for page in planning_reader.pages:
+                        merger.add_page(page)
+                    merged_count += 1
+                    _logger.info(f"[MERGE] Added Planning Chantier: {len(planning_reader.pages)} pages")
+                except Exception as e:
+                    skipped_files.append(f"Planning Chantier: {e}")
+                    _logger.warning(f"[MERGE] Skipped Planning Chantier (corrupted): {e}")
+            else:
+                _logger.info("[MERGE] No Planning Chantier found, skipping")
+
+            # 4. Planning Sous-traitant - schedule linked to subcontractor
+            st_planning_docs = self.env['construction.document'].search([
+                ('chantier_id', '=', contract.chantier_id.id),
+                ('document_type', '=', 'schedule'),
+                ('partner_id', '=', contract.subcontractor_id.id)
+            ], limit=1)
+            
+            if st_planning_docs and st_planning_docs.file_data:
+                try:
+                    st_bytes = base64.b64decode(st_planning_docs.file_data)
+                    st_reader = PdfReader(io.BytesIO(st_bytes))
+                    for page in st_reader.pages:
+                        merger.add_page(page)
+                    merged_count += 1
+                    _logger.info(f"[MERGE] Added Planning ST: {len(st_reader.pages)} pages")
+                except Exception as e:
+                    skipped_files.append(f"Planning ST: {e}")
+                    _logger.warning(f"[MERGE] Skipped Planning ST (corrupted): {e}")
+            else:
+                _logger.info("[MERGE] No Planning ST found, skipping")
+
+            # 5. Bon de Commande (PO) - Generate PDF from Odoo report
+            for po in contract.purchase_order_ids:
+                try:
+                    # Use Odoo's report engine to generate PO PDF
+                    report = self.env.ref('purchase.action_report_purchase_order', raise_if_not_found=False)
+                    if report:
+                        pdf_content, content_type = self.env['ir.actions.report'].sudo()._render_qweb_pdf(
+                            report, [po.id]
+                        )
+                        po_reader = PdfReader(io.BytesIO(pdf_content))
+                        for page in po_reader.pages:
+                            merger.add_page(page)
+                        merged_count += 1
+                        _logger.info(f"[MERGE] Added PO {po.name}: {len(po_reader.pages)} pages")
+                except Exception as e:
+                    skipped_files.append(f"PO {po.name}: {e}")
+                    _logger.warning(f"[MERGE] Skipped PO {po.name} (error): {e}")
+
+            # Write merged PDF
+            output = io.BytesIO()
+            merger.write(output)
+            merged_pdf = output.getvalue()
+            
+            # Log summary
+            _logger.info(
+                f"[MERGE] Complete for {contract.name}: "
+                f"{merged_count} documents merged, "
+                f"{len(skipped_files)} skipped, "
+                f"final size: {len(merged_pdf)/1024:.1f} KB"
+            )
+            
+            if skipped_files:
+                contract.message_post(
+                    body=_("⚠️ PDF Fusion: Certains documents ont été ignorés (corrompus):<br/>%s") % 
+                         "<br/>".join(skipped_files),
+                    message_type='notification'
+                )
+
+            return merged_pdf
+
+        except UserError:
+            raise
+        except Exception as e:
+            _logger.error(f"[MERGE] Critical failure for {contract.name}: {e}", exc_info=True)
+            # Return original if merge fails completely
+            return contract_pdf_bytes
+        finally:
+            # Explicit cleanup for memory management
+            merger = None
+            gc.collect()
+

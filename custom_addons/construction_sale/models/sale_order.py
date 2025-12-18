@@ -88,13 +88,19 @@ class SaleOrder(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
-            if vals.get('chantier_id') and not vals.get('quote_reference'):
+            # Bug Fix #4: Override generic name with [CHANTIER]-DEV-[SEQ]
+            if vals.get('chantier_id'):
                 chantier = self.env['construction.chantier'].browse(vals['chantier_id'])
                 # Count existing quotes for this chantier
                 existing_count = self.search_count([('chantier_id', '=', chantier.id)])
-                # Generate reference
-                chantier_name = chantier.name.replace(' ', '-')[:30] if chantier.name else 'CHANTIER'
-                vals['quote_reference'] = f"{chantier_name}-DEV-{existing_count + 1:03d}"
+                # Generate formatted name
+                chantier_name = chantier.name.replace(' ', '-').upper()[:15] if chantier.name else 'CHANTIER'
+                # Format: PROJECT-DEV-001-v1
+                new_name = f"{chantier_name}-DEV-{existing_count + 1:03d}-v1"
+                
+                vals['name'] = new_name
+                vals['quote_reference'] = new_name
+                
         return super().create(vals_list)
 
     # ============================================================

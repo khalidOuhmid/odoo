@@ -59,6 +59,8 @@ class Visit(models.Model):
     description = fields.Html(string='Description', help="Description détaillée de la visite")
     notes = fields.Html(string='Notes de visite')
     report = fields.Html(string='Compte-rendu')
+    report_html = fields.Html(string='Rapport HTML', readonly=True)
+    report_pdf = fields.Binary(string='Rapport PDF', readonly=True, attachment=True)
     
     attachment_ids = fields.Many2many(
         'ir.attachment',
@@ -325,16 +327,15 @@ END:VCALENDAR"""
                 mail = self.env['mail.mail'].browse(last_mail_id)
                 email_body = mail.body_html
                 subject = mail.subject or _("Notification de visite")
+                attachments = mail.attachment_ids
                 
                 if email_body:
-                    # Provide a simple header to indicate origin, but keep body HTML intact
-                    # Use a standard quoting style or just the body
-                    
                     self.chantier_id.message_post(
                         body=Markup(email_body),
                         subject=subject,
-                        message_type='comment',  # Use comment to look like a message
-                        subtype_xmlid='mail.mt_note' # Keep as note to not spam followers? Or mt_comment?
+                        message_type='comment',
+                        subtype_xmlid='mail.mt_note',
+                        attachment_ids=[(6, 0, attachments.ids)]
                     )
                 else:
                     self._post_fallback_summary()
@@ -377,10 +378,18 @@ END:VCALENDAR"""
         
         # Use the ir.actions.report model to render, passing the XML ID string
         try:
+            # Render PDF
             pdf_content, _content_type = self.env['ir.actions.report']._render_qweb_pdf(
                 'construction_visit.action_report_visit', 
                 [self.id]
             )
+            
+            # Render HTML
+            html_content = self.env['ir.actions.report']._render_qweb_html(
+                'construction_visit.action_report_visit', 
+                [self.id]
+            )
+            
         except Exception as e:
             _logger.error("Report generation failed: %s", str(e))
             raise UserError(_("Erreur lors de la generation du rapport: %s") % str(e))
@@ -396,7 +405,11 @@ END:VCALENDAR"""
             'mimetype': 'application/pdf',
         })
         
-        self.report_generated = True
+        self.write({
+            'report_generated': True,
+            'report_pdf': base64.b64encode(pdf_content),
+            'report_html': html_content,
+        })
         
         # Post to chatter
         self.message_post(

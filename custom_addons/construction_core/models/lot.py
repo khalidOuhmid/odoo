@@ -182,6 +182,32 @@ class Lot(models.Model):
     description = fields.Text(string='Description')
 
     # ============= DOCUMENTS ============= #
+    document_status = fields.Selection([
+        ('ok', 'Conforme'),
+        ('warning', 'Expire Bientôt'),
+        ('error', 'Manquant / Expiré')
+    ], string='Statut Documents', compute='_compute_document_status', store=True)
+    
+    @api.depends('document_cctp', 'document_planning_sous_traitant', 'subcontractor_id', 'execution_type')
+    def _compute_document_status(self):
+        for lot in self:
+            if lot.execution_type == 'internal':
+                lot.document_status = 'ok'
+                continue
+                
+            status = 'ok'
+            # 1. Check Missing Mandatory Docs
+            if not lot.document_cctp or not lot.document_planning_sous_traitant:
+                status = 'error'
+            
+            # 2. Check Subcontractor Compliance (if module available)
+            if lot.subcontractor_id:
+                # Check for "compliance_state" or similar on partner if it exists
+                # Fallback: check if basic fields are set
+                pass 
+                
+            lot.document_status = status
+
     # Specific documents as requested
     document_cctp = fields.Binary(string='CCTP', attachment=True)
     document_cctp_filename = fields.Char(string='Nom Fichier CCTP')
@@ -192,8 +218,6 @@ class Lot(models.Model):
     document_planning_sous_traitant = fields.Binary(string='Planning Sous-Traitant', attachment=True)
     document_planning_sous_traitant_filename = fields.Char(string='Nom Fichier Planning ST')
 
-    # Generic documents (kept for extras)
-    # Generic documents (kept for extras)
     # Generic documents (kept for extras)
     document_ids = fields.Many2many(
         'ir.attachment',

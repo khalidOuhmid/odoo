@@ -274,7 +274,13 @@
                                                 
                                                 <!-- Cost -->
                                                 <td t-if="state.showMargin" class="text-end o_margin_cell small">
-                                                    <t t-esc="formatMoney(line.price_buy)"/>
+                                                    <div class="input-group input-group-sm" style="width: 80px; margin-left: auto;">
+                                                        <input type="number" 
+                                                               class="form-control text-end o_cost_input"
+                                                               t-att-value="line.price_buy"
+                                                               t-on-change="(ev) => this.onLineCostChange(ev, line._index)"
+                                                               min="0" step="0.01"/>
+                                                    </div>
                                                 </td>
                                                 
                                                 <!-- Margin % -->

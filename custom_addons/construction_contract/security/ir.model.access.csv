@@ -29,3 +29,7 @@ access_urssaf_code_comptable,urssaf.code.comptable,model_construction_urssaf_cod
 access_urssaf_code_admin,urssaf.code.admin,model_construction_urssaf_code,group_construction_admin,1,1,1,1
 access_send_wizard_pilote,send.wizard.pilote,model_contract_send_wizard,group_construction_pilote,1,1,1,1
 access_send_wizard_admin,send.wizard.admin,model_contract_send_wizard,group_construction_admin,1,1,1,1
+access_lot_grouping_wizard_user,lot.grouping.wizard.user,model_construction_lot_grouping_wizard,base.group_user,1,1,1,1
+access_lot_grouping_wizard_admin,lot.grouping.wizard.admin,model_construction_lot_grouping_wizard,group_construction_admin,1,1,1,1
+access_contract_validation_wizard_user,contract.validation.wizard.user,model_construction_contract_validation_wizard,base.group_user,1,1,1,1
+access_contract_validation_wizard_admin,contract.validation.wizard.admin,model_construction_contract_validation_wizard,group_construction_admin,1,1,1,1
