@@ -42,6 +42,7 @@ Enterprise Standards:
         'wizard/lot_subcontractor_assign_wizard_views.xml',
         'wizard/lot_management_wizard_views.xml',
         'wizard/multi_lot_wizard_views.xml',
+        'wizard/sans_suite_wizard_views.xml',
         'views/main_views.xml',
         'views/chantier_views.xml',
         'views/lot_views.xml',

@@ -532,10 +532,16 @@ export class QuoteBuilder extends Component {
             // Product has a cost → calculate selling price with margin
             cost = product.standard_price;
             price = this.calculatePriceFromMargin(cost, margin);
+        } else if (product.list_price && product.list_price > 0) {
+            // Product has no cost but has selling price → reverse-calculate cost
+            // Formula: cost = selling_price / (1 + margin/100)
+            price = product.list_price;
+            cost = price / (1 + margin / 100);
+            console.log(`[QuoteBuilder] Reverse-calculated cost: ${price} / 1.${margin} = ${cost.toFixed(2)}`);
         } else {
-            // Product has no cost → use list_price directly as selling price
+            // Product has no cost AND no price
             cost = 0;
-            price = product.list_price || 0;
+            price = 0;
         }
 
         this.state.wizardProduct = {

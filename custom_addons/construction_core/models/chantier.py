@@ -231,6 +231,26 @@ class Chantier(models.Model):
         help="Sous-traitants assignés aux lots de ce chantier"
     )
     
+    # ============= Sans Suite Tracking (US-COR-008) ============= #
+    sans_suite_reason = fields.Selection([
+        ('client_cancelled', 'Client a renoncé'),
+        ('budget_insufficient', 'Budget insuffisant'),
+        ('delays_incompatible', 'Délais incompatibles'),
+        ('technical_impossible', 'Impossibilité technique'),
+        ('competition', 'Concurrence'),
+        ('other', 'Autre raison')
+    ], string='Raison Sans Suite', tracking=True)
+    
+    sans_suite_details = fields.Text(
+        string='Détails Sans Suite',
+        help="Précisions sur la raison de l'abandon"
+    )
+    
+    sans_suite_date = fields.Date(
+        string='Date Sans Suite',
+        tracking=True
+    )
+    
     # ============= Contract Generation Visibility ============= #
     show_contract_generation = fields.Boolean(
         compute='_compute_show_contract_generation',
@@ -333,10 +353,20 @@ class Chantier(models.Model):
             weighted_sum = sum(record.lots_ids.mapped('weighted_value'))
             record.progress = (weighted_sum / total_price * 100) if total_price > 0 else 0.0
 
-    @api.depends('lots_ids.price')
+    @api.depends('lots_ids.price', 'quotation_ids.state', 'quotation_ids.amount_total')
     def _compute_total_cost(self):
+        """
+        Compute total chantier value from validated sale orders (devis).
+        Falls back to lot prices if no validated quotes exist.
+        """
         for record in self:
-            record.total_cost = sum(record.lots_ids.mapped('price'))
+            # Priority: Use validated sale orders
+            validated_quotes = record.quotation_ids.filtered(lambda q: q.state == 'sale')
+            if validated_quotes:
+                record.total_cost = sum(validated_quotes.mapped('amount_total'))
+            else:
+                # Fallback: Sum lot prices
+                record.total_cost = sum(record.lots_ids.mapped('price'))
 
     def _compute_quotation_count(self):
         for record in self:
@@ -498,22 +528,27 @@ class Chantier(models.Model):
                 
                 # Check document conformity from partner if available
                 # Fields from blg_contacts_extension: doc_kbis_status, doc_urssaf_status, etc.
+                # COMPLIANT statuses: 'valid' or 'expiring' (expiring is still usable)
                 conformity_ok = True
                 conformity_badge = '<span class="badge bg-secondary">Non vérifié</span>'
                 
+                compliant_statuses = {'valid', 'expiring'}
+                
                 if hasattr(partner, 'doc_kbis_status'):
-                    kbis_ok = getattr(partner, 'doc_kbis_status', '') == 'valid'
-                    urssaf_ok = getattr(partner, 'doc_urssaf_status', '') == 'valid'
-                    insurance_ok = getattr(partner, 'doc_insurance_dec_status', '') == 'valid'
-                    rib_ok = getattr(partner, 'doc_rib_status', '') == 'valid'
+                    kbis_ok = getattr(partner, 'doc_kbis_status', 'missing') in compliant_statuses
+                    urssaf_ok = getattr(partner, 'doc_urssaf_status', 'missing') in compliant_statuses
+                    insurance_ok = getattr(partner, 'doc_insurance_dec_status', 'missing') in compliant_statuses
+                    cni_ok = getattr(partner, 'doc_cni_status', 'missing') in compliant_statuses
+                    rib_ok = getattr(partner, 'doc_rib_status', 'missing') in compliant_statuses
                     
-                    if kbis_ok and urssaf_ok and insurance_ok and rib_ok:
+                    if kbis_ok and urssaf_ok and insurance_ok and cni_ok and rib_ok:
                         conformity_badge = '<span class="badge bg-success">✅ Conforme</span>'
                     else:
                         missing = []
                         if not kbis_ok: missing.append('KBIS')
                         if not urssaf_ok: missing.append('URSSAF')
                         if not insurance_ok: missing.append('Assurance')
+                        if not cni_ok: missing.append('CNI')
                         if not rib_ok: missing.append('RIB')
                         conformity_badge = f'<span class="badge bg-warning text-dark">⚠️ Manque: {", ".join(missing)}</span>'
                 

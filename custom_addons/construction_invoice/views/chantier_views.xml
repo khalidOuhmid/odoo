@@ -16,7 +16,7 @@
             
             <xpath expr="//notebook" position="inside">
                 <page string="Facturation &amp; Cycle" 
-                      invisible="state not in ['stage_finalisation_dossier', 'stage_travaux', 'stage_livraison']"
+                      invisible="not show_invoicing"
                       name="billing_page">
                     
                     <!-- CYCLE MANAGER HEADER -->

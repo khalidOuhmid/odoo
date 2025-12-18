@@ -27,14 +27,24 @@ class BillingCycle(models.Model):
         ('over_billed', 'Over Billed')
     ], compute='_compute_billing_status', store=True, string="Billing Status")
 
-    @api.depends('chantier_id')
+    @api.depends('chantier_id.quotation_ids.state', 'chantier_id.quotation_ids.amount_total', 'chantier_id.total_cost')
     def _compute_total_amount_confirmed(self):
+        """
+        Compute total confirmed amount from validated sale orders.
+        Falls back to chantier.total_cost if no confirmed orders.
+        """
         for cycle in self:
-            confirmed_orders = self.env['sale.order'].search([
-                ('chantier_id', '=', cycle.chantier_id.id),
-                ('state', 'in', ['sale', 'done'])
-            ])
-            cycle.total_amount_confirmed = sum(confirmed_orders.mapped('amount_total'))
+            if cycle.chantier_id:
+                confirmed_orders = cycle.chantier_id.quotation_ids.filtered(
+                    lambda q: q.state in ['sale', 'done']
+                )
+                if confirmed_orders:
+                    cycle.total_amount_confirmed = sum(confirmed_orders.mapped('amount_total'))
+                else:
+                    # Fallback to chantier total_cost
+                    cycle.total_amount_confirmed = cycle.chantier_id.total_cost or 0.0
+            else:
+                cycle.total_amount_confirmed = 0.0
 
     @api.depends('step_ids.amount', 'total_amount_confirmed')
     def _compute_billing_status(self):

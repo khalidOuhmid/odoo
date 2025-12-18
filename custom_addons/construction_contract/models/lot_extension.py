@@ -30,6 +30,8 @@ class Lot(models.Model):
         """
         Create contract directly (no wizard) and open GrapeJS editor.
         Uses sensible defaults from the lot data.
+        
+        CRITICAL: Validates prerequisites BEFORE creating contract to avoid orphans.
         """
         self.ensure_one()
         
@@ -38,7 +40,7 @@ class Lot(models.Model):
             return self.contract_id.action_open_contract_editor()
         
         if not self.subcontractor_id:
-            raise models.UserError(_(
+            raise models.UserError(_( 
                 "Ce lot n'a pas de sous-traitant assigné. "
                 "Veuillez d'abord sélectionner un sous-traitant."
             ))
@@ -60,7 +62,41 @@ class Lot(models.Model):
             ('contract_id', '=', False),
         ])
         
-        # Create contract with defaults
+        # Assign ALL related lots to this contract (multi-lot aggregation)
+        all_lots = related_lots | self
+        
+        # =====================================================
+        # VALIDATION BEFORE CONTRACT CREATION (no orphans!)
+        # =====================================================
+        if not self.env.context.get('force_contract_validation'):
+            missing = []
+            
+            # PO Validated per lot
+            for lot in all_lots:
+                po = self.env['purchase.order'].search([
+                    ('lot_ids', 'in', lot.id),
+                    ('state', 'in', ['purchase', 'done'])
+                ], limit=1)
+                if not po:
+                    missing.append(f"• Bon de Commande validé pour le lot {lot.code}")
+
+            if missing:
+                # Return validation wizard WITHOUT creating contract
+                return {
+                    'name': _('Documents Manquants'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'construction.contract.validation.wizard',
+                    'view_mode': 'form',
+                    'target': 'new',
+                    'context': {
+                        'default_lot_id': self.id,
+                        'default_missing_items': '<br/>'.join(missing)
+                    }
+                }
+        
+        # =====================================================
+        # ALL VALIDATIONS PASSED - CREATE CONTRACT
+        # =====================================================
         contract = self.env['construction.contract'].create({
             'chantier_id': self.chantier_id.id,
             'subcontractor_id': self.subcontractor_id.id,
@@ -70,59 +106,10 @@ class Lot(models.Model):
             'retention_rate': 5.0,  # Default 5%
         })
         
-        # Assign ALL related lots to this contract (multi-lot aggregation)
-        all_lots = related_lots | self
-        
-        # VALIDATION CONTRACT (Fix 4)
-        if not self.env.context.get('force_contract_validation'):
-             missing = []
-             # 1. CCTP (Specs)
-             cctp = self.chantier_id.document_ids.filtered(lambda d: d.document_type == 'specs')
-             if not cctp:
-                 missing.append("• CCTP (Specs) sur le chantier")
-                 
-             # 2. Planning Chantier
-             planning_chantier = self.chantier_id.document_ids.filtered(lambda d: d.document_type == 'schedule' and not d.partner_id)
-             if not planning_chantier:
-                  missing.append("• Planning Chantier")
-                  
-             # 3. Planning Sous-traitant
-             st_planning = self.env['construction.document'].search([
-                 ('chantier_id', '=', self.chantier_id.id),
-                 ('partner_id', '=', self.subcontractor_id.id),
-                 ('document_type', '=', 'schedule')
-             ], limit=1)
-             if not st_planning:
-                  missing.append("• Planning Sous-traitant")
-             
-             # 4. PO Validated per lot
-             for lot in all_lots:
-                 po = self.env['purchase.order'].search([
-                     ('lot_ids', 'in', lot.id),
-                     ('state', 'in', ['purchase', 'done'])
-                 ], limit=1)
-                 if not po:
-                     missing.append(f"• Bon de Commande validé pour le lot {lot.code}")
-
-             if missing:
-                 return {
-                     'name': _('Documents Manquants'),
-                     'type': 'ir.actions.act_window',
-                     'res_model': 'construction.contract.validation.wizard',
-                     'view_mode': 'form',
-                     'target': 'new',
-                     'context': {
-                         'default_lot_id': self.id,
-                         # Use HTML format for the field
-                         'default_missing_items': '<br/>'.join(missing)
-                     }
-                 }
-
-        related_lots.write({'contract_id': contract.id})
+        # Assign lots to contract
+        all_lots.write({'contract_id': contract.id})
 
         # AGGREGATION: Collect Purchase Orders from all related lots
-        # "réunir les bons de commandes de tout les lots du même chantier liée a un sous traitant"
-        all_lots = related_lots | self
         linked_pos = self.env['purchase.order'].search([
             ('lot_ids', 'in', all_lots.ids),
             ('partner_id', '=', self.subcontractor_id.id),
@@ -230,8 +217,16 @@ class Lot(models.Model):
         created_po = False
         
         with self.env.cr.savepoint():
+            # US-COR-012: Generate PO Name following nomenclature
+            # Format: [CHANTIER]-[LOT1+LOT2]-[SOUS_TRAITANT]
+            chantier_name = (chantier.name or 'CHANTIER').replace(' ', '-').upper()[:15]
+            lot_codes = '+'.join(self.mapped('code'))
+            st_name = (subcontractor.name or 'ST').replace(' ', '-').upper()[:10]
+            po_name = f"{chantier_name}-{lot_codes}-{st_name}"
+            
             # Create PO Header
             po_vals = {
+                'name': po_name,  # US-COR-012 Nomenclature
                 'partner_id': subcontractor.id,
                 'origin': _("Chantier %s - Lots: %s") % (chantier.name, ', '.join(self.mapped('code'))),
                 'chantier_id': chantier.id,
@@ -259,29 +254,34 @@ class Lot(models.Model):
                     # raise models.UserError(_("Aucune ligne de vente trouvée pour le lot '%s'.") % lot.name)
                     continue
                 
-                # Add Section Header
+                # Add Section Header (display_type lines still need product_qty in Odoo 18)
                 PurchaseOrderLine.create({
                     'order_id': created_po.id,
                     'display_type': 'line_section',
                     'name': f"=== Lot {lot.code} : {lot.name} ===",
+                    'product_qty': 0.0,  # Required even for section lines
                 })
                 
                 lot_cost_accumulated = 0.0
                 
                 for sol in source_lines:
                     price_unit = sol.price_buy
-                    qty = sol.product_uom_qty
+                    qty = sol.product_uom_qty or 1.0  # Ensure never None or 0
                     
                     # Sanity: if price_buy is 0, maybe use standard_price?
                     if float_is_zero(price_unit, precision_digits=currency.decimal_places):
                          price_unit = sol.product_id.standard_price
                     
+                    # Ensure qty is at least 1.0 (mandatory field validation)
+                    if not qty or qty <= 0:
+                        qty = 1.0
+                    
                     # Create PO Line
                     pol_vals = {
                         'order_id': created_po.id,
-                        'name': sol.name,
+                        'name': sol.name or sol.product_id.name or 'Produit',
                         'product_id': sol.product_id.id,
-                        'product_qty': qty or 1.0,  ## FIX: Mandatory
+                        'product_qty': qty,  # CRITICAL: Must be > 0
                         'product_uom': sol.product_uom.id,
                         'price_unit': price_unit,
                         'taxes_id': [(6, 0, sol.product_id.supplier_taxes_id.ids)],

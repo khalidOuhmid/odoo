@@ -130,6 +130,13 @@ class LotManagementWizard(models.TransientModel):
         help="Prix de vente - Coût de revient"
     )
     
+    lot_margin_percent = fields.Float(
+        string='Marge (%)',
+        compute='_compute_financial_kpis',
+        digits=(5, 2),
+        help="(Marge / Prix Vente) × 100"
+    )
+    
     # ============================================================
     # DOCUMENTS SECTION
     # ============================================================
@@ -209,6 +216,13 @@ class LotManagementWizard(models.TransientModel):
         compute='_compute_progress_values',
         currency_field='currency_id',
         help="Valeur restante à réaliser"
+    )
+    
+    # US-COR-005: Over-billing detection
+    is_over_billed = fields.Boolean(
+        string='Surfacturation',
+        compute='_compute_progress_values',
+        help="True si avancement > 100%"
     )
     
     # ============================================================
@@ -314,6 +328,19 @@ class LotManagementWizard(models.TransientModel):
             wizard.lot_sale_price = sale_price
             wizard.lot_cost = cost
             wizard.lot_margin = sale_price - cost
+            
+            # Calculate margin percentage
+            if sale_price > 0:
+                wizard.lot_margin_percent = ((sale_price - cost) / sale_price) * 100
+            else:
+                wizard.lot_margin_percent = 0.0
+            
+            # US-COR-011: Log critical if negative margin
+            if wizard.lot_margin < 0:
+                _logger.critical(
+                    "[LOGGER][CRITICAL][construction.lot] Lot %s: MARGE NEGATIVE %.2f EUR (%.1f%%)",
+                    lot.code if lot else "N/A", wizard.lot_margin, wizard.lot_margin_percent
+                )
     
     @api.depends('lot_id', 'subcontractor_id')
     def _compute_subcontractor_status(self):
@@ -444,13 +471,24 @@ class LotManagementWizard(models.TransientModel):
     
     @api.depends('lot_sale_price', 'progress_percentage')
     def _compute_progress_values(self):
-        """Compute realized and remaining values based on progress."""
+        """Compute realized and remaining values based on progress.
+        
+        US-COR-005: Also detect over-billing (>100%) with CRITICAL logging.
+        """
         for wizard in self:
             progress = wizard.progress_percentage or 0.0
             sale_price = wizard.lot_sale_price or 0.0
             
             wizard.completed_value = sale_price * progress / 100.0
             wizard.remaining_value = sale_price - wizard.completed_value
+            
+            # US-COR-005: Over-billing detection
+            wizard.is_over_billed = progress > 100.0
+            if wizard.is_over_billed and wizard.lot_id:
+                _logger.critical(
+                    "[LOGGER][CRITICAL][construction.progress] Lot %s: SURFACTURATION %.1f%% (>100%%)",
+                    wizard.lot_id.code, progress
+                )
     
     # ============================================================
     # CONSTRAINTS
@@ -532,7 +570,11 @@ class LotManagementWizard(models.TransientModel):
         return {'type': 'ir.actions.act_window_close'}
     
     def action_generate_po(self):
-        """Generate Purchase Order for external lot."""
+        """Generate Purchase Order for external lot.
+        
+        MULTI-LOT INTELLIGENCE: If other lots on the same chantier have the same
+        subcontractor, offer to group them into a single PO.
+        """
         self.ensure_one()
         
         if self.execution_type != 'external':
@@ -544,10 +586,35 @@ class LotManagementWizard(models.TransientModel):
         # Save current values first
         self.action_save()
         
-        # Call lot's PO generation method if available
         lot = self.lot_id
+        
+        # MULTI-LOT DETECTION: Check for other lots with same subcontractor
+        if not self.env.context.get('force_grouping'):
+            other_lots = self.env['construction.lot'].search([
+                ('chantier_id', '=', lot.chantier_id.id),
+                ('subcontractor_id', '=', self.subcontractor_id.id),
+                ('execution_type', '=', 'external'),
+                ('id', '!=', lot.id)
+            ])
+            
+            if other_lots:
+                # Open grouping wizard
+                all_lot_ids = (lot | other_lots).ids
+                return {
+                    'name': _('Lots Multiples Détectés'),
+                    'type': 'ir.actions.act_window',
+                    'res_model': 'construction.lot.grouping.wizard',
+                    'view_mode': 'form',
+                    'target': 'new',
+                    'context': {
+                        'default_target_lot_id': lot.id,
+                        'default_lot_ids': [(6, 0, all_lot_ids)],
+                    }
+                }
+        
+        # No other lots or forced - proceed with single lot generation
         if hasattr(lot, 'action_generate_purchase_order'):
-            return lot.action_generate_purchase_order()
+            return lot.with_context(force_grouping=True).action_generate_purchase_order()
         else:
             raise UserError(_("La méthode de génération de bon de commande n'est pas disponible."))
     

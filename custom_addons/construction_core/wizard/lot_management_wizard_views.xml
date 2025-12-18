@@ -38,24 +38,24 @@
                         <!-- ============================================== -->
                         <!-- TAB 1: VUE D'ENSEMBLE                          -->
                         <!-- ============================================== -->
-                        <page string="📊 Vue d'Ensemble" name="overview">
+                        <page string="Vue d'Ensemble" name="overview">
                             <group>
                                 <!-- External Mode: Subcontractor Assignment -->
-                                <group string="👷 Sous-Traitant" invisible="execution_type != 'external'">
+                                <group string="Sous-Traitant" invisible="execution_type != 'external'">
                                     <field name="subcontractor_id" 
                                            placeholder="Sélectionner un sous-traitant..."
                                            options="{'no_create': True}"/>
                                 </group>
                                 
                                 <!-- Internal Mode: Responsible User -->
-                                <group string="👥 Équipe Interne" invisible="execution_type != 'internal'">
+                                <group string="Équipe Interne" invisible="execution_type != 'internal'">
                                     <field name="internal_user_id" 
                                            placeholder="Sélectionner un responsable..."
                                            options="{'no_create': True}"/>
                                 </group>
                                 
                                 <!-- Planning Section -->
-                                <group string="📅 Planning">
+                                <group string="Planning">
                                     <label for="date_start"/>
                                     <div class="o_row">
                                         <field name="date_start" class="oe_inline"/>
@@ -65,20 +65,25 @@
                                 </group>
                             </group>
                             
-                            <separator string="💰 Synthèse Financière"/>
+                            <separator string="Synthèse Financière"/>
                             
                             <!-- Financial KPIs (Read-Only) -->
                             <group>
-                                <group>
+                                <group string="Revenus &amp; Coûts">
                                     <field name="currency_id" invisible="1"/>
                                     <field name="lot_sale_price" readonly="1" widget="monetary"
-                                           decoration-bf="1"/>
-                                    <field name="lot_cost" readonly="1" widget="monetary"/>
+                                           string="Prix de Vente HT"/>
+                                    <field name="lot_cost" readonly="1" widget="monetary"
+                                           string="Coût Prévu"/>
                                 </group>
-                                <group>
+                                <group string="Marge">
                                     <field name="lot_margin" readonly="1" widget="monetary"
-                                           decoration-success="lot_margin > 0"
+                                           decoration-success="lot_margin &gt; 0"
                                            decoration-danger="lot_margin &lt; 0"/>
+                                    <field name="lot_margin_percent" readonly="1" 
+                                           widget="percentage"
+                                           decoration-success="lot_margin_percent &gt; 0"
+                                           decoration-danger="lot_margin_percent &lt; 0"/>
                                 </group>
                             </group>
                             
@@ -94,7 +99,7 @@
                         <!-- ============================================== -->
                         <!-- TAB 2: DOCUMENTS                               -->
                         <!-- ============================================== -->
-                        <page string="📂 Documents" name="documents">
+                        <page string="Documents" name="documents">
                             <!-- Technical Documents -->
                             <group string="Documents Techniques">
                                 <group>
@@ -121,7 +126,7 @@
                             <separator/>
                             
                             <!-- Purchase Order Section (External Only) -->
-                            <group string="🛒 Bon de Commande" invisible="execution_type != 'external'">
+                            <group string="Bon de Commande" invisible="execution_type != 'external'">
                                 <group>
                                     <button name="action_generate_po" 
                                             string="Générer le Bon de Commande"
@@ -139,7 +144,7 @@
                             <separator invisible="execution_type != 'external'"/>
                             
                             <!-- Contract Section (External Only) -->
-                            <group string="📜 Contrat de Sous-Traitance" invisible="execution_type != 'external'">
+                            <group string="Contrat de Sous-Traitance" invisible="execution_type != 'external'">
                                 <!-- Prerequisites Panel -->
                                 <div class="alert alert-secondary mb-3" role="alert" style="font-size: 13px;">
                                     <strong>Prérequis :</strong><br/>
@@ -168,7 +173,7 @@
                         <!-- ============================================== -->
                         <!-- TAB 3: NOTES                                   -->
                         <!-- ============================================== -->
-                        <page string="📝 Notes" name="notes">
+                        <page string="Notes" name="notes">
                             <field name="notes" widget="html" nolabel="1" colspan="2"
                                    placeholder="Notes et commentaires structurés concernant le lot..."/>
                         </page>
@@ -176,7 +181,15 @@
                         <!-- ============================================== -->
                         <!-- TAB 4: AVANCEMENT                              -->
                         <!-- ============================================== -->
-                        <page string="📈 Avancement" name="progress">
+                        <page string="Avancement" name="progress">
+                            <!-- US-COR-005: Over-billing Alert -->
+                            <field name="is_over_billed" invisible="1"/>
+                            <div class="alert alert-danger mb-3" role="alert" invisible="not is_over_billed">
+                                <i class="fa fa-exclamation-circle me-2"/>
+                                <strong>ALERTE SURFACTURATION:</strong> L'avancement dépasse 100%. 
+                                Veuillez vérifier la facturation de ce lot.
+                            </div>
+                            
                             <div class="alert alert-warning mb-3" role="alert">
                                 <i class="fa fa-exclamation-triangle me-2"/>
                                 <strong>Important:</strong> Le pourcentage d'avancement est indexé sur la valeur facturable. 

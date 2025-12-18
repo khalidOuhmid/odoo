@@ -73,16 +73,31 @@ class BillingStep(models.Model):
             # Audit Requirement: "Reste à facturer sur la dernière facture pour tomber juste"
             amount_to_invoice = remaining
         
-        # Create Invoice
+        # Create Invoice with proper chantier reference
+        invoice_ref = _("%s - %s (%.0f%%)") % (
+            chantier.name or chantier.reference or 'Chantier',
+            self.name,
+            self.percentage or 0
+        )
+        
         invoice_vals = {
             'move_type': 'out_invoice',
             'partner_id': chantier.client.id,
             'invoice_date': fields.Date.today(),
             'chantier_id': chantier.id,
+            'ref': invoice_ref,  # Reference visible on invoice
             'invoice_origin': _("Cycle %s - %s") % (self.cycle_id.name, self.name),
-            'narration': _("Facturation Étape: %s") % self.name,
+            'narration': _("Facturation Étape: %s (%.0f%% sur %.2f €)") % (
+                self.name, 
+                self.percentage or 0,
+                self.cycle_id.total_amount_confirmed
+            ),
             'invoice_line_ids': [(0, 0, {
-                'name': _("Avancement Chantier - %s") % self.name,
+                'name': _("[%s] %s - Avancement %.0f%%") % (
+                    chantier.name or chantier.reference or 'Chantier',
+                    self.name,
+                    self.percentage or 0
+                ),
                 'quantity': 1,
                 'price_unit': amount_to_invoice,
                 'tax_ids': [(6, 0, [])], 

@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================ -->
+    <!-- Sans Suite Wizard Form View (US-COR-008)                     -->
+    <!-- ============================================================ -->
+    
+    <record id="sans_suite_wizard_form" model="ir.ui.view">
+        <field name="name">construction.sans.suite.wizard.form</field>
+        <field name="model">construction.sans.suite.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Classer Sans Suite">
+                <sheet>
+                    <!-- Critical Warning Banner -->
+                    <div class="alert alert-danger" role="alert">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <strong>ATTENTION:</strong> Cette action est <strong>irréversible</strong>. 
+                        Le chantier sera archivé et ne pourra plus être modifié.
+                    </div>
+                    
+                    <!-- Chantier Reference -->
+                    <div class="oe_title mb-4">
+                        <h2>
+                            <span>Classer </span>
+                            <field name="chantier_name" class="oe_inline" readonly="1"/>
+                            <span> comme Sans Suite</span>
+                        </h2>
+                    </div>
+                    
+                    <field name="chantier_id" invisible="1"/>
+                    
+                    <!-- Reason Section -->
+                    <group string="Raison de l'abandon">
+                        <field name="reason" widget="radio" required="1"/>
+                        <field name="reason_details" placeholder="Détails supplémentaires (500 caractères max)..."/>
+                    </group>
+                    
+                    <!-- Approval Section -->
+                    <field name="require_approval" invisible="1"/>
+                    <group string="Validation Hiérarchique" invisible="not require_approval">
+                        <div class="alert alert-warning" role="alert">
+                            <i class="fa fa-user-shield me-2"/>
+                            Ce chantier nécessite une validation hiérarchique avant classement.
+                        </div>
+                        <field name="approver_id" required="require_approval"/>
+                    </group>
+                    
+                    <!-- Client Notification Section -->
+                    <group string="Notification Client">
+                        <field name="notify_client"/>
+                        <field name="client_email_template" widget="text" 
+                               invisible="not notify_client"
+                               placeholder="Message personnalisé pour le client..."/>
+                    </group>
+                </sheet>
+                
+                <footer>
+                    <button name="action_confirm" 
+                            string="Confirmer Sans Suite" 
+                            type="object" 
+                            class="btn-danger"
+                            icon="fa-times-circle"
+                            confirm="Êtes-vous sûr de vouloir classer ce chantier Sans Suite ? Cette action est irréversible."/>
+                    <button name="action_cancel" 
+                            string="Annuler" 
+                            type="object" 
+                            class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- Action to Open Wizard -->
+    <record id="action_sans_suite_wizard" model="ir.actions.act_window">
+        <field name="name">Classer Sans Suite</field>
+        <field name="res_model">construction.sans.suite.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="construction_core.model_construction_chantier"/>
+        <field name="binding_view_types">form</field>
+    </record>
+
+</odoo>

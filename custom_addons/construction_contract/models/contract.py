@@ -718,13 +718,45 @@ class ConstructionContract(models.Model):
     @api.model
     def create(self, vals):
         """
-        Override create to generate sequence number and access token
+        Override create to generate sequence number and access token.
+        
+        US-COR-012: Contract naming convention:
+        Format: [CHANTIER]-CT-[LOT]-[DATE_AAAAMMJJ]
+        Example: Villa-Dupont-CT-PLOM-20251218
         """
-        # Generate contract reference from sequence
+        # US-COR-012: Generate contract reference following nomenclature
         if vals.get('name', _('New')) == _('New'):
-            vals['name'] = self.env['ir.sequence'].next_by_code(
-                'construction.contract'
-            ) or _('New')
+            chantier_id = vals.get('chantier_id')
+            lot_ids = vals.get('lot_ids', [])
+            
+            if chantier_id:
+                chantier = self.env['construction.chantier'].browse(chantier_id)
+                chantier_name = (chantier.name or 'CHANTIER').replace(' ', '-').upper()[:15]
+                
+                # Get lot codes
+                lot_code = 'LOT'
+                if lot_ids:
+                    # Handle Odoo command format [(6, 0, [ids])]
+                    if isinstance(lot_ids, list) and lot_ids:
+                        if isinstance(lot_ids[0], (list, tuple)) and lot_ids[0][0] == 6:
+                            real_ids = lot_ids[0][2]
+                        else:
+                            real_ids = lot_ids
+                        
+                        if real_ids:
+                            lots = self.env['construction.lot'].browse(real_ids)
+                            lot_code = '+'.join(lots.mapped('code'))
+                
+                # Date format: AAAAMMJJ
+                from datetime import date
+                date_str = date.today().strftime('%Y%m%d')
+                
+                vals['name'] = f"{chantier_name}-CT-{lot_code}-{date_str}"
+            else:
+                # Fallback to sequence if no chantier
+                vals['name'] = self.env['ir.sequence'].next_by_code(
+                    'construction.contract'
+                ) or _('New')
 
         # Generate secure access token for portal
         if not vals.get('access_token'):

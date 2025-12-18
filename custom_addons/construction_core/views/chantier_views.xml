@@ -331,11 +331,6 @@
                                     <i class="fa fa-users me-2"/>Ressources du Chantier
                                 </h4>
                                 <div class="btn-group">
-                                    <button name="%(action_multi_lot_wizard)d" 
-                                            type="action" 
-                                            string="Multi-Lots"
-                                            class="btn btn-outline-primary btn-sm"
-                                            icon="fa-cubes"/>
                                     <button name="action_check_contract_eligibility" 
                                             type="object" 
                                             string="Vérifier Conformité"
