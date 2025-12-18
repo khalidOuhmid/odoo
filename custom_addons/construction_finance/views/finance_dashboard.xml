@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- SEARCH VIEW -->
+    <record id="view_finance_analysis_search" model="ir.ui.view">
+        <field name="name">construction.finance.analysis.report.search</field>
+        <field name="model">construction.finance.analysis.report</field>
+        <field name="arch" type="xml">
+            <search string="Analyse Financière">
+                <field name="chantier_id"/>
+                <field name="partner_id"/>
+                <field name="company_id"/>
+                <filter string="Marge Faible (< 15%)" name="low_margin" domain="[('margin', '&lt;', 0.15 * invoiced_revenue), ('invoiced_revenue', '>', 0)]"/>
+                <filter string="Chantiers à Perte" name="negative_margin" domain="[('margin', '&lt;', 0)]"/>
+                <group expand="1" string="Regrouper par">
+                    <filter string="Chantier" name="group_chantier" context="{'group_by':'chantier_id'}"/>
+                    <filter string="Mois" name="group_date" context="{'group_by':'date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- GRAPH VIEW: The Jaws -->
+    <record id="view_finance_analysis_graph" model="ir.ui.view">
+        <field name="name">construction.finance.analysis.report.graph</field>
+        <field name="model">construction.finance.analysis.report</field>
+        <field name="arch" type="xml">
+            <graph string="Analyse Financière" type="line" sample="1">
+                <field name="date" type="row" interval="month"/>
+                <field name="invoiced_revenue" type="measure"/>
+                <field name="invoiced_cost" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- PIVOT VIEW -->
+    <record id="view_finance_analysis_pivot" model="ir.ui.view">
+        <field name="name">construction.finance.analysis.report.pivot</field>
+        <field name="model">construction.finance.analysis.report</field>
+        <field name="arch" type="xml">
+            <pivot string="Tableau de Bord Financier" sample="1" disable_linking="True">
+                <field name="chantier_id" type="row"/>
+                <field name="planned_revenue" type="measure"/>
+                <field name="invoiced_revenue" type="measure"/>
+                <field name="committed_cost" type="measure"/>
+                <field name="invoiced_cost" type="measure"/>
+                <field name="margin" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- TREE VIEW: Top/Flop List -->
+    <record id="view_finance_analysis_tree" model="ir.ui.view">
+        <field name="name">construction.finance.analysis.report.list</field>
+        <field name="model">construction.finance.analysis.report</field>
+        <field name="arch" type="xml">
+            <list string="Détail Financier" decoration-danger="margin &lt; 0" decoration-success="margin &gt; 0">
+                <field name="date"/>
+                <field name="chantier_id"/>
+                <field name="invoiced_revenue" sum="Total CA"/>
+                <field name="invoiced_cost" sum="Total Coût"/>
+                <field name="margin" sum="Marge Nette"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ACTION -->
+    <record id="action_finance_dashboard" model="ir.actions.act_window">
+        <field name="name">Cockpit Financier</field>
+        <field name="res_model">construction.finance.analysis.report</field>
+        <field name="view_mode">graph,pivot,list</field>
+        <field name="context">{'search_default_group_chantier': 1}</field>
+    </record>
+
+</odoo>

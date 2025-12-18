@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    
+    <!-- Top Level Menu -->
+    <menuitem id="menu_construction_finance_root"
+              name="Finance"
+              web_icon="construction_finance,static/description/icon.png"
+              sequence="40"/>
+
+    <!-- Dashboard Submenu -->
+    <menuitem id="menu_finance_dashboard"
+              name="Cockpit"
+              parent="menu_construction_finance_root"
+              action="action_finance_dashboard"
+              sequence="1"/>
+
+</odoo>

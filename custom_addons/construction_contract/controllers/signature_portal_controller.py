@@ -103,6 +103,15 @@ class SignaturePortalController(http.Controller):
         validation_status = contract._get_page_validation_status(access_token)
         can_sign = validation_status.get('can_sign', False)
 
+        # Fetch related attachments (CCTP, Plans)
+        Attachment = request.env['ir.attachment'].sudo()
+        domain = ['|', '|',
+            '&', ('res_model', '=', 'construction.contract'), ('res_id', '=', contract.id),
+            '&', ('res_model', '=', 'construction.chantier'), ('res_id', '=', contract.chantier_id.id),
+            '&', ('res_model', '=', 'construction.lot'), ('res_id', 'in', contract.lot_ids.ids)
+        ]
+        attachments = Attachment.search(domain)
+
         values = {
             'contract': contract,
             'access_token': access_token,
@@ -110,6 +119,7 @@ class SignaturePortalController(http.Controller):
             'can_sign': can_sign,
             'pdf_url': f'/my/contract/{contract_id}/pdf?access_token={access_token}',
             'json': json,
+            'attachments': attachments,
         }
 
         return request.render('construction_contract.signature_portal_template', values)
@@ -426,6 +436,61 @@ class SignaturePortalController(http.Controller):
                 headers=[
                     ('Content-Type', 'application/pdf'),
                     ('Content-Disposition', f'attachment; filename="{filename}"'),
+                ],
+            )
+
+        except (NotFound, AccessError) as e:
+            return self._render_error_page('contract_not_found', str(e))
+
+    @http.route('/my/contract/<int:contract_id>/attachment/<int:attachment_id>', type='http', auth='public')
+    def download_attachment(self, contract_id, attachment_id, access_token=None, **kwargs):
+        """
+        Download secondary attachment (CCTP, Plans, etc.)
+        Secured by contract access token.
+        """
+        try:
+            contract = self._validate_access(contract_id, access_token)
+            
+            # Verify attachment belongs to contract or related objects (Chantier, Lots)
+            # For simplicity in this hotfix, we verify the attachment is linked to one of these models
+            # and that the specific record is related to our contract.
+            
+            Attachment = request.env['ir.attachment'].sudo()
+            attachment = Attachment.browse(attachment_id)
+            
+            if not attachment.exists():
+                raise NotFound(_("Attachment not found."))
+            
+            # Security Check: Is this attachment related to our contract context?
+            allowed_models = ['construction.contract', 'construction.chantier', 'construction.lot']
+            if attachment.res_model not in allowed_models:
+                 raise AccessError(_("Access denied to this document type."))
+            
+            # Check linkage
+            is_allowed = False
+            if attachment.res_model == 'construction.contract' and attachment.res_id == contract.id:
+                is_allowed = True
+            elif attachment.res_model == 'construction.chantier' and attachment.res_id == contract.chantier_id.id:
+                is_allowed = True
+            elif attachment.res_model == 'construction.lot' and attachment.res_id in contract.lot_ids.ids:
+                is_allowed = True
+                
+            if not is_allowed:
+                raise AccessError(_("This document does not belong to your contract context."))
+
+            # Serve file
+            filecontent =  attachment.datas
+            if not filecontent:
+                 raise NotFound(_("File content missing."))
+                 
+            import base64
+            content = base64.b64decode(filecontent)
+            
+            return request.make_response(
+                content,
+                headers=[
+                    ('Content-Type', attachment.mimetype or 'application/octet-stream'),
+                    ('Content-Disposition', f'attachment; filename="{attachment.name}"'),
                 ],
             )
 

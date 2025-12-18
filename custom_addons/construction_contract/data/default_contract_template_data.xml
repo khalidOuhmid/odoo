@@ -341,7 +341,24 @@
     <h2>2. Désignation des prestations</h2>
     <p>
         <strong>Nature des prestations objet du contrat :</strong><br/>
+        {% if lots %}
+        <table class="lots-table" style="width:100%; border-collapse:collapse; margin-top:10px; margin-bottom:10px;">
+            <tr style="background-color:#eee;">
+                <th style="padding:5px; border:1px solid #ccc; width:20%;">Lot</th>
+                <th style="padding:5px; border:1px solid #ccc; width:60%;">Description</th>
+                <th style="padding:5px; border:1px solid #ccc; text-align:right; width:20%;">Montant HT</th>
+            </tr>
+            {% for lot in lots %}
+            <tr>
+                <td style="padding:5px; border:1px solid #ccc;">{{ lot.name }}</td>
+                <td style="padding:5px; border:1px solid #ccc;">{{ lot.desc }}</td>
+                <td style="padding:5px; border:1px solid #ccc; text-align:right;">{{ lot.amount }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+        {% else %}
         {{service_description}}
+        {% endif %}
     </p>
     <p>
         <strong>Référence chantier / Projet :</strong><br/>
@@ -398,14 +415,13 @@
                     <strong>Le Contractant</strong><br/>
                     {{signataire_contractant_nom}}<br/>
                     <div class="signature-box">
-                        <t t-if="signature_blg_image">
-                            <img t-att-src="'data:image/png;base64,' + signature_blg_image" alt="Signature BLG" class="signature-img"/>
-                        </t>
+                        {% if signature_blg_image %}
+                            <img src="data:image/png;base64,{{signature_blg_image}}" alt="Signature BLG" class="signature-img"/>
+                        {% endif %}
                     </div>
                     <small style="color:gray;">
                         {{contractant_nom}}<br/>
                         {{contractant_adresse}}, {{contractant_cp_ville}}<br/>
-                        <!-- SIRET hardcoded based on prompt or needs variable? Prompt has hardcoded in transcription. -->
                         N° de siret : 91918081000021<br/>
                         ☎ 05 40 45 27 20
                     </small>
@@ -413,13 +429,13 @@
                 <td style="width:50%; border:none; vertical-align:top;">
                     <strong>L'Entreprise</strong><br/>
                     {{signataire_entreprise_nom}}<br/>
-                    <div class="signature-box">
-                        <t t-if="signature_partner_image">
-                            <img t-att-src="'data:image/png;base64,' + signature_partner_image" alt="Signature Entreprise" class="signature-img"/>
-                        </t>
-                        <t t-else="">
+                    <div class="signature-box" id="signature-placeholder">
+                        {% if signature_partner_image %}
+                            <img src="data:image/png;base64,{{signature_partner_image}}" alt="Signature Entreprise" class="signature-img"/>
+                        {% else %}
+                            <!-- SIGNATURE_CLIENT -->
                             <div style="color:#999; text-align:center; padding-top:40px;">(Signature attendue)</div>
-                        </t>
+                        {% endif %}
                     </div>
                     <small style="color:gray;">
                         (Signature et cachet)

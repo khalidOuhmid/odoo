@@ -115,6 +115,34 @@
                                 </div>
                             </div>
 
+                            <!-- Attachments Card -->
+                            <t t-if="attachments">
+                                <div class="card attachments-card mb-4">
+                                    <div class="card-header">
+                                        <h5 class="mb-0">
+                                            <i class="fa fa-paperclip"/> Documents Annexes (CCTP, Plans)
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="list-group">
+                                            <t t-foreach="attachments" t-as="attachment">
+                                                <a t-attf-href="/my/contract/#{contract.id}/attachment/#{attachment.id}?access_token=#{access_token}"
+                                                   class="list-group-item list-group-item-action d-flex justify-content-between align-items-center"
+                                                   target="_blank">
+                                                    <div>
+                                                        <i t-attf-class="fa #{'fa-file-pdf-o' if 'pdf' in attachment.mimetype else 'fa-file-image-o' if 'image' in attachment.mimetype else 'fa-file-o'} mr-2"/>
+                                                        <t t-esc="attachment.name"/>
+                                                    </div>
+                                                    <span class="badge badge-light badge-pill">
+                                                        <i class="fa fa-download"/>
+                                                    </span>
+                                                </a>
+                                            </t>
+                                        </div>
+                                    </div>
+                                </div>
+                            </t>
+
                             <!-- Progress Card -->
                             <div class="card progress-card mb-4">
                                 <div class="card-body">

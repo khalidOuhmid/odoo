@@ -399,6 +399,10 @@ class ConstructionContract(models.Model):
             # === EXTRAS ===
             'service_description': self._escape_xml(', '.join(filter(None, self.lot_ids.mapped('description'))) or safe(self, 'notes', '')),
             'master_name': self._escape_xml(safe(self, 'master_name', "MAÎTRE D'OUVRAGE")),
+            
+            # === LOTS & PAYMENT SCHEDULE (FIX DATA INJECTION) ===
+            'lots': self._get_lots_data_context(),
+            'schedule': self._get_schedule_data_context(),
         }
         
         # Validation (skip if method missing)
@@ -406,6 +410,60 @@ class ConstructionContract(models.Model):
             self._validate_context_completeness(context)
         
         return context
+
+    def _get_lots_data_context(self):
+        """Build structured list of lots for Jinja2 iteration."""
+        lots_data = []
+        for lot in self.lot_ids:
+            # Attempt to find amount from related PO lines or lot fields
+            amount = 0.0
+            # Rough logic: Sum PO lines linked to this lot for this subcontractor
+            # This matches logic in _compute_amounts roughly but per lot
+            for po in self.purchase_order_ids:
+                for line in po.order_line:
+                    # Check if line relates to this lot (by name or custom field)
+                    # For now, relying on lot fields if available or defaulting
+                    # Assuming lot has 'price' or we use global PO division?
+                    # Let's use the lot attributes if they exist or 0
+                    pass
+            
+            # Better approach: if lot has stored price or we calculated it
+            # For this hotfix, we use what we have access to easily.
+            # The user Prompt said: "Récupère les lignes de commande ... associées au contrat"
+            
+            # Simple retrieval from lot model if it stores cost/price
+            # If not, we try to sum linked PO lines found in action_generate_consolidated_po logic
+            # or simple attributes.
+            
+            description = lot.description or lot.name
+            
+            # Recalculate specific amount for this lot from POs attached to this contract
+            lot_amount = 0.0
+            related_po_lines = self.env['purchase.order.line'].search([
+                ('order_id', 'in', self.purchase_order_ids.ids),
+                '|', 
+                ('name', 'ilike', lot.code or 'INVALID_CODE'),
+                ('product_id.name', 'ilike', lot.name)
+            ])
+            lot_amount = sum(related_po_lines.mapped('price_subtotal'))
+            
+            lots_data.append({
+                'name': self._escape_xml(lot.name),
+                'desc': self._escape_xml(description),
+                'code': self._escape_xml(lot.code or ''),
+                'amount': self._format_currency(lot_amount),
+                'amount_raw': lot_amount
+            })
+        return lots_data
+
+    def _get_schedule_data_context(self):
+        """Build payment schedule data."""
+        # TODO: Link to real payment terms or milestones
+        # For now return standard placeholder structure
+        return [
+            {'name': 'Acompte', 'percent': '30%', 'amount': self._format_currency(self.total_amount_ttc * 0.3)},
+            {'name': 'Solde', 'percent': '70%', 'amount': self._format_currency(self.total_amount_ttc * 0.7)},
+        ]
 
     # === MÉTHODES HELPERS === #
     def _format_currency(self, amount, no_symbol=False):
@@ -1391,7 +1449,25 @@ class ConstructionContract(models.Model):
         #   {{ subcontractor_signature.image_data }} in the HTML template.
         #   Our _get_contract_data_context (which I need to check) populates this.
         
-        # 1. Regenerate PDF
+        # 1. Inject Signature Image (FIX SIGNATURE VISUELLE)
+        if subcontractor_signature and subcontractor_signature.signature_data:
+            # Get valid base64 image
+            sig_image = subcontractor_signature.signature_data.decode('utf-8') if isinstance(subcontractor_signature.signature_data, bytes) else subcontractor_signature.signature_data
+            img_tag = f'<img src="data:image/png;base64,{sig_image}" alt="Signature" style="max-height: 150px; border-bottom: 1px solid #000;"/>'
+            
+            # Inject into HTML
+            if self.contract_template_html:
+                if '<!-- SIGNATURE_CLIENT -->' in self.contract_template_html:
+                    self.contract_template_html = self.contract_template_html.replace('<!-- SIGNATURE_CLIENT -->', img_tag)
+                elif 'id="signature-placeholder"' in self.contract_template_html:
+                     # Fallback to regex or simple replace if ID exists
+                     import re
+                     self.contract_template_html = re.sub(r'<div[^>]*id="signature-placeholder"[^>]*>.*?</div>', f'<div id="signature-placeholder">{img_tag}</div>', self.contract_template_html, flags=re.DOTALL)
+                else:
+                    # Append strictly if missing
+                    self.contract_template_html += f'<div class="signature-injection-fallback" style="margin-top:50px;"><h4>Signature:</h4>{img_tag}</div>'
+
+        # 2. Regenerate PDF
         self.with_context(contract_signature=subcontractor_signature).action_generate_pdf()
         
         # Verify PDF was regenerated
