@@ -67,6 +67,17 @@ class LotManagementWizard(models.TransientModel):
         help="Entreprise sous-traitante pour ce lot"
     )
     
+    # US-COR-001: Alert for already assigned subcontractor
+    is_subcontractor_already_assigned = fields.Boolean(
+        compute='_compute_subcontractor_status',
+        string='ST déjà assigné'
+    )
+    
+    subcontractor_warning = fields.Html(
+        compute='_compute_subcontractor_status',
+        string='Avertissement ST'
+    )
+    
     # Internal mode
     internal_user_id = fields.Many2one(
         'res.users',
@@ -304,6 +315,33 @@ class LotManagementWizard(models.TransientModel):
             wizard.lot_cost = cost
             wizard.lot_margin = sale_price - cost
     
+    @api.depends('lot_id', 'subcontractor_id')
+    def _compute_subcontractor_status(self):
+        """
+        US-COR-001: Check if subcontractor is already assigned.
+        Generates warning HTML if reassignment attempted.
+        """
+        for wizard in self:
+            lot = wizard.lot_id
+            original_st = lot.subcontractor_id if lot else False
+            
+            # Check if there's already an assigned ST on the lot
+            if original_st and wizard.subcontractor_id != original_st:
+                wizard.is_subcontractor_already_assigned = True
+                wizard.subcontractor_warning = _(
+                    '<div class="alert alert-warning">'
+                    '<i class="fa fa-exclamation-triangle me-2"></i>'
+                    '<strong>Attention:</strong> Le sous-traitant <b>%s</b> est déjà assigné. '
+                    'Modifier cette assignation peut impacter les BC et contrats existants.'
+                    '</div>'
+                ) % original_st.name
+            elif original_st:
+                wizard.is_subcontractor_already_assigned = True
+                wizard.subcontractor_warning = False
+            else:
+                wizard.is_subcontractor_already_assigned = False
+                wizard.subcontractor_warning = False
+
     @api.depends('lot_id')
     def _compute_related_records(self):
         """Find related PO and Contract for this lot."""

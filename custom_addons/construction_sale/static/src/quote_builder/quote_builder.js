@@ -45,6 +45,11 @@ export class QuoteBuilder extends Component {
             showCreateProductWizard: false,
             wizardProduct: null,
             newProduct: null,
+            // US-SAL-003: Track modifications
+            isDirty: false,
+            // US-SAL-005: Reset confirmation modal
+            showResetConfirm: false,
+            resetConfirmChecked: false,
         });
 
         onWillStart(async () => {
@@ -61,7 +66,33 @@ export class QuoteBuilder extends Component {
         // Auto-save with debounce
         useEffect(() => {
             this.saveDraft();
+            this.state.isDirty = true;
         }, () => [this.state.cart, this.state.chantierId]);
+
+        // US-SAL-003: Auto-save every 30 seconds
+        useEffect(() => {
+            const interval = setInterval(() => {
+                if (this.state.cart.length > 0 && this.state.isDirty) {
+                    this.saveDraft();
+                    this.notification.add("Brouillon sauvegardé", { type: "info", sticky: false });
+                    console.log('[QuoteBuilder] Auto-save triggered');
+                }
+            }, 30000);
+            return () => clearInterval(interval);
+        }, () => []);
+
+        // US-SAL-003: Warning on page exit with unsaved changes
+        useEffect(() => {
+            const handleBeforeUnload = (e) => {
+                if (this.state.cart.length > 0 && this.state.isDirty) {
+                    e.preventDefault();
+                    e.returnValue = 'Vous avez des modifications non sauvegardées.';
+                    return e.returnValue;
+                }
+            };
+            window.addEventListener('beforeunload', handleBeforeUnload);
+            return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+        }, () => []);
 
         // Debounced search
         this.debouncedSearch = debounce(this._performSearch.bind(this), 300);
@@ -111,10 +142,11 @@ export class QuoteBuilder extends Component {
 
     async loadInitialData() {
         try {
+            // Load products (unfiltered initially)
             const products = await this.orm.call(
                 "sale.order",
                 "search_products_for_spa",
-                [""],
+                ["", null],  // search_term, lot_category_id
                 { limit: 100 }
             );
             this.state.products = products;
@@ -133,12 +165,35 @@ export class QuoteBuilder extends Component {
     async loadProducts() {
         try {
             this.state.loading = true;
+
+            // FIX FILTRAGE: Get the category_id of the selected lot
+            let lotCategoryId = null;
+            if (this.state.selectedLotId) {
+                const selectedLot = this.state.lots.find(l => l.id === this.state.selectedLotId);
+                console.log("[QuoteBuilder] Selected lot:", selectedLot);
+
+                if (selectedLot && selectedLot.category_id) {
+                    // Many2one returns [id, name] array
+                    lotCategoryId = Array.isArray(selectedLot.category_id)
+                        ? selectedLot.category_id[0]
+                        : selectedLot.category_id;
+                    console.log("[QuoteBuilder] Filtering by category_id:", lotCategoryId);
+                } else {
+                    console.warn("[QuoteBuilder] Selected lot has no category_id:", selectedLot);
+                }
+            } else {
+                console.log("[QuoteBuilder] No lot selected, showing all products");
+            }
+
+            console.log("[QuoteBuilder] Calling RPC with search_term:", this.state.searchTerm, "lot_category_id:", lotCategoryId);
+
             this.state.products = await this.orm.call(
                 "sale.order",
                 "search_products_for_spa",
-                [this.state.searchTerm || ""],
-                { limit: 100 }
+                [this.state.searchTerm || "", lotCategoryId, 100]  // Pass all positional args
             );
+
+            console.log("[QuoteBuilder] Loaded", this.state.products.length, "products");
         } catch (e) {
             console.error("[QuoteBuilder] Refresh error", e);
         } finally {
@@ -158,10 +213,11 @@ export class QuoteBuilder extends Component {
                 this.state.chantierName = chantiers[0].name;
 
                 if (chantiers[0].lots_ids?.length > 0) {
+                    // FIX FILTRAGE: Also fetch category_id for lot filtering
                     this.state.lots = await this.orm.searchRead(
                         "construction.lot",
                         [["id", "in", chantiers[0].lots_ids]],
-                        ["id", "name", "code"]
+                        ["id", "name", "code", "category_id"]
                     );
                 }
             }
@@ -260,7 +316,10 @@ export class QuoteBuilder extends Component {
     // ===========================================
 
     onLotClick(lotId) {
+        // Toggle lot selection
         this.state.selectedLotId = lotId === this.state.selectedLotId ? null : lotId;
+        // FIX FILTRAGE: Reload products when lot selection changes
+        this.loadProducts();
     }
 
     getLotItemCount(lotId) {
@@ -396,7 +455,35 @@ export class QuoteBuilder extends Component {
                 sellingPrice: sellingPrice
             });
 
-            // Create product with cost and calculated selling price
+            // FIX: Get lot_category_ids from the WIZARD'S lot_ids selection (not sidebar)
+            // The user selects multiple lots in the wizard, we need to extract their category_ids
+            let lotCategoryIds = [];
+
+            if (np.lot_ids && np.lot_ids.length > 0) {
+                // Get category_id from each selected lot
+                for (const lotId of np.lot_ids) {
+                    const lot = this.state.lots.find(l => l.id === lotId);
+                    if (lot && lot.category_id) {
+                        const catId = Array.isArray(lot.category_id) ? lot.category_id[0] : lot.category_id;
+                        if (catId && !lotCategoryIds.includes(catId)) {
+                            lotCategoryIds.push(catId);
+                        }
+                    }
+                }
+                console.log('[QuoteBuilder] Assigning lot_category_ids from wizard:', lotCategoryIds);
+            } else if (this.state.selectedLotId) {
+                // Fallback: use sidebar selected lot if no lots in wizard
+                const selectedLot = this.state.lots.find(l => l.id === this.state.selectedLotId);
+                if (selectedLot && selectedLot.category_id) {
+                    const catId = Array.isArray(selectedLot.category_id)
+                        ? selectedLot.category_id[0]
+                        : selectedLot.category_id;
+                    if (catId) lotCategoryIds.push(catId);
+                    console.log('[QuoteBuilder] Fallback: using sidebar lot_category_id:', catId);
+                }
+            }
+
+            // Create product with cost, calculated selling price, and lot_category_ids (Many2many)
             const productData = {
                 name: np.name.trim(),
                 uom_id: np.uom_id,
@@ -405,6 +492,12 @@ export class QuoteBuilder extends Component {
                 list_price: sellingPrice,  // Calculate selling price with margin
                 sale_ok: true,
             };
+
+            // Add lot_category_ids (Many2many) if any categories were found
+            // Use Odoo command format: [[6, 0, [ids]]] to set the relation
+            if (lotCategoryIds.length > 0) {
+                productData.lot_category_ids = [[6, 0, lotCategoryIds]];
+            }
 
             const result = await this.orm.create("product.template", [productData]);
             console.log('[QuoteBuilder] Created product ID:', result);
@@ -726,13 +819,19 @@ export class QuoteBuilder extends Component {
     }
 
     getCartMarginPercent() {
-        const total = this.getCartTotal();
-        return total === 0 ? 0 : (this.getCartMargin() / total) * 100;
+        // FIXED: Show MARKUP percentage (margin/cost), not margin on revenue
+        // User enters 50% markup → should see 50% displayed
+        const cost = this.getCartCost();
+        return cost === 0 ? 0 : (this.getCartMargin() / cost) * 100;
     }
 
     getGroupedCart() {
         const groups = {};
         this.state.cart.forEach((line, idx) => {
+            // FIX: Do NOT filter cart lines by selected lot
+            // The lot selection only affects the product CATALOG, not the cart display
+            // All cart lines should always be visible, grouped by their lot
+
             const lotId = line.lot_id || 'unassigned';
             if (!groups[lotId]) {
                 const lot = this.state.lots.find(l => l.id === line.lot_id);
@@ -813,7 +912,31 @@ export class QuoteBuilder extends Component {
             localStorage.removeItem(cartKey);
         }
         this.state.cart = [];
+        this.state.isDirty = false;
+        this.state.showResetConfirm = false;
+        this.state.resetConfirmChecked = false;
         this.notification.add("Panier réinitialisé", { type: "warning" });
+    }
+
+    // US-SAL-005: Reset confirmation modal handlers
+    onResetClick() {
+        this.state.showResetConfirm = true;
+        this.state.resetConfirmChecked = false;
+    }
+
+    onResetConfirmCheckbox(ev) {
+        this.state.resetConfirmChecked = ev.target.checked;
+    }
+
+    onCancelReset() {
+        this.state.showResetConfirm = false;
+        this.state.resetConfirmChecked = false;
+    }
+
+    onConfirmReset() {
+        if (this.state.resetConfirmChecked) {
+            this.clearDraft();
+        }
     }
 
     // ===========================================
@@ -855,33 +978,106 @@ export class QuoteBuilder extends Component {
                 return;
             }
 
-            // Create order with only valid sale.order.line fields
-            const orderData = await this.orm.call("sale.order", "create_from_spa", [{
-                chantier_id: this.state.chantierId,
-                partner_id: partnerId,
-                order_line: this.state.cart.filter(l => !l.isOptional).map(line => [0, 0, {
-                    product_id: line.product_id,
-                    name: line.name + (line.specs?.location ? ` (${line.specs.location})` : ''),
-                    product_uom_qty: line.qty,
-                    price_unit: line.price_unit,
-                    price_buy: line.price_buy,
-                    target_margin_percent: line.target_margin_percent,
-                    lot_id: line.lot_id,  // Required for construction orders
-                }])
+            // Build order lines data
+            const orderLineData = this.state.cart.filter(l => !l.isOptional).map(line => [0, 0, {
+                product_id: line.product_id,
+                name: line.name + (line.specs?.location ? ` (${line.specs.location})` : ''),
+                product_uom_qty: line.qty,
+                price_unit: line.price_unit,
+                price_buy: line.price_buy,
+                target_margin_percent: line.target_margin_percent,
+                lot_id: line.lot_id,  // Required for construction orders
             }]);
 
-            this.notification.add("✅ Devis créé!", { type: "success" });
+            let orderId = this.state.orderId;
+
+            if (orderId) {
+                // Check if order is confirmed (can't modify confirmed orders in Odoo)
+                const orderInfo = await this.orm.searchRead(
+                    "sale.order",
+                    [["id", "=", orderId]],
+                    ["state", "name"]
+                );
+
+                const orderState = orderInfo[0]?.state;
+                const orderName = orderInfo[0]?.name || "Quote";
+
+                if (orderState === 'sale' || orderState === 'done') {
+                    // CONFIRMED ORDER: Cannot modify lines, create a new revision
+                    console.log("[QuoteBuilder] Order is confirmed, creating revision...");
+
+                    // Generate v2 name (or v3, v4, etc.)
+                    let newName = orderName;
+                    const versionMatch = orderName.match(/-v(\d+)$/);
+                    if (versionMatch) {
+                        const nextVersion = parseInt(versionMatch[1]) + 1;
+                        newName = orderName.replace(/-v\d+$/, `-v${nextVersion}`);
+                    } else {
+                        newName = `${orderName}-v2`;
+                    }
+
+                    // Create new order as revision
+                    const newOrderData = await this.orm.call("sale.order", "create_from_spa", [{
+                        chantier_id: this.state.chantierId,
+                        partner_id: partnerId,
+                        order_line: orderLineData,
+                        name_override: newName  // Pass custom name if supported
+                    }]);
+
+                    orderId = newOrderData.id;
+                    this.state.orderId = orderId;
+                    this.persistProjectContext(this.state.chantierId, orderId);
+
+                    this.notification.add(`✅ Nouvelle version créée: ${newName}`, { type: "success" });
+                } else {
+                    // DRAFT ORDER: Can update normally
+                    console.log("[QuoteBuilder] Updating draft order:", orderId);
+
+                    const lineCommands = [
+                        [5, 0, 0],  // Clear all existing lines
+                        ...this.state.cart.filter(l => !l.isOptional).map(line => [0, 0, {
+                            product_id: line.product_id,
+                            name: line.name + (line.specs?.location ? ` (${line.specs.location})` : ''),
+                            product_uom_qty: line.qty,
+                            price_unit: line.price_unit,
+                            lot_id: line.lot_id,
+                        }])
+                    ];
+
+                    await this.orm.write("sale.order", [orderId], {
+                        order_line: lineCommands
+                    });
+
+                    this.notification.add("✅ Devis mis à jour!", { type: "success" });
+                }
+            } else {
+                // CREATE new order
+                console.log("[QuoteBuilder] Creating new order for chantier:", this.state.chantierId);
+
+                const orderData = await this.orm.call("sale.order", "create_from_spa", [{
+                    chantier_id: this.state.chantierId,
+                    partner_id: partnerId,
+                    order_line: orderLineData
+                }]);
+
+                orderId = orderData.id;
+                this.state.orderId = orderId;
+                this.persistProjectContext(this.state.chantierId, orderId);
+
+                this.notification.add("✅ Devis créé!", { type: "success" });
+            }
+
             localStorage.removeItem(this.cartStoreKey);
 
             this.action.doAction({
                 type: 'ir.actions.act_window',
                 res_model: 'sale.order',
-                res_id: orderData.id,
+                res_id: orderId,
                 views: [[false, 'form']],
             });
         } catch (e) {
-            console.error("[QuoteBuilder] Create failed", e);
-            this.notification.add("Erreur: " + (e.message || "Création impossible"), { type: "danger" });
+            console.error("[QuoteBuilder] Save failed", e);
+            this.notification.add("Erreur: " + (e.message || "Sauvegarde impossible"), { type: "danger" });
         } finally {
             this.state.loading = false;
         }

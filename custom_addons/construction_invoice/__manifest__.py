@@ -37,6 +37,7 @@ Les factures sont déclenchées par les étapes:
         'views/invoice_schedule_views.xml',
         'views/chantier_views.xml',
         'views/menus.xml',
+        'wizards/billing_cycle_wizard_view.xml',
     ],
     'installable': True,
     'application': False,

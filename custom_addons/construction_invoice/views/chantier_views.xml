@@ -14,9 +14,79 @@
                 </button>
             </div>
             
-            <data>
-                <!-- Add invoice fields using xpath (Future Use) -->
-            </data>
+            <xpath expr="//notebook" position="inside">
+                <page string="Facturation &amp; Cycle" 
+                      invisible="state not in ['stage_finalisation_dossier', 'stage_travaux', 'stage_livraison']"
+                      name="billing_page">
+                    
+                    <!-- CYCLE MANAGER HEADER -->
+                    <div class="o_horizontal_separator text-uppercase fw-bold text-primary">Gestion du Cycle</div>
+                    <group>
+                        <group>
+                            <label for="billing_cycle_id"/>
+                            <div class="o_row">
+                                <field name="billing_cycle_id" readonly="1" class="fw-bold"/>
+                                <button name="%(construction_invoice.action_construction_billing_cycle_wizard)d" 
+                                        type="action" 
+                                        string="Définir Cycle" 
+                                        context="{'default_chantier_id': id}"
+                                        class="btn-sm btn-link" 
+                                        icon="fa-cogs"
+                                        invisible="billing_cycle_id"/>
+                                <button name="%(construction_invoice.action_construction_billing_cycle_wizard)d" 
+                                        type="action" 
+                                        string="Modifier" 
+                                        context="{'default_chantier_id': id}"
+                                        class="btn-sm btn-link text-warning"
+                                        icon="fa-edit"
+                                        invisible="not billing_cycle_id"/>
+                            </div>
+                        </group>
+                        <group>
+                            <field name="invoice_schedule_count" widget="statinfo" string="Étapes générées"/>
+                            <!-- Show Billing Status Banner Here -->
+                            <widget name="web_ribbon" title="SUR-FACTURÉ" bg_color="bg-danger" 
+                                    invisible="not billing_cycle_id or 'billing_status' == 'balanced' or 'billing_status' == 'under_billed'"/>
+                        </group>
+                    </group>
+
+                    <!-- BILLING STEPS KANBAN/TREE -->
+                     <field name="billing_step_ids" mode="list,kanban">
+                        <list string="Étapes de Facturation" editable="bottom" decoration-success="state=='paid'" decoration-info="state=='invoiced'">
+                            <field name="sequence" widget="handle"/>
+                            <field name="name"/>
+                            <field name="percentage"/>
+                            <field name="amount" sum="Total"/>
+                            <field name="state" widget="badge" 
+                                   decoration-success="state == 'paid'" 
+                                   decoration-info="state == 'invoiced'" 
+                                   decoration-warning="state == 'ready'"
+                                   decoration-muted="state == 'draft'"/>
+                            <button name="action_create_invoice" type="object" icon="fa-file-text-o" 
+                                    class="btn-primary" 
+                                    invisible="state != 'draft'"
+                                    title="Générer Facture"/>
+                        </list>
+                    </field>
+
+                    <!-- PARTNERSHIPS SECTION -->
+                    <div groups="construction_core.group_construction_manager">
+                        <div class="o_horizontal_separator text-uppercase fw-bold text-muted mt-4">Partenariats &amp; Apporteurs</div>
+                        <group>
+                            <group>
+                                <field name="business_provider_id"/>
+                                <field name="commission_type" invisible="not business_provider_id"/>
+                            </group>
+                            <group invisible="not business_provider_id">
+                                <field name="commission_value"/>
+                                <field name="commission_total_due" widget="monetary"/>
+                                <field name="commission_total_paid" widget="monetary"/>
+                            </group>
+                        </group>
+                    </div>
+
+                </page>
+            </xpath>
         </field>
     </record>
 

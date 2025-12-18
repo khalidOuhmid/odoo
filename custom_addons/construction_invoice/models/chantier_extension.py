@@ -22,6 +22,53 @@ class Chantier(models.Model):
         string='Devis principal',
         help="Devis servant de référence pour la facturation"
     )
+
+    # ============= BILLING CYCLE ============= #
+    billing_cycle_id = fields.Many2one(
+        'construction.billing.cycle',
+        string="Cycle de Facturation",
+        copy=False
+    )
+    
+    # ============= BUSINESS PROVIDER ============= #
+    business_provider_id = fields.Many2one(
+        'res.partner',
+        string="Apporteur d'Affaires",
+        tracking=True,
+        domain=[('is_company', '=', True)]
+    )
+    commission_type = fields.Selection([
+        ('percentage', 'Pourcentage (%)'),
+        ('fixed', 'Montant Fixe')
+    ], string="Type de Commission", default='percentage')
+    
+    commission_value = fields.Float(string="Valeur Commission")
+    
+    commission_total_due = fields.Monetary(
+        string="Commission Due",
+        compute='_compute_commission_totals',
+        currency_field='currency_id'
+    )
+    commission_total_paid = fields.Monetary(
+        string="Commission Payée",
+        compute='_compute_commission_totals',
+        currency_field='currency_id'
+    )
+
+    @api.depends('invoice_ids.state', 'invoice_ids.payment_state')
+    def _compute_commission_totals(self):
+        for chantier in self:
+            # Placeholder logic - refined in Account Move trigger usually
+            # But here we show totals based on created vendor bills
+            commission_bills = self.env['account.move'].search([
+                ('partner_id', '=', chantier.business_provider_id.id),
+                ('move_type', '=', 'in_invoice'),
+                # We need a way to link bills to chantier. using ref or narration typically
+                ('invoice_origin', 'ilike', chantier.reference or '') 
+            ])
+            chantier.commission_total_due = sum(commission_bills.mapped('amount_total'))
+            chantier.commission_total_paid = sum(commission_bills.filtered(lambda m: m.payment_state == 'paid').mapped('amount_total'))
+
     invoice_schedule_ids = fields.One2many(
         'construction.invoice.schedule',
         'chantier_id',
@@ -32,6 +79,15 @@ class Chantier(models.Model):
     )
     
     # ============= COMPUTED ============= #
+    
+
+    # ============= COMPUTED ============= #
+
+    billing_step_ids = fields.One2many(
+        related='billing_cycle_id.step_ids',
+        string="Étapes du Cycle",
+        readonly=False
+    )
     
     def _compute_invoice_schedule_count(self):
         for record in self:

@@ -41,8 +41,8 @@
                                 class="btn btn-primary" icon="fa-plus"/>
                     </div>
                     
-                    <!-- Inline Visits List - READONLY, Clickable rows -->
-                    <field name="visit_ids" nolabel="1" readonly="1">
+                    <!-- Inline Visits List - Click to edit in popup -->
+                    <field name="visit_ids" nolabel="1" context="{'form_view_ref': 'construction_visit.view_visit_form'}" options="{'no_create': True}">
                         <list decoration-info="state == 'planned'"
                               decoration-warning="state == 'confirmed'"
                               decoration-success="state == 'completed'"

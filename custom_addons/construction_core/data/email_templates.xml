@@ -39,5 +39,69 @@
             </field>
         </record>
 
+        <!-- Email Template: Guarantee Reminder J-7 (US-COR-006) -->
+        <record id="email_template_guarantee_j7" model="mail.template">
+            <field name="name">Construction: Rappel Garantie J-7</field>
+            <field name="model_id" ref="construction_core.model_construction_chantier"/>
+            <field name="subject">⏰ Rappel: Libération garantie dans 7 jours - {{ object.name }}</field>
+            <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+            <field name="email_to">{{ object.client.email }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #f59e0b;">⏰ Rappel: Libération de Garantie</h2>
+                    
+                    <p>Bonjour <strong>{{ object.client.name }}</strong>,</p>
+                    
+                    <p>Nous vous informons que la retenue de garantie pour le chantier suivant sera libérée dans <strong>7 jours</strong>:</p>
+                    
+                    <div style="background-color: #fef3c7; padding: 15px; border-left: 4px solid #f59e0b; margin: 20px 0;">
+                        <strong>Chantier:</strong> {{ object.name }}<br/>
+                        <strong>Référence:</strong> {{ object.reference }}<br/>
+                        <strong>Date de libération:</strong> {{ object.guarantee_release_date }}<br/>
+                        <strong>Montant:</strong> {{ '%.2f' % object.guarantee_retention_amount }} €
+                    </div>
+                    
+                    <p>Veuillez vous assurer que toutes les conditions de libération sont remplies.</p>
+                    
+                    <p style="margin-top: 30px;">
+                        Cordialement,<br/>
+                        <strong>{{ object.company_id.name }}</strong>
+                    </p>
+                </div>
+            </field>
+        </record>
+
+        <!-- Email Template: Guarantee Reminder J-0 (US-COR-006) -->
+        <record id="email_template_guarantee_j0" model="mail.template">
+            <field name="name">Construction: Libération Garantie Aujourd'hui</field>
+            <field name="model_id" ref="construction_core.model_construction_chantier"/>
+            <field name="subject">✅ Libération garantie aujourd'hui - {{ object.name }}</field>
+            <field name="email_from">{{ (object.company_id.email or user.email) }}</field>
+            <field name="email_to">{{ object.client.email }}</field>
+            <field name="body_html" type="html">
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #10b981;">✅ Libération de Garantie</h2>
+                    
+                    <p>Bonjour <strong>{{ object.client.name }}</strong>,</p>
+                    
+                    <p>La retenue de garantie pour le chantier suivant arrive à échéance <strong>aujourd'hui</strong>:</p>
+                    
+                    <div style="background-color: #d1fae5; padding: 15px; border-left: 4px solid #10b981; margin: 20px 0;">
+                        <strong>Chantier:</strong> {{ object.name }}<br/>
+                        <strong>Référence:</strong> {{ object.reference }}<br/>
+                        <strong>Date de libération:</strong> {{ object.guarantee_release_date }}<br/>
+                        <strong>Montant à libérer:</strong> {{ '%.2f' % object.guarantee_retention_amount }} €
+                    </div>
+                    
+                    <p>La retenue de garantie peut maintenant être libérée conformément aux termes du contrat.</p>
+                    
+                    <p style="margin-top: 30px;">
+                        Cordialement,<br/>
+                        <strong>{{ object.company_id.name }}</strong>
+                    </p>
+                </div>
+            </field>
+        </record>
+
     </data>
 </odoo>

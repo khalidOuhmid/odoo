@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_chantier_form_inherit_sale" model="ir.ui.view">
+        <field name="name">construction.chantier.form.inherit.sale</field>
+        <field name="model">construction.chantier</field>
+        <field name="inherit_id" ref="construction_core.view_construction_chantier_form"/>
+        <field name="arch" type="xml">
+            <!-- FIX OWL CRASH: Prevent form opening on row click -->
+            <xpath expr="//field[@name='quotation_ids']/list" position="attributes">
+                <attribute name="no_open">1</attribute>
+            </xpath>
+            
+            <!-- Add Smart Quote Builder button and delete confirmation -->
+            <xpath expr="//field[@name='quotation_ids']/list" position="inside">
+                 <!-- Smart Quote Builder button - visible for all states except cancel -->
+                 <button name="action_open_quote_builder" 
+                        type="object"
+                        class="btn-primary"
+                        invisible="state == 'cancel'"
+                        string="Ouvrir Constructeur"/>
+                 <!-- Delete button with confirmation - only for draft/sent -->
+                 <button name="unlink" type="object" 
+                         string="Supprimer" 
+                         icon="fa-trash" 
+                         class="text-danger"
+                         confirm="Êtes-vous sûr de vouloir supprimer ce devis ?"
+                         invisible="state in ['sale', 'done', 'cancel']"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

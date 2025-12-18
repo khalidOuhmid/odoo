@@ -29,6 +29,11 @@
                         </group>
                     </group>
                     
+                    <!-- US-COR-001: Alert Zone Above Tabs -->
+                    <field name="is_subcontractor_already_assigned" invisible="1"/>
+                    <field name="subcontractor_warning" widget="html" nolabel="1" 
+                           invisible="not subcontractor_warning" colspan="2"/>
+                    
                     <notebook>
                         <!-- ============================================== -->
                         <!-- TAB 1: VUE D'ENSEMBLE                          -->

@@ -544,13 +544,15 @@
     background: var(--qb-success) !important;
 }
 
-/* Data Table */
+/* Data Table - Improved Readability */
 .o_quote_table {
     background: white;
     border: 1px solid var(--qb-border);
     border-top: none;
     margin-bottom: 16px;
     border-radius: 0 0 4px 4px;
+    table-layout: auto;
+    width: 100%;
 }
 
 .o_quote_table thead {
@@ -563,15 +565,29 @@
     color: var(--qb-text-muted);
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    padding: 10px 12px;
+    padding: 10px 8px;
     border-bottom: 1px solid var(--qb-border);
+    white-space: nowrap;
 }
 
 .o_quote_table td {
-    padding: 10px 12px;
+    padding: 12px 8px;
     font-size: 0.85rem;
     vertical-align: middle;
     border-bottom: 1px solid #f0f0f0;
+}
+
+/* Product name column - allow wrapping */
+.o_quote_table td:first-child {
+    max-width: 200px;
+    min-width: 120px;
+}
+
+.o_quote_table td:first-child input {
+    max-width: 100%;
+    width: 100%;
+    font-size: 0.85rem;
+    font-weight: 500;
 }
 
 .o_quote_table tbody tr:hover {
@@ -582,19 +598,33 @@
     border-bottom: none;
 }
 
-/* Inputs in Table */
+/* Inputs in Table - Better sizing */
 .o_quote_table input {
     border: 1px solid var(--qb-border);
     border-radius: 4px;
-    padding: 4px 8px;
+    padding: 6px 8px;
     font-size: 0.85rem;
+}
+
+.o_quote_table input[type="number"] {
+    width: 70px;
+    text-align: center;
+}
+
+.o_quote_table input[type="text"] {
     width: 100%;
-    max-width: 80px;
 }
 
 .o_quote_table input:focus {
     border-color: var(--qb-primary);
     outline: none;
+}
+
+/* Dimension inputs - compact */
+.o_quote_table .d-flex.gap-1 input {
+    width: 45px !important;
+    padding: 4px 6px;
+    font-size: 0.8rem;
 }
 
 /* Margin Cells */
@@ -604,6 +634,7 @@
 
 .o_margin_input {
     border-color: var(--qb-warning) !important;
+    width: 55px !important;
 }
 
 /* Optional Lines */

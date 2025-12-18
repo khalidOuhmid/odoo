@@ -277,10 +277,11 @@
                                     <field name="date_end_planned" optional="hide"/>
                                     <field name="completion_percentage" widget="progressbar" 
                                            options="{'editable': true, 'max_value': 100}"/>
-                                    <field name="price" sum="Total"/>
-                                    <field name="margin_percent" string="Marge %" optional="show"
-                                           decoration-success="margin_percent > 20"
-                                           decoration-warning="margin_percent > 0 and margin_percent &lt;= 20"
+                                    <field name="price"/>
+                                    <field name="margin_percent" string="Marge %" optional="hide"
+                                           groups="construction_core.group_construction_admin,construction_core.group_construction_accountant"
+                                           decoration-success="margin_percent &gt; 20"
+                                           decoration-warning="margin_percent &gt; 0 and margin_percent &lt; 20"
                                            decoration-danger="margin_percent &lt;= 0"/>
                                     <field name="is_finished" widget="boolean_toggle"/>
                                 </list>
@@ -325,55 +326,35 @@
                             <field name="show_contract_generation" invisible="1"/>
                             <field name="project_subcontractor_ids" invisible="1"/>
                             
-                            <group>
-                                <group string="Responsables Internes">
-                                    <field name="user_ids" widget="many2many_tags" 
-                                           options="{'color_field': 'color'}"/>
-                                </group>
-                            </group>
-                            
-                            <!-- Subcontractors from Lots Section -->
-                            <group string="Sous-traitants du Projet">
-                                <div class="o_horizontal_separator mb-3">
-                                    <span class="text-muted">
-                                        Liste des sous-traitants assignés aux lots de ce chantier
-                                    </span>
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h4 class="mb-0">
+                                    <i class="fa fa-users me-2"/>Ressources du Chantier
+                                </h4>
+                                <div class="btn-group">
+                                    <button name="%(action_multi_lot_wizard)d" 
+                                            type="action" 
+                                            string="Multi-Lots"
+                                            class="btn btn-outline-primary btn-sm"
+                                            icon="fa-cubes"/>
+                                    <button name="action_check_contract_eligibility" 
+                                            type="object" 
+                                            string="Vérifier Conformité"
+                                            class="btn btn-outline-secondary btn-sm"
+                                            invisible="not show_contract_generation"/>
                                 </div>
+                            </div>
+                            
+                            <!-- US-COR-010: Dynamic Resources Table -->
+                            <field name="team_resources_html" widget="html" readonly="1" nolabel="1"/>
+                            
+                            <!-- Internal Team Assignment -->
+                            <group string="Responsables Internes" class="mt-3">
+                                <field name="user_ids" widget="many2many_tags" 
+                                       options="{'color_field': 'color'}"/>
                             </group>
-                            
-                            <!-- Subcontractor List with Contract Generation -->
-                            <div class="table-responsive" invisible="not project_subcontractor_ids">
-                                <table class="table table-hover">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Sous-traitant</th>
-                                            <th>Lots assignés</th>
-                                            <th>État Conformité</th>
-                                            <th class="text-end">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <!-- Dynamic content handled by project_subcontractor_ids -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            
-                            <!-- Contract Eligibility Check -->
-                            <div class="mt-3" invisible="not show_contract_generation">
-                                <button name="action_check_contract_eligibility" 
-                                        type="object" 
-                                        string="🔍 Vérifier Éligibilité Contrats"
-                                        class="btn btn-outline-primary"/>
-                            </div>
                             
                             <!-- Legacy subcontractor field (hidden) -->
                             <field name="subcontractor_ids" invisible="1"/>
-                            
-                            <div class="alert alert-info mt-3" invisible="project_subcontractor_ids">
-                                <i class="fa fa-info-circle me-2"/>
-                                Aucun sous-traitant assigné. Affectez des sous-traitants aux lots 
-                                dans l'onglet "Lots".
-                            </div>
                         </page>
 
                         <!-- Tab 5: Devis (Visible from stage_devis_envoye) -->

@@ -74,6 +74,30 @@ class SaleOrder(models.Model):
             order.is_pdf_quote_builder_available = False
 
     # ============================================================
+    # QUOTE REFERENCE AUTO-GENERATION (US-SAL-005)
+    # Format: [CHANTIER_NAME]-DEV-[SEQUENCE]
+    # ============================================================
+    
+    quote_reference = fields.Char(
+        string='Référence Devis',
+        copy=False,
+        readonly=True,
+        help="Auto-generated: [NOM_CHANTIER]-DEV-[NUMERO]"
+    )
+    
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get('chantier_id') and not vals.get('quote_reference'):
+                chantier = self.env['construction.chantier'].browse(vals['chantier_id'])
+                # Count existing quotes for this chantier
+                existing_count = self.search_count([('chantier_id', '=', chantier.id)])
+                # Generate reference
+                chantier_name = chantier.name.replace(' ', '-')[:30] if chantier.name else 'CHANTIER'
+                vals['quote_reference'] = f"{chantier_name}-DEV-{existing_count + 1:03d}"
+        return super().create(vals_list)
+
+    # ============================================================
     # BUSINESS LOGIC & VALIDATION
     # ============================================================
 
@@ -138,10 +162,29 @@ class SaleOrder(models.Model):
         """
         try:
             # Add strict validation logic here for incoming JSON data
-            if not vals.get('chantier_id'):
+            chantier_id = vals.get('chantier_id')
+            if not chantier_id:
                 _logger.warning("SPA Quote created without chantier_id")
             
+            # Support custom name for revisions (e.g., "ChantierDupont-001-v2")
+            name_override = vals.pop('name_override', None)
+            
+            # Generate custom name: {chantier_name}-{seq}-v1
+            if chantier_id and not name_override:
+                chantier = self.env['construction.chantier'].browse(chantier_id)
+                if chantier:
+                    # Count existing quotes for this chantier to get sequence
+                    existing_quotes = self.search_count([('chantier_id', '=', chantier_id)])
+                    seq_num = str(existing_quotes + 1).zfill(3)
+                    chantier_short = chantier.name[:20].replace(' ', '-')
+                    name_override = f"{chantier_short}-{seq_num}-v1"
+                    _logger.info(f"Generated quote name: {name_override}")
+            
             order = super().create(vals)
+            
+            # Apply custom name if provided (for revisions or new quotes)
+            if name_override:
+                order.write({'name': name_override})
             
             # Auto-resequence lines by lot after creation
             order._resequence_lines_by_lot()
@@ -156,8 +199,36 @@ class SaleOrder(models.Model):
             raise
 
     def action_open_quote_builder(self) -> dict:
-        """Open the React/Owl Quote Builder for this order."""
+        """Open the React/Owl Quote Builder for this order.
+        
+        If order is confirmed (sale state), show a warning dialog first.
+        """
         self.ensure_one()
+        
+        # If quote is confirmed, we need to show a warning
+        if self.state in ['sale', 'done']:
+            return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': _('Attention - Devis Confirmé'),
+                    'message': _('Ce devis est déjà validé. Toute modification impactera la facturation.'),
+                    'type': 'warning',
+                    'sticky': True,
+                    'next': {
+                        'type': 'ir.actions.client',
+                        'tag': 'construction_sale.quote_builder',
+                        'name': _('Smart Quote Builder (Mode Admin)'),
+                        'context': {
+                            'default_chantier_id': self.chantier_id.id,
+                            'default_order_id': self.id,
+                            'active_id': self.id,
+                            'confirmed_order': True,
+                        },
+                    }
+                }
+            }
+        
         return {
             'type': 'ir.actions.client',
             'tag': 'construction_sale.quote_builder',
@@ -165,12 +236,12 @@ class SaleOrder(models.Model):
             'context': {
                 'default_chantier_id': self.chantier_id.id,
                 'default_order_id': self.id,
-                'active_id': self.id,  # For loading existing lines
+                'active_id': self.id,
             },
         }
 
     @api.model
-    def search_products_for_spa(self, search_term: str = "", limit: int = 50) -> list[dict]:
+    def search_products_for_spa(self, search_term: str = "", lot_category_id: int = None, limit: int = 50) -> list[dict]:
         """Retrieve products optimized for SPA display.
         
         Implements efficient search with proper field projections to avoid N+1 queries.
@@ -178,23 +249,46 @@ class SaleOrder(models.Model):
         
         Args:
             search_term: Optional search query for product name/code
+            lot_category_id: Optional lot category ID to filter products (FIX FILTRAGE)
             limit: Maximum number of results (default 50, max 200)
             
         Returns:
             List of product dictionaries with minimal fields for performance:
             [{'id': 1, 'name': '...', 'list_price': 100.0, ...}, ...]
         """
+        # DEBUG: Log received parameters
+        _logger.info("[QUOTE_BUILDER] search_products_for_spa called with:")
+        _logger.info("[QUOTE_BUILDER]   search_term='%s', lot_category_id=%s (type=%s), limit=%s",
+                     search_term, lot_category_id, type(lot_category_id).__name__, limit)
+        
         domain = [('sale_ok', '=', True)]
+        
+        # FIX FILTRAGE: Filter by lot category if specified
+        # Use 'in' operator for Many2many field lot_category_ids
+        if lot_category_id and int(lot_category_id) > 0:
+            # For Many2many: ('lot_category_ids', 'in', [category_id]) 
+            # This returns products where ANY of their categories matches
+            domain.append(('lot_category_ids', 'in', [int(lot_category_id)]))
+            _logger.info("[QUOTE_BUILDER]   Filtering by lot_category_ids IN [%s]", lot_category_id)
+        else:
+            _logger.info("[QUOTE_BUILDER]   No lot filter applied (showing all products)")
+        
         if search_term:
             domain += ['|', ('name', 'ilike', search_term), ('default_code', 'ilike', search_term)]
         
-        # Fixed field list - includes uom for dimension calculator
-        return self.env['product.product'].search_read(
+        # DEBUG: Log final domain
+        _logger.info("[QUOTE_BUILDER]   Final domain: %s", domain)
+        
+        # Fixed field list - includes uom for dimension calculator and lot_category_ids
+        result = self.env['product.product'].search_read(
             domain,
-            ['id', 'display_name', 'name', 'list_price', 'default_code', 'uom_id', 'standard_price'],
+            ['id', 'display_name', 'name', 'list_price', 'default_code', 'uom_id', 'standard_price', 'lot_category_ids'],
             limit=min(limit, 200),  # Governor limit for performance
             order='name asc'
         )
+        
+        _logger.info("[QUOTE_BUILDER]   Found %s products", len(result))
+        return result
 
     # ============================================================
     # TASK 3: RESEQUENCE LINES BY LOT

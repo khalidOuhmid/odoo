@@ -156,8 +156,44 @@ class Chantier(models.Model):
         string='Coût Total',
         compute='_compute_total_cost',
         store=True,
-        currency_field='currency_id'
+        currency_field='currency_id',
+        groups='construction_core.group_construction_admin,construction_core.group_construction_accountant'
     )
+    
+    # ============= Guarantee Retention (US-COR-006) ============= #
+    guarantee_retention_rate = fields.Float(
+        string='Taux Rétention Garantie (%)',
+        default=5.0,
+        help="Pourcentage de retenue de garantie (standard: 5%)"
+    )
+    guarantee_retention_amount = fields.Monetary(
+        string='Montant Rétention',
+        compute='_compute_guarantee_amounts',
+        store=True,
+        currency_field='currency_id',
+        groups='construction_core.group_construction_admin,construction_core.group_construction_accountant',
+        help="Calculé depuis le total des lots × taux de rétention"
+    )
+    guarantee_release_date = fields.Date(
+        string='Date Libération Garantie',
+        tracking=True,
+        help="Date prévue de libération de la retenue de garantie"
+    )
+    guarantee_reminder_sent_j7 = fields.Boolean(
+        string='Rappel J-7 Envoyé',
+        default=False,
+        help="Rappel envoyé 7 jours avant la date de libération"
+    )
+    guarantee_reminder_sent_j0 = fields.Boolean(
+        string='Rappel J-0 Envoyé',
+        default=False,
+        help="Rappel envoyé le jour de la libération"
+    )
+    guarantee_status = fields.Selection([
+        ('pending', 'En cours'),
+        ('released', 'Libérée'),
+        ('expired', 'Expirée')
+    ], string='Statut Garantie', default='pending', tracking=True)
     
     # ============= Relations ============= #
     user_ids = fields.Many2many('res.users', string='Responsables')
@@ -235,6 +271,12 @@ class Chantier(models.Model):
         string='Conditions de Validation'
     )
     
+    # ============= Team Resources Display (US-COR-010) ============= #
+    team_resources_html = fields.Html(
+        compute='_compute_team_resources_html',
+        string='Ressources du Chantier'
+    )
+    
     # NOTE: visit_ids and document_ids are added by construction_visit and 
     # construction_document modules respectively via _inherit
 
@@ -300,13 +342,102 @@ class Chantier(models.Model):
         for record in self:
             record.quotation_count = len(record.quotation_ids)
 
+    @api.depends('lots_ids.subcontractor_id', 'lots_ids.execution_type')
     def _compute_subcontractor_count(self):
+        """Count unique subcontractors assigned to lots (not the direct M2M field)."""
         for record in self:
-            record.subcontractor_count = len(record.subcontractor_ids)
-
+            # Count subcontractors from lots, not the direct M2M field
+            external_lots = record.lots_ids.filtered(
+                lambda l: l.execution_type == 'external' and l.subcontractor_id
+            )
+            record.subcontractor_count = len(external_lots.mapped('subcontractor_id'))
     def _compute_lots_count(self):
         for record in self:
             record.lots_count = len(record.lots_ids)
+
+    @api.depends('lots_ids.price', 'guarantee_retention_rate')
+    def _compute_guarantee_amounts(self):
+        """US-COR-006: Compute 5% retention amount from total lot prices."""
+        for record in self:
+            total_lots_price = sum(record.lots_ids.mapped('price'))
+            rate = record.guarantee_retention_rate or 5.0
+            record.guarantee_retention_amount = total_lots_price * (rate / 100.0)
+
+    @api.model
+    def _cron_send_guarantee_reminders(self):
+        """
+        US-COR-006: Cron job to send guarantee reminders.
+        Runs daily, checks for chantiers with release dates J-7 or J-0.
+        """
+        from datetime import timedelta
+        today = fields.Date.today()
+        j7_date = today + timedelta(days=7)
+        
+        _logger.info('[CORE][CRON] Starting guarantee reminder check for %s', today)
+        
+        # Find chantiers with J-7 reminder needed
+        chantiers_j7 = self.search([
+            ('guarantee_release_date', '=', j7_date),
+            ('guarantee_reminder_sent_j7', '=', False),
+            ('guarantee_status', '=', 'pending'),
+        ])
+        
+        for chantier in chantiers_j7:
+            _logger.info('[CORE][GUARANTEE] J-7 reminder sent for chantier %s', chantier.reference)
+            self._send_guarantee_reminder(chantier, 'j7')
+            chantier.guarantee_reminder_sent_j7 = True
+        
+        # Find chantiers with J-0 reminder needed
+        chantiers_j0 = self.search([
+            ('guarantee_release_date', '=', today),
+            ('guarantee_reminder_sent_j0', '=', False),
+            ('guarantee_status', '=', 'pending'),
+        ])
+        
+        for chantier in chantiers_j0:
+            _logger.info('[CORE][GUARANTEE] J-0 reminder sent for chantier %s', chantier.reference)
+            self._send_guarantee_reminder(chantier, 'j0')
+            chantier.guarantee_reminder_sent_j0 = True
+            chantier.guarantee_status = 'expired'
+        
+        _logger.info('[CORE][CRON] Guarantee check complete. J-7: %d, J-0: %d', 
+                    len(chantiers_j7), len(chantiers_j0))
+        return True
+
+    def _send_guarantee_reminder(self, chantier, reminder_type):
+        """Send guarantee reminder email using template."""
+        template_ref = f'construction_core.email_template_guarantee_{reminder_type}'
+        template = self.env.ref(template_ref, raise_if_not_found=False)
+        
+        if template:
+            template.send_mail(chantier.id, force_send=True)
+            chantier.message_post(
+                body=_(f"📧 Rappel garantie {reminder_type.upper()} envoyé automatiquement."),
+                message_type='notification'
+            )
+        else:
+            _logger.warning('[CORE][TEMPLATE] Template %s not found, using fallback', template_ref)
+            # Fallback: post to chatter
+            chantier.message_post(
+                body=_(
+                    f"⏰ Rappel garantie ({reminder_type.upper()}): "
+                    f"La retenue de garantie de {chantier.guarantee_retention_amount:,.2f} € "
+                    f"arrive à échéance le {chantier.guarantee_release_date}."
+                ),
+                message_type='notification'
+            )
+
+    def action_release_guarantee(self):
+        """Manually release the guarantee retention."""
+        self.ensure_one()
+        _logger.info('[CORE][GUARANTEE] Manual release for chantier %s by user %s', 
+                    self.reference, self.env.user.name)
+        self.guarantee_status = 'released'
+        self.message_post(
+            body=_("✅ Retenue de garantie libérée manuellement."),
+            message_type='notification'
+        )
+        return True
 
     @api.depends('lots_ids.subcontractor_id', 'lots_ids.execution_type')
     def _compute_project_subcontractors(self):
@@ -316,6 +447,125 @@ class Chantier(models.Model):
                 lambda l: l.execution_type == 'external' and l.subcontractor_id
             )
             record.project_subcontractor_ids = external_lots.mapped('subcontractor_id')
+
+    @api.depends('lots_ids', 'lots_ids.subcontractor_id', 'lots_ids.execution_type', 
+                 'lots_ids.purchase_order_id', 'lots_ids.contract_id', 'user_ids')
+    def _compute_team_resources_html(self):
+        """
+        US-COR-010: Generate structured HTML table for Team tab.
+        Shows both internal team and subcontractors with conformity status.
+        """
+        for record in self:
+            # Internal Team Section
+            internal_rows = ""
+            for user in record.user_ids:
+                internal_rows += f"""
+                    <tr>
+                        <td><span class="badge bg-primary">Interne</span></td>
+                        <td><strong>{user.name}</strong></td>
+                        <td>{user.email or '-'}</td>
+                        <td>-</td>
+                        <td><span class="badge bg-success">Équipe BLG</span></td>
+                    </tr>
+                """
+            
+            # Subcontractors Section
+            st_rows = ""
+            external_lots = record.lots_ids.filtered(
+                lambda l: l.execution_type == 'external' and l.subcontractor_id
+            )
+            
+            # Group lots by subcontractor
+            st_lots_map = {}
+            for lot in external_lots:
+                st_id = lot.subcontractor_id.id
+                if st_id not in st_lots_map:
+                    st_lots_map[st_id] = {
+                        'partner': lot.subcontractor_id,
+                        'lots': [],
+                        'has_po': False,
+                        'has_contract': False,
+                    }
+                st_lots_map[st_id]['lots'].append(lot)
+                if lot.purchase_order_id:
+                    st_lots_map[st_id]['has_po'] = True
+                if lot.contract_id:
+                    st_lots_map[st_id]['has_contract'] = True
+            
+            for st_id, data in st_lots_map.items():
+                partner = data['partner']
+                lots_names = ', '.join([l.code for l in data['lots']])
+                
+                # Check document conformity from partner if available
+                # Fields from blg_contacts_extension: doc_kbis_status, doc_urssaf_status, etc.
+                conformity_ok = True
+                conformity_badge = '<span class="badge bg-secondary">Non vérifié</span>'
+                
+                if hasattr(partner, 'doc_kbis_status'):
+                    kbis_ok = getattr(partner, 'doc_kbis_status', '') == 'valid'
+                    urssaf_ok = getattr(partner, 'doc_urssaf_status', '') == 'valid'
+                    insurance_ok = getattr(partner, 'doc_insurance_dec_status', '') == 'valid'
+                    rib_ok = getattr(partner, 'doc_rib_status', '') == 'valid'
+                    
+                    if kbis_ok and urssaf_ok and insurance_ok and rib_ok:
+                        conformity_badge = '<span class="badge bg-success">✅ Conforme</span>'
+                    else:
+                        missing = []
+                        if not kbis_ok: missing.append('KBIS')
+                        if not urssaf_ok: missing.append('URSSAF')
+                        if not insurance_ok: missing.append('Assurance')
+                        if not rib_ok: missing.append('RIB')
+                        conformity_badge = f'<span class="badge bg-warning text-dark">⚠️ Manque: {", ".join(missing)}</span>'
+                
+                # Status badges
+                status_badges = ""
+                if data['has_po']:
+                    status_badges += '<span class="badge bg-info me-1">BC ✓</span>'
+                else:
+                    status_badges += '<span class="badge bg-light text-dark me-1">BC ✗</span>'
+                if data['has_contract']:
+                    status_badges += '<span class="badge bg-success">Contrat ✓</span>'
+                else:
+                    status_badges += '<span class="badge bg-light text-dark">Contrat ✗</span>'
+                
+                st_rows += f"""
+                    <tr>
+                        <td><span class="badge bg-warning text-dark">Sous-traitant</span></td>
+                        <td><strong>{partner.name}</strong></td>
+                        <td>{lots_names}</td>
+                        <td>{status_badges}</td>
+                        <td>{conformity_badge}</td>
+                    </tr>
+                """
+            
+            if not internal_rows and not st_rows:
+                record.team_resources_html = """
+                    <div class="alert alert-info text-center">
+                        <i class="fa fa-users fa-2x mb-2"></i>
+                        <p class="mb-0">Aucune ressource assignée</p>
+                    </div>
+                """
+                continue
+            
+            record.team_resources_html = f"""
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 120px;">Type</th>
+                                <th>Nom</th>
+                                <th>Lots / Contact</th>
+                                <th>BC / Contrat</th>
+                                <th>Conformité</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {internal_rows}
+                            {st_rows}
+                        </tbody>
+                    </table>
+                </div>
+            """
 
     @api.depends('stage_id')
     def _compute_show_contract_generation(self):
@@ -689,9 +939,24 @@ class Chantier(models.Model):
         return True, "OK"
 
     def check_quotation_accepted_stage(self):
-        """Validate DA stage requirements."""
-        if len(self.subcontractor_ids) != len(self.lots_ids):
-            return False, f"Sous-traitants: {len(self.subcontractor_ids)}, Lots: {len(self.lots_ids)}"
+        """Validate DA stage requirements.
+        
+        Checks that all external lots have a subcontractor assigned.
+        Internal lots (régie interne) don't require a subcontractor.
+        """
+        if not self.lots_ids:
+            return False, "Lots: 0"
+        
+        # Check that all external lots have proper subcontractor assignment
+        lots_missing_assignment = []
+        for lot in self.lots_ids:
+            _logger.info(f"Lot {lot.name}: execution_type={lot.execution_type}, ST={lot.subcontractor_id.name if lot.subcontractor_id else 'None'}")
+            if lot.execution_type == 'external' and not lot.subcontractor_id:
+                lots_missing_assignment.append(lot.name)
+        
+        if lots_missing_assignment:
+            return False, f"Sous-traitants: {len(lots_missing_assignment)} lot(s) non assigné(s)"
+        
         if not self.date_start_contract:
             return False, "Date de début contractuelle manquante"
         if not self.date_end_contract:
@@ -847,12 +1112,7 @@ class Chantier(models.Model):
             
             return {
                 'type': 'ir.actions.client',
-                'tag': 'display_notification',
-                'params': {
-                    'title': _('Étape mise à jour'),
-                    'message': _('Chantier passé à : %s') % next_stage.name,
-                    'type': 'success'
-                }
+                'tag': 'reload',
             }
         else:
             # Open force wizard for directors

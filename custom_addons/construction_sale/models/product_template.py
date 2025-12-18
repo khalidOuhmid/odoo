@@ -21,6 +21,59 @@ class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
     # ============================================================
+    # LOT CATEGORY ASSIGNMENT (US-SAL-002)
+    # ============================================================
+    
+    # REFACTORED: Changed from Many2one to Many2many to support multiple categories
+    lot_category_ids = fields.Many2many(
+        'construction.lot.category',
+        'product_template_lot_category_rel',
+        'product_id',
+        'category_id',
+        string='Catégories de Lot',
+        help="Catégories de lot construction (ex: Plomberie, Électricité). Un produit peut appartenir à plusieurs catégories."
+    )
+    
+    # Keep old field for backwards compatibility (computed from new field)
+    lot_category_id = fields.Many2one(
+        'construction.lot.category',
+        string='Catégorie de Lot (legacy)',
+        compute='_compute_lot_category_id',
+        store=True,
+        help="Première catégorie de lot (pour compatibilité)"
+    )
+    
+    @api.depends('lot_category_ids')
+    def _compute_lot_category_id(self):
+        for product in self:
+            product.lot_category_id = product.lot_category_ids[:1] if product.lot_category_ids else False
+    
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            # Auto-generate default_code from lot codes + name (US-SAL-002)
+            lot_ids = vals.get('lot_category_ids')
+            if lot_ids and vals.get('name') and not vals.get('default_code'):
+                # Handle both list of IDs and Odoo command format [(6, 0, [ids])]
+                if isinstance(lot_ids, list) and lot_ids:
+                    if isinstance(lot_ids[0], (list, tuple)) and lot_ids[0][0] == 6:
+                        category_ids = lot_ids[0][2]
+                    else:
+                        category_ids = lot_ids
+                    
+                    if category_ids:
+                        # Get lot codes (max 2 to keep reference short)
+                        lots = self.env['construction.lot.category'].browse(category_ids[:2])
+                        lot_codes = [lot.code for lot in lots if lot.code]
+                        
+                        if lot_codes:
+                            # Format: LOT1-LOT2-PRODUCTNAME or LOT1-PRODUCTNAME
+                            codes_prefix = '-'.join(lot_codes)
+                            product_name = vals['name'].replace(' ', '-')[:15].upper()
+                            vals['default_code'] = f"{codes_prefix}-{product_name}"
+        return super().create(vals_list)
+
+    # ============================================================
     # CONSTRUCTION PRICING
     # ============================================================
 

@@ -18,7 +18,9 @@
     'depends': ['sale', 'construction_core', 'web', 'purchase'],
     'data': [
         'wizards/sale_to_purchase_views.xml',
+        'views/product_views.xml',
         'views/sale_order_views.xml',
+        'views/chantier_views.xml',
         'views/sale_order_report.xml',
         'views/client_actions.xml',
     ],

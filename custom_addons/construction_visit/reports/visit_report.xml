@@ -18,28 +18,19 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
-                    <div class="page" style="font-family: 'Segoe UI', Arial, sans-serif;">
+                    <div class="page" style="font-family: 'Times New Roman', Times, serif;">
                         
-                        <!-- BLG Header with Gradient -->
-                        <div style="background: linear-gradient(135deg, #92564C, #D4C5BC); 
-                                    padding: 25px 30px; margin: -20px -20px 30px -20px; border-radius: 0 0 10px 10px;">
-                            <div class="row">
-                                <div class="col-8">
-                                    <h1 style="color: #FFFFFF; margin: 0; font-size: 28px; font-weight: 600;">
-                                        COMPTE-RENDU DE VISITE
-                                    </h1>
-                                    <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">
-                                        <t t-out="doc.name">Visite</t>
-                                    </p>
-                                </div>
-                                <div class="col-4 text-end">
-                                    <div style="background: #FFFFFF; display: inline-block; padding: 10px 20px; border-radius: 6px;">
-                                        <span style="color: #92564C; font-weight: 600; font-size: 14px;">
-                                            BLG GROUPE
-                                        </span>
-                                    </div>
-                                </div>
-                            </div>
+                        <!-- BLG Header - Enterprise Style (Solid Bordeaux) -->
+                        <div style="background-color: #92564C; color: white; padding: 30px; margin: -20px -20px 30px -20px; text-align: center;">
+                            <h1 style="margin: 0; font-family: 'Times New Roman', Times, serif; letter-spacing: 1px; text-transform: uppercase; font-size: 28px; font-weight: 600;">
+                                BLG GROUPE
+                            </h1>
+                            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 16px; font-style: italic;">
+                                Compte-Rendu de Visite
+                            </p>
+                            <p style="color: rgba(255,255,255,0.85); margin: 5px 0 0 0; font-size: 14px;">
+                                <t t-out="doc.name">Visite</t>
+                            </p>
                         </div>
                         
                         <!-- Visit Info Cards -->

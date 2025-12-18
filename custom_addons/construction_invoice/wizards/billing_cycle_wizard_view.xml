@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_construction_billing_cycle_wizard_form" model="ir.ui.view">
+        <field name="name">construction.billing.cycle.wizard.form</field>
+        <field name="model">construction.billing.cycle.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Définir Cycle de Facturation">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="cycle_type" widget="radio"/>
+                        </group>
+                        <group>
+                            <field name="chantier_id" readonly="1"/>
+                            <field name="total_amount"/>
+                        </group>
+                    </group>
+                    <div class="alert alert-info" role="alert" invisible="cycle_type != 'standard'">
+                        <p><strong>Cycle Standard:</strong></p>
+                        <ul>
+                            <li>30% Acompte Commande</li>
+                            <li>30% Situation Intermédiaire</li>
+                            <li>40% Solde Réception</li>
+                        </ul>
+                    </div>
+                </sheet>
+                <footer>
+                    <button string="Appliquer" name="action_apply_cycle" type="object" class="btn-primary"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_construction_billing_cycle_wizard" model="ir.actions.act_window">
+        <field name="name">Définir Cycle</field>
+        <field name="res_model">construction.billing.cycle.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+</odoo>

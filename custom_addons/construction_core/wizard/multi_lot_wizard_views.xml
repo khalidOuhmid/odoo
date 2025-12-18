@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ============================================================ -->
+    <!-- Multi-Lot Wizard Form View (US-COR-002)                      -->
+    <!-- ============================================================ -->
+    
+    <record id="multi_lot_wizard_form" model="ir.ui.view">
+        <field name="name">construction.multi.lot.wizard.form</field>
+        <field name="model">construction.multi.lot.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Gestion Multi-Lots">
+                <sheet>
+                    <!-- Header -->
+                    <div class="oe_title">
+                        <h2>
+                            <i class="fa fa-cubes me-2"/>Gestion Multi-Lots
+                        </h2>
+                        <span class="text-muted">
+                            Chantier: <field name="chantier_id" readonly="1" class="oe_inline" options="{'no_open': True}"/>
+                        </span>
+                    </div>
+                    
+                    <separator/>
+                    
+                    <!-- Validation Message (Above Content) -->
+                    <field name="validation_message" widget="html" nolabel="1" colspan="2"/>
+                    
+                    <group>
+                        <!-- Lot Selection -->
+                        <group string="Sélection des Lots" colspan="2">
+                            <field name="lot_ids" widget="many2many_tags" 
+                                   options="{'color_field': 'color'}"
+                                   nolabel="1" colspan="2"/>
+                        </group>
+                    </group>
+                    
+                    <!-- Lots Summary Table -->
+                    <field name="lots_summary_html" widget="html" nolabel="1" colspan="2" readonly="1"/>
+                    
+                    <separator string="Résumé Financier"/>
+                    
+                    <!-- Financial KPIs -->
+                    <group>
+                        <group>
+                            <field name="currency_id" invisible="1"/>
+                            <field name="subcontractor_id" readonly="1"/>
+                            <field name="is_same_subcontractor" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="total_sale_price" readonly="1" widget="monetary"/>
+                            <field name="total_cost" readonly="1" widget="monetary"/>
+                            <field name="total_margin" readonly="1" widget="monetary"
+                                   decoration-success="total_margin > 0"
+                                   decoration-danger="total_margin &lt; 0"/>
+                        </group>
+                    </group>
+                    
+                    <separator/>
+                    
+                    <!-- Info Banner -->
+                    <div class="alert alert-info" role="alert">
+                        <i class="fa fa-info-circle me-2"/>
+                        <strong>Mode Multi-Lots:</strong> 
+                        Générez un bon de commande consolidé ou redirigez vers le module contrat 
+                        pour tous les lots ayant le même sous-traitant.
+                    </div>
+                </sheet>
+                
+                <footer>
+                    <button name="action_generate_consolidated_po" 
+                            string="Générer BC Consolidé" 
+                            type="object" 
+                            class="btn-primary"
+                            icon="fa-shopping-cart"
+                            invisible="not is_same_subcontractor"
+                            confirm="Générer un bon de commande consolidé pour tous les lots sélectionnés ?"/>
+                    <button name="action_open_contract_wizard" 
+                            string="Créer Contrat Multi-Lots" 
+                            type="object" 
+                            class="btn-success"
+                            icon="fa-file-text-o"
+                            invisible="not is_same_subcontractor"/>
+                    <button string="Annuler" special="cancel" class="btn-secondary"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+    
+    <!-- ============================================================ -->
+    <!-- Action to Open Multi-Lot Wizard                              -->
+    <!-- ============================================================ -->
+    
+    <record id="action_multi_lot_wizard" model="ir.actions.act_window">
+        <field name="name">Gestion Multi-Lots</field>
+        <field name="res_model">construction.multi.lot.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="binding_model_id" ref="construction_core.model_construction_lot"/>
+        <field name="binding_view_types">list</field>
+    </record>
+    
+</odoo>

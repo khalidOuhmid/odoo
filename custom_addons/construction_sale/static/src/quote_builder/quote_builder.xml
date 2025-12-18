@@ -26,13 +26,18 @@
                 <div class="d-flex gap-2">
                     <button t-if="state.cart.length > 0" 
                             class="btn btn-outline-light btn-sm"
-                            t-on-click="clearDraft">
+                            t-on-click="onResetClick">
                         <i class="fa fa-trash me-1"/>Réinitialiser
                     </button>
                     <button class="btn o_btn_create_quote btn-sm shadow"
                             t-on-click="createQuote"
                             t-att-disabled="state.cart.length === 0 ? 'disabled' : undefined">
-                        <i class="fa fa-file-text me-1"/>Générer le Devis
+                        <t t-if="state.orderId">
+                            <i class="fa fa-save me-1"/>Modifier le Devis
+                        </t>
+                        <t t-else="">
+                            <i class="fa fa-file-text me-1"/>Générer le Devis
+                        </t>
                     </button>
                 </div>
             </div>
@@ -536,6 +541,41 @@
                             <button type="button" class="btn btn-secondary" t-on-click="onCloseCreateProductWizard">Annuler</button>
                             <button type="button" class="btn btn-success" t-on-click="onConfirmCreateProductWizard">
                                 <i class="fa fa-check me-1"/>Créer
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- RESET CONFIRMATION MODAL (US-SAL-005) -->
+            <div t-if="state.showResetConfirm" class="modal show d-block" style="background: rgba(0,0,0,0.6);">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content">
+                        <div class="modal-header bg-danger text-white">
+                            <h5 class="modal-title"><i class="fa fa-exclamation-triangle me-2"/>Attention: Suppression du panier</h5>
+                            <button type="button" class="btn-close btn-close-white" t-on-click="onCancelReset"/>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-warning">
+                                <i class="fa fa-warning me-2"/>
+                                <strong>Cette action est irréversible.</strong> Toutes les lignes du panier seront supprimées.
+                            </div>
+                            <div class="form-check mt-3">
+                                <input type="checkbox" class="form-check-input" id="confirmResetCheck"
+                                       t-att-checked="state.resetConfirmChecked"
+                                       t-on-change="onResetConfirmCheckbox"/>
+                                <label class="form-check-label fw-bold" for="confirmResetCheck">
+                                    Je confirme vouloir supprimer tout le panier
+                                </label>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" t-on-click="onCancelReset">
+                                <i class="fa fa-times me-1"/>Annuler
+                            </button>
+                            <button type="button" class="btn btn-danger"
+                                    t-att-disabled="!state.resetConfirmChecked ? 'disabled' : undefined"
+                                    t-on-click="onConfirmReset">
+                                <i class="fa fa-trash me-1"/>Supprimer
                             </button>
                         </div>
                     </div>

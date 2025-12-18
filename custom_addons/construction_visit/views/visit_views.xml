@@ -55,7 +55,7 @@
         <field name="name">construction.visit.form</field>
         <field name="model">construction.visit</field>
         <field name="arch" type="xml">
-            <form string="Visite de Chantier">
+            <form string="Visite de Chantier" edit="true" force_save="1">
                 <header>
                     <!-- State Transition Buttons -->
                     <button name="action_plan" string="Planifier" type="object" 
@@ -137,6 +137,12 @@
                     </group>
                     
                     <notebook>
+                        <page string="Description" name="description">
+                            <field name="description" placeholder="Description détaillée de la visite..."/>
+                        </page>
+                        <page string="Pièces Jointes" name="attachments">
+                            <field name="attachment_ids" widget="many2many_binary"/>
+                        </page>
                         <!-- Tab 1: Notes & Observations -->
                         <page string="Observations" name="observations">
                             <field name="notes" placeholder="Notez vos observations pendant la visite..."/>
@@ -166,8 +172,13 @@
                     </notebook>
                 </sheet>
                 
-                <!-- Empty footer hides default Save/Discard in modal dialog -->
-                <footer invisible="1"/>
+                <!-- Footer with action buttons for modal dialog -->
+                <footer>
+                    <button string="Terminer" name="action_complete" type="object" 
+                            class="btn-primary" invisible="state != 'in_progress'"/>
+                    <button string="Sauvegarder" special="save" class="btn-success"/>
+                    <button string="Annuler" special="cancel" class="btn-secondary"/>
+                </footer>
                 
                 <chatter/>
             </form>

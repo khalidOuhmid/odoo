@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Product Template Form Extension - Add Lot Categories Field (Many2many) -->
+    <record id="view_product_template_form_construction" model="ir.ui.view">
+        <field name="name">product.template.form.construction</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_only_form_view"/>
+        <field name="arch" type="xml">
+            <!-- Add Lot Categories field in the Sales group -->
+            <xpath expr="//page[@name='sales']//group" position="inside">
+                <group string="Construction">
+                    <field name="lot_category_ids" 
+                           widget="many2many_tags"
+                           options="{'no_create': True, 'color_field': 'color'}"
+                           placeholder="Catégories de lot (Plomberie, Électricité...)"/>
+                </group>
+            </xpath>
+        </field>
+    </record>
+</odoo>

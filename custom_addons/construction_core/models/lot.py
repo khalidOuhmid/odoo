@@ -6,6 +6,9 @@ Includes Master Data (Category) and Project Instances (Lot).
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class LotCategory(models.Model):
@@ -112,11 +115,13 @@ class Lot(models.Model):
     )
 
     # ============= COMPUTED FINANCIALS ============= #
+    # SECURITY: Financial fields restricted to admin/accountant (A1 HOTFIX)
     cost_total = fields.Monetary(
         string='Coût Total',
         compute='_compute_lot_financials',
         store=True,
         currency_field='currency_id',
+        groups='construction_core.group_construction_admin,construction_core.group_construction_accountant',
         help="Somme des bons de commande confirmés (sans marge)"
     )
     revenue_total = fields.Monetary(
@@ -131,12 +136,14 @@ class Lot(models.Model):
         compute='_compute_lot_financials',
         store=True,
         currency_field='currency_id',
+        groups='construction_core.group_construction_admin,construction_core.group_construction_accountant',
         help="Revenu - Coût"
     )
     margin_percent = fields.Float(
         string='Marge (%)',
         compute='_compute_lot_financials',
         store=True,
+        groups='construction_core.group_construction_admin,construction_core.group_construction_accountant',
         help="(Marge / Revenu) × 100"
     )
     
@@ -145,7 +152,7 @@ class Lot(models.Model):
         string='Avancement (%)',
         default=0.0,
         tracking=True,
-        help="Pourcentage d'avancement du lot (0-100%)"
+        help="Pourcentage d'avancement du lot (peut dépasser 100% = surfacturation)"
     )
     is_finished = fields.Boolean(
         string='Terminé',
@@ -153,6 +160,13 @@ class Lot(models.Model):
         store=True,
         readonly=False,
         tracking=True
+    )
+    # US-COR-005: Over-billing detection
+    is_over_billed = fields.Boolean(
+        string='Surfacturation',
+        compute='_compute_is_finished',
+        store=True,
+        help="Avancement supérieur à 100%"
     )
     weighted_value = fields.Monetary(
         string='Valeur pondérée',
@@ -179,10 +193,12 @@ class Lot(models.Model):
     document_planning_sous_traitant_filename = fields.Char(string='Nom Fichier Planning ST')
 
     # Generic documents (kept for extras)
+    # Generic documents (kept for extras)
+    # Generic documents (kept for extras)
     document_ids = fields.Many2many(
         'ir.attachment',
-        'construction_lot_attachment_rel',
-        'lot_id', 'attachment_id',
+        'construction_lot_files_final_rel',
+        'lot_id', 'ir_attachment_id',
         string='Autres Documents',
         help="Documents supplémentaires"
     )
@@ -204,8 +220,8 @@ class Lot(models.Model):
     # ============= Constraints ============= #
     _sql_constraints = [
         ('positive_price', 'CHECK(price >= 0)', 'Le prix doit être positif.'),
-        ('completion_range', 'CHECK(completion_percentage >= 0 AND completion_percentage <= 100)', 
-         'Le pourcentage doit être entre 0 et 100.'),
+        ('completion_positive', 'CHECK(completion_percentage >= 0)',
+         'Le pourcentage doit être positif (surfacturation > 100% autorisée).'),
         ('unique_lot_per_chantier', 'unique(code, chantier_id)', 'Le code du lot doit être unique par chantier.'),
     ]
 
@@ -214,6 +230,7 @@ class Lot(models.Model):
     def _compute_is_finished(self):
         for record in self:
             record.is_finished = record.completion_percentage >= 100.0
+            record.is_over_billed = record.completion_percentage > 100.0
 
     @api.depends('price', 'completion_percentage')
     def _compute_weighted_value(self):
@@ -258,12 +275,14 @@ class Lot(models.Model):
         string='Coût Prévu',
         compute='_compute_planned_financials',
         currency_field='currency_id',
+        groups='construction_core.group_construction_admin,construction_core.group_construction_accountant',
         help="Coût théorique calculé depuis les produits du devis"
     )
     planned_margin = fields.Monetary(
         string='Marge Prévue',
         compute='_compute_planned_financials',
-        currency_field='currency_id'
+        currency_field='currency_id',
+        groups='construction_core.group_construction_admin,construction_core.group_construction_accountant'
     )
     
     purchase_order_id = fields.Many2one(
@@ -493,10 +512,19 @@ class Lot(models.Model):
     @api.constrains('completion_percentage')
     def _check_completion_percentage(self):
         for record in self:
-            if record.completion_percentage < 0 or record.completion_percentage > 100:
+            if record.completion_percentage < 0:
+                _logger.error('[CORE][VALIDATION] Lot %s: Negative completion rejected', record.code)
                 raise ValidationError(_(
-                    "Le pourcentage d'avancement doit être entre 0% et 100%."
+                    "Le pourcentage d'avancement doit être positif."
                 ))
+            # Log warning for over-billing but don't block
+            if record.completion_percentage > 100:
+                _logger.warning('[CORE][OVERBILLING] Lot %s: Avancement %s%% > 100%%', 
+                               record.code, int(record.completion_percentage))
+                record.message_post(
+                    body=_("⚠️ Surfacturation: L'avancement est de %s%% (>100%%)") % int(record.completion_percentage),
+                    message_type='notification'
+                )
 
     @api.constrains('date_start_planned', 'date_end_planned', 'chantier_id')
     def _check_lot_dates_within_chantier(self):

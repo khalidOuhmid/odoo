@@ -9,53 +9,59 @@
             <field name="subject">📅 Visite programmée - {{ object.chantier_id.name }}</field>
             <field name="email_from">{{ (object.chantier_id.company_id.email if object.chantier_id.company_id.email else object.create_uid.email_formatted) or user.email_formatted }}</field>
             <field name="body_html" type="html">
-<div style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #FFFFFF;">
-    <!-- Header with BLG Gradient -->
-    <div style="background: linear-gradient(135deg, #92564C, #D4C5BC); padding: 30px 40px; text-align: center;">
-        <h1 style="color: #FFFFFF; margin: 0; font-size: 24px; font-weight: 600;">
+<div style="font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; border: 1px solid #E5E3E2; background-color: #FFFFFF;">
+    <!-- Header BLG Style: Solid Bordeaux -->
+    <div style="background-color: #92564C; color: white; padding: 25px; text-align: center;">
+        <h2 style="margin:0; font-family: 'Times New Roman', Times, serif; letter-spacing: 1px; text-transform: uppercase;">
             BLG GROUPE
-        </h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">
+        </h2>
+        <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0; font-size: 14px; font-style: italic;">
             Visite de Chantier Programmée
         </p>
     </div>
     
     <!-- Main Content -->
-    <div style="padding: 40px; max-width: 600px; margin: 0 auto;">
-        <p style="color: #978A86; font-size: 15px; line-height: 1.6;">
+    <div style="padding: 30px; background-color: #FFFFFF; color: #978A86;">
+        <p style="font-size: 16px; margin-bottom: 20px;">
             Bonjour,
         </p>
         
-        <p style="color: #978A86; font-size: 15px; line-height: 1.6;">
-            Vous êtes convié(e) à une visite de chantier. Veuillez trouver ci-dessous les informations :
+        <p style="font-size: 15px; line-height: 1.5; color: #978A86;">
+            Vous êtes convié(e) à une visite de chantier. Veuillez trouver ci-dessous les détails de l'intervention :
         </p>
         
-        <!-- Visit Info Card -->
-        <div style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 25px; margin: 25px 0;">
-            <table style="width: 100%; border-collapse: collapse;">
+        <!-- Information Card (Enterprise Style: Beige) -->
+        <div style="background-color: #D4C5BC; border-left: 4px solid #92564C; padding: 20px; margin: 25px 0;">
+            <table style="width: 100%; border-collapse: collapse; font-family: 'Times New Roman', Times, serif;">
                 <tr>
-                    <td style="padding: 12px 0; border-bottom: 1px solid #E5E3E2;">
-                        <span style="color: #AEADAB; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Chantier</span><br/>
-                        <span style="color: #92564C; font-size: 16px; font-weight: 600;">
+                    <td style="padding: 8px 0; vertical-align: top; width: 120px;">
+                        <span style="color: #92564C; font-weight: bold; text-transform: uppercase; font-size: 12px;">Chantier</span>
+                    </td>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #505050; font-weight: bold; font-size: 15px;">
                             <t t-out="object.chantier_id.name">Nom du Chantier</t>
                         </span>
                     </td>
                 </tr>
                 <tr>
-                    <td style="padding: 12px 0; border-bottom: 1px solid #E5E3E2;">
-                        <span style="color: #AEADAB; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Date &amp; Heure</span><br/>
-                        <span style="color: #978A86; font-size: 16px; font-weight: 500;">
+                    <td style="padding: 8px 0; vertical-align: top;">
+                        <span style="color: #92564C; font-weight: bold; text-transform: uppercase; font-size: 12px;">Date</span>
+                    </td>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #505050; font-size: 15px;">
                             <t t-out="object.date.strftime('%d/%m/%Y à %H:%M')">Date</t>
                         </span>
-                        <span style="color: #AEADAB; font-size: 14px; margin-left: 10px;">
+                        <span style="color: #505050; font-size: 13px; font-style: italic;">
                             (Durée: <t t-out="object.duration"/>h)
                         </span>
                     </td>
                 </tr>
                 <tr>
-                    <td style="padding: 12px 0; border-bottom: 1px solid #E5E3E2;">
-                        <span style="color: #AEADAB; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Motif de la Visite</span><br/>
-                        <span style="color: #978A86; font-size: 16px;">
+                    <td style="padding: 8px 0; vertical-align: top;">
+                        <span style="color: #92564C; font-weight: bold; text-transform: uppercase; font-size: 12px;">Motif</span>
+                    </td>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #505050;">
                             <t t-if="object.visit_type == 'initial'">Visite Initiale</t>
                             <t t-if="object.visit_type == 'progress'">Suivi de Chantier</t>
                             <t t-if="object.visit_type == 'quality'">Contrôle Qualité</t>
@@ -64,9 +70,11 @@
                     </td>
                 </tr>
                 <tr>
-                    <td style="padding: 12px 0;">
-                        <span style="color: #AEADAB; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Adresse</span><br/>
-                        <span style="color: #978A86; font-size: 16px;">
+                    <td style="padding: 8px 0; vertical-align: top;">
+                        <span style="color: #92564C; font-weight: bold; text-transform: uppercase; font-size: 12px;">Adresse</span>
+                    </td>
+                    <td style="padding: 8px 0;">
+                        <span style="color: #505050;">
                             <t t-out="object.chantier_id.address or 'Non renseignée'">Adresse</t>
                             <t t-if="object.chantier_id.city">, <t t-out="object.chantier_id.city"/></t>
                         </span>
@@ -74,52 +82,41 @@
                 </tr>
             </table>
         </div>
-        
-        <!-- Maps/Waze Buttons -->
+
+        <!-- Action Buttons -->
         <div style="text-align: center; margin: 30px 0;">
             <a t-att-href="object.get_maps_url()" 
                style="display: inline-block; background-color: #92564C; color: white; padding: 12px 25px; 
-                      text-decoration: none; border-radius: 6px; font-weight: 500; margin: 0 10px;">
-                📍 Voir sur Google Maps
+                      text-decoration: none; border-radius: 2px; font-weight: bold; font-family: 'Times New Roman', Times, serif; margin: 0 5px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Voir sur Google Maps
             </a>
             <a t-att-href="object.get_waze_url()" 
-               style="display: inline-block; background-color: #D4C5BC; color: #92564C; padding: 12px 25px; 
-                      text-decoration: none; border-radius: 6px; font-weight: 500; margin: 0 10px;">
-                🚗 Ouvrir dans Waze
+               style="display: inline-block; background-color: #FFFFFF; border: 1px solid #92564C; color: #92564C; padding: 11px 24px; 
+                      text-decoration: none; border-radius: 2px; font-weight: bold; font-family: 'Times New Roman', Times, serif; margin: 0 5px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+                Ouvrir dans Waze
             </a>
         </div>
         
-        <!-- Participants List -->
-        <div style="background: #F9F8F7; border-radius: 8px; padding: 20px; margin: 25px 0;">
-            <h3 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                Participants Conviés
-            </h3>
-            <ul style="margin: 0; padding-left: 20px; color: #978A86;">
-                <t t-foreach="object.participant_ids" t-as="participant">
-                    <li style="margin-bottom: 5px;">
-                        <t t-out="participant.name">Participant</t>
-                        <t t-if="participant.email">
-                            <span style="color: #AEADAB;">(<t t-out="participant.email"/>)</span>
-                        </t>
-                    </li>
-                </t>
-            </ul>
-        </div>
+        <!-- Participants -->
+        <t t-if="object.participant_ids">
+            <div style="margin-top: 25px; font-size: 13px;">
+                <strong style="color: #92564C; text-transform: uppercase;">Participants :</strong>
+                <ul style="margin: 10px 0 0 0; padding-left: 20px; color: #505050;">
+                    <t t-foreach="object.participant_ids" t-as="participant">
+                        <li style="margin-bottom: 5px;">
+                            <t t-out="participant.name"/>
+                            <t t-if="participant.email"><span style="color: #978A86;"> (<t t-out="participant.email"/>)</span></t>
+                        </li>
+                    </t>
+                </ul>
+            </div>
+        </t>
         
         <!-- Footer -->
-        <div style="border-top: 1px solid #E5E3E2; padding-top: 25px; margin-top: 30px; text-align: center;">
-            <p style="color: #AEADAB; font-size: 13px; margin: 0;">
-                Cordialement,<br/>
-                <strong style="color: #92564C;">L'équipe BLG Groupe</strong>
-            </p>
+        <div style="font-size: 12px; color: #AEADAB; margin-top: 40px; border-top: 1px solid #E5E3E2; padding-top: 15px; text-align: center;">
+            <p style="margin-bottom: 5px;">BLG GROUPE - Service Technique</p>
+            <p style="margin: 0;"><em>Ce message est automatique. Merci de ne pas y répondre directement.</em></p>
         </div>
-    </div>
-    
-    <!-- Footer Bar -->
-    <div style="background-color: #E5E3E2; padding: 15px; text-align: center;">
-        <p style="margin: 0; color: #978A86; font-size: 12px;">
-            © BLG Groupe - Tous droits réservés
-        </p>
     </div>
 </div>
             </field>
@@ -134,35 +131,35 @@
             <field name="subject">📋 Compte-rendu de visite - {{ object.chantier_id.name }}</field>
             <field name="email_from">{{ (object.chantier_id.company_id.email if object.chantier_id.company_id.email else object.create_uid.email_formatted) or user.email_formatted }}</field>
             <field name="body_html" type="html">
-<div style="margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; background-color: #FFFFFF;">
-    <!-- Header with BLG Gradient -->
-    <div style="background: linear-gradient(135deg, #92564C, #D4C5BC); padding: 30px 40px; text-align: center;">
-        <h1 style="color: #FFFFFF; margin: 0; font-size: 24px; font-weight: 600;">
+<div style="font-family: 'Times New Roman', Times, serif; max-width: 600px; margin: 0 auto; border: 1px solid #E5E3E2; background-color: #FFFFFF;">
+    <!-- Header BLG Style: Solid Bordeaux -->
+    <div style="background-color: #92564C; color: white; padding: 25px; text-align: center;">
+        <h2 style="margin:0; font-family: 'Times New Roman', Times, serif; letter-spacing: 1px; text-transform: uppercase;">
             BLG GROUPE
-        </h1>
-        <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 14px;">
+        </h2>
+        <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0; font-size: 14px; font-style: italic;">
             Compte-Rendu de Visite
         </p>
     </div>
     
     <!-- Main Content -->
-    <div style="padding: 40px; max-width: 600px; margin: 0 auto;">
-        <p style="color: #978A86; font-size: 15px; line-height: 1.6;">
+    <div style="padding: 30px; background-color: #FFFFFF; color: #978A86;">
+        <p style="font-size: 16px; margin-bottom: 20px;">
             Bonjour,
         </p>
         
-        <p style="color: #978A86; font-size: 15px; line-height: 1.6;">
+        <p style="font-size: 15px; line-height: 1.5; color: #978A86;">
             Veuillez trouver ci-joint le compte-rendu de la visite effectuée le 
             <strong><t t-out="object.date.strftime('%d/%m/%Y')">Date</t></strong> 
             sur le chantier <strong><t t-out="object.chantier_id.name">Chantier</t></strong>.
         </p>
         
-        <!-- Visit Summary Card -->
-        <div style="background: #F9F8F7; border-left: 4px solid #92564C; padding: 20px; margin: 25px 0;">
-            <p style="margin: 0; color: #92564C; font-weight: 600;">
+        <!-- Visit Summary Card (Beige #D4C5BC) -->
+        <div style="background-color: #D4C5BC; border-left: 4px solid #92564C; padding: 20px; margin: 25px 0;">
+            <p style="margin: 0; color: #92564C; font-weight: bold; font-family: 'Times New Roman', Times, serif; font-size: 16px;">
                 <t t-out="object.name">Titre de la visite</t>
             </p>
-            <p style="margin: 10px 0 0 0; color: #978A86; font-size: 14px;">
+            <p style="margin: 5px 0 0 0; color: #505050; font-size: 14px; font-style: italic;">
                 Type: 
                 <t t-if="object.visit_type == 'initial'">Visite Initiale</t>
                 <t t-if="object.visit_type == 'progress'">Suivi de Chantier</t>
@@ -171,24 +168,15 @@
             </p>
         </div>
         
-        <p style="color: #978A86; font-size: 15px; line-height: 1.6;">
+        <p style="font-size: 15px; line-height: 1.5; color: #978A86;">
             N'hésitez pas à nous contacter pour toute question.
         </p>
         
         <!-- Footer -->
-        <div style="border-top: 1px solid #E5E3E2; padding-top: 25px; margin-top: 30px; text-align: center;">
-            <p style="color: #AEADAB; font-size: 13px; margin: 0;">
-                Cordialement,<br/>
-                <strong style="color: #92564C;">L'équipe BLG Groupe</strong>
-            </p>
+        <div style="font-size: 12px; color: #AEADAB; margin-top: 40px; border-top: 1px solid #E5E3E2; padding-top: 15px; text-align: center;">
+            <p style="margin-bottom: 5px;">BLG GROUPE - Service Technique</p>
+            <p style="margin: 0;"><em>Ce message est automatique. Merci de ne pas y répondre directement.</em></p>
         </div>
-    </div>
-    
-    <!-- Footer Bar -->
-    <div style="background-color: #E5E3E2; padding: 15px; text-align: center;">
-        <p style="margin: 0; color: #978A86; font-size: 12px;">
-            © BLG Groupe - Tous droits réservés
-        </p>
     </div>
 </div>
             </field>
