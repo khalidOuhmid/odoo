@@ -315,6 +315,17 @@ class Lot(models.Model):
         compute='_compute_related_single_records',
         help="Dernier BC validé pour ce lot"
     )
+    po_state = fields.Selection(
+        related='purchase_order_id.state',
+        string='Statut BC',
+        readonly=True
+    )
+    po_amount_total = fields.Monetary(
+        related='purchase_order_id.amount_total',
+        string='Total BC',
+        currency_field='currency_id',
+        readonly=True
+    )
     contract_id = fields.Many2one(
         'construction.contract',
         string='Contrat Actif',
@@ -493,6 +504,154 @@ class Lot(models.Model):
                 },
             }
         raise UserError(_("La génération de contrat nécessite le module de contrats."))
+
+    # ============= TASK-014: Flexible Document Creation Mid-Project ============= #
+
+    def action_create_additional_quote(self):
+        """
+        TASK-014: Creates a new additional quote for the associated chantier of this lot.
+        
+        Opens the sale.order form view with the chantier and client pre-filled.
+        Supports creating multiple quotes mid-project without restricting the number.
+        
+        Returns:
+            dict: IR action to open the sale.order form view.
+        """
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Nouveau Devis - %s') % self.name,
+            'res_model': 'sale.order',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': {
+                'default_chantier_id': self.chantier_id.id,
+                'default_partner_id': self.chantier_id.client.id,
+            },
+        }
+
+    def action_create_additional_po(self):
+        """
+        TASK-014: Creates a new additional purchase order for this lot.
+        
+        Opens the purchase.order form view pre-filled with the assigned subcontractor
+        and the current lot. This allows creating multiple POs per lot (e.g. for
+        amendments or additional work).
+        
+        Raises:
+            UserError: If no subcontractor is assigned to the lot.
+            
+        Returns:
+            dict: IR action to open the purchase.order form view.
+        """
+        self.ensure_one()
+        if not self.subcontractor_id:
+            raise UserError(_("Assignez un sous-traitant avant de créer un bon de commande."))
+        
+        context = {
+            'default_chantier_id': self.chantier_id.id,
+            'default_partner_id': self.subcontractor_id.id,
+            'default_lot_ids': [(6, 0, [self.id])],
+        }
+        
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Nouveau BC - %s') % self.name,
+            'res_model': 'purchase.order',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': context,
+        }
+
+    def action_create_additional_contract(self):
+        """
+        TASK-014: Creates a new additional subcontractor contract for this lot.
+        
+        Opens the contract creation wizard with the lot and subcontractor pre-filled.
+        Allows generating multiple contracts per lot for an amended scope of work.
+        
+        Raises:
+            UserError: If no subcontractor is assigned to the lot, or if the
+                       construction_contract module is not installed.
+                       
+        Returns:
+            dict: IR action to open the contract wizard or form view.
+        """
+        self.ensure_one()
+        if not self.subcontractor_id:
+            raise UserError(_("Assignez un sous-traitant avant de créer un contrat."))
+        
+        # Try wizard first, then direct creation
+        if 'contract.creation.wizard' in self.env:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Nouveau Contrat ST - %s') % self.name,
+                'res_model': 'contract.creation.wizard',
+                'view_mode': 'form',
+                'target': 'new',
+                'context': {
+                    'default_lot_ids': [(4, self.id)],
+                    'default_chantier_id': self.chantier_id.id,
+                    'default_subcontractor_id': self.subcontractor_id.id,
+                },
+            }
+        
+        if 'construction.contract' in self.env:
+            return {
+                'type': 'ir.actions.act_window',
+                'name': _('Nouveau Contrat ST - %s') % self.name,
+                'res_model': 'construction.contract',
+                'view_mode': 'form',
+                'target': 'current',
+                'context': {
+                    'default_lot_ids': [(6, 0, [self.id])],
+                    'default_chantier_id': self.chantier_id.id,
+                    'default_subcontractor_id': self.subcontractor_id.id,
+                },
+            }
+        
+        raise UserError(_("La création de contrat nécessite le module construction_contract."))
+
+    def action_view_related_documents(self):
+        """
+        TASK-014: Views all related documents (quotes, POs, contracts) for this lot.
+        
+        Returns:
+            dict: IR action to open a filtered tree view of the associated documents.
+        """
+        self.ensure_one()
+        
+        # Collect all related PO IDs
+        po_ids = []
+        PurchaseOrder = self.env.get('purchase.order')
+        if PurchaseOrder:
+            pos = PurchaseOrder.search([('lot_ids', 'in', [self.id])])
+            po_ids = pos.ids
+        
+        # Collect all related contract IDs
+        contract_ids = []
+        if 'construction.contract' in self.env:
+            Contract = self.env['construction.contract']
+            if 'lot_ids' in Contract._fields:
+                contracts = Contract.search([('lot_ids', 'in', [self.id])])
+                contract_ids = contracts.ids
+
+        # Build summary for notification
+        summary_parts = []
+        if po_ids:
+            summary_parts.append(_('%d BC') % len(po_ids))
+        if contract_ids:
+            summary_parts.append(_('%d Contrat(s)') % len(contract_ids))
+        
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Documents liés - %s') % self.name,
+                'message': ', '.join(summary_parts) if summary_parts else _('Aucun document lié'),
+                'type': 'info',
+            }
+        }
 
 
     # Note: _compute_subcontractor_doc_warning is defined in construction_subcontractor module

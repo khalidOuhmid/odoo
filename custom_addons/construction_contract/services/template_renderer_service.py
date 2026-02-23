@@ -667,72 +667,116 @@ class ContractTemplateRenderer(models.AbstractModel):
     def _assemble_html_document(self, rendered_html, css):
         """
         Assemble complete HTML document with CSS
+        
+        TASK-007: Uses BLG Charte Graphique 2025 as base styling.
+        The custom template CSS is appended AFTER the base reset,
+        ensuring BLG variables and typography take precedence.
 
         Args:
             rendered_html (str): Rendered body HTML
-            css (str): CSS styles
+            css (str): CSS styles (from template or contract_template_blg.css)
 
         Returns:
             str: Complete HTML document
         """
+        # Read BLG CSS from file system for embedding
+        blg_css = ""
+        try:
+            import os
+            blg_css_path = os.path.join(
+                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                'static', 'src', 'css', 'contract_template_blg.css'
+            )
+            if os.path.exists(blg_css_path):
+                with open(blg_css_path, 'r', encoding='utf-8') as f:
+                    blg_css = f.read()
+                _logger.debug("BLG CSS loaded: %d bytes", len(blg_css))
+            else:
+                _logger.warning("BLG CSS not found at %s", blg_css_path)
+        except Exception as e:
+            _logger.warning("Failed to load BLG CSS: %s", e)
+
         return f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Contract Document</title>
-    <style>
-        /* Reset and base styles */
-        * {{
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Contract Document</title>
+<style>
+    /* ========== RESET ========== */
+    * {{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }}
 
-        body {{
-            font-family: 'Arial', 'Helvetica', sans-serif;
-            font-size: 11pt;
-            line-height: 1.6;
-            color: #333;
-        }}
+    /* ========== A4 PAGE SETUP (WeasyPrint) ========== */
+    @page {{
+        size: A4;
+        margin: 20mm 15mm 25mm 15mm;
 
-        /* Table styles */
-        table {{
-            width: 100%;
-            border-collapse: collapse;
-            margin: 15px 0;
+        @bottom-center {{
+            content: "Page " counter(page) " sur " counter(pages);
+            font-size: 9pt;
+            color: #AEADAB;
         }}
+    }}
 
-        th, td {{
-            padding: 8px 12px;
-            text-align: left;
-            border: 1px solid #ddd;
-        }}
+    /* ========== BLG BASE TYPOGRAPHY ========== */
+    body {{
+        font-family: "Times New Roman", Times, "Liberation Serif", serif;
+        font-size: 11pt;
+        line-height: 1.45;
+        color: #2B2B2B;
+        background-color: #FFFFFF;
+        width: 100%;
+    }}
 
-        th {{
-            background-color: #f5f5f5;
-            font-weight: bold;
-        }}
+    /* Table defaults */
+    table {{
+        width: 100%;
+        border-collapse: collapse;
+        margin: 15px 0;
+        page-break-inside: avoid;
+    }}
 
-        /* Contract variable highlighting */
-        .contract-var {{
-            display: inline;
-            font-weight: inherit;
-        }}
+    th, td {{
+        padding: 8px 12px;
+        text-align: left;
+        border: 1px solid #E5E3E2;
+    }}
 
-        /* Page break for printing */
-        @media print {{
-            .page-break {{
-                page-break-before: always;
-            }}
-        }}
+    th {{
+        background-color: #92564C;
+        color: #FFFFFF;
+        font-family: Georgia, "Times New Roman", Times, serif;
+        font-weight: 600;
+    }}
 
-        /* Custom template CSS */
-        {css}
-    </style>
+    /* Contract variable highlighting */
+    .contract-var {{
+        display: inline;
+        font-weight: inherit;
+    }}
+
+    /* Page break helpers */
+    .page-break {{
+        page-break-before: always;
+    }}
+
+    .no-break {{
+        page-break-inside: avoid;
+    }}
+
+    /* ========== BLG CHARTER CSS ========== */
+    {blg_css}
+
+    /* ========== TEMPLATE-SPECIFIC CSS ========== */
+    {css}
+</style>
 </head>
 <body>
-    {rendered_html}
+{rendered_html}
 </body>
 </html>"""
 

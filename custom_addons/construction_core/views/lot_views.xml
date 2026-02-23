@@ -135,7 +135,15 @@
                                             invisible="purchase_order_id"
                                             confirm="Générer un bon de commande pour ce lot ?"/>
                                     <field name="purchase_order_id" readonly="1" 
-                                           invisible="not purchase_order_id"/>
+                                           invisible="not purchase_order_id"
+                                           widget="many2one_button"/>
+                                    <field name="po_state" invisible="not purchase_order_id" readonly="1"
+                                           widget="badge"
+                                           decoration-info="po_state == 'draft'"
+                                           decoration-warning="po_state == 'sent'"
+                                           decoration-success="po_state in ('purchase', 'done')"/>
+                                    <field name="po_amount_total" invisible="not purchase_order_id" readonly="1"
+                                           widget="monetary"/>
                                 </group>
                             </group>
                             
@@ -166,6 +174,35 @@
                                             icon="fa-external-link"
                                             invisible="not contract_id"/>
                                     <field name="contract_id" readonly="1" invisible="1"/>
+                                </group>
+                            </group>
+
+                            <separator/>
+
+                            <!-- TASK-014: Additional Document Creation (always visible) -->
+                            <group string="Créer des documents supplémentaires">
+                                <div class="alert alert-light mb-2" role="alert" style="font-size: 12px;">
+                                    <i class="fa fa-plus-circle me-1"/>
+                                    Créer des devis, BC ou contrats additionnels en cours de chantier.
+                                </div>
+                                <group>
+                                    <button name="action_create_additional_quote" 
+                                            string="Nouveau Devis"
+                                            type="object" 
+                                            class="btn-outline-primary me-2"
+                                            icon="fa-file-text"/>
+                                    <button name="action_create_additional_po" 
+                                            string="Nouveau BC"
+                                            type="object" 
+                                            class="btn-outline-warning me-2"
+                                            icon="fa-shopping-cart"
+                                            invisible="execution_type != 'external'"/>
+                                    <button name="action_create_additional_contract" 
+                                            string="Nouveau Contrat ST"
+                                            type="object" 
+                                            class="btn-outline-success"
+                                            icon="fa-file-contract"
+                                            invisible="execution_type != 'external'"/>
                                 </group>
                             </group>
                         </page>

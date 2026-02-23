@@ -50,6 +50,8 @@ export class QuoteBuilder extends Component {
             // US-SAL-005: Reset confirmation modal
             showResetConfirm: false,
             resetConfirmChecked: false,
+            // TASK-004: Inline insertion position
+            insertAtIndex: null,
         });
 
         onWillStart(async () => {
@@ -673,7 +675,7 @@ export class QuoteBuilder extends Component {
         const wp = this.state.wizardProduct;
         if (!wp) return;
 
-        this.state.cart.push({
+        const newLine = {
             product_id: wp.id,
             name: wp.overrideName,
             qty: wp.qty,
@@ -691,9 +693,18 @@ export class QuoteBuilder extends Component {
                 color: wp.color,
                 notes: wp.notes,
             },
-        });
+        };
 
-        this.notification.add(`✓ Ajouté: ${wp.overrideName}`, { type: "success" });
+        // TASK-004: Insert at specific position if set, otherwise append
+        if (this.state.insertAtIndex !== null && this.state.insertAtIndex !== undefined) {
+            this.state.cart.splice(this.state.insertAtIndex, 0, newLine);
+            this.notification.add(`✓ Inséré à la position ${this.state.insertAtIndex + 1}: ${wp.overrideName}`, { type: "success" });
+            this.state.insertAtIndex = null;
+        } else {
+            this.state.cart.push(newLine);
+            this.notification.add(`✓ Ajouté: ${wp.overrideName}`, { type: "success" });
+        }
+
         this.onCloseLineWizard();
     }
 
@@ -770,6 +781,15 @@ export class QuoteBuilder extends Component {
         const line = this.state.cart[index];
         this.state.cart.splice(index, 1);
         this.notification.add(`Supprimé: ${line?.name}`, { type: "info" });
+    }
+
+    // TASK-004: Insert a new line at a specific position
+    onInsertLineAt(index) {
+        this.state.insertAtIndex = index;
+        this.notification.add(
+            `Position ${index + 1} sélectionnée. Cliquez sur un produit pour l'insérer ici.`,
+            { type: "info" }
+        );
     }
 
     recalculateLineQty(index) {

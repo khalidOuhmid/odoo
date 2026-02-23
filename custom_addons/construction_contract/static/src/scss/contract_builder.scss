@@ -1,11 +1,12 @@
 // Hide Odoo navbar on builder page
 body:has(.contract-builder-shell) {
+
     .o_main_navbar,
     .o_navbar_apps_menu,
     header.o_navbar {
         display: none !important;
     }
-    
+
     .o_action_manager {
         padding-top: 0 !important;
     }
@@ -26,7 +27,7 @@ body:has(.contract-builder-shell) {
     flex-wrap: wrap;
     gap: 12px;
     margin-bottom: 24px;
-    
+
     h2 {
         font-size: 1.75rem;
         font-weight: 600;
@@ -38,12 +39,12 @@ body:has(.contract-builder-shell) {
     display: grid;
     grid-template-columns: minmax(320px, 380px) 1fr;
     gap: 24px;
-    
+
     @media (max-width: 1200px) {
         grid-template-columns: minmax(300px, 350px) 1fr;
         gap: 16px;
     }
-    
+
     @media (max-width: 992px) {
         grid-template-columns: 1fr;
         gap: 20px;
@@ -55,7 +56,7 @@ body:has(.contract-builder-shell) {
     border-radius: 12px;
     box-shadow: 0 4px 18px rgba(15, 23, 42, 0.12);
     padding: 20px;
-    
+
     @media (max-width: 768px) {
         padding: 16px;
     }
@@ -80,7 +81,7 @@ body:has(.contract-builder-shell) {
 .contract-builder-panel .form-select,
 .contract-builder-panel .form-control {
     border-color: #e2e8f0;
-    
+
     &:focus {
         border-color: #3b82f6;
         box-shadow: 0 0 0 0.2rem rgba(59, 130, 246, 0.15);
@@ -109,10 +110,10 @@ body:has(.contract-builder-shell) {
     gap: 8px;
     flex-wrap: wrap;
     margin-bottom: 16px;
-    
+
     @media (max-width: 768px) {
         flex-direction: column;
-        
+
         .btn {
             width: 100%;
         }
@@ -181,4 +182,29 @@ body:has(.contract-builder-shell) {
     color: #0f172a;
 }
 
+/* ============================================= */
+/* TASK-006: Section Styles                      */
+/* ============================================= */
+.builder-section {
+    margin-bottom: 16px;
+    padding: 14px 16px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
 
+.builder-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #92564C;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+
+    i {
+        color: #92564C;
+        opacity: 0.8;
+    }
+}

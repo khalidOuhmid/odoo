@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- SEARCH VIEW -->
+    <!-- SEARCH VIEW — TASK-012: Enhanced filters -->
     <record id="view_finance_analysis_search" model="ir.ui.view">
         <field name="name">construction.finance.analysis.report.search</field>
         <field name="model">construction.finance.analysis.report</field>
@@ -10,17 +10,29 @@
                 <field name="chantier_id"/>
                 <field name="partner_id"/>
                 <field name="company_id"/>
-                <filter string="Marge Faible (&lt; 15%)" name="low_margin" domain="[('margin', '&lt;', 0.15 * invoiced_revenue), ('invoiced_revenue', '&gt;', 0)]"/>
-                <filter string="Chantiers à Perte" name="negative_margin" domain="[('margin', '&lt;', 0)]"/>
+                <!-- KPI Quick Filters -->
+                <filter string="Marge &gt; 15%" name="healthy_margin"
+                        domain="[('margin_percent', '&gt;', 15)]"/>
+                <filter string="Marge Faible (&lt; 15%)" name="low_margin"
+                        domain="[('margin_percent', '&lt;', 15), ('invoiced_revenue', '&gt;', 0)]"/>
+                <filter string="Chantiers à Perte" name="negative_margin"
+                        domain="[('margin', '&lt;', 0)]"/>
+                <separator/>
+                <filter string="Ce Mois" name="this_month"
+                        domain="[('date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                <filter string="Ce Trimestre" name="this_quarter"
+                        domain="[('date', '&gt;=', (context_today() - relativedelta(months=3)).strftime('%Y-%m-%d'))]"/>
+                <separator/>
                 <group expand="1" string="Regrouper par">
                     <filter string="Chantier" name="group_chantier" context="{'group_by':'chantier_id'}"/>
+                    <filter string="Partenaire" name="group_partner" context="{'group_by':'partner_id'}"/>
                     <filter string="Mois" name="group_date" context="{'group_by':'date:month'}"/>
                 </group>
             </search>
         </field>
     </record>
 
-    <!-- GRAPH VIEW: The Jaws -->
+    <!-- GRAPH VIEW: Revenue vs Cost (The Jaws) -->
     <record id="view_finance_analysis_graph" model="ir.ui.view">
         <field name="name">construction.finance.analysis.report.graph</field>
         <field name="model">construction.finance.analysis.report</field>
@@ -29,11 +41,12 @@
                 <field name="date" type="row" interval="month"/>
                 <field name="invoiced_revenue" type="measure"/>
                 <field name="invoiced_cost" type="measure"/>
+                <field name="margin" type="measure"/>
             </graph>
         </field>
     </record>
 
-    <!-- PIVOT VIEW -->
+    <!-- PIVOT VIEW — TASK-012: Added margin_percent + commission -->
     <record id="view_finance_analysis_pivot" model="ir.ui.view">
         <field name="name">construction.finance.analysis.report.pivot</field>
         <field name="model">construction.finance.analysis.report</field>
@@ -44,31 +57,40 @@
                 <field name="invoiced_revenue" type="measure"/>
                 <field name="committed_cost" type="measure"/>
                 <field name="invoiced_cost" type="measure"/>
+                <field name="commission_cost" type="measure"/>
                 <field name="margin" type="measure"/>
+                <field name="margin_percent" type="measure"/>
             </pivot>
         </field>
     </record>
 
-    <!-- TREE VIEW: Top/Flop List -->
+    <!-- TREE VIEW: KPI List — TASK-012: Added margin_percent + color coding -->
     <record id="view_finance_analysis_tree" model="ir.ui.view">
         <field name="name">construction.finance.analysis.report.list</field>
         <field name="model">construction.finance.analysis.report</field>
         <field name="arch" type="xml">
-            <list string="Détail Financier" decoration-danger="margin &lt; 0" decoration-success="margin &gt; 0">
+            <list string="Détail Financier"
+                  decoration-danger="margin &lt; 0"
+                  decoration-warning="margin_percent &gt;= 0 and margin_percent &lt; 15"
+                  decoration-success="margin_percent &gt;= 15">
                 <field name="date"/>
                 <field name="chantier_id"/>
+                <field name="planned_revenue" sum="Total Prévisionnel"/>
                 <field name="invoiced_revenue" sum="Total CA"/>
+                <field name="committed_cost" sum="Total Engagé"/>
                 <field name="invoiced_cost" sum="Total Coût"/>
+                <field name="commission_cost" sum="Total Commissions"/>
                 <field name="margin" sum="Marge Nette"/>
+                <field name="margin_percent" avg="Marge Moy. %"/>
             </list>
         </field>
     </record>
 
-    <!-- ACTION -->
+    <!-- ACTION — TASK-012: Default to pivot with chantier grouping -->
     <record id="action_finance_dashboard" model="ir.actions.act_window">
         <field name="name">Cockpit Financier</field>
         <field name="res_model">construction.finance.analysis.report</field>
-        <field name="view_mode">graph,pivot,list</field>
+        <field name="view_mode">pivot,graph,list</field>
         <field name="context">{'search_default_group_chantier': 1}</field>
     </record>
 

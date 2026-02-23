@@ -13,55 +13,69 @@
         <field name="binding_type">report</field>
     </record>
 
-    <!-- Visit Report Template - BLG Charte (Mission 4) -->
+    <!--
+         Visit Report Template: BLG Charte Graphique 2025
+         
+         TASK-002: Full BLG branding with logo from construction_contract,
+         inheriting the BLG color palette and typography.
+         
+         Logo: /construction_contract/static/src/img/Logo.png
+    -->
     <template id="report_visit_document">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="doc">
                 <t t-call="web.external_layout">
-                    <div class="page" style="font-family: 'Times New Roman', Times, serif;">
+                    <div class="page" style="font-family: 'Times New Roman', Times, 'Liberation Serif', serif; font-size: 11pt; line-height: 1.45; color: #2B2B2B; width: 100%;">
                         
-                        <!-- BLG Header - Enterprise Style (Solid Bordeaux) -->
-                        <div style="background-color: #92564C; color: white; padding: 30px; margin: -20px -20px 30px -20px; text-align: center;">
-                            <h1 style="margin: 0; font-family: 'Times New Roman', Times, serif; letter-spacing: 1px; text-transform: uppercase; font-size: 28px; font-weight: 600;">
-                                BLG GROUPE
-                            </h1>
-                            <p style="color: rgba(255,255,255,0.9); margin: 8px 0 0 0; font-size: 16px; font-style: italic;">
-                                Compte-Rendu de Visite
-                            </p>
-                            <p style="color: rgba(255,255,255,0.85); margin: 5px 0 0 0; font-size: 14px;">
-                                <t t-out="doc.name">Visite</t>
-                            </p>
+                        <!-- ======================== HEADER BLG ======================== -->
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 25px; padding-bottom: 15px; border-bottom: 2px solid #92564C;">
+                            <!-- Logo BLG (from construction_contract) -->
+                            <div style="flex-shrink: 0;">
+                                <img src="/construction_contract/static/src/img/Logo.png" 
+                                     style="height: 60px; width: auto;" 
+                                     alt="BLG Groupe"/>
+                            </div>
+                            <!-- Document Title -->
+                            <div style="text-align: right;">
+                                <h1 style="margin: 0; font-family: Georgia, 'Times New Roman', Times, serif; color: #92564C; font-size: 22pt; text-transform: uppercase; letter-spacing: 0.03em; font-weight: 600;">
+                                    Compte-Rendu de Visite
+                                </h1>
+                                <p style="margin: 5px 0 0 0; color: #AEADAB; font-size: 11pt; font-style: italic;">
+                                    <t t-out="doc.name">Visite</t>
+                                </p>
+                            </div>
                         </div>
                         
-                        <!-- Visit Info Cards -->
+                        <!-- ======================== INFO CARDS ======================== -->
                         <div class="row" style="margin-bottom: 25px;">
+                            <!-- Chantier Info -->
                             <div class="col-6">
-                                <div style="background: #F9F8F7; border-left: 4px solid #92564C; padding: 20px; border-radius: 0 8px 8px 0;">
-                                    <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                <div style="background: #F9F8F7; border-left: 4px solid #92564C; padding: 18px; height: 100%;">
+                                    <h4 style="color: #92564C; margin: 0 0 12px 0; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; font-family: Georgia, serif; font-weight: 600;">
                                         Informations Chantier
                                     </h4>
-                                    <table style="width: 100%;">
+                                    <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="color: #AEADAB; padding: 5px 0; width: 40%;">Chantier</td>
-                                            <td style="color: #978A86; font-weight: 500;">
+                                            <td style="color: #AEADAB; padding: 4px 0; width: 35%; font-size: 10pt;">Chantier</td>
+                                            <td style="color: #978A86; font-weight: 600; font-size: 11pt;">
                                                 <t t-out="doc.chantier_id.name">Chantier</t>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="color: #AEADAB; padding: 5px 0;">Référence</td>
-                                            <td style="color: #978A86;">
+                                            <td style="color: #AEADAB; padding: 4px 0; font-size: 10pt;">Référence</td>
+                                            <td style="color: #978A86; font-size: 10pt;">
                                                 <t t-out="doc.chantier_id.reference or '-'">Ref</t>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="color: #AEADAB; padding: 5px 0;">Client</td>
-                                            <td style="color: #978A86;">
+                                            <td style="color: #AEADAB; padding: 4px 0; font-size: 10pt;">Client</td>
+                                            <td style="color: #978A86; font-size: 10pt;">
                                                 <t t-out="doc.chantier_id.client.name or '-'">Client</t>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="color: #AEADAB; padding: 5px 0;">Adresse</td>
-                                            <td style="color: #978A86;">
+                                            <td style="color: #AEADAB; padding: 4px 0; font-size: 10pt;">Adresse</td>
+                                            <td style="color: #978A86; font-size: 10pt;">
                                                 <t t-out="doc.chantier_id.address or '-'">Adresse</t>
                                                 <t t-if="doc.chantier_id.city">
                                                     <br/><t t-out="doc.chantier_id.city"/>
@@ -71,38 +85,41 @@
                                     </table>
                                 </div>
                             </div>
+                            <!-- Visit Info -->
                             <div class="col-6">
-                                <div style="background: #F9F8F7; border-left: 4px solid #D4C5BC; padding: 20px; border-radius: 0 8px 8px 0;">
-                                    <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
+                                <div style="background: #F9F8F7; border-left: 4px solid #D4C5BC; padding: 18px; height: 100%;">
+                                    <h4 style="color: #92564C; margin: 0 0 12px 0; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; font-family: Georgia, serif; font-weight: 600;">
                                         Informations Visite
                                     </h4>
-                                    <table style="width: 100%;">
+                                    <table style="width: 100%; border-collapse: collapse;">
                                         <tr>
-                                            <td style="color: #AEADAB; padding: 5px 0; width: 40%;">Date</td>
-                                            <td style="color: #978A86; font-weight: 500;">
+                                            <td style="color: #AEADAB; padding: 4px 0; width: 35%; font-size: 10pt;">Date</td>
+                                            <td style="color: #978A86; font-weight: 600; font-size: 11pt;">
                                                 <t t-out="doc.date.strftime('%d/%m/%Y à %H:%M')">Date</t>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="color: #AEADAB; padding: 5px 0;">Durée</td>
-                                            <td style="color: #978A86;">
+                                            <td style="color: #AEADAB; padding: 4px 0; font-size: 10pt;">Durée</td>
+                                            <td style="color: #978A86; font-size: 10pt;">
                                                 <t t-out="doc.duration"/>h
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="color: #AEADAB; padding: 5px 0;">Type</td>
-                                            <td style="color: #978A86;">
+                                            <td style="color: #AEADAB; padding: 4px 0; font-size: 10pt;">Type</td>
+                                            <td style="color: #978A86; font-size: 10pt;">
                                                 <t t-if="doc.visit_type == 'initial'">Visite Initiale</t>
-                                                <t t-if="doc.visit_type == 'progress'">Suivi de Chantier</t>
-                                                <t t-if="doc.visit_type == 'quality'">Contrôle Qualité</t>
-                                                <t t-if="doc.visit_type == 'final'">Réception</t>
+                                                <t t-if="doc.visit_type == 'follow_up'">Suivi de Chantier</t>
+                                                <t t-if="doc.visit_type == 'technical'">Visite Technique</t>
+                                                <t t-if="doc.visit_type == 'final'">Réception Finale</t>
                                             </td>
                                         </tr>
                                         <tr>
-                                            <td style="color: #AEADAB; padding: 5px 0;">État</td>
+                                            <td style="color: #AEADAB; padding: 4px 0; font-size: 10pt;">État</td>
                                             <td>
-                                                <span style="background: #92564C; color: white; padding: 3px 10px; border-radius: 12px; font-size: 12px;">
+                                                <span style="background: #92564C; color: white; padding: 2px 10px; border-radius: 10px; font-size: 9pt; text-transform: uppercase;">
                                                     <t t-if="doc.state == 'completed'">Terminée</t>
+                                                    <t t-elif="doc.state == 'in_progress'">En Cours</t>
+                                                    <t t-elif="doc.state == 'confirmed'">Confirmée</t>
                                                     <t t-else=""><t t-out="doc.state"/></t>
                                                 </span>
                                             </td>
@@ -112,72 +129,81 @@
                             </div>
                         </div>
                         
-                        <!-- Participants (Unified - Mission 1) -->
-                        <div style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                                👥 Participants
+                        <!-- ======================== PARTICIPANTS ======================== -->
+                        <div style="background: #FFFFFF; border: 1px solid #E5E3E2; padding: 18px; margin-bottom: 20px; page-break-inside: avoid;">
+                            <h4 style="color: #92564C; margin: 0 0 12px 0; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; font-family: Georgia, serif; font-weight: 600; border-bottom: 1px solid #AEADAB; padding-bottom: 5px;">
+                                Participants
                             </h4>
-                            <div class="row">
-                                <t t-foreach="doc.participant_ids" t-as="participant">
-                                    <div class="col-4" style="margin-bottom: 10px;">
-                                        <div style="display: flex; align-items: center;">
-                                            <div style="width: 35px; height: 35px; background: #D4C5BC; border-radius: 50%; 
-                                                        display: flex; align-items: center; justify-content: center; margin-right: 10px;">
-                                                <span style="color: #92564C; font-weight: 600; font-size: 14px;">
-                                                    <t t-out="participant.name[:2].upper()">XX</t>
-                                                </span>
-                                            </div>
-                                            <div>
-                                                <span style="color: #978A86; font-weight: 500;">
-                                                    <t t-out="participant.name">Participant</t>
-                                                </span>
-                                                <br/>
-                                                <span style="color: #AEADAB; font-size: 11px;">
-                                                    <t t-out="participant.function or participant.email or ''"/>
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </t>
-                                <t t-if="not doc.participant_ids">
-                                    <div class="col-12">
-                                        <p style="color: #AEADAB; font-style: italic;">Aucun participant enregistré</p>
-                                    </div>
-                                </t>
-                            </div>
+                            <table style="width: 100%; border-collapse: collapse;">
+                                <thead>
+                                    <tr>
+                                        <th style="background-color: #92564C; color: #FFFFFF; padding: 8px 12px; font-family: Georgia, serif; font-weight: 600; text-align: left; font-size: 10pt;">Nom</th>
+                                        <th style="background-color: #92564C; color: #FFFFFF; padding: 8px 12px; font-family: Georgia, serif; font-weight: 600; text-align: left; font-size: 10pt;">Fonction</th>
+                                        <th style="background-color: #92564C; color: #FFFFFF; padding: 8px 12px; font-family: Georgia, serif; font-weight: 600; text-align: left; font-size: 10pt;">Email</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="doc.participant_ids" t-as="participant">
+                                        <tr>
+                                            <td style="padding: 6px 12px; border: 1px solid #E5E3E2; color: #978A86; font-size: 10pt;">
+                                                <t t-out="participant.name">Participant</t>
+                                            </td>
+                                            <td style="padding: 6px 12px; border: 1px solid #E5E3E2; color: #978A86; font-size: 10pt;">
+                                                <t t-out="participant.function or '-'"/>
+                                            </td>
+                                            <td style="padding: 6px 12px; border: 1px solid #E5E3E2; color: #AEADAB; font-size: 10pt;">
+                                                <t t-out="participant.email or '-'"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <t t-if="not doc.participant_ids">
+                                <p style="color: #AEADAB; font-style: italic; margin: 10px 0 0 0; font-size: 10pt;">Aucun participant enregistré</p>
+                            </t>
                         </div>
                         
-                        <!-- Notes & Observations -->
-                        <div t-if="doc.notes" style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                                📝 Notes et Observations
+                        <!-- ======================== MOTIF ======================== -->
+                        <div t-if="doc.motif" style="background: rgba(212, 197, 188, 0.15); border-left: 3px solid #92564C; padding: 15px 18px; margin-bottom: 20px; page-break-inside: avoid;">
+                            <h4 style="color: #92564C; margin: 0 0 8px 0; font-size: 11pt; font-family: Georgia, serif; font-weight: 600;">
+                                Motif de la Visite
                             </h4>
-                            <div style="color: #978A86; line-height: 1.6;" t-raw="doc.notes"/>
+                            <p style="color: #978A86; margin: 0; font-size: 10pt; text-align: justify; line-height: 1.5;">
+                                <t t-out="doc.motif"/>
+                            </p>
                         </div>
                         
-                        <!-- Compte Rendu -->
-                        <div t-if="doc.report" style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                                📄 Compte-Rendu Détaillé
+                        <!-- ======================== NOTES & OBSERVATIONS ======================== -->
+                        <div t-if="doc.notes" style="background: #FFFFFF; border: 1px solid #E5E3E2; padding: 18px; margin-bottom: 20px; page-break-inside: avoid;">
+                            <h4 style="color: #92564C; margin: 0 0 12px 0; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; font-family: Georgia, serif; font-weight: 600; border-bottom: 1px solid #AEADAB; padding-bottom: 5px;">
+                                Notes et Observations
                             </h4>
-                            <div style="color: #978A86; line-height: 1.6;" t-raw="doc.report"/>
+                            <div style="color: #978A86; line-height: 1.6; font-size: 10pt; text-align: justify;" t-raw="doc.notes"/>
                         </div>
                         
-                        <!-- Photos Section - Embedded Images Grid -->
-                        <div t-if="doc.photo_ids" style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                                <i class="fa fa-camera" style="margin-right: 8px;"/>Photos (<t t-out="len(doc.photo_ids)"/>)
+                        <!-- ======================== COMPTE-RENDU ======================== -->
+                        <div t-if="doc.report" style="background: #FFFFFF; border: 1px solid #E5E3E2; padding: 18px; margin-bottom: 20px;">
+                            <h4 style="color: #92564C; margin: 0 0 12px 0; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; font-family: Georgia, serif; font-weight: 600; border-bottom: 1px solid #AEADAB; padding-bottom: 5px;">
+                                Compte-Rendu Détaillé
+                            </h4>
+                            <div style="color: #978A86; line-height: 1.6; font-size: 10pt; text-align: justify;" t-raw="doc.report"/>
+                        </div>
+                        
+                        <!-- ======================== PHOTOS ======================== -->
+                        <div t-if="doc.photo_ids" style="background: #FFFFFF; border: 1px solid #E5E3E2; padding: 18px; margin-bottom: 20px;">
+                            <h4 style="color: #92564C; margin: 0 0 12px 0; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; font-family: Georgia, serif; font-weight: 600; border-bottom: 1px solid #AEADAB; padding-bottom: 5px;">
+                                Photos (<t t-out="len(doc.photo_ids)"/>)
                             </h4>
                             <div class="row">
                                 <t t-foreach="doc.photo_ids" t-as="photo">
-                                    <div class="col-4" style="margin-bottom: 15px;">
-                                        <div style="background: #F9F8F7; border-radius: 8px; padding: 10px; text-align: center;">
+                                    <div class="col-4" style="margin-bottom: 12px;">
+                                        <div style="background: #F9F8F7; padding: 8px; text-align: center; page-break-inside: avoid;">
                                             <img t-att-src="'data:%s;base64,%s' % (photo.mimetype, photo.datas.decode('utf-8') if photo.datas else '')" 
-                                                 style="max-width: 100%; max-height: 200px; border-radius: 6px; object-fit: contain;"
+                                                 style="max-width: 100%; max-height: 180px; object-fit: contain;"
                                                  t-att-alt="photo.name"/>
-                                            <p style="color: #AEADAB; font-size: 10px; margin: 8px 0 0 0; word-break: break-word;">
-                                                <t t-out="photo.name[:30]"/>
-                                                <t t-if="len(photo.name) > 30">...</t>
+                                            <p style="color: #AEADAB; font-size: 8pt; margin: 6px 0 0 0; word-break: break-word;">
+                                                <t t-out="photo.name[:40]"/>
+                                                <t t-if="len(photo.name) > 40">...</t>
                                             </p>
                                         </div>
                                     </div>
@@ -185,59 +211,61 @@
                             </div>
                         </div>
                         
-                        <!-- Videos Section -->
-                        <div t-if="doc.video_ids" style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                                <i class="fa fa-video-camera" style="margin-right: 8px;"/>Videos (<t t-out="len(doc.video_ids)"/>)
+                        <!-- ======================== VIDEOS ======================== -->
+                        <div t-if="doc.video_ids" style="background: #FFFFFF; border: 1px solid #E5E3E2; padding: 18px; margin-bottom: 20px; page-break-inside: avoid;">
+                            <h4 style="color: #92564C; margin: 0 0 12px 0; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; font-family: Georgia, serif; font-weight: 600; border-bottom: 1px solid #AEADAB; padding-bottom: 5px;">
+                                Vidéos (<t t-out="len(doc.video_ids)"/>)
                             </h4>
-                            <ul style="list-style: none; padding: 0; margin: 0;">
+                            <table style="width: 100%; border-collapse: collapse;">
                                 <t t-foreach="doc.video_ids" t-as="video">
-                                    <li style="padding: 8px 12px; background: #F9F8F7; border-radius: 6px; margin-bottom: 8px;">
-                                        <i class="fa fa-play-circle" style="color: #92564C; margin-right: 10px;"/>
-                                        <span style="color: #978A86;"><t t-out="video.name"/></span>
-                                        <span style="color: #AEADAB; font-size: 11px; margin-left: 10px;">
-                                            (<t t-out="'%.1f' % (video.file_size / 1024 / 1024)" /> Mo)
-                                        </span>
-                                    </li>
+                                    <tr>
+                                        <td style="padding: 6px 12px; border: 1px solid #E5E3E2; color: #978A86; font-size: 10pt;">
+                                            <t t-out="video.name"/>
+                                        </td>
+                                        <td style="padding: 6px 12px; border: 1px solid #E5E3E2; color: #AEADAB; font-size: 9pt; text-align: right; width: 80px;">
+                                            <t t-out="'%.1f' % (video.file_size / 1024 / 1024)"/> Mo
+                                        </td>
+                                    </tr>
                                 </t>
-                            </ul>
+                            </table>
                         </div>
                         
-                        <!-- Documents Section -->
-                        <div t-if="doc.document_ids" style="background: #FFFFFF; border: 1px solid #E5E3E2; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-                            <h4 style="color: #92564C; margin: 0 0 15px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">
-                                <i class="fa fa-file-o" style="margin-right: 8px;"/>Documents Joints (<t t-out="len(doc.document_ids)"/>)
+                        <!-- ======================== DOCUMENTS ======================== -->
+                        <div t-if="doc.document_ids" style="background: #FFFFFF; border: 1px solid #E5E3E2; padding: 18px; margin-bottom: 20px; page-break-inside: avoid;">
+                            <h4 style="color: #92564C; margin: 0 0 12px 0; font-size: 11pt; text-transform: uppercase; letter-spacing: 1px; font-family: Georgia, serif; font-weight: 600; border-bottom: 1px solid #AEADAB; padding-bottom: 5px;">
+                                Documents Joints (<t t-out="len(doc.document_ids)"/>)
                             </h4>
-                            <ul style="list-style: none; padding: 0; margin: 0;">
+                            <table style="width: 100%; border-collapse: collapse;">
                                 <t t-foreach="doc.document_ids" t-as="document">
-                                    <li style="padding: 8px 12px; background: #F9F8F7; border-radius: 6px; margin-bottom: 8px;">
-                                        <i class="fa fa-file-text-o" style="color: #92564C; margin-right: 10px;"/>
-                                        <span style="color: #978A86;"><t t-out="document.name"/></span>
-                                        <span style="color: #AEADAB; font-size: 11px; margin-left: 10px;">
-                                            (<t t-out="document.mimetype"/>)
-                                        </span>
-                                    </li>
+                                    <tr>
+                                        <td style="padding: 6px 12px; border: 1px solid #E5E3E2; color: #978A86; font-size: 10pt;">
+                                            <t t-out="document.name"/>
+                                        </td>
+                                        <td style="padding: 6px 12px; border: 1px solid #E5E3E2; color: #AEADAB; font-size: 9pt; text-align: right; width: 120px;">
+                                            <t t-out="document.mimetype"/>
+                                        </td>
+                                    </tr>
                                 </t>
-                            </ul>
+                            </table>
                         </div>
                         
-                        <!-- Signatures -->
-                        <div class="row" style="margin-top: 50px; page-break-inside: avoid;">
+                        <!-- ======================== SIGNATURES ======================== -->
+                        <div class="row" style="margin-top: 40px; page-break-inside: avoid;">
                             <div class="col-6 text-center">
-                                <div style="border-top: 2px solid #E5E3E2; padding-top: 10px; margin: 0 30px;">
-                                    <p style="color: #AEADAB; margin: 0; font-size: 12px;">Signature BLG Groupe</p>
+                                <div style="border: 1px solid #AEADAB; min-height: 100px; padding: 10px; background-color: #FAFAFA; margin: 0 15px;">
+                                    <p style="color: #AEADAB; font-style: italic; font-size: 9pt; margin: 30px 0 0 0;">Signature BLG Groupe</p>
                                 </div>
                             </div>
                             <div class="col-6 text-center">
-                                <div style="border-top: 2px solid #E5E3E2; padding-top: 10px; margin: 0 30px;">
-                                    <p style="color: #AEADAB; margin: 0; font-size: 12px;">Signature Client</p>
+                                <div style="border: 1px solid #AEADAB; min-height: 100px; padding: 10px; background-color: #FAFAFA; margin: 0 15px;">
+                                    <p style="color: #AEADAB; font-style: italic; font-size: 9pt; margin: 30px 0 0 0;">Signature Client</p>
                                 </div>
                             </div>
                         </div>
                         
-                        <!-- Footer -->
-                        <div style="border-top: 1px solid #E5E3E2; padding-top: 20px; margin-top: 40px; text-align: center;">
-                            <p style="color: #AEADAB; font-size: 11px; margin: 0;">
+                        <!-- ======================== FOOTER ======================== -->
+                        <div style="border-top: 1px solid #E5E3E2; padding-top: 15px; margin-top: 30px; text-align: center;">
+                            <p style="color: #AEADAB; font-size: 8pt; margin: 0; line-height: 1.5;">
                                 Document généré le <t t-out="datetime.datetime.now().strftime('%d/%m/%Y à %H:%M')"/>
                                 — BLG Groupe © Tous droits réservés
                             </p>

@@ -63,9 +63,9 @@
                     <td style="padding: 8px 0;">
                         <span style="color: #505050;">
                             <t t-if="object.visit_type == 'initial'">Visite Initiale</t>
-                            <t t-if="object.visit_type == 'progress'">Suivi de Chantier</t>
-                            <t t-if="object.visit_type == 'quality'">Contrôle Qualité</t>
-                            <t t-if="object.visit_type == 'final'">Réception</t>
+                            <t t-if="object.visit_type == 'follow_up'">Suivi de Chantier</t>
+                            <t t-if="object.visit_type == 'technical'">Visite Technique</t>
+                            <t t-if="object.visit_type == 'final'">Réception Finale</t>
                         </span>
                     </td>
                 </tr>
@@ -162,9 +162,9 @@
             <p style="margin: 5px 0 0 0; color: #505050; font-size: 14px; font-style: italic;">
                 Type: 
                 <t t-if="object.visit_type == 'initial'">Visite Initiale</t>
-                <t t-if="object.visit_type == 'progress'">Suivi de Chantier</t>
-                <t t-if="object.visit_type == 'quality'">Contrôle Qualité</t>
-                <t t-if="object.visit_type == 'final'">Réception</t>
+                <t t-if="object.visit_type == 'follow_up'">Suivi de Chantier</t>
+                <t t-if="object.visit_type == 'technical'">Visite Technique</t>
+                <t t-if="object.visit_type == 'final'">Réception Finale</t>
             </p>
         </div>
         

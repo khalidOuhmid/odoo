@@ -221,6 +221,17 @@
                                     </thead>
                                     <tbody>
                                         <t t-foreach="group.lines" t-as="line" t-key="line._index">
+                                            <!-- TASK-004: Insert zone BEFORE each line (Notion-style) -->
+                                            <tr class="o_insert_zone"
+                                                t-on-click="() => this.onInsertLineAt(line._index)">
+                                                <td t-att-colspan="state.showMargin ? '9' : '7'">
+                                                    <div class="o_insert_zone_inner">
+                                                        <span class="o_insert_zone_btn">
+                                                            <i class="fa fa-plus me-1"/>Insérer ici
+                                                        </span>
+                                                    </div>
+                                                </td>
+                                            </tr>
                                             <tr t-attf-class="align-middle #{line.isOptional ? 'o_quote_line_optional' : ''}">
                                                 <!-- Product Name -->
                                                 <td>

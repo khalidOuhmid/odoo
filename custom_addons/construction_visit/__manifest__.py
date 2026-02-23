@@ -32,6 +32,7 @@ Audit & Compliance:
     'data': [
         'security/ir.model.access.csv',
         'data/mail_template_visit.xml',
+        'data/cron.xml',
         'reports/visit_report.xml',
         'views/visit_views.xml',
         'views/chantier_views.xml',

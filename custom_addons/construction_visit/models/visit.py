@@ -4,8 +4,11 @@ Visit Model - BLG Groupe Production Module
 Enterprise-grade: RFC 5545 ICS calendar integration, strict validation
 
 Author: Khalid Ouhmid for BLGGROUPE
-Version: 1.0
+Version: 1.1
 Odoo Version: 18.0
+
+Changelog:
+    1.1 - TASK-001: Fixed notification bugs (race condition, error handling, cron)
 """
 from odoo import models, fields, api, _
 from markupsafe import Markup
@@ -259,11 +262,21 @@ END:VCALENDAR"""
 
     # ============= WORKFLOW ACTIONS ============= #
     def action_send_notification(self):
-        # Send email notification with ICS calendar file to participants
+        """
+        Sends an email notification with an ICS calendar file to all participants.
+        
+        This method ensures that:
+        - Errors per participant are handled individually without blocking others.
+        - `force_send=True` is used to send immediately and avoid race conditions.
+        - A notification trace is posted to the associated Chantier's chatter.
+        
+        Returns:
+            dict: Client action to display a success or warning notification.
+        """
         self.ensure_one()
         
         if not self.participant_ids:
-            raise UserError(_("Aucun participant a notifier."))
+            raise UserError(_("Aucun participant à notifier."))
         
         template = self.env.ref(
             'construction_visit.email_template_visit_notification',
@@ -271,10 +284,10 @@ END:VCALENDAR"""
         )
         
         if not template:
-            self.message_post(body=_("Template email non trouve - pas de notification envoyee."))
+            self.message_post(body=_("Template email non trouvé — pas de notification envoyée."))
             return
-            
-        # Generate ICS
+        
+        # Generate ICS attachment (once for all participants)
         ics_content = self._generate_ics_content()
         ics_filename = f"invitation_{self.name.replace(' ', '_')}.ics"
         
@@ -288,43 +301,85 @@ END:VCALENDAR"""
         })
         
         sent_count = 0
+        failed_participants = []
         last_mail_id = False
         
         for participant in self.participant_ids:
             if not participant.email:
+                _logger.warning(
+                    "Visit %s: participant '%s' has no email — skipped",
+                    self.name, participant.name
+                )
                 continue
-                
-            email_values = {
-                'email_to': participant.email,
-                'email_from': self.env.user.email_formatted,
-            }
             
-            if ics_attachment:
-                email_values['attachment_ids'] = [(4, ics_attachment.id)]
-            
-            # Use force_send=False to ensure the mail object is created and we get an ID
-            mail_id = template.send_mail(self.id, force_send=False, email_values=email_values)
-            if mail_id:
-                last_mail_id = mail_id
-                # Send immediately
-                self.env['mail.mail'].browse(mail_id).send()
+            try:
+                email_values = {
+                    'email_to': participant.email,
+                    'email_from': self.env.user.email_formatted,
+                }
                 
-            sent_count += 1
-            _logger.info("Visit notification sent to %s", participant.email)
+                if ics_attachment:
+                    email_values['attachment_ids'] = [(4, ics_attachment.id)]
+                
+                # Use force_send=True — single atomic send, no race condition
+                mail_id = template.send_mail(
+                    self.id, force_send=True, email_values=email_values
+                )
+                if mail_id:
+                    last_mail_id = mail_id
+                
+                sent_count += 1
+                _logger.info("Visit notification sent to %s", participant.email)
+                
+            except Exception as e:
+                _logger.error(
+                    "Visit %s: failed to notify %s — %s",
+                    self.name, participant.email, str(e)
+                )
+                failed_participants.append(participant.name)
         
-        self.notification_sent = True
+        # Mark as sent even if some failed (partial success)
+        if sent_count > 0:
+            self.notification_sent = True
+        
+        # Build chatter message
+        body_parts = [_("Notification de visite envoyée à %d participant(s)") % sent_count]
+        if failed_participants:
+            body_parts.append(
+                _("⚠️ Échec d'envoi pour : %s") % ', '.join(failed_participants)
+            )
         
         self.message_post(
-            body=_("Notification de visite envoyee a %d participants") % sent_count,
+            body='<br/>'.join(body_parts),
             message_type='notification'
         )
         
+        # Post FULL body to Chantier Chatter
+        self._post_notification_to_chantier(last_mail_id)
         
-        # Post FULL body to Chantier Chatter (As requested: "Voir le mail")
-        if self.chantier_id and last_mail_id:
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Notification Envoyée'),
+                'message': _('%d participant(s) notifié(s)') % sent_count,
+                'type': 'success' if not failed_participants else 'warning',
+            }
+        }
+
+    def _post_notification_to_chantier(self, mail_id):
+        """
+        Posts a summary of the visit notification to the associated Chantier's chatter.
+        
+        Args:
+            mail_id (int): The ID of the mail.mail record sent to participants.
+        """
+        if not self.chantier_id:
+            return
+        
+        if mail_id:
             try:
-                # Capture accurate body from the sent mail record
-                mail = self.env['mail.mail'].browse(last_mail_id)
+                mail = self.env['mail.mail'].browse(mail_id)
                 email_body = mail.body_html
                 subject = mail.subject or _("Notification de visite")
                 attachments = mail.attachment_ids
@@ -337,26 +392,17 @@ END:VCALENDAR"""
                         subtype_xmlid='mail.mt_note',
                         attachment_ids=[(6, 0, attachments.ids)]
                     )
-                else:
-                    self._post_fallback_summary()
+                    return
             except Exception as e:
                 _logger.warning("Error posting email body to chatter: %s", str(e))
-                self._post_fallback_summary()
-        elif self.chantier_id:
-             self._post_fallback_summary()
         
-        return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Notification Envoyee'),
-                'message': _('%d participants notifies') % sent_count,
-                'type': 'success'
-            }
-        }
+        # Fallback
+        self._post_fallback_summary()
 
     def _post_fallback_summary(self):
-        # Post simple summary if full body retrieval fails
+        """
+        Posts a basic summary to the Chantier's chatter if full email body retrieval fails.
+        """
         participant_names = ', '.join(self.participant_ids.mapped('name')[:5])
         self.chantier_id.message_post(
             body=_(
@@ -370,7 +416,15 @@ END:VCALENDAR"""
 
     # ============= Report Generation ============= #
     def action_generate_report(self):
-        # Generate PDF report and attach to visit
+        """
+        Generates a PDF report for the visit and attaches it to the current record.
+        
+        Raises:
+            UserError: If the visit is not in the 'completed' state.
+            
+        Returns:
+            dict: Client action returning a success notification.
+        """
         self.ensure_one()
         
         if self.state != 'completed':
@@ -385,7 +439,7 @@ END:VCALENDAR"""
             )
             
             # Render HTML
-            html_content = self.env['ir.actions.report']._render_qweb_html(
+            html_content, _html_content_type = self.env['ir.actions.report']._render_qweb_html(
                 'construction_visit.action_report_visit', 
                 [self.id]
             )
@@ -432,7 +486,15 @@ END:VCALENDAR"""
         }
 
     def action_send_report(self):
-        # Send generated report to all participants
+        """
+        Sends the generated PDF report to all participants via email.
+        
+        Raises:
+            UserError: If the report hasn't been generated or there are no participants.
+            
+        Returns:
+            dict: Client action returning a success notification.
+        """
         self.ensure_one()
         
         if not self.report_generated:
@@ -490,6 +552,52 @@ END:VCALENDAR"""
                 'type': 'success'
             }
         }
+
+    # ============= CRON: Automated Notifications (TASK-001) ============= #
+    @api.model
+    def _cron_send_visit_notifications(self):
+        """
+        Cron job: Automatically sends notifications for confirmed visits approaching within 48h.
+        
+        Runs daily. Finds visits that are:
+        - In 'confirmed' state.
+        - Not yet notified (`notification_sent` is False).
+        - Scheduled within the next 48 hours.
+        
+        Sends notifications and logs the results.
+        
+        Returns:
+            bool: True if successful.
+        """
+        now = fields.Datetime.now()
+        deadline = now + timedelta(hours=48)
+        
+        visits_to_notify = self.search([
+            ('state', '=', 'confirmed'),
+            ('notification_sent', '=', False),
+            ('date', '>=', now),
+            ('date', '<=', deadline),
+            ('participant_ids', '!=', False),
+        ])
+        
+        _logger.info(
+            "Cron visit notifications: %d visit(s) to notify", len(visits_to_notify)
+        )
+        
+        for visit in visits_to_notify:
+            try:
+                visit.action_send_notification()
+                _logger.info(
+                    "Cron: notification sent for visit '%s' (ID: %d)",
+                    visit.name, visit.id
+                )
+            except Exception as e:
+                _logger.error(
+                    "Cron: failed to notify visit '%s' (ID: %d) — %s",
+                    visit.name, visit.id, str(e)
+                )
+        
+        return True
 
     # ============= DYNAMIC REFRESH ============= #
     def refresh_stages(self):

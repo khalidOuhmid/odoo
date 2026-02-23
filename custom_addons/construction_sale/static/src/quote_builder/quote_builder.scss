@@ -736,3 +736,72 @@
         min-width: 150px;
     }
 }
+
+/* ============================================= */
+/* TASK-004: Insert Zone (Notion-style)          */
+/* ============================================= */
+.o_insert_zone {
+    height: 0;
+    overflow: visible;
+    position: relative;
+    cursor: pointer;
+
+    td {
+        padding: 0 !important;
+        border: none !important;
+        height: 0;
+        position: relative;
+    }
+}
+
+.o_insert_zone_inner {
+    position: relative;
+    height: 2px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.o_insert_zone_btn {
+    display: none;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: var(--qb-primary, #92564C);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 600;
+    padding: 2px 12px;
+    border-radius: 10px;
+    white-space: nowrap;
+    z-index: 10;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    animation: insertZoneFadeIn 0.15s ease-out;
+}
+
+.o_insert_zone:hover {
+    .o_insert_zone_inner {
+        background: var(--qb-primary, #92564C);
+        opacity: 0.3;
+    }
+
+    .o_insert_zone_btn {
+        display: inline-flex;
+        align-items: center;
+    }
+}
+
+@keyframes insertZoneFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}

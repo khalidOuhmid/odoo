@@ -347,11 +347,19 @@ class Chantier(models.Model):
         - Lot B: 100€ at 50% = 50€ weighted
         - Total: 200€
         - Progress = (100 + 50) / 200 × 100 = 75%
+        
+        TASK-013: Also triggers auto-LR transition when >= 95%.
         """
         for record in self:
             total_price = sum(record.lots_ids.mapped('price'))
             weighted_sum = sum(record.lots_ids.mapped('weighted_value'))
-            record.progress = (weighted_sum / total_price * 100) if total_price > 0 else 0.0
+            new_progress = (weighted_sum / total_price * 100) if total_price > 0 else 0.0
+            old_progress = record.progress
+            record.progress = new_progress
+            
+            # TASK-013: Auto-trigger LR stage at 95%
+            if old_progress < 95.0 and new_progress >= 95.0:
+                record._check_progress_95_trigger()
 
     @api.depends('lots_ids.price', 'quotation_ids.state', 'quotation_ids.amount_total')
     def _compute_total_cost(self):
@@ -464,9 +472,83 @@ class Chantier(models.Model):
                     self.reference, self.env.user.name)
         self.guarantee_status = 'released'
         self.message_post(
-            body=_("✅ Retenue de garantie libérée manuellement."),
+            body=_("✅ Retenue de garantie libérée manuellement par %s.") % self.env.user.name,
             message_type='notification'
         )
+        return True
+
+    # ============= TASK-013: Auto-LR at 95% ============= #
+    def _check_progress_95_trigger(self):
+        """
+        TASK-013: Automatically transitions the chantier to the LR (Levée de Réserve) stage
+        when progress reaches or exceeds 95%.
+        
+        When triggered:
+        1. Sets the stage to LR.
+        2. Calculates the guarantee release date as exactly 1 year from today.
+        3. Posts an informative message to the chatter.
+        4. The existing cron job `_cron_send_guarantee_reminders` handles subsequent reminders.
+        """
+        self.ensure_one()
+        
+        if not self.stage_id:
+            return
+        
+        stage_code = self.stage_id.code
+        
+        # Only trigger from TRAV chapter stages (T25, T50, T75, T100)
+        trav_stages = ['T25', 'T50', 'T75', 'T100']
+        if stage_code not in trav_stages:
+            return
+        
+        # Find the LR stage
+        lr_stage = self.env['construction.stage'].search([('code', '=', 'LR')], limit=1)
+        if not lr_stage:
+            _logger.warning('[CORE][TASK-013] LR stage not found in database')
+            return
+        
+        # Calculate guarantee release date: 1 year from now
+        today = fields.Date.today()
+        release_date = today + timedelta(days=365)
+        
+        # Transition to LR stage
+        old_stage_name = self.stage_id.name
+        self.with_context(bypass_stage_validation=True).write({
+            'stage_id': lr_stage.id,
+            'guarantee_release_date': release_date,
+            'guarantee_status': 'pending',
+        })
+        
+        _logger.info(
+            '[CORE][TASK-013] Chantier %s auto-transitioned to LR (progress: %.1f%%). '
+            'Guarantee release date: %s',
+            self.reference, self.progress, release_date
+        )
+        
+        # Post rich notification to chatter
+        self.message_post(
+            body=_(
+                "🔔 <b>Levée de réserve automatique</b><br/>"
+                "La progression du chantier a atteint <b>%.1f%%</b> (≥ 95%%).<br/>"
+                "<ul>"
+                "<li>Étape précédente : %s</li>"
+                "<li>Nouvelle étape : <b>%s</b></li>"
+                "<li>Retenue de garantie : <b>%.2f €</b> (%.0f%%)</li>"
+                "<li>Date de libération prévue : <b>%s</b></li>"
+                "</ul>"
+                "Les rappels automatiques seront envoyés à J-7 et J-0."
+            ) % (
+                self.progress,
+                old_stage_name,
+                lr_stage.name,
+                self.guarantee_retention_amount,
+                self.guarantee_retention_rate,
+                release_date.strftime('%d/%m/%Y'),
+            ),
+            message_type='notification',
+            subtype_xmlid='mail.mt_note',
+        )
+        
         return True
 
     @api.depends('lots_ids.subcontractor_id', 'lots_ids.execution_type')

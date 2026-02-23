@@ -3,6 +3,13 @@ from odoo import tools
 from odoo import models, fields, api
 
 class ConstructionFinanceAnalysisReport(models.Model):
+    """
+    SQL View for Construction Finance Analysis.
+    
+    This model aggregates financial data across sales orders, purchase orders,
+    and invoices to provide a comprehensive view of planned vs. actual revenue,
+    costs, and margins per chantier.
+    """
     _name = "construction.finance.analysis.report"
     _description = "Construction Finance Analysis"
     _auto = False
@@ -24,9 +31,15 @@ class ConstructionFinanceAnalysisReport(models.Model):
     commission_cost = fields.Monetary('Commissions Apporteurs', readonly=True)
     
     margin = fields.Monetary('Marge', readonly=True)
+    margin_percent = fields.Float('Marge %', readonly=True, group_operator='avg')
     currency_id = fields.Many2one('res.currency', 'Devise', readonly=True)
 
     def init(self):
+        """
+        Initializes the SQL view for the report.
+        Calculates planned/invoiced revenue, committed/invoiced costs,
+        commission costs, margin, and margin percentage.
+        """
         tools.drop_view_if_exists(self.env.cr, self._table)
         self.env.cr.execute("""
             CREATE OR REPLACE VIEW %s AS (
@@ -42,7 +55,12 @@ class ConstructionFinanceAnalysisReport(models.Model):
                     SUM(committed_cost) as committed_cost,
                     SUM(invoiced_cost) as invoiced_cost,
                     SUM(commission_cost) as commission_cost,
-                    SUM(invoiced_revenue) - SUM(invoiced_cost) - SUM(commission_cost) as margin
+                    SUM(invoiced_revenue) - SUM(invoiced_cost) - SUM(commission_cost) as margin,
+                    CASE 
+                        WHEN SUM(invoiced_revenue) > 0 
+                        THEN ROUND(((SUM(invoiced_revenue) - SUM(invoiced_cost) - SUM(commission_cost)) / SUM(invoiced_revenue) * 100)::numeric, 1)
+                        ELSE 0 
+                    END as margin_percent
                 FROM (
                     -- 1. REVENUE PLANNED (Sales Orders)
                     SELECT

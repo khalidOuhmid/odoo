@@ -52,104 +52,131 @@
 
                     <div class="contract-builder-grid">
                         <div class="contract-builder-panel">
-                            <h3>Settings</h3>
+                            <h3><i class="fa fa-cogs me-2"/>Paramètres du Contrat</h3>
 
-                            <div class="mb-3">
-                                <label class="form-label">Subcontractor</label>
-                                <select name="subcontractor_id" class="form-select js-builder-input" required="1">
-                                    <option value="">Select</option>
-                                    <t t-foreach="subcontractors" t-as="partner">
-                                        <option t-att-value="partner.id"
-                                                t-att-selected="partner.id == default_values.get('subcontractor_id') and 'selected' or None">
-                                            <t t-esc="partner.name"/>
-                                        </option>
-                                    </t>
-                                </select>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Work Packages</label>
-                                <select name="lot_ids" class="form-select js-builder-input" multiple="1" size="8">
-                                    <t t-foreach="chantier.lots_ids" t-as="lot">
-                                        <option t-att-value="lot.id"
-                                                t-att-selected="lot.id in default_values.get('lot_ids', []) and 'selected' or None">
-                                            <t t-esc="lot.name"/>
-                                        </option>
-                                    </t>
-                                </select>
-                            </div>
-
-                            <div class="builder-section-divider"/>
-
-                            <div class="mb-3">
-                                <label class="form-label">Contract Template</label>
-                                <select name="template_id" class="form-select js-builder-input" required="1">
-                                    <option value="">Select</option>
-                                    <t t-foreach="templates" t-as="template">
-                                        <option t-att-value="template.id"
-                                                t-att-selected="template.id == default_values.get('template_id') and 'selected' or None">
-                                            <t t-esc="template.name"/>
-                                        </option>
-                                    </t>
-                                </select>
-                            </div>
-
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <label class="form-label">Contract Date</label>
-                                    <input type="date" class="form-control js-builder-input" name="contract_date"
-                                           t-att-value="default_values.get('contract_date')"/>
+                            <!-- SECTION 1: Sous-traitant -->
+                            <div class="builder-section">
+                                <div class="builder-section-title">
+                                    <i class="fa fa-user-circle me-2"/>Sous-traitant
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label">Retention (%)</label>
-                                    <input type="number" step="0.1" min="0" max="20"
-                                           class="form-control js-builder-input" name="retention_rate"
-                                           t-att-value="default_values.get('retention_rate')"/>
+                                <div class="mb-3">
+                                    <select name="subcontractor_id" class="form-select js-builder-input" required="1">
+                                        <option value="">— Sélectionner —</option>
+                                        <t t-foreach="subcontractors" t-as="partner">
+                                            <option t-att-value="partner.id"
+                                                    t-att-selected="partner.id == default_values.get('subcontractor_id') and 'selected' or None">
+                                                <t t-esc="partner.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
                                 </div>
                             </div>
 
-                            <div class="row g-2 mt-2">
-                                <div class="col-6">
-                                    <label class="form-label">Work Start Date</label>
-                                    <input type="date" class="form-control js-builder-input" name="start_date"
-                                           t-att-value="default_values.get('start_date')"/>
+                            <!-- SECTION 2: Lots / Prestations -->
+                            <div class="builder-section">
+                                <div class="builder-section-title">
+                                    <i class="fa fa-folder-open me-2"/>Lots / Prestations
                                 </div>
-                                <div class="col-6">
-                                    <label class="form-label">Work End Date</label>
-                                    <input type="date" class="form-control js-builder-input" name="end_date"
-                                           t-att-value="default_values.get('end_date')"/>
+                                <div class="mb-3">
+                                    <select name="lot_ids" class="form-select js-builder-input" multiple="1" size="6">
+                                        <t t-foreach="chantier.lots_ids" t-as="lot">
+                                            <option t-att-value="lot.id"
+                                                    t-att-selected="lot.id in default_values.get('lot_ids', []) and 'selected' or None">
+                                                <t t-esc="lot.code"/> — <t t-esc="lot.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                    <small class="text-muted mt-1 d-block">
+                                        <i class="fa fa-info-circle me-1"/>Ctrl+Clic pour sélection multiple
+                                    </small>
                                 </div>
                             </div>
 
-                            <div class="form-check form-switch mt-4">
-                                <input class="form-check-input js-builder-input" type="checkbox" id="builder-deliverables"
-                                       name="generate_deliverables"
-                                       t-att-checked="default_values.get('generate_deliverables') and 'checked' or None"/>
-                                <label class="form-check-label" for="builder-deliverables">
-                                    Auto-generate deliverables
-                                </label>
+                            <!-- SECTION 3: Modèle de contrat -->
+                            <div class="builder-section">
+                                <div class="builder-section-title">
+                                    <i class="fa fa-file-text me-2"/>Modèle de contrat
+                                </div>
+                                <div class="mb-3">
+                                    <select name="template_id" class="form-select js-builder-input" required="1">
+                                        <option value="">— Sélectionner —</option>
+                                        <t t-foreach="templates" t-as="template">
+                                            <option t-att-value="template.id"
+                                                    t-att-selected="template.id == default_values.get('template_id') and 'selected' or None">
+                                                <t t-esc="template.name"/>
+                                            </option>
+                                        </t>
+                                    </select>
+                                </div>
                             </div>
 
-                            <div class="form-check form-switch mt-2">
-                                <input class="form-check-input js-builder-input" type="checkbox" id="builder-send"
-                                       name="send_immediately"
-                                       t-att-checked="default_values.get('send_immediately') and 'checked' or None"/>
-                                <label class="form-check-label" for="builder-send">
-                                    Send immediately for signature
-                                </label>
+                            <!-- SECTION 4: Planification -->
+                            <div class="builder-section">
+                                <div class="builder-section-title">
+                                    <i class="fa fa-calendar me-2"/>Planification
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Date du contrat</label>
+                                        <input type="date" class="form-control js-builder-input" name="contract_date"
+                                               t-att-value="default_values.get('contract_date')"/>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Retenue (%)</label>
+                                        <input type="number" step="0.1" min="0" max="20"
+                                               class="form-control js-builder-input" name="retention_rate"
+                                               t-att-value="default_values.get('retention_rate')"/>
+                                    </div>
+                                </div>
+                                <div class="row g-2 mt-2">
+                                    <div class="col-6">
+                                        <label class="form-label">Début travaux</label>
+                                        <input type="date" class="form-control js-builder-input" name="start_date"
+                                               t-att-value="default_values.get('start_date')"/>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label">Fin travaux</label>
+                                        <input type="date" class="form-control js-builder-input" name="end_date"
+                                               t-att-value="default_values.get('end_date')"/>
+                                    </div>
+                                </div>
                             </div>
 
+                            <!-- SECTION 5: Options -->
+                            <div class="builder-section">
+                                <div class="builder-section-title">
+                                    <i class="fa fa-sliders me-2"/>Options
+                                </div>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input js-builder-input" type="checkbox" id="builder-deliverables"
+                                           name="generate_deliverables"
+                                           t-att-checked="default_values.get('generate_deliverables') and 'checked' or None"/>
+                                    <label class="form-check-label" for="builder-deliverables">
+                                        Générer les livrables automatiquement
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input js-builder-input" type="checkbox" id="builder-send"
+                                           name="send_immediately"
+                                           t-att-checked="default_values.get('send_immediately') and 'checked' or None"/>
+                                    <label class="form-check-label" for="builder-send">
+                                        Envoyer immédiatement pour signature
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- SUMMARY CARDS -->
                             <div class="builder-summary">
                                 <div class="builder-summary-card">
-                                    <span>Site</span>
+                                    <span><i class="fa fa-building me-1"/>Chantier</span>
                                     <strong><t t-esc="chantier.name"/></strong>
                                 </div>
                                 <div class="builder-summary-card">
-                                    <span>Packages</span>
+                                    <span><i class="fa fa-cubes me-1"/>Lots</span>
                                     <strong><t t-esc="len(chantier.lots_ids)"/></strong>
                                 </div>
                                 <div class="builder-summary-card">
-                                    <span>Templates</span>
+                                    <span><i class="fa fa-file-o me-1"/>Modèles</span>
                                     <strong><t t-esc="len(templates)"/></strong>
                                 </div>
                             </div>
