@@ -11,7 +11,6 @@ Includes:
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
-from typing import Any
 
 
 class SaleOrderLine(models.Model):
@@ -277,10 +276,4 @@ class SaleOrderLine(models.Model):
                 # 2. No negative quantities
                 if line.product_uom_qty < 0:
                     raise ValidationError(_("Line '%s': Quantity cannot be negative.") % line.name)
-                
-                # 3. Warning on zero price (valid for gifts/warranty, but dangerous otherwise)
-                if line.price_unit == 0 and not line.is_optional and not line.product_uom_qty == 0:
-                    # We could block, but for flexibility we might just allow it.
-                    # Strict mode:
-                    # raise ValidationError(_("Line '%s': Price must be greater than 0.") % line.name)
-                    pass
+

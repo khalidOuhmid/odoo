@@ -14,26 +14,26 @@ class TestConstructionChantier(TransactionCase):
             'is_company': True,
         })
         
+        cls.chapter_avt = cls.env['construction.chapter'].create({
+            'name': 'Avant Vente Test',
+            'code': 'AVT_TEST',
+            'sequence': 10,
+        })
+        
         cls.stage_draft = cls.env['construction.stage'].create({
-            'name': 'Prospect / Étude',
-            'code': 'PROSP',
+            'name': 'Prospect / Étude Test',
+            'code': 'PROSP_TEST',
             'sequence': 1,
-            'chapter_code': 'AVT',
+            'chapter_id': cls.chapter_avt.id,
             'fold': False,
         })
         
         cls.stage_da = cls.env['construction.stage'].create({
-            'name': 'Dossier Accepté',
-            'code': 'DA',
+            'name': 'Dossier Accepté Test',
+            'code': 'DA_TEST',
             'sequence': 2,
-            'chapter_code': 'PREP',
+            'chapter_id': cls.chapter_avt.id,
             'fold': False,
-        })
-        
-        cls.chapter_avt = cls.env['construction.chapter'].create({
-            'name': 'Avant Vente',
-            'code': 'AVT',
-            'sequence': 10,
         })
         
         # Override stage defaults for testing
@@ -78,11 +78,11 @@ class TestConstructionChantier(TransactionCase):
 
     def test_action_move_to_next_stage(self):
         # GIVEN a chantier in Prospect stage
-        self.assertEqual(self.chantier.stage_id.code, 'PROSP')
+        self.assertEqual(self.chantier.stage_id.code, 'PROSP_TEST')
         # WHEN moving to next stage
         self.chantier.action_move_to_next_stage()
         # THEN stage should be DA
-        self.assertEqual(self.chantier.stage_id.code, 'DA')
+        self.assertEqual(self.chantier.stage_id.code, 'DA_TEST')
 
     def test_action_release_guarantee(self):
         # GIVEN a chantier with a pending guarantee
@@ -97,14 +97,16 @@ class TestConstructionChantier(TransactionCase):
     def test_check_progress_95_trigger(self):
         # GIVEN a chantier in a TRAV stage
         stage_t75 = self.env['construction.stage'].create({
-            'name': 'Travaux 75%',
-            'code': 'T75',
+            'name': 'Travaux 75% Test',
+            'code': 'T75_TEST',
             'sequence': 5,
+            'chapter_id': self.chapter_avt.id,
         })
         stage_lr = self.env['construction.stage'].create({
-            'name': 'Levée de Réserve',
-            'code': 'LR',
+            'name': 'Levée de Réserve Test',
+            'code': 'LR_TEST',
             'sequence': 6,
+            'chapter_id': self.chapter_avt.id,
         })
         self.chantier.write({'stage_id': stage_t75.id})
         

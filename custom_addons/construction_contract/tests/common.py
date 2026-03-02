@@ -1,95 +1,148 @@
 # -*- coding: utf-8 -*-
+"""Common test fixtures for the construction_contract module.
+
+Provides a shared mixin that creates the minimum viable dataset
+for contract integration tests: company, subcontractor, chantier,
+lot, purchase order, and a draft contract.
+
+All record creation is guarded against missing models so that
+subsets of tests can run even when optional dependencies are
+not installed.
+"""
+
 from odoo.tests import common
 from datetime import date, timedelta
 import base64
+import logging
 
-class ContractTestMixin(object):
-    """
-    Mixin to setup the common dataset for construction contract tests.
-    Used by both TransactionCase and HttpCase.
+_logger = logging.getLogger(__name__)
+
+
+class ContractTestMixin:
+    """Mixin for construction contract test data setup.
+
+    Call ``setUpContractData()`` in your ``setUpClass()`` to get:
+    - ``cls.company`` — current company, name set to BLG GROUPE
+    - ``cls.subcontractor`` — partner with ``supplier_rank=1``
+    - ``cls.chantier`` — construction.chantier record
+    - ``cls.lot`` — construction.lot linked to chantier
+    - ``cls.po`` — purchase.order for the subcontractor
+    - ``cls.contract`` — draft construction.contract
+    - ``cls.template`` — contract.template with minimal HTML
     """
 
     @classmethod
     def setUpContractData(cls):
-        # 1. Company BLG
+        """Create shared test records used across the test suite."""
+
+        # 1. Company
         cls.company = cls.env.company
         cls.company.write({
             'name': 'BLG GROUPE',
             'street': '44, rue de la commanderie des Templiers',
             'zip': '33440',
-            'city': 'Ambarès et Lagrave',
-            'logo': base64.b64encode(b'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'), # Mock 1x1 GIF
+            'city': 'Ambarès-et-Lagrave',
+            'company_registry': '80123456700012',
         })
 
-        # 2. Subcontractor
+        # 2. Subcontractor partner (with compliant documents for contract creation)
+        _mock_doc = base64.b64encode(b'%PDF-1.4 mock document').decode('ascii')
         cls.subcontractor = cls.env['res.partner'].create({
-            'name': 'SARL SOUS-TRAITANT',
+            'name': 'SARL Sous-Traitant Test',
             'is_company': True,
-            'is_subcontractor': True,
-            'email': 'sous-traitant@example.com',
+            'email': 'st-test@example.com',
             'street': '12 rue des Artisans',
             'zip': '33000',
             'city': 'Bordeaux',
-            'phone': '0600000000',
-            'siret': '12345678900001',
+            'phone': '0556000000',
+            'supplier_rank': 1,
+            'company_registry': '12345678901234',
+            # Doc fields from construction_subcontractor (used by model constraint)
+            'doc_urssaf': _mock_doc,
+            'doc_kbis': _mock_doc,
+            'doc_insurance_dec': _mock_doc,
+        })
+        # Force-set statuses AFTER creation to bypass compute override
+        cls.subcontractor.write({
+            'doc_urssaf_status': 'valid',
+            'doc_kbis_status': 'valid',
+            'doc_insurance_dec_status': 'valid',
         })
 
-        # 3. Chantier (Construction Project)
-        # Check if model exists (dependency construction_core)
-        if 'construction.chantier' in cls.env:
-            cls.chantier = cls.env['construction.chantier'].create({
-                'name': 'Chantier Test Residential',
-                'code': 'CHANTIER-001',
-                'address_id': cls.env['res.partner'].create({
-                    'name': 'Adresse Chantier',
-                    'street': '5 avenue des Chenes',
-                    'zip': '33000',
-                    'city': 'Bordeaux',
-                }).id
-            })
-        else:
-            # Fallback for mock environment if core not fully loaded logic matches
-            # But the requirement says "1 chantier (construction.project) avec adresse."
-            # The actual model name in prev files was 'construction.chantier'.
-            pass
+        # 3. Chantier
+        cls.chantier = cls.env['construction.chantier'].create({
+            'name': 'Chantier QA Résidentiel',
+            'client': cls.env['res.partner'].create({
+                'name': 'Client QA Test',
+            }).id,
+        })
 
-        # 4. Lot (Work Package)
-        # Check if model exists
-        if 'construction.lot' in cls.env:
-            cls.lot = cls.env['construction.lot'].create({
-                'name': 'Lot 01 - Gros Oeuvre',
-                'chantier_id': cls.chantier.id,
-                'description': 'Travaux de gros oeuvre et vrd',
-            })
-            
-            # 4.1. Documents d'essai
-            # Creating dummy attachments linked to the lot
-            for doc_name in ['planning_chantier.pdf', 'planning_lot.pdf', 'cctp.pdf', 'bon_commande.pdf']:
-                cls.env['ir.attachment'].create({
-                    'name': doc_name,
-                    'type': 'binary',
-                    'datas': base64.b64encode(b'%PDF-1.4...mock content...'),
-                    'res_model': 'construction.lot',
-                    'res_id': cls.lot.id,
-                    'mimetype': 'application/pdf',
-                })
+        # 4. Lot
+        cls.lot = cls.env['construction.lot'].create({
+            'name': 'Lot 01 - Gros Œuvre',
+            'code': 'GO_QA_01',
+            'chantier_id': cls.chantier.id,
+            'execution_type': 'external',
+            'subcontractor_id': cls.subcontractor.id,
+        })
 
-        # 5. Purchase Order (linked to lot)
+        # 5. Second lot for multi-lot tests
+        cls.lot2 = cls.env['construction.lot'].create({
+            'name': 'Lot 02 - Électricité',
+            'code': 'ELEC_QA_02',
+            'chantier_id': cls.chantier.id,
+            'execution_type': 'external',
+            'subcontractor_id': cls.subcontractor.id,
+        })
+
+        # 6. Contract template (minimal)
+        cls.template = cls.env['construction.contract.template'].create({
+            'name': 'Template QA Test',
+            'grapesjs_html': '<h1>Contract {{contract.name}}</h1><p>{{subcontractor.name}}</p>',
+            'grapesjs_css': 'h1 { color: #92564C; }',
+        })
+
+        # 7. Purchase Order
+        cls.product = cls.env['product.product'].create({
+            'name': 'Prestation QA Test',
+            'type': 'service',
+            'standard_price': 100.0,
+            'list_price': 150.0,
+        })
+
         cls.po = cls.env['purchase.order'].create({
             'partner_id': cls.subcontractor.id,
-            'name': 'PO-TEST-001',
             'date_order': date.today(),
-            'amount_total': 10000.0,
-            # If construction_purchase module links logs/chantier
-            # 'chantier_id': cls.chantier.id, # Assuming field exists
+            'order_line': [(0, 0, {
+                'product_id': cls.product.id,
+                'name': 'Prestation test',
+                'product_qty': 10,
+                'price_unit': 100.0,
+            })],
         })
-        
-        # 6. Construction Contract (Draft)
+
+        # 8. Draft contract
         cls.contract = cls.env['construction.contract'].create({
-            'name': 'New Contract', # Will be recomputed
             'subcontractor_id': cls.subcontractor.id,
             'chantier_id': cls.chantier.id,
             'lot_ids': [(6, 0, [cls.lot.id])],
-            'purchase_order_ids': [(6, 0, [cls.po.id])],
+            'template_id': cls.template.id,
             'state': 'draft',
+            'date': date.today(),
+            'start_date': date.today(),
+            'end_date': date.today() + timedelta(days=180),
+            'retention_rate': 5.0,
         })
+
+    @classmethod
+    def _create_mock_signature_data(cls):
+        """Create a minimal base64-encoded 1x1 GIF for signature tests.
+
+        Returns:
+            str: Base64-encoded image string.
+        """
+        return base64.b64encode(
+            b'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff'
+            b'\x00\x00\x00!\xf9\x04\x00\x00\x00\x00\x00,'
+            b'\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
+        ).decode('ascii')

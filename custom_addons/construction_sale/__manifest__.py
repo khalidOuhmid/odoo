@@ -26,11 +26,14 @@
     ],
     'assets': {
         'web.assets_backend': [
+            ('prepend', 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap'),
+            'construction_sale/static/lib/sortable/Sortable.min.js',
             'construction_sale/static/src/stub_widgets.xml',
             'construction_sale/static/src/stub_widgets.js',
             'construction_sale/static/src/quote_builder/quote_builder.xml',
             'construction_sale/static/src/quote_builder/quote_builder.scss',
             'construction_sale/static/src/quote_builder/quote_builder.js',
+            'construction_sale/static/src/quote_builder/quote_builder_dnd.js',
         ],
     },
     'installable': True,

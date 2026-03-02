@@ -310,11 +310,13 @@ class Chantier(models.Model):
     # ============= Computed Fields ============= #
     @api.depends('stage_id', 'stage_id.chapter_id')
     def _compute_chapter_name(self):
+        """Compute the name of the chapter associated with the current stage."""
         for record in self:
             record.chapter_name = record.stage_id.chapter_id.name if record.stage_id and record.stage_id.chapter_id else False
 
     @api.depends('date_start_contract', 'date_end_contract')
     def _compute_duration_planned(self):
+        """Compute the planned duration in days based on contract dates."""
         for record in self:
             if record.date_start_contract and record.date_end_contract:
                 delta = record.date_end_contract - record.date_start_contract
@@ -324,6 +326,7 @@ class Chantier(models.Model):
 
     @api.depends('date_start_internal', 'date_end_internal', 'state')
     def _compute_duration_actual(self):
+        """Compute the actual duration in days. Uses state to determine if ongoing."""
         today = fields.Date.today()
         for record in self:
             if record.date_start_internal and record.date_end_internal:
@@ -377,6 +380,7 @@ class Chantier(models.Model):
                 record.total_cost = sum(record.lots_ids.mapped('price'))
 
     def _compute_quotation_count(self):
+        """Compute the number of associated quotations."""
         for record in self:
             record.quotation_count = len(record.quotation_ids)
 
@@ -390,6 +394,7 @@ class Chantier(models.Model):
             )
             record.subcontractor_count = len(external_lots.mapped('subcontractor_id'))
     def _compute_lots_count(self):
+        """Compute the number of associated lots."""
         for record in self:
             record.lots_count = len(record.lots_ids)
 
@@ -729,6 +734,7 @@ class Chantier(models.Model):
             
             # Helper to compare stages (considering chapter order + stage sequence)
             def is_at_or_after(target_stage):
+                """Check if current stage is at or after the target stage."""
                 if not target_stage:
                     return False
                 target_chapter = target_stage.chapter_id
@@ -913,6 +919,7 @@ class Chantier(models.Model):
     # ============= CRUD Methods ============= #
     @api.model_create_multi
     def create(self, vals_list):
+        """Override create to generate sequences and set initial stages."""
         for vals in vals_list:
             if not vals.get('reference') or vals.get('reference') == '/':
                 vals['reference'] = self.env['ir.sequence'].next_by_code('construction.chantier') or '/'
@@ -927,6 +934,7 @@ class Chantier(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        """Override write to validate stage transitions and dates."""
         if 'stage_id' in vals and not self.env.context.get('bypass_stage_validation'):
             if not self.env.user.has_group('construction_core.group_construction_admin'):
                 raise ValidationError(_(

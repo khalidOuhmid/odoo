@@ -15,6 +15,9 @@ import { debounce } from "@web/core/utils/timing";
  * - Lot-based organization
  * - LocalStorage persistence (F5-safe)
  * - Custom product creation wizard
+ *
+ * Margin formula: MARKUP — price = cost × (1 + margin% / 100)
+ * Example: cost=100, margin=50% → price=150
  */
 export class QuoteBuilder extends Component {
     setup() {
@@ -25,6 +28,14 @@ export class QuoteBuilder extends Component {
         // Storage Keys - Note: cartStoreKey is set dynamically after orderId is known
         this.projectStoreKey = 'blg_active_project';
         this.baseCartStoreKey = 'blg_quote_draft';
+
+        // Stable line ID counter (for t-key in template)
+        this._nextLineId = 1;
+
+        // Undo/Redo stacks (non-reactive, max 50 entries)
+        this._undoStack = [];
+        this._redoStack = [];
+        this._maxUndoStack = 50;
 
         // Reactive State
         this.state = useState({
@@ -52,6 +63,11 @@ export class QuoteBuilder extends Component {
             resetConfirmChecked: false,
             // TASK-004: Inline insertion position
             insertAtIndex: null,
+            // DnD: version counter to trigger Sortable re-init
+            cartVersion: 0,
+            // Undo/Redo: reactive counters for UI buttons
+            undoCount: 0,
+            redoCount: 0,
         });
 
         onWillStart(async () => {
@@ -71,13 +87,12 @@ export class QuoteBuilder extends Component {
             this.state.isDirty = true;
         }, () => [this.state.cart, this.state.chantierId]);
 
-        // US-SAL-003: Auto-save every 30 seconds
+        // Auto-save every 30 seconds
         useEffect(() => {
             const interval = setInterval(() => {
                 if (this.state.cart.length > 0 && this.state.isDirty) {
                     this.saveDraft();
                     this.notification.add("Brouillon sauvegardé", { type: "info", sticky: false });
-                    console.log('[QuoteBuilder] Auto-save triggered');
                 }
             }, 30000);
             return () => clearInterval(interval);
@@ -98,12 +113,33 @@ export class QuoteBuilder extends Component {
 
         // Debounced search
         this.debouncedSearch = debounce(this._performSearch.bind(this), 300);
+
+        // Ctrl+Z / Ctrl+Y keyboard listener for undo/redo
+        useEffect(() => {
+            const handleKeyDown = (e) => {
+                if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+                    if (e.key === 'z' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.undo();
+                    } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
+                        e.preventDefault();
+                        this.redo();
+                    }
+                }
+            };
+            window.addEventListener('keydown', handleKeyDown);
+            return () => window.removeEventListener('keydown', handleKeyDown);
+        }, () => []);
     }
 
     // ===========================================
     // CONTEXT INITIALIZATION
     // ===========================================
 
+    /**
+     * Initialize context from action params or localStorage.
+     * Sets chantierId and orderId on the reactive state.
+     */
     async initializeContext() {
         console.log('[QuoteBuilder] Initializing...');
 
@@ -117,8 +153,8 @@ export class QuoteBuilder extends Component {
                     const parsed = JSON.parse(stored);
                     chantierId = parsed.chantierId;
                     orderId = parsed.orderId;
-                } catch (e) {
-                    console.warn('[QuoteBuilder] Failed to parse stored project');
+                } catch {
+                    // Corrupted stored project — ignore
                 }
             }
         }
@@ -130,6 +166,11 @@ export class QuoteBuilder extends Component {
         }
     }
 
+    /**
+     * Persist project context to localStorage for F5-safe navigation.
+     * @param {number} chantierId - Active construction site ID
+     * @param {number} orderId - Active sale order ID
+     */
     persistProjectContext(chantierId, orderId) {
         localStorage.setItem(this.projectStoreKey, JSON.stringify({
             chantierId,
@@ -142,13 +183,16 @@ export class QuoteBuilder extends Component {
     // DATA LOADING
     // ===========================================
 
+    /**
+     * Load initial product catalog and chantier details.
+     * Called once during onWillStart.
+     */
     async loadInitialData() {
         try {
-            // Load products (unfiltered initially)
             const products = await this.orm.call(
                 "sale.order",
                 "search_products_for_spa",
-                ["", null],  // search_term, lot_category_id
+                ["", null],
                 { limit: 100 }
             );
             this.state.products = products;
@@ -157,52 +201,46 @@ export class QuoteBuilder extends Component {
                 await this.loadChantierDetails(this.state.chantierId);
             }
         } catch (e) {
-            console.error("[QuoteBuilder] Load error", e);
             this.notification.add("Erreur chargement", { type: "danger" });
         } finally {
             this.state.loading = false;
         }
     }
 
+    /**
+     * Reload product catalog filtered by selected lot and search term.
+     * Called on lot selection change and search input.
+     */
     async loadProducts() {
         try {
             this.state.loading = true;
 
-            // FIX FILTRAGE: Get the category_id of the selected lot
             let lotCategoryId = null;
             if (this.state.selectedLotId) {
                 const selectedLot = this.state.lots.find(l => l.id === this.state.selectedLotId);
-                console.log("[QuoteBuilder] Selected lot:", selectedLot);
-
                 if (selectedLot && selectedLot.category_id) {
-                    // Many2one returns [id, name] array
                     lotCategoryId = Array.isArray(selectedLot.category_id)
                         ? selectedLot.category_id[0]
                         : selectedLot.category_id;
-                    console.log("[QuoteBuilder] Filtering by category_id:", lotCategoryId);
-                } else {
-                    console.warn("[QuoteBuilder] Selected lot has no category_id:", selectedLot);
                 }
-            } else {
-                console.log("[QuoteBuilder] No lot selected, showing all products");
             }
-
-            console.log("[QuoteBuilder] Calling RPC with search_term:", this.state.searchTerm, "lot_category_id:", lotCategoryId);
 
             this.state.products = await this.orm.call(
                 "sale.order",
                 "search_products_for_spa",
-                [this.state.searchTerm || "", lotCategoryId, 100]  // Pass all positional args
+                [this.state.searchTerm || "", lotCategoryId, 100]
             );
-
-            console.log("[QuoteBuilder] Loaded", this.state.products.length, "products");
         } catch (e) {
-            console.error("[QuoteBuilder] Refresh error", e);
+            this.notification.add("Erreur chargement produits", { type: "danger" });
         } finally {
             this.state.loading = false;
         }
     }
 
+    /**
+     * Load chantier name and associated lots for sidebar display.
+     * @param {number} chantierId - ID of the construction site to load
+     */
     async loadChantierDetails(chantierId) {
         try {
             const chantiers = await this.orm.searchRead(
@@ -215,7 +253,6 @@ export class QuoteBuilder extends Component {
                 this.state.chantierName = chantiers[0].name;
 
                 if (chantiers[0].lots_ids?.length > 0) {
-                    // FIX FILTRAGE: Also fetch category_id for lot filtering
                     this.state.lots = await this.orm.searchRead(
                         "construction.lot",
                         [["id", "in", chantiers[0].lots_ids]],
@@ -224,26 +261,23 @@ export class QuoteBuilder extends Component {
                 }
             }
         } catch (e) {
-            console.error("[QuoteBuilder] Chantier load error", e);
+            this.notification.add("Erreur chargement chantier", { type: "danger" });
         }
     }
 
     /**
-     * TASK 2: Load existing order lines into cart
-     * When opening builder on existing quote S00123, populate cart with existing lines
+     * Load existing SO lines into cart when opening an existing order.
+     * Converts server records to cart-format objects.
+     * @returns {boolean} true if lines were loaded, false otherwise
      */
     async loadExistingOrderLines() {
         const orderId = this.state.orderId || this.props.action?.context?.active_id;
 
         if (!orderId) {
-            console.log('[QuoteBuilder] No order ID - starting with empty cart');
             return false;
         }
 
         try {
-            console.log('[QuoteBuilder] Loading existing lines for order:', orderId);
-
-            // Fetch all lines for this order
             const lines = await this.orm.searchRead(
                 "sale.order.line",
                 [["order_id", "=", orderId], ["display_type", "=", false]],
@@ -257,13 +291,11 @@ export class QuoteBuilder extends Component {
             );
 
             if (lines.length === 0) {
-                console.log('[QuoteBuilder] No existing lines found');
                 return false;
             }
 
-            // Convert to cart format, grouped by lot
             const cartItems = lines.map(line => ({
-                id: line.id,  // Keep server ID for updates
+                id: line.id,
                 product_id: line.product_id?.[0],
                 name: line.name,
                 qty: line.product_uom_qty,
@@ -282,22 +314,16 @@ export class QuoteBuilder extends Component {
                 },
             }));
 
-            // Sort by lot for proper grouping
             cartItems.sort((a, b) => (a.lot_id || 0) - (b.lot_id || 0));
-
+            // Assign stable UIDs to loaded lines
+            cartItems.forEach(item => this._assignUid(item));
             this.state.cart = cartItems;
-            console.log('[QuoteBuilder] Loaded', cartItems.length, 'existing lines');
+            this.state.cartVersion++;
 
             return true;
-        } catch (e) {
-            console.error('[QuoteBuilder] Error loading existing lines:', e);
+        } catch {
             return false;
         }
-    }
-
-    async checkUserPermissions() {
-        // Margin always visible - no permission check needed
-        this.state.showMargin = true;
     }
 
     // ===========================================
@@ -508,8 +534,6 @@ export class QuoteBuilder extends Component {
             await this.loadProducts();
             this.onCloseCreateProductWizard();
         } catch (e) {
-            console.error('[QuoteBuilder] Create error', e);
-            // Extract server error message if available
             const serverMsg = e?.data?.message || e?.message || "Création impossible";
             this.notification.add("Erreur: " + serverMsg, { type: "danger" });
         } finally {
@@ -675,6 +699,8 @@ export class QuoteBuilder extends Component {
         const wp = this.state.wizardProduct;
         if (!wp) return;
 
+        this._pushUndo();
+
         const newLine = {
             product_id: wp.id,
             name: wp.overrideName,
@@ -694,6 +720,7 @@ export class QuoteBuilder extends Component {
                 notes: wp.notes,
             },
         };
+        this._assignUid(newLine);
 
         // TASK-004: Insert at specific position if set, otherwise append
         if (this.state.insertAtIndex !== null && this.state.insertAtIndex !== undefined) {
@@ -704,6 +731,7 @@ export class QuoteBuilder extends Component {
             this.state.cart.push(newLine);
             this.notification.add(`✓ Ajouté: ${wp.overrideName}`, { type: "success" });
         }
+        this.state.cartVersion++;
 
         this.onCloseLineWizard();
     }
@@ -778,8 +806,10 @@ export class QuoteBuilder extends Component {
     }
 
     onRemoveLine(index) {
+        this._pushUndo();
         const line = this.state.cart[index];
         this.state.cart.splice(index, 1);
+        this.state.cartVersion++;
         this.notification.add(`Supprimé: ${line?.name}`, { type: "info" });
     }
 
@@ -807,6 +837,90 @@ export class QuoteBuilder extends Component {
         } else if (line.uom_type === 'ml' && L > 0) {
             line.qty = L;
         }
+    }
+
+    // ===========================================
+    // UNDO / REDO SYSTEM
+    // ===========================================
+
+    /**
+     * Assign a stable unique ID to a cart line.
+     * Used as t-key in OWL template to prevent full DOM rebuild on reorder.
+     */
+    _assignUid(line) {
+        line._uid = this._nextLineId++;
+        return line;
+    }
+
+    /**
+     * Push current cart state onto undo stack before a mutation.
+     * Clears redo stack (linear history model).
+     */
+    _pushUndo() {
+        // Deep clone the current cart
+        const snapshot = this.state.cart.map(line => ({
+            ...line,
+            specs: line.specs ? { ...line.specs } : {},
+        }));
+        this._undoStack.push(snapshot);
+        // Cap the stack size
+        if (this._undoStack.length > this._maxUndoStack) {
+            this._undoStack.shift();
+        }
+        // Clear redo on new action
+        this._redoStack = [];
+        // Update reactive counters
+        this.state.undoCount = this._undoStack.length;
+        this.state.redoCount = 0;
+    }
+
+    /**
+     * Undo: restore previous cart state from undo stack.
+     */
+    undo() {
+        if (this._undoStack.length === 0) return;
+        // Save current state to redo stack
+        const current = this.state.cart.map(line => ({
+            ...line,
+            specs: line.specs ? { ...line.specs } : {},
+        }));
+        this._redoStack.push(current);
+        // Pop from undo stack
+        const previous = this._undoStack.pop();
+        // Ensure UIDs exist
+        previous.forEach(item => {
+            if (!item._uid) this._assignUid(item);
+        });
+        this.state.cart = previous;
+        this.state.cartVersion++;
+        // Update counters
+        this.state.undoCount = this._undoStack.length;
+        this.state.redoCount = this._redoStack.length;
+        this.notification.add("↩ Annulé", { type: "info", sticky: false });
+    }
+
+    /**
+     * Redo: restore next cart state from redo stack.
+     */
+    redo() {
+        if (this._redoStack.length === 0) return;
+        // Save current to undo stack
+        const current = this.state.cart.map(line => ({
+            ...line,
+            specs: line.specs ? { ...line.specs } : {},
+        }));
+        this._undoStack.push(current);
+        // Pop from redo stack
+        const next = this._redoStack.pop();
+        next.forEach(item => {
+            if (!item._uid) this._assignUid(item);
+        });
+        this.state.cart = next;
+        this.state.cartVersion++;
+        // Update counters
+        this.state.undoCount = this._undoStack.length;
+        this.state.redoCount = this._redoStack.length;
+        this.notification.add("↪ Refait", { type: "info", sticky: false });
     }
 
     // ===========================================
@@ -915,7 +1029,13 @@ export class QuoteBuilder extends Component {
                 // Only restore if same chantier AND same order
                 if (parsed.chantierId === this.state.chantierId &&
                     parsed.orderId === this.state.orderId) {
-                    this.state.cart = parsed.cart || [];
+                    const cart = parsed.cart || [];
+                    // Assign UIDs to restored lines (they may not have them from old drafts)
+                    cart.forEach(item => {
+                        if (!item._uid) this._assignUid(item);
+                    });
+                    this.state.cart = cart;
+                    this.state.cartVersion++;
                     if (this.state.cart.length > 0) {
                         this.notification.add(`Brouillon restauré (${this.state.cart.length})`, { type: "info" });
                     }
@@ -1071,8 +1191,7 @@ export class QuoteBuilder extends Component {
 
                     this.notification.add(`✅ Nouvelle version créée: ${newName}`, { type: "success" });
                 } else {
-                    // DRAFT ORDER: Can update normally
-                    console.log("[QuoteBuilder] Updating draft order:", orderId);
+                    // DRAFT ORDER: Update lines including cost/margin fields
 
                     const lineCommands = [
                         [5, 0, 0],  // Clear all existing lines
@@ -1081,7 +1200,12 @@ export class QuoteBuilder extends Component {
                             name: line.name + (line.specs?.location ? ` (${line.specs.location})` : ''),
                             product_uom_qty: line.qty,
                             price_unit: line.price_unit,
+                            price_buy: line.price_buy,
+                            target_margin_percent: line.target_margin_percent,
                             lot_id: line.lot_id,
+                            dimension_l: line.dimension_l || 0,
+                            dimension_w: line.dimension_w || 0,
+                            dimension_h: line.dimension_h || 0,
                         }])
                     ];
 
@@ -1093,8 +1217,6 @@ export class QuoteBuilder extends Component {
                 }
             } else {
                 // CREATE new order
-                console.log("[QuoteBuilder] Creating new order for chantier:", this.state.chantierId);
-
                 const orderData = await this.orm.call("sale.order", "create_from_spa", [{
                     chantier_id: this.state.chantierId,
                     partner_id: partnerId,
@@ -1108,7 +1230,7 @@ export class QuoteBuilder extends Component {
                 this.notification.add("✅ Devis créé!", { type: "success" });
             }
 
-            localStorage.removeItem(this.cartStoreKey);
+            localStorage.removeItem(this.getCartStoreKey());
 
             this.action.doAction({
                 type: 'ir.actions.act_window',
@@ -1117,7 +1239,6 @@ export class QuoteBuilder extends Component {
                 views: [[false, 'form']],
             });
         } catch (e) {
-            console.error("[QuoteBuilder] Save failed", e);
             this.notification.add("Erreur: " + (e.message || "Sauvegarde impossible"), { type: "danger" });
         } finally {
             this.state.loading = false;

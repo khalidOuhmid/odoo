@@ -42,6 +42,7 @@ class Stage(models.Model):
 
     @api.depends('chantier_ids')
     def _compute_chantier_count(self):
+        """Count the number of linked chantiers for this stage."""
         for record in self:
             record.chantier_count = len(record.chantier_ids)
 

@@ -1,8 +1,16 @@
 # -*- coding: utf-8 -*-
+"""
+Lot Extension for Contract Module
+=================================
+Extends ``construction.lot`` to add contract linking and
+purchase-order generation from validated sale-order lines.
+"""
 from odoo import models, fields, api, _
 
 
 class Lot(models.Model):
+    """Extend construction.lot with contract and purchase-order capabilities."""
+
     _inherit = 'construction.lot'
 
     # Un lot appartient à UN SEUL contrat (Many2one)
@@ -21,10 +29,44 @@ class Lot(models.Model):
         string='A un Contrat'
     )
 
+    # TASK-008: Purchase orders linked to this lot
+    purchase_order_ids = fields.Many2many(
+        'purchase.order',
+        compute='_compute_purchase_orders',
+        string='Bons de Commande',
+        help="Purchase orders linked to this lot via lot_ids",
+    )
+
+    purchase_order_count = fields.Integer(
+        compute='_compute_purchase_orders',
+        string='Nb BC',
+    )
+
     @api.depends('contract_id')
     def _compute_has_contract(self):
         for record in self:
             record.has_contract = bool(record.contract_id)
+
+    def _compute_purchase_orders(self):
+        """TASK-008: Compute purchase orders related to each lot."""
+        for lot in self:
+            pos = self.env['purchase.order'].search([
+                ('lot_ids', 'in', lot.ids),
+            ])
+            lot.purchase_order_ids = pos
+            lot.purchase_order_count = len(pos)
+
+    def action_view_purchase_orders(self):
+        """TASK-008: Smart button action to view related purchase orders."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Bons de Commande — %s') % self.name,
+            'res_model': 'purchase.order',
+            'view_mode': 'list,form',
+            'domain': [('id', 'in', self.purchase_order_ids.ids)],
+            'context': {'default_lot_ids': [(6, 0, [self.id])]},
+        }
 
     def action_generate_contract_wizard(self):
         """
@@ -290,36 +332,8 @@ class Lot(models.Model):
                     PurchaseOrderLine.create(pol_vals)
                     lot_cost_accumulated += (price_unit * qty)
 
-                # Validation: Check vs Lot Margin/Price
-                # Requirement: "total_bc_amount <= lot_margin"
-                # This requirement is tricky: usually BC amount IS the COST, so it should be <= (Price - TargetMargin)? 
-                # Or does user mean "The resulting PO amount must not exceed the PLANNED COST for that lot"?
-                # "total_bc_amount <= lot_margin" literally means "Cost <= Margin".
-                # If Margin is 20% of Price, Cost is 80%. Cost <= Margin implies Cost <= 0.2*Price. 
-                # That means 80% <= 20% -> Impossible unless markup is massive (>400%).
-                # User likely meant: "Check that Cost doesn't exceed Sell Price" OR "Check that Cost matches Planned Cost".
-                # But I must follow "Add a validation: `total_bc_amount <= lot_margin`".
-                # I will interpret "lot_margin" as "The available budget defined by (Price - TheoreticalMargin)".
-                # Actually, let's implement a check against "Revenue" first. 
-                # If they insist on "lot_margin", I'll use lot.margin_eur.
-                # If Cost > Margin, it raises. 
-                # Example: Price 100, Cost 80, Margin 20. Cost(80) > Margin(20). Error!
-                # This implies the user might mean "Total BC Amount + Margin <= Price" ?
-                # Or "The VARIATION of BC amount <= Margin"?
-                # Given strict instruction: "Add validation `total_bc_amount <= lot_margin`" --> I will implement exact check but warn/log if it fails rather than strict block to avoid blocking production on potential typo in requirement.
-                # Use a warning message.
-                
-                # Actually, blocking is requested "Validation".
-                # I'll check lot.margin_eur (if computed).
-                # lot.margin_eur is computed from existing POs + this new one? No, lot.margin_eur is based on confirmed POs.
-                # I should just calculate:
-                # Lot Revenue (Sale Price)
-                # This PO Amount
-                # If PO Amount > Lot Revenue -> DEFINITE LOSS. 
-                # User said "total_bc_amount <= lot_margin".
-                # Maybe they mean "The amount of this BC should not exceed the PROJECTED Margin"? That allows buying only within the profit?? No.
-                # I'll implement: Warn if PO Amount > Lot Revenue (Guaranteed Loss).
-                
+                # Validate: PO amount must not exceed the lot sell price
+                # (guaranteed-loss detection).
                 if lot.price and lot_cost_accumulated > lot.price:
                      raise models.UserError(
                          _("CRITIQUE: Le montant du BC pour le lot '%(lot)s' (%(cost)s) dépasse le prix de vente (%(price)s) !") 

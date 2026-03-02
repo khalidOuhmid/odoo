@@ -190,6 +190,7 @@ class Lot(models.Model):
     
     @api.depends('document_cctp', 'document_planning_sous_traitant', 'subcontractor_id', 'execution_type')
     def _compute_document_status(self):
+        """Compute the conformity status of mandatory documents."""
         for lot in self:
             if lot.execution_type == 'internal':
                 lot.document_status = 'ok'
@@ -252,12 +253,14 @@ class Lot(models.Model):
     # ============= Computes ============= #
     @api.depends('completion_percentage')
     def _compute_is_finished(self):
+        """Determine if the lot is finished or overbilled based on completion percentage."""
         for record in self:
             record.is_finished = record.completion_percentage >= 100.0
             record.is_over_billed = record.completion_percentage > 100.0
 
     @api.depends('price', 'completion_percentage')
     def _compute_weighted_value(self):
+        """Calculate the weighted financial value of the lot based on completion."""
         for record in self:
             record.weighted_value = record.price * (record.completion_percentage / 100.0)
 
@@ -462,6 +465,7 @@ class Lot(models.Model):
 
     @api.depends('weighted_value', 'price')
     def _compute_remaining_value(self):
+        """Calculate the remaining financial value to be billed/completed."""
         for record in self:
             record.remaining_value = (record.price or 0.0) - (record.weighted_value or 0.0)
 
@@ -660,6 +664,7 @@ class Lot(models.Model):
     # ============= Onchange ============= #
     @api.onchange('category_id')
     def _onchange_category_id(self):
+        """Update lot name and code when category changes."""
         if self.category_id:
             self.name = self.category_id.name
             self.code = self.category_id.code
@@ -681,6 +686,7 @@ class Lot(models.Model):
     # ============= Constraints ============= #
     @api.constrains('chantier_id', 'code')
     def _check_unique_lot_code(self):
+        """Ensure lot codes are unique within the same chantier."""
         for record in self:
             existing = self.search([
                 ('chantier_id', '=', record.chantier_id.id),
@@ -694,6 +700,7 @@ class Lot(models.Model):
 
     @api.constrains('completion_percentage')
     def _check_completion_percentage(self):
+        """Validate completion percentage (must be positive, warns if >100%)."""
         for record in self:
             if record.completion_percentage < 0:
                 _logger.error('[CORE][VALIDATION] Lot %s: Negative completion rejected', record.code)

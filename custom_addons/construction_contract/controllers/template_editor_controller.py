@@ -13,12 +13,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-# Import configuration
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from config.template_variables import get_variable_blocks_for_grapesjs
+from ..config.template_variables import get_variable_blocks_for_grapesjs
 
 
 class TemplateEditorController(http.Controller):

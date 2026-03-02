@@ -25,7 +25,7 @@ class TestSecurityAccess(common.TransactionCase):
         cls.partner = cls.env['res.partner'].create({'name': 'Test Partner Security'})
         cls.chantier = cls.env['construction.chantier'].create({
             'name': 'Security Test Site',
-            'partner_id': cls.partner.id,
+            'client': cls.partner.id,
         })
         cls.lot = cls.env['construction.lot'].create({
             'name': 'Lot Security Test',

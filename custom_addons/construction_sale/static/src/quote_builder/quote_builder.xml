@@ -1,603 +1,626 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates xml:space="preserve">
     <t t-name="construction_sale.QuoteBuilder">
-        <div t-attf-class="o_construction_quote_builder h-100 d-flex flex-column #{state.loading ? 'o_quote_builder_loading' : ''}">
-            
-            <!-- NO PROJECT WARNING -->
-            <div t-if="!state.chantierId" class="o_no_project_warning text-center">
-                <i class="fa fa-exclamation-triangle me-2"/>
-                ⚠️ AUCUN CHANTIER LIÉ - Veuillez accéder via un chantier existant
-            </div>
-            
-            <!-- HEADER BAR -->
-            <div class="o_quote_header px-4 py-3 d-flex justify-content-between align-items-center">
-                <div class="d-flex align-items-center gap-3">
-                    <h4 class="m-0 fw-bold">
-                        <i class="fa fa-calculator me-2"/>Estimateur Chantier
-                    </h4>
-                    <t t-if="state.chantierName">
-                        <span class="badge fs-6">
-                            <i class="fa fa-map-marker me-1"/>
-                            <t t-esc="state.chantierName"/>
-                        </span>
-                    </t>
+        <div class="qb">
+
+            <!-- ==================== LOADING STATE ==================== -->
+            <div t-if="state.loading" class="qb__loading">
+                <div class="qb__skeleton">
+                    <div class="qb__skeleton-bar"></div>
+                    <div class="qb__skeleton-bar qb__skeleton-bar--short"></div>
+                    <div class="qb__skeleton-bar"></div>
                 </div>
-                
-                <div class="d-flex gap-2">
-                    <button t-if="state.cart.length > 0" 
-                            class="btn btn-outline-light btn-sm"
-                            t-on-click="onResetClick">
-                        <i class="fa fa-trash me-1"/>Réinitialiser
-                    </button>
-                    <button class="btn o_btn_create_quote btn-sm shadow"
-                            t-on-click="createQuote"
-                            t-att-disabled="state.cart.length === 0 ? 'disabled' : undefined">
-                        <t t-if="state.orderId">
-                            <i class="fa fa-save me-1"/>Modifier le Devis
-                        </t>
-                        <t t-else="">
-                            <i class="fa fa-file-text me-1"/>Générer le Devis
-                        </t>
-                    </button>
+                <div class="qb__skeleton">
+                    <div class="qb__skeleton-bar qb__skeleton-bar--short"></div>
+                    <div class="qb__skeleton-bar"></div>
+                    <div class="qb__skeleton-bar qb__skeleton-bar--short"></div>
+                </div>
+                <div class="qb__skeleton">
+                    <div class="qb__skeleton-bar"></div>
+                    <div class="qb__skeleton-bar"></div>
+                    <div class="qb__skeleton-bar qb__skeleton-bar--short"></div>
                 </div>
             </div>
 
-            <!-- SUMMARY BAR -->
-            <div class="o_summary_bar px-4 py-3">
-                <div class="row g-3 text-center align-items-center">
-                    <div class="col">
-                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">Lignes</small>
-                        <span class="fs-4 fw-bold text-primary" t-esc="state.cart.length"/>
-                    </div>
-                    <div class="col">
-                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">Quantité</small>
-                        <span class="fs-4 fw-bold text-info" t-esc="getTotalQty().toFixed(2)"/>
-                    </div>
-                    <div class="col">
-                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">Montant HT</small>
-                        <span class="fs-4 fw-bold text-success" t-esc="formatMoney(getCartTotal())"/>
-                    </div>
-                    <!-- Global Margin Control (Manager only) -->
-                    <div class="col" t-if="state.showMargin">
-                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">
-                            <i class="fa fa-percent me-1"/>Marge par défaut
-                        </small>
-                        <div class="input-group input-group-sm mx-auto" style="max-width: 100px;">
-                            <input type="number" 
-                                   class="form-control text-center fw-bold"
-                                   t-att-value="state.defaultMargin"
-                                   t-on-change="onGlobalMarginChange"
-                                   min="0" max="500" step="5"/>
-                            <span class="input-group-text">%</span>
-                        </div>
-                    </div>
-                    <div class="col" t-if="state.showMargin">
-                        <small class="text-muted d-block text-uppercase" style="font-size:0.7rem;">
-                            <i class="fa fa-lock me-1"/>Marge totale
-                        </small>
-                        <span class="fs-5 fw-bold o_quote_margin_badge px-2 py-1 rounded">
-                            <t t-esc="formatMoney(getCartMargin())"/>
-                            <small>(<t t-esc="getCartMarginPercent().toFixed(1)"/>%)</small>
-                        </span>
-                    </div>
-                </div>
+            <!-- ==================== NO CHANTIER WARNING ==================== -->
+            <div t-if="!state.chantierId and !state.loading" class="qb__no-project">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                    <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                </svg>
+                <h3>Aucun chantier lié</h3>
+                <p>Veuillez accéder au QuoteBuilder depuis un chantier existant.</p>
             </div>
 
-            <!-- MAIN LAYOUT -->
-            <div class="d-flex flex-grow-1 overflow-hidden">
-                
-                <!-- LEFT: Lot Sidebar -->
-                <div class="o_lot_sidebar d-flex flex-column" style="width: 200px; min-width: 200px;">
-                    <div class="o_lot_sidebar_header p-3">
-                        <h6 class="m-0 text-uppercase small fw-bold">
-                            <i class="fa fa-folder-open me-2"/>Lots
-                        </h6>
-                    </div>
-                    
-                    <div class="flex-grow-1 overflow-auto p-2">
-                        <t t-if="state.lots.length > 0">
-                            <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
-                                <button t-attf-class="o_lot_button btn w-100 text-start mb-2 py-2 #{state.selectedLotId === lot.id ? 'active' : ''}"
-                                        t-on-click="() => this.onLotClick(lot.id)">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <strong t-esc="lot.code"/>
-                                        <span class="badge" t-esc="getLotItemCount(lot.id)"/>
-                                    </div>
-                                    <small class="text-truncate d-block mt-1 opacity-75" t-esc="lot.name"/>
-                                </button>
-                            </t>
-                        </t>
-                        
-                        <t t-if="state.lots.length === 0">
-                            <div class="text-center py-4 text-muted">
-                                <i class="fa fa-folder-o fa-2x mb-2 opacity-50"/>
-                                <p class="small mb-0">Aucun lot</p>
+            <!-- ==================== MAIN LAYOUT ==================== -->
+            <t t-if="!state.loading and state.chantierId">
+                <div class="qb__layout">
+
+                    <!-- ============= SIDEBAR ============= -->
+                    <aside class="qb__sidebar">
+                        <!-- Chantier Avatar -->
+                        <div class="qb__sidebar-chantier">
+                            <div class="qb__chantier-avatar">
+                                <t t-esc="state.chantierName ? state.chantierName.substring(0, 2).toUpperCase() : '??'"/>
                             </div>
-                        </t>
-                    </div>
-                    
-                    <div class="p-2 border-top bg-light">
-                        <button class="btn o_btn_add_product btn-sm w-100"
-                                t-on-click="onCreateProduct">
-                            <i class="fa fa-plus me-1"/>Nouveau Produit
-                        </button>
-                    </div>
-                </div>
-
-                <!-- CENTER: Product Catalog -->
-                <div class="o_catalog_panel flex-grow-1 d-flex flex-column overflow-hidden" style="max-width: 320px;">
-                    <div class="o_catalog_header">
-                        <h6 class="text-uppercase small fw-bold mb-2 text-secondary">
-                            <i class="fa fa-search me-2"/>Catalogue
-                        </h6>
-                        <input type="text" 
-                               class="form-control form-control-sm shadow-sm" 
-                               placeholder="Rechercher un produit..."
-                               t-att-value="state.searchTerm"
-                               t-on-input="onSearchInput"/>
-                    </div>
-                    
-                    <div class="flex-grow-1 overflow-auto p-2">
-                        <div t-if="state.loading" class="text-center py-5">
-                            <div class="spinner-border text-primary"/>
-                            <p class="text-muted mt-2 small">Chargement...</p>
+                            <div class="qb__chantier-info">
+                                <span class="qb__chantier-label">Chantier actif</span>
+                                <strong class="qb__chantier-name" t-esc="state.chantierName || 'Sans nom'"/>
+                            </div>
                         </div>
-                        
-                        <div t-if="!state.loading">
-                            <t t-foreach="state.products" t-as="product" t-key="product.id">
-                                <div class="o_product_card card mb-2 shadow-sm"
-                                     t-on-click="() => this.onProductClick(product)">
-                                    <div class="card-body py-2 px-3">
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="flex-grow-1 overflow-hidden">
-                                                <div class="fw-bold text-truncate" t-esc="product.name"/>
-                                                <small class="text-muted" t-esc="product.default_code"/>
-                                            </div>
-                                            <div class="text-end ms-2">
-                                                <div class="o_price" t-esc="formatMoney(product.list_price)"/>
-                                                <span t-if="product.uom_id" class="badge bg-light text-secondary" t-esc="product.uom_id[1]"/>
+
+                        <!-- Search -->
+                        <div class="qb__sidebar-search">
+                            <svg class="qb__search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                            </svg>
+                            <input type="text"
+                                   class="qb__search-input"
+                                   placeholder="Rechercher un article..."
+                                   t-att-value="state.searchTerm"
+                                   t-on-input="onSearchInput"/>
+                        </div>
+
+                        <!-- Lot Pills -->
+                        <div class="qb__sidebar-lots">
+                            <div class="qb__sidebar-section-title">Lots techniques</div>
+                            <t t-if="state.lots.length > 0">
+                                <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
+                                    <button t-attf-class="qb__lot-pill #{state.selectedLotId === lot.id ? 'qb__lot-pill--active' : ''}"
+                                            t-on-click="() => this.onLotClick(lot.id)">
+                                        <span class="qb__lot-pill-code" t-esc="lot.code"/>
+                                        <span class="qb__lot-pill-name" t-esc="lot.name"/>
+                                        <span class="qb__lot-pill-count" t-esc="getLotItemCount(lot.id)"/>
+                                    </button>
+                                </t>
+                            </t>
+                            <div t-if="state.lots.length === 0" class="qb__sidebar-empty">
+                                <span>Aucun lot défini</span>
+                            </div>
+                        </div>
+
+                        <!-- Create Product Button -->
+                        <div class="qb__sidebar-create">
+                            <button class="qb__btn qb__btn--create-product" t-on-click="onCreateProduct">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                                </svg>
+                                Créer un article
+                            </button>
+                        </div>
+
+                        <!-- Global Margin -->
+                        <div class="qb__sidebar-margin" t-if="state.showMargin">
+                            <label class="qb__sidebar-section-title">Marge globale</label>
+                            <div class="qb__margin-input-group">
+                                <input type="number"
+                                       class="qb__input qb__input--margin"
+                                       t-att-value="state.defaultMargin"
+                                       t-on-change="onGlobalMarginChange"
+                                       min="0" max="500" step="5"/>
+                                <span class="qb__margin-suffix">%</span>
+                            </div>
+                        </div>
+
+                        <!-- Product Catalog (in sidebar) -->
+                        <div class="qb__sidebar-catalog">
+                            <div class="qb__sidebar-section-title">
+                                Catalogue
+                                <span class="qb__catalog-count" t-esc="state.products.length"/>
+                            </div>
+                            <div class="qb__product-list">
+                                <t t-foreach="state.products" t-as="product" t-key="product.id">
+                                    <div class="qb__product-card" t-on-click="() => this.onProductClick(product)">
+                                        <div class="qb__product-card-body">
+                                            <div class="qb__product-name" t-esc="product.name || product.display_name"/>
+                                            <div class="qb__product-meta">
+                                                <span class="qb__product-price" t-esc="formatMoney(product.list_price)"/>
+                                                <span t-if="product.uom_id" class="qb__product-uom" t-esc="product.uom_id[1]"/>
                                             </div>
                                         </div>
+                                        <button class="qb__product-add-btn">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+                                            </svg>
+                                        </button>
                                     </div>
+                                </t>
+                                <!-- Empty catalog -->
+                                <div t-if="state.products.length === 0" class="qb__catalog-empty">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.4">
+                                        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                                        <line x1="8" y1="11" x2="14" y2="11"/>
+                                    </svg>
+                                    <p>Aucun article trouvé</p>
+                                    <button class="qb__btn qb__btn--link" t-on-click="onCreateProduct">+ Créer un produit</button>
                                 </div>
-                            </t>
-                            
-                            <div t-if="state.products.length === 0" class="o_empty_state">
-                                <i class="fa fa-database"/>
-                                <p class="mb-0">Aucun produit trouvé</p>
-                                <button class="btn btn-link btn-sm" t-on-click="onCreateProduct">
-                                    + Créer un produit
-                                </button>
                             </div>
                         </div>
-                    </div>
-                </div>
+                    </aside>
 
-                <!-- RIGHT: Estimator Grid -->
-                <div class="o_estimator_panel flex-grow-1 d-flex flex-column overflow-hidden">
-                    <div class="o_estimator_header p-3">
-                        <h5 class="m-0 fw-bold text-secondary">
-                            <i class="fa fa-list-alt me-2"/>Estimation Détaillée
-                        </h5>
-                        <small class="text-muted">Cliquez sur un produit pour le configurer</small>
-                    </div>
-                    
-                    <div class="flex-grow-1 overflow-auto p-3">
-                        
-                        <!-- Empty State -->
-                        <div t-if="state.cart.length === 0" class="o_empty_state h-100 d-flex flex-column align-items-center justify-content-center">
-                            <i class="fa fa-shopping-cart"/>
-                            <h5>Panier vide</h5>
-                            <p>Sélectionnez un lot puis ajoutez des produits</p>
-                        </div>
-                        
-                        <!-- Grouped by Lot -->
-                        <t t-if="state.cart.length > 0">
-                            <t t-foreach="getGroupedCart()" t-as="group" t-key="group.id">
-                                <div class="o_quote_section_header px-3 py-2 mt-3 d-flex justify-content-between align-items-center">
-                                    <span>
-                                        <i class="fa fa-folder me-2"/>
-                                        <t t-esc="group.name"/>
-                                    </span>
-                                    <div>
-                                        <span class="badge me-2" t-esc="group.lines.length + ' article(s)'"/>
-                                        <span class="badge badge-success" t-esc="formatMoney(group.total)"/>
+                    <!-- ============= MAIN CANVAS ============= -->
+                    <main class="qb__canvas">
+                        <!-- Canvas Header -->
+                        <header class="qb__canvas-header">
+                            <div class="qb__breadcrumb">
+                                <span class="qb__breadcrumb-item">QuoteBuilder</span>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                                <span class="qb__breadcrumb-item" t-esc="state.chantierName"/>
+                                <t t-if="state.orderId">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+                                    <span class="qb__breadcrumb-item">Devis #<t t-esc="state.orderId"/></span>
+                                </t>
+                            </div>
+                            <div class="qb__header-actions">
+                                <span t-if="state.isDirty" class="qb__draft-badge">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                                    Brouillon sauvegardé
+                                </span>
+                                <button t-if="state.cart.length > 0"
+                                        class="qb__btn qb__btn--danger-outline"
+                                        t-on-click="onResetClick">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </header>
+
+                        <!-- Canvas Body -->
+                        <div class="qb__canvas-body">
+                            <!-- Empty Cart State -->
+                            <div t-if="state.cart.length === 0" class="qb__empty-state">
+                                <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" opacity="0.3">
+                                    <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+                                </svg>
+                                <h4>Commencez votre estimation</h4>
+                                <p>Sélectionnez un article dans le catalogue pour l'ajouter au devis.</p>
+                            </div>
+
+                            <!-- Grouped Cart -->
+                            <t t-if="state.cart.length > 0">
+                                <t t-foreach="getGroupedCart()" t-as="group" t-key="group.id">
+                                    <!-- Lot Section Header -->
+                                    <div class="qb__lot-header">
+                                        <div class="qb__lot-header-left">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+                                            <span class="qb__lot-header-name" t-esc="group.name"/>
+                                            <span class="qb__lot-header-count" t-esc="group.lines.length + ' ligne(s)'"/>
+                                        </div>
+                                        <span class="qb__lot-header-total" t-esc="formatMoney(group.total)"/>
                                     </div>
-                                </div>
-                                
-                                <table class="o_quote_table table table-sm mb-0">
-                                    <thead>
-                                        <tr>
-                                            <th style="width: 28%;">Produit</th>
-                                            <th style="width: 12%;" class="text-center">Dim.</th>
-                                            <th style="width: 8%;" class="text-center">Qté</th>
-                                            <th t-if="state.showMargin" style="width: 10%;" class="text-end o_margin_cell">Coût</th>
-                                            <th t-if="state.showMargin" style="width: 10%;" class="text-center o_margin_cell">Marge%</th>
-                                            <th style="width: 10%;" class="text-end">P.U.</th>
-                                            <th style="width: 10%;" class="text-end">Total</th>
-                                            <th style="width: 8%;" class="text-center">Opt.</th>
-                                            <th style="width: 4%;"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+
+                                    <!-- Sortable Container -->
+                                    <div class="qb__sortable-container" t-att-data-lot-id="group.id">
                                         <t t-foreach="group.lines" t-as="line" t-key="line._index">
-                                            <!-- TASK-004: Insert zone BEFORE each line (Notion-style) -->
-                                            <tr class="o_insert_zone"
-                                                t-on-click="() => this.onInsertLineAt(line._index)">
-                                                <td t-att-colspan="state.showMargin ? '9' : '7'">
-                                                    <div class="o_insert_zone_inner">
-                                                        <span class="o_insert_zone_btn">
-                                                            <i class="fa fa-plus me-1"/>Insérer ici
-                                                        </span>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                            <tr t-attf-class="align-middle #{line.isOptional ? 'o_quote_line_optional' : ''}">
-                                                <!-- Product Name -->
-                                                <td>
-                                                    <input type="text" 
-                                                           class="form-control form-control-sm border-0 bg-transparent fw-bold"
+                                            <!-- Insert Zone (before each line) -->
+                                            <div class="qb__insert-zone" t-on-click="() => this.onInsertLineAt(line._index)">
+                                                <div class="qb__insert-zone-line"></div>
+                                                <span class="qb__insert-zone-btn">
+                                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                                </span>
+                                            </div>
+
+                                            <!-- Row Card -->
+                                            <div t-attf-class="qb__row #{line.isOptional ? 'qb__row--optional' : ''}" t-att-data-index="line._index">
+                                                <!-- Drag Handle -->
+                                                <div class="qb__row-handle">⠿</div>
+
+                                                <!-- Name -->
+                                                <div class="qb__row-name">
+                                                    <input type="text"
+                                                           class="qb__input qb__input--name"
                                                            t-att-value="line.name"
                                                            t-on-change="(ev) => this.onLineNameChange(ev, line._index)"/>
-                                                    <small t-if="line.specs?.location" class="text-muted d-block ps-2">
-                                                        <i class="fa fa-map-marker me-1"/>
-                                                        <t t-esc="line.specs.location"/>
-                                                    </small>
-                                                </td>
-                                                
-                                                <!-- Dimensions -->
-                                                <td class="text-center">
-                                                    <div class="d-flex gap-1 justify-content-center">
-                                                        <t t-if="line.uom_type !== 'unit'">
-                                                            <input type="number" class="form-control form-control-sm text-center" 
-                                                                   style="width: 40px;" placeholder="L"
-                                                                   t-att-value="line.dimension_l"
-                                                                   t-on-change="(ev) => this.onLineDimLChange(ev, line._index)"
-                                                                   step="0.1"/>
-                                                            <t t-if="line.uom_type === 'm2' || line.uom_type === 'm3'">
-                                                                <input type="number" class="form-control form-control-sm text-center" 
-                                                                       style="width: 40px;" placeholder="W"
-                                                                       t-att-value="line.dimension_w"
-                                                                       t-on-change="(ev) => this.onLineDimWChange(ev, line._index)"
-                                                                       step="0.1"/>
-                                                            </t>
-                                                            <t t-if="line.uom_type === 'm3'">
-                                                                <input type="number" class="form-control form-control-sm text-center" 
-                                                                       style="width: 40px;" placeholder="H"
-                                                                       t-att-value="line.dimension_h"
-                                                                       t-on-change="(ev) => this.onLineDimHChange(ev, line._index)"
-                                                                       step="0.1"/>
-                                                            </t>
-                                                        </t>
-                                                        <t t-else=""><span class="text-muted">-</span></t>
+                                                    <div class="qb__row-name-meta">
+                                                        <span t-if="line.isOptional" class="qb__badge qb__badge--optional">Optionnel</span>
+                                                        <span t-if="line.specs and line.specs.location" class="qb__row-location">
+                                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                                                            <t t-esc="line.specs.location"/>
+                                                        </span>
                                                     </div>
-                                                </td>
-                                                
-                                                <!-- Quantity -->
-                                                <td class="text-center">
-                                                    <input type="number" 
-                                                           class="form-control form-control-sm text-center" 
-                                                           style="width: 60px; margin: auto;"
+                                                </div>
+
+                                                <!-- Dimensions (only if not unit) -->
+                                                <div class="qb__row-dims" t-if="line.uom_type !== 'unit'">
+                                                    <input type="number" class="qb__input qb__input--dim" placeholder="L"
+                                                           t-att-value="line.dimension_l"
+                                                           t-on-change="(ev) => this.onLineDimLChange(ev, line._index)"
+                                                           step="0.1" min="0"/>
+                                                    <span class="qb__dim-sep">×</span>
+                                                    <t t-if="line.uom_type === 'm2' or line.uom_type === 'm3'">
+                                                        <input type="number" class="qb__input qb__input--dim" placeholder="l"
+                                                               t-att-value="line.dimension_w"
+                                                               t-on-change="(ev) => this.onLineDimWChange(ev, line._index)"
+                                                               step="0.1" min="0"/>
+                                                    </t>
+                                                    <t t-if="line.uom_type === 'm3'">
+                                                        <span class="qb__dim-sep">×</span>
+                                                        <input type="number" class="qb__input qb__input--dim" placeholder="h"
+                                                               t-att-value="line.dimension_h"
+                                                               t-on-change="(ev) => this.onLineDimHChange(ev, line._index)"
+                                                               step="0.1" min="0"/>
+                                                    </t>
+                                                </div>
+                                                <div class="qb__row-dims qb__row-dims--empty" t-if="line.uom_type === 'unit'">
+                                                    <span class="qb__text-muted">—</span>
+                                                </div>
+
+                                                <!-- Qty -->
+                                                <div class="qb__row-qty">
+                                                    <input type="number"
+                                                           class="qb__input qb__input--qty"
                                                            t-att-value="line.qty.toFixed(2)"
                                                            t-on-change="(ev) => this.onLineQtyChange(ev, line._index)"
                                                            min="0.01" step="0.01"/>
-                                                </td>
-                                                
+                                                </div>
+
                                                 <!-- Cost -->
-                                                <td t-if="state.showMargin" class="text-end o_margin_cell small">
-                                                    <div class="input-group input-group-sm" style="width: 80px; margin-left: auto;">
-                                                        <input type="number" 
-                                                               class="form-control text-end o_cost_input"
-                                                               t-att-value="line.price_buy"
-                                                               t-on-change="(ev) => this.onLineCostChange(ev, line._index)"
-                                                               min="0" step="0.01"/>
-                                                    </div>
-                                                </td>
-                                                
+                                                <div class="qb__row-cost" t-if="state.showMargin">
+                                                    <span class="qb__row-cost-label">Coût</span>
+                                                    <input type="number"
+                                                           class="qb__input qb__input--cost"
+                                                           t-att-value="line.price_buy"
+                                                           t-on-change="(ev) => this.onLineCostChange(ev, line._index)"
+                                                           min="0" step="0.01"/>
+                                                </div>
+
                                                 <!-- Margin % -->
-                                                <td t-if="state.showMargin" class="text-center o_margin_cell">
-                                                    <div class="input-group input-group-sm" style="width: 70px; margin: auto;">
-                                                        <input type="number" 
-                                                               class="o_margin_input form-control text-center"
-                                                               t-att-value="line.target_margin_percent.toFixed(0)"
-                                                               t-on-change="(ev) => this.onLineMarginChange(ev, line._index)"
-                                                               min="0" max="99" step="5"/>
-                                                        <span class="input-group-text">%</span>
-                                                    </div>
-                                                </td>
-                                                
-                                                <!-- Unit Price -->
-                                                <td class="text-end fw-bold">
-                                                    <t t-esc="formatMoney(line.price_unit)"/>
-                                                </td>
-                                                
+                                                <div class="qb__row-margin" t-if="state.showMargin">
+                                                    <input type="number"
+                                                           class="qb__input qb__input--margin-line"
+                                                           t-att-value="line.target_margin_percent.toFixed(0)"
+                                                           t-on-change="(ev) => this.onLineMarginChange(ev, line._index)"
+                                                           min="0" max="500" step="5"/>
+                                                    <span t-attf-class="qb__badge qb__badge--margin #{line.target_margin_percent >= 30 ? 'qb__badge--margin-good' : (line.target_margin_percent >= 15 ? 'qb__badge--margin-warn' : 'qb__badge--margin-bad')}">
+                                                        <t t-esc="line.target_margin_percent.toFixed(0)"/>%
+                                                    </span>
+                                                </div>
+
+                                                <!-- Unit Price (read-only) -->
+                                                <div class="qb__row-price">
+                                                    <span class="qb__row-price-value" t-esc="formatMoney(line.price_unit)"/>
+                                                </div>
+
                                                 <!-- Total -->
-                                                <td class="text-end">
-                                                    <span class="fw-bold text-success" t-esc="formatMoney(line.qty * line.price_unit)"/>
-                                                </td>
-                                                
-                                                <!-- Optional -->
-                                                <td class="text-center">
-                                                    <input type="checkbox"
-                                                           class="form-check-input"
-                                                           t-att-checked="line.isOptional"
-                                                           t-on-change="() => this.onLineOptionalToggle(line._index)"
-                                                           title="Ligne optionnelle"/>
-                                                </td>
-                                                
-                                                <!-- Delete -->
-                                                <td class="text-center">
-                                                    <button class="btn btn-link text-danger p-0"
-                                                            t-on-click="() => this.onRemoveLine(line._index)">
-                                                        <i class="fa fa-times"/>
+                                                <div class="qb__row-total">
+                                                    <span class="qb__row-total-value" t-esc="formatMoney(line.qty * line.price_unit)"/>
+                                                </div>
+
+                                                <!-- Actions -->
+                                                <div class="qb__row-actions">
+                                                    <button class="qb__btn qb__btn--icon qb__btn--delete"
+                                                            t-on-click="() => this.onRemoveLine(line._index)"
+                                                            title="Supprimer">
+                                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                            <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                                                        </svg>
                                                     </button>
-                                                </td>
-                                            </tr>
+                                                </div>
+                                            </div>
                                         </t>
-                                    </tbody>
-                                </table>
-                            </t>
-                        </t>
-                    </div>
-                    
-                    <!-- Footer -->
-                    <div t-if="state.cart.length > 0" class="o_quote_footer p-3">
-                        <div class="row align-items-center">
-                            <div class="col-md-5">
-                                <small class="text-muted">
-                                    <i class="fa fa-info-circle me-1"/>Cochez "Opt." pour exclure du total
-                                </small>
-                            </div>
-                            <div class="col-md-7 text-end">
-                                <t t-if="state.showMargin">
-                                    <span class="me-3 text-muted">
-                                        Coût: <t t-esc="formatMoney(getCartCost())"/>
-                                    </span>
-                                    <span class="me-3 o_quote_margin_badge px-2 py-1 rounded">
-                                        <i class="fa fa-lock me-1"/>
-                                        <t t-esc="formatMoney(getCartMargin())"/>
-                                        (<t t-esc="getCartMarginPercent().toFixed(1)"/>%)
-                                    </span>
+                                    </div>
                                 </t>
-                                <span class="o_quote_total_badge">
-                                    Total: <t t-esc="formatMoney(getCartTotal())"/>
-                                </span>
+                            </t>
+                        </div>
+
+                        <!-- ============= FOOTER ============= -->
+                        <footer t-if="state.cart.length > 0" class="qb__footer">
+                            <div class="qb__footer-stats">
+                                <div class="qb__footer-stat" t-if="state.showMargin">
+                                    <span class="qb__footer-stat-label">Total Coût</span>
+                                    <span class="qb__footer-stat-value" t-esc="formatMoney(getCartCost())"/>
+                                </div>
+                                <div class="qb__footer-stat">
+                                    <span class="qb__footer-stat-label">Total HT</span>
+                                    <span class="qb__footer-stat-value qb__footer-stat-value--primary" t-esc="formatMoney(getCartTotal())"/>
+                                </div>
+                                <div class="qb__footer-stat" t-if="state.showMargin">
+                                    <span class="qb__footer-stat-label">Marge €</span>
+                                    <span class="qb__footer-stat-value" t-esc="formatMoney(getCartMargin())"/>
+                                </div>
+                                <div class="qb__footer-stat" t-if="state.showMargin">
+                                    <span class="qb__footer-stat-label">Marge %</span>
+                                    <span t-attf-class="qb__footer-stat-value #{getCartMarginPercent() >= 30 ? 'qb__text-success' : (getCartMarginPercent() >= 15 ? 'qb__text-warning' : 'qb__text-danger')}">
+                                        <t t-esc="getCartMarginPercent().toFixed(1)"/>%
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="qb__footer-actions">
+                                <button class="qb__btn qb__btn--secondary" t-on-click="onResetClick">
+                                    Réinitialiser
+                                </button>
+                                <button class="qb__btn qb__btn--primary"
+                                        t-on-click="createQuote"
+                                        t-att-disabled="state.cart.length === 0 ? 'disabled' : undefined">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
+                                    </svg>
+                                    <t t-if="state.orderId">Modifier le Devis</t>
+                                    <t t-else="">Générer le Devis</t>
+                                </button>
+                            </div>
+                        </footer>
+                    </main>
+                </div>
+            </t>
+
+            <!-- ==================== LINE CONFIG WIZARD ==================== -->
+            <div t-if="state.showLineConfigWizard" class="qb__modal-backdrop">
+                <div class="qb__modal qb__modal--config">
+                    <div class="qb__modal-header">
+                        <h3 class="qb__modal-title">Configurer la ligne</h3>
+                        <button class="qb__btn qb__btn--icon qb__modal-close" t-on-click="onCloseLineWizard">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="qb__modal-body">
+                        <!-- Row 1: Name + Lot -->
+                        <div class="qb__form-row">
+                            <div class="qb__form-group qb__form-group--flex2">
+                                <label class="qb__label">Désignation</label>
+                                <input type="text" class="qb__input"
+                                       t-att-value="state.wizardProduct?.overrideName"
+                                       t-on-input="onWizardNameChange"/>
+                            </div>
+                            <div class="qb__form-group">
+                                <label class="qb__label">Lot</label>
+                                <select class="qb__input qb__input--select" t-on-change="onWizardLotChange">
+                                    <option value="">— Sélectionner —</option>
+                                    <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
+                                        <option t-att-value="lot.id"
+                                                t-att-selected="state.wizardProduct?.lot_id === lot.id">
+                                            <t t-esc="lot.code"/> - <t t-esc="lot.name"/>
+                                        </option>
+                                    </t>
+                                </select>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- LINE CONFIG WIZARD -->
-            <div t-if="state.showLineConfigWizard" class="modal show d-block" style="background: rgba(0,0,0,0.5);">
-                <div class="modal-dialog modal-lg o_quote_wizard">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">
-                                <i class="fa fa-cog me-2"/>Configurer la ligne
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" t-on-click="onCloseLineWizard"/>
+
+                        <!-- Row 2: Location + Color -->
+                        <div class="qb__form-row">
+                            <div class="qb__form-group">
+                                <label class="qb__label">Emplacement</label>
+                                <input type="text" class="qb__input" placeholder="Ex: Chambre 1"
+                                       t-att-value="state.wizardProduct?.location"
+                                       t-on-input="onWizardLocationChange"/>
+                            </div>
+                            <div class="qb__form-group">
+                                <label class="qb__label">Couleur / Référence</label>
+                                <input type="text" class="qb__input" placeholder="Ex: Blanc RAL 9010"
+                                       t-att-value="state.wizardProduct?.color"
+                                       t-on-input="onWizardColorChange"/>
+                            </div>
                         </div>
-                        <div class="modal-body">
-                            <div class="row g-3">
-                                <div class="col-md-8">
-                                    <label class="form-label fw-bold">Désignation</label>
-                                    <input type="text" class="form-control"
-                                           t-att-value="state.wizardProduct?.overrideName"
-                                           t-on-input="onWizardNameChange"/>
+
+                        <!-- Dimensions Section (if not unit) -->
+                        <t t-if="state.wizardProduct?.uom_type !== 'unit'">
+                            <div class="qb__form-section-title">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 3H3v18h18V3zM3 9h18M3 15h18M9 3v18M15 3v18"/></svg>
+                                Dimensions
+                            </div>
+                            <div class="qb__form-row">
+                                <div class="qb__form-group">
+                                    <label class="qb__label">Longueur (m)</label>
+                                    <input type="number" class="qb__input"
+                                           t-att-value="state.wizardProduct?.dimension_l"
+                                           t-on-input="onWizardDimLChange"
+                                           min="0" step="0.01"/>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Quantité</label>
-                                    <input type="number" class="form-control"
+                                <t t-if="state.wizardProduct?.uom_type === 'm2' or state.wizardProduct?.uom_type === 'm3'">
+                                    <div class="qb__form-group">
+                                        <label class="qb__label">Largeur (m)</label>
+                                        <input type="number" class="qb__input"
+                                               t-att-value="state.wizardProduct?.dimension_w"
+                                               t-on-input="onWizardDimWChange"
+                                               min="0" step="0.01"/>
+                                    </div>
+                                </t>
+                                <t t-if="state.wizardProduct?.uom_type === 'm3'">
+                                    <div class="qb__form-group">
+                                        <label class="qb__label">Hauteur (m)</label>
+                                        <input type="number" class="qb__input"
+                                               t-att-value="state.wizardProduct?.dimension_h"
+                                               t-on-input="onWizardDimHChange"
+                                               min="0" step="0.01"/>
+                                    </div>
+                                </t>
+                                <div class="qb__form-group">
+                                    <label class="qb__label">Qté calculée</label>
+                                    <input type="text" class="qb__input qb__input--readonly" readonly="readonly"
+                                           t-att-value="state.wizardProduct?.qty.toFixed(3)"/>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Qty (if unit) -->
+                        <t t-if="state.wizardProduct?.uom_type === 'unit'">
+                            <div class="qb__form-row">
+                                <div class="qb__form-group">
+                                    <label class="qb__label">Quantité</label>
+                                    <input type="number" class="qb__input"
                                            t-att-value="state.wizardProduct?.qty"
                                            t-on-input="onWizardQtyChange"
                                            min="0.01" step="0.01"/>
                                 </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Emplacement</label>
-                                    <input type="text" class="form-control" placeholder="Ex: Chambre 1"
-                                           t-att-value="state.wizardProduct?.location"
-                                           t-on-input="onWizardLocationChange"/>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Couleur</label>
-                                    <input type="text" class="form-control" placeholder="Ex: Blanc"
-                                           t-att-value="state.wizardProduct?.color"
-                                           t-on-input="onWizardColorChange"/>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Lot</label>
-                                    <select class="form-select" t-on-change="onWizardLotChange">
-                                        <option value="">-- Sélectionner --</option>
-                                        <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
-                                            <option t-att-value="lot.id" 
-                                                    t-att-selected="state.wizardProduct?.lot_id === lot.id">
-                                                <t t-esc="lot.code"/> - <t t-esc="lot.name"/>
-                                            </option>
-                                        </t>
-                                    </select>
-                                </div>
-                                
-                                <t t-if="state.showMargin">
-                                    <div class="col-12"><hr/><h6 class="text-uppercase small fw-bold text-muted"><i class="fa fa-lock me-2"/>Tarification</h6></div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Coût (€)</label>
-                                        <input type="text" class="form-control bg-light" readonly="readonly" t-att-value="formatMoney(state.wizardProduct?.price_buy)"/>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Marge %</label>
-                                        <div class="input-group">
-                                            <input type="number" class="form-control" 
-                                                   t-att-value="state.wizardProduct?.target_margin_percent" 
-                                                   t-on-input="onWizardMarginChange" 
-                                                   min="0" max="500" step="1"/>
-                                            <span class="input-group-text">%</span>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Prix de Vente</label>
-                                        <input type="text" class="form-control bg-light fw-bold text-success" readonly="readonly" t-att-value="formatMoney(state.wizardProduct?.price_unit)"/>
-                                    </div>
-                                </t>
-                                
-                                <!-- Dimensions Section -->
-                                <t t-if="state.wizardProduct?.uom_type !== 'unit'">
-                                    <div class="col-12"><hr/><h6 class="text-uppercase small fw-bold text-muted"><i class="fa fa-ruler me-2"/>Dimensions</h6></div>
-                                    <div class="col-md-3">
-                                        <label class="form-label">Longueur (m)</label>
-                                        <input type="number" class="form-control" 
-                                               t-att-value="state.wizardProduct?.dimension_l" 
-                                               t-on-input="onWizardDimLChange"
-                                               min="0" step="0.01"/>
-                                    </div>
-                                    <t t-if="state.wizardProduct?.uom_type === 'm2' or state.wizardProduct?.uom_type === 'm3'">
-                                        <div class="col-md-3">
-                                            <label class="form-label">Largeur (m)</label>
-                                            <input type="number" class="form-control" 
-                                                   t-att-value="state.wizardProduct?.dimension_w" 
-                                                   t-on-input="onWizardDimWChange"
-                                                   min="0" step="0.01"/>
-                                        </div>
+                            </div>
+                        </t>
+
+                        <!-- Pricing Section -->
+                        <div class="qb__form-section-title" t-if="state.showMargin">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+                            Tarification
+                        </div>
+                        <div class="qb__form-row" t-if="state.showMargin">
+                            <div class="qb__form-group">
+                                <label class="qb__label">Coût d'achat (€)</label>
+                                <input type="text" class="qb__input qb__input--readonly" readonly="readonly"
+                                       t-att-value="formatMoney(state.wizardProduct?.price_buy)"/>
+                            </div>
+                            <div class="qb__form-group">
+                                <label class="qb__label">Marge %</label>
+                                <input type="number" class="qb__input"
+                                       t-att-value="state.wizardProduct?.target_margin_percent"
+                                       t-on-input="onWizardMarginChange"
+                                       min="0" max="200" step="1"/>
+                            </div>
+                            <div class="qb__form-group">
+                                <label class="qb__label">Prix de vente</label>
+                                <input type="text" class="qb__input qb__input--readonly qb__input--highlight" readonly="readonly"
+                                       t-att-value="formatMoney(state.wizardProduct?.price_unit)"/>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="qb__form-row">
+                            <div class="qb__form-group qb__form-group--full">
+                                <label class="qb__label">Notes techniques</label>
+                                <textarea class="qb__input qb__input--textarea" rows="2"
+                                          t-att-value="state.wizardProduct?.notes"
+                                          t-on-input="onWizardNotesChange"/>
+                            </div>
+                        </div>
+
+                        <!-- Optional Toggle -->
+                        <div class="qb__form-row">
+                            <label class="qb__toggle">
+                                <input type="checkbox"
+                                       t-att-checked="state.wizardProduct?.isOptional"
+                                       t-on-change="onWizardOptionalToggle"/>
+                                <span class="qb__toggle-slider"></span>
+                                <span class="qb__toggle-label">Ligne optionnelle <small>(exclue du total)</small></span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="qb__modal-footer">
+                        <button class="qb__btn qb__btn--secondary" t-on-click="onCloseLineWizard">Annuler</button>
+                        <button class="qb__btn qb__btn--primary" t-on-click="onConfirmLineWizard">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                            Ajouter au devis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ==================== CREATE PRODUCT WIZARD ==================== -->
+            <div t-if="state.showCreateProductWizard" class="qb__modal-backdrop">
+                <div class="qb__modal qb__modal--create">
+                    <div class="qb__modal-header qb__modal-header--create">
+                        <h3 class="qb__modal-title">Nouveau produit</h3>
+                        <button class="qb__btn qb__btn--icon qb__modal-close" t-on-click="onCloseCreateProductWizard">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="qb__modal-body">
+                        <div class="qb__form-row">
+                            <div class="qb__form-group qb__form-group--flex2">
+                                <label class="qb__label">Nom <span class="qb__required">*</span></label>
+                                <input type="text" class="qb__input" placeholder="Ex: Carrelage Sol 60x60"
+                                       t-att-value="state.newProduct?.name"
+                                       t-on-input="onNewProductNameChange"/>
+                            </div>
+                            <div class="qb__form-group">
+                                <label class="qb__label">Couleur</label>
+                                <input type="text" class="qb__input" placeholder="Blanc, Gris..."
+                                       t-att-value="state.newProduct?.color"
+                                       t-on-input="onNewProductColorChange"/>
+                            </div>
+                        </div>
+                        <div class="qb__form-row">
+                            <div class="qb__form-group">
+                                <label class="qb__label">Unité de mesure <span class="qb__required">*</span></label>
+                                <select class="qb__input qb__input--select" t-on-change="onNewProductUomChange">
+                                    <option value="">— Sélectionner —</option>
+                                    <t t-foreach="state.uomList" t-as="uom" t-key="uom.id">
+                                        <option t-att-value="uom.id"
+                                                t-att-selected="state.newProduct?.uom_id === uom.id">
+                                            <t t-esc="uom.name"/>
+                                        </option>
                                     </t>
-                                    <t t-if="state.wizardProduct?.uom_type === 'm3'">
-                                        <div class="col-md-3">
-                                            <label class="form-label">Hauteur (m)</label>
-                                            <input type="number" class="form-control" 
-                                                   t-att-value="state.wizardProduct?.dimension_h" 
-                                                   t-on-input="onWizardDimHChange"
-                                                   min="0" step="0.01"/>
-                                        </div>
+                                </select>
+                            </div>
+                            <div class="qb__form-group">
+                                <label class="qb__label">Coût d'achat <span class="qb__required">*</span></label>
+                                <div class="qb__input-with-suffix">
+                                    <input type="number" class="qb__input" placeholder="0.00"
+                                           t-att-value="state.newProduct?.list_price"
+                                           t-on-input="onNewProductPriceChange"
+                                           step="0.01" min="0"/>
+                                    <span class="qb__input-suffix">€</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Lots selection as pills -->
+                        <div class="qb__form-row">
+                            <div class="qb__form-group qb__form-group--full">
+                                <label class="qb__label">Lots associés</label>
+                                <div class="qb__lot-pills-select">
+                                    <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
+                                        <button type="button"
+                                                t-attf-class="qb__lot-pill-select #{state.newProduct?.lot_ids?.includes(lot.id) ? 'qb__lot-pill-select--active' : ''}"
+                                                t-on-click="() => this.onToggleNewProductLot(lot.id)">
+                                            <t t-esc="lot.code"/> — <t t-esc="lot.name"/>
+                                        </button>
                                     </t>
-                                    <div class="col-md-3">
-                                        <label class="form-label">UoM</label>
-                                        <input type="text" class="form-control bg-light" readonly="readonly" 
-                                               t-att-value="state.wizardProduct?.uom_type === 'm2' ? 'm²' : (state.wizardProduct?.uom_type === 'm3' ? 'm³' : 'ml')"/>
-                                    </div>
-                                </t>
-                                
-                                <div class="col-12">
-                                    <label class="form-label">Notes</label>
-                                    <textarea class="form-control" rows="2" t-att-value="state.wizardProduct?.notes" t-on-input="onWizardNotesChange"/>
-                                </div>
-                                
-                                <div class="col-12">
-                                    <div class="form-check">
-                                        <input type="checkbox" class="form-check-input" id="optCheck" t-att-checked="state.wizardProduct?.isOptional" t-on-change="onWizardOptionalToggle"/>
-                                        <label class="form-check-label" for="optCheck"><strong>Ligne optionnelle</strong> (exclue du total)</label>
-                                    </div>
+                                    <span t-if="state.lots.length === 0" class="qb__text-muted">Aucun lot défini</span>
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" t-on-click="onCloseLineWizard">Annuler</button>
-                            <button type="button" class="btn btn-primary" t-on-click="onConfirmLineWizard">
-                                <i class="fa fa-plus me-1"/>Ajouter
-                            </button>
-                        </div>
+                    </div>
+                    <div class="qb__modal-footer">
+                        <button class="qb__btn qb__btn--secondary" t-on-click="onCloseCreateProductWizard">Annuler</button>
+                        <button class="qb__btn qb__btn--success" t-on-click="onConfirmCreateProductWizard">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                            Créer le produit
+                        </button>
                     </div>
                 </div>
             </div>
-            
-            <!-- CREATE PRODUCT WIZARD -->
-            <div t-if="state.showCreateProductWizard" class="modal show d-block" style="background: rgba(0,0,0,0.5);">
-                <div class="modal-dialog modal-lg o_quote_wizard o_create_product">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title"><i class="fa fa-cube me-2"/>Nouveau Produit</h5>
-                            <button type="button" class="btn-close btn-close-white" t-on-click="onCloseCreateProductWizard"/>
+
+            <!-- ==================== RESET CONFIRMATION MODAL ==================== -->
+            <div t-if="state.showResetConfirm" class="qb__modal-backdrop">
+                <div class="qb__modal qb__modal--danger">
+                    <div class="qb__modal-header qb__modal-header--danger">
+                        <h3 class="qb__modal-title">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                                <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                            </svg>
+                            Réinitialiser le panier
+                        </h3>
+                        <button class="qb__btn qb__btn--icon qb__modal-close" t-on-click="onCancelReset">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                        </button>
+                    </div>
+                    <div class="qb__modal-body">
+                        <div class="qb__alert qb__alert--danger">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>
+                            </svg>
+                            <span><strong>Cette action est irréversible.</strong> Toutes les lignes du panier seront supprimées.</span>
                         </div>
-                        <div class="modal-body">
-                            <div class="row g-3">
-                                <div class="col-md-8">
-                                    <label class="form-label fw-bold">Nom <span class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" placeholder="Ex: Carrelage Sol 60x60" t-att-value="state.newProduct?.name" t-on-input="onNewProductNameChange"/>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Couleur</label>
-                                    <input type="text" class="form-control" placeholder="Blanc, Gris..." t-att-value="state.newProduct?.color" t-on-input="onNewProductColorChange"/>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Unité <span class="text-danger">*</span></label>
-                                    <select class="form-select" t-on-change="onNewProductUomChange">
-                                        <option value="">-- Sélectionner --</option>
-                                        <t t-foreach="state.uomList" t-as="uom" t-key="uom.id">
-                                            <option t-att-value="uom.id" t-att-selected="state.newProduct?.uom_id === uom.id"><t t-esc="uom.name"/></option>
-                                        </t>
-                                    </select>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Dimensions</label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control text-center" placeholder="L" t-att-value="state.newProduct?.dimension_l" t-on-input="onNewProductDimLChange" step="0.01"/>
-                                        <span class="input-group-text">×</span>
-                                        <input type="number" class="form-control text-center" placeholder="W" t-att-value="state.newProduct?.dimension_w" t-on-input="onNewProductDimWChange" step="0.01"/>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <label class="form-label fw-bold">Coût d'achat <span class="text-danger">*</span></label>
-                                    <div class="input-group">
-                                        <input type="number" class="form-control" placeholder="0.00" t-att-value="state.newProduct?.list_price" t-on-input="onNewProductPriceChange" step="0.01" min="0"/>
-                                        <span class="input-group-text">€</span>
-                                    </div>
-                                    <small class="text-muted">Prix fournisseur (la marge sera appliquée)</small>
-                                </div>
-                                <div class="col-12">
-                                    <label class="form-label fw-bold">Lots</label>
-                                    <div class="d-flex flex-wrap gap-2">
-                                        <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
-                                            <button type="button" t-attf-class="btn btn-sm #{state.newProduct?.lot_ids?.includes(lot.id) ? 'btn-primary' : 'btn-outline-secondary'}" t-on-click="() => this.onToggleNewProductLot(lot.id)">
-                                                <t t-esc="lot.code"/> - <t t-esc="lot.name"/>
-                                            </button>
-                                        </t>
-                                        <span t-if="state.lots.length === 0" class="text-muted small">Aucun lot</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" t-on-click="onCloseCreateProductWizard">Annuler</button>
-                            <button type="button" class="btn btn-success" t-on-click="onConfirmCreateProductWizard">
-                                <i class="fa fa-check me-1"/>Créer
-                            </button>
-                        </div>
+                        <label class="qb__toggle qb__toggle--danger">
+                            <input type="checkbox"
+                                   t-att-checked="state.resetConfirmChecked"
+                                   t-on-change="onResetConfirmCheckbox"/>
+                            <span class="qb__toggle-slider"></span>
+                            <span class="qb__toggle-label">Je confirme vouloir supprimer tout le panier</span>
+                        </label>
+                    </div>
+                    <div class="qb__modal-footer">
+                        <button class="qb__btn qb__btn--secondary" t-on-click="onCancelReset">Annuler</button>
+                        <button class="qb__btn qb__btn--danger"
+                                t-att-disabled="!state.resetConfirmChecked ? 'disabled' : undefined"
+                                t-on-click="onConfirmReset">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
+                            </svg>
+                            Confirmer la suppression
+                        </button>
                     </div>
                 </div>
             </div>
-            <!-- RESET CONFIRMATION MODAL (US-SAL-005) -->
-            <div t-if="state.showResetConfirm" class="modal show d-block" style="background: rgba(0,0,0,0.6);">
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header bg-danger text-white">
-                            <h5 class="modal-title"><i class="fa fa-exclamation-triangle me-2"/>Attention: Suppression du panier</h5>
-                            <button type="button" class="btn-close btn-close-white" t-on-click="onCancelReset"/>
-                        </div>
-                        <div class="modal-body">
-                            <div class="alert alert-warning">
-                                <i class="fa fa-warning me-2"/>
-                                <strong>Cette action est irréversible.</strong> Toutes les lignes du panier seront supprimées.
-                            </div>
-                            <div class="form-check mt-3">
-                                <input type="checkbox" class="form-check-input" id="confirmResetCheck"
-                                       t-att-checked="state.resetConfirmChecked"
-                                       t-on-change="onResetConfirmCheckbox"/>
-                                <label class="form-check-label fw-bold" for="confirmResetCheck">
-                                    Je confirme vouloir supprimer tout le panier
-                                </label>
-                            </div>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" t-on-click="onCancelReset">
-                                <i class="fa fa-times me-1"/>Annuler
-                            </button>
-                            <button type="button" class="btn btn-danger"
-                                    t-att-disabled="!state.resetConfirmChecked ? 'disabled' : undefined"
-                                    t-on-click="onConfirmReset">
-                                <i class="fa fa-trash me-1"/>Supprimer
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
         </div>
     </t>
 </templates>

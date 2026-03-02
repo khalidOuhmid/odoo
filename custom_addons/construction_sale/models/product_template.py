@@ -6,7 +6,6 @@ Adds construction-specific pricing and specification fields.
 """
 
 from odoo import models, fields, api
-from typing import Any
 
 
 class ProductTemplate(models.Model):

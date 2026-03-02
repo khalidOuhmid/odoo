@@ -665,43 +665,82 @@ class ContractTemplateRenderer(models.AbstractModel):
     # ============================================================
 
     def _assemble_html_document(self, rendered_html, css):
-        """
-        Assemble complete HTML document with CSS
-        
-        TASK-007: Uses BLG Charte Graphique 2025 as base styling.
-        The custom template CSS is appended AFTER the base reset,
-        ensuring BLG variables and typography take precedence.
+        """Assemble a complete HTML document ready for WeasyPrint PDF generation.
+
+        TASK-007: BLG Charte Graphique 2025 branding.
+        - Running header on every page with BLG logo (base64-embedded).
+        - Running footer with company info + page counter.
+        - Full A4 width body.
+        - BLG CSS loaded from static/src/css/contract_template_blg.css.
 
         Args:
-            rendered_html (str): Rendered body HTML
-            css (str): CSS styles (from template or contract_template_blg.css)
+            rendered_html: Rendered body HTML (Jinja2 output).
+            css: Template-specific CSS to append after base styles.
 
         Returns:
-            str: Complete HTML document
+            Complete HTML document string.
         """
-        # Read BLG CSS from file system for embedding
+        import os
+        import base64 as b64
+
+        module_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+        # --- Load BLG CSS ---
         blg_css = ""
+        blg_css_path = os.path.join(module_root, 'static', 'src', 'css', 'contract_template_blg.css')
         try:
-            import os
-            blg_css_path = os.path.join(
-                os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-                'static', 'src', 'css', 'contract_template_blg.css'
-            )
             if os.path.exists(blg_css_path):
                 with open(blg_css_path, 'r', encoding='utf-8') as f:
                     blg_css = f.read()
                 _logger.debug("BLG CSS loaded: %d bytes", len(blg_css))
-            else:
-                _logger.warning("BLG CSS not found at %s", blg_css_path)
         except Exception as e:
             _logger.warning("Failed to load BLG CSS: %s", e)
+
+        # --- Load BLG logo as base64 data-URI ---
+        logo_data_uri = ""
+        logo_path = os.path.join(module_root, 'static', 'src', 'img', 'Logo.png')
+        try:
+            if os.path.exists(logo_path):
+                with open(logo_path, 'rb') as f:
+                    logo_b64 = b64.b64encode(f.read()).decode('ascii')
+                logo_data_uri = f"data:image/png;base64,{logo_b64}"
+                _logger.debug("BLG logo loaded for PDF header")
+        except Exception as e:
+            _logger.warning("Failed to load BLG logo: %s", e)
+
+        # --- Company info for footer ---
+        company = self.env.company
+        company_name = company.name or 'BLG Construction'
+        company_address = f"{company.street or ''}, {company.zip or ''} {company.city or ''}".strip(', ')
+        company_siret = company.company_registry or ''
+        footer_line = f"{company_name}"
+        if company_address:
+            footer_line += f" — {company_address}"
+        if company_siret:
+            footer_line += f" — SIRET: {company_siret}"
+
+        # --- Build @page header/footer image rule ---
+        logo_css = ""
+        if logo_data_uri:
+            logo_css = f"""
+        @top-left {{
+            content: url("{logo_data_uri}");
+            width: 60px;
+        }}
+        @top-right {{
+            content: "{company_name}";
+            font-size: 8pt;
+            color: #978A86;
+            font-family: Georgia, serif;
+            vertical-align: bottom;
+        }}"""
 
         return f"""<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Contract Document</title>
+<title>Contrat — {company_name}</title>
 <style>
     /* ========== RESET ========== */
     * {{
@@ -713,13 +752,24 @@ class ContractTemplateRenderer(models.AbstractModel):
     /* ========== A4 PAGE SETUP (WeasyPrint) ========== */
     @page {{
         size: A4;
-        margin: 20mm 15mm 25mm 15mm;
-
+        margin: 25mm 15mm 28mm 15mm;
+{logo_css}
         @bottom-center {{
             content: "Page " counter(page) " sur " counter(pages);
             font-size: 9pt;
             color: #AEADAB;
         }}
+        @bottom-left {{
+            content: "{footer_line}";
+            font-size: 7pt;
+            color: #AEADAB;
+            max-width: 70%;
+        }}
+    }}
+
+    /* First page: extra top margin for header block */
+    @page :first {{
+        margin-top: 25mm;
     }}
 
     /* ========== BLG BASE TYPOGRAPHY ========== */

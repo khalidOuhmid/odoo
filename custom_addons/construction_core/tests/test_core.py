@@ -56,7 +56,7 @@ class TestConstructionCore(TransactionCase):
         # First Lot
         self.lot_model.create({
             'name': 'Lot 1',
-            'code': '01',
+            'code': '01_TEST',
             'chantier_id': chantier.id,
             'price': 1000.0
         })
@@ -65,7 +65,7 @@ class TestConstructionCore(TransactionCase):
         with self.assertRaises(Exception):
             self.lot_model.create({
                 'name': 'Lot 1 Duplicate',
-                'code': '01',
+                'code': '01_TEST',
                 'chantier_id': chantier.id,
                 'price': 2000.0
             })
@@ -180,16 +180,16 @@ class TestLotSubcontractorWizard(TransactionCase):
         # Create master data
         self.chapter = self.env['construction.chapter'].create({
             'name': 'Test Chapter', 
-            'code': 'TC'
+            'code': 'TC_SUB_TEST'
         })
         self.stage = self.env['construction.stage'].create({
             'name': 'Test Stage', 
-            'code': 'TS', 
+            'code': 'TS_SUB_TEST', 
             'chapter_id': self.chapter.id
         })
         self.category = self.env['construction.lot.category'].create({
-            'name': 'Électricité',
-            'code': 'ELEC',
+            'name': 'Électricité Test',
+            'code': 'ELEC_TEST',
         })
         self.partner = self.env['res.partner'].create({
             'name': 'Test Client',

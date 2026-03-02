@@ -9,7 +9,6 @@ Uses line-level price_buy (cost) for PO pricing.
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-from typing import Any
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -143,10 +142,6 @@ class SaleToPurchaseWizard(models.TransientModel):
         if not generated_orders:
             raise UserError(_("No Purchase Orders were created. Check if Lots have Subcontractors assigned or specify an override vendor."))
 
-        # 3. Success notification
-        po_names = ', '.join(generated_orders.mapped('name'))
-        
-        # 4. Open Result
         return {
             'name': _('Generated Purchase Orders'),
             'type': 'ir.actions.act_window',

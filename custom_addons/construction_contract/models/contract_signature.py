@@ -11,12 +11,7 @@ import logging
 
 _logger = logging.getLogger(__name__)
 
-# Import constants
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from config.contract_constants import AUTHENTICATION_METHODS, MAX_SIGNATURE_SIZE_MB
+from ..config.contract_constants import AUTHENTICATION_METHODS, MAX_SIGNATURE_SIZE_MB
 
 
 class ConstructionContractSignature(models.Model):

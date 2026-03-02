@@ -8,5 +8,9 @@ from . import test_contract_portal
 from . import test_contract_security
 from . import test_contract_performance
 from . import test_multi_lot_aggregation
-# from . import test_contract_builder # File appears missing in file system
 from . import test_purchase_generation
+from . import test_lot_extension
+from . import test_contract_deliverable
+from . import test_contract_signature
+from . import test_wizards
+

@@ -7,16 +7,12 @@ Includes planning documents, certificates, and technical documentation
 
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
+import base64
 import logging
 
 _logger = logging.getLogger(__name__)
 
-# Import constants
-import sys
-import os
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from config.contract_constants import DELIVERABLE_TYPES
+from ..config.contract_constants import DELIVERABLE_TYPES
 
 
 class ConstructionContractDeliverable(models.Model):
@@ -191,20 +187,19 @@ class ConstructionContractDeliverable(models.Model):
         """Calculate file size from binary data"""
         for deliverable in self:
             if deliverable.document:
-                import base64
                 try:
                     decoded = base64.b64decode(deliverable.document)
                     size_bytes = len(decoded)
                     deliverable.file_size = size_bytes
 
-                    # Human-readable size
                     if size_bytes < 1024:
                         deliverable.file_size_readable = f"{size_bytes} B"
                     elif size_bytes < 1024 * 1024:
                         deliverable.file_size_readable = f"{size_bytes / 1024:.1f} KB"
                     else:
                         deliverable.file_size_readable = f"{size_bytes / (1024 * 1024):.1f} MB"
-                except:
+                except Exception:
+                    _logger.warning("Failed to decode document for deliverable %s", deliverable.name)
                     deliverable.file_size = 0
                     deliverable.file_size_readable = "0 B"
             else:

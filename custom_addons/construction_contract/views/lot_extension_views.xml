@@ -14,6 +14,13 @@
                         invisible="not has_contract">
                     <span class="o_stat_text">Contrat</span>
                 </button>
+                <button name="action_view_purchase_orders"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-shopping-cart"
+                        invisible="purchase_order_count == 0">
+                    <field name="purchase_order_count" widget="statinfo" string="BC"/>
+                </button>
             </xpath>
 
             <!-- Add Generate PO button in Header -->

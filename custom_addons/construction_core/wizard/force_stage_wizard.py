@@ -19,6 +19,7 @@ class ForceStageWizard(models.TransientModel):
 
     @api.model
     def default_get(self, fields):
+        """Load default values from current chantier context."""
         res = super().default_get(fields)
         if self.env.context.get('active_model') == 'construction.chantier':
             chantier = self.env['construction.chantier'].browse(self.env.context.get('active_id'))

@@ -30,14 +30,13 @@ class PurchaseOrder(models.Model):
         # Create a temporary contract object or use the service directly
         # For now, we delegate to the existing construction.contract logic
         if not self.contract_id:
-            # Auto-create contract if missing
-             vals = {
+            vals = {
                 'subcontractor_id': self.partner_id.id,
                 'chantier_id': self.chantier_id.id,
-                'sale_order_ids': [(6, 0, [])], # TODO: Link to Sales?
+                'sale_order_ids': [(6, 0, [])],
                 'custom_html_override': self.contract_template_html
             }
-             self.contract_id = self.env['construction.contract'].create(vals)
+            self.contract_id = self.env['construction.contract'].create(vals)
         
         return self.contract_id.action_generate_pdf()
 

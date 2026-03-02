@@ -7,7 +7,6 @@ Designed to work with the Owl SPA frontend.
 """
 
 from odoo import models, fields, api, _
-from typing import Any, Optional
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -109,15 +108,18 @@ class SaleOrder(models.Model):
 
     @api.constrains('chantier_id', 'partner_id')
     def _check_chantier_consistency(self):
-        """
-        Enforce business rule: The Quote Customer must be related to the Construction Site.
-        This prevents data incoherence ensuring billing goes to the right entity.
+        """Enforce partner/chantier coherence.
+
+        Business rule: if the chantier has a client, the order's partner
+        must match. This prevents billing to the wrong entity.
         """
         for order in self:
-            if order.chantier_id and order.partner_id:
-                # Logic: Warn if partner doesn't match chantier main partner (optional, or strict?)
-                # For now, we allow flexibility but logging could be added here.
-                pass
+            if order.chantier_id and order.chantier_id.client and order.partner_id:
+                if order.partner_id != order.chantier_id.client:
+                    _logger.warning(
+                        "Order %s: partner %s differs from chantier client %s",
+                        order.name, order.partner_id.name, order.chantier_id.client.name,
+                    )
 
     @api.constrains('amount_total', 'state')
     def _check_monetary_safety(self):
@@ -134,10 +136,8 @@ class SaleOrder(models.Model):
                     )
                 
                 # Optional: Zero check (unless it's a specific warranty replacement)
-                if order.amount_total == 0 and not order.context.get('allow_zero_total'):
-                    # Warning only for now, or strict block? Let's be strict for "SAP-level"
-                    # We can use a context key to bypass if needed manually
-                    _logger.warning(f"Order {order.name} confirmed with 0 amount")
+                if order.amount_total == 0 and not self.env.context.get('allow_zero_total'):
+                    _logger.warning("Order %s confirmed with 0 amount", order.name)
 
     # ============================================================
     # API METHODS (For SPA/Owl)
@@ -166,43 +166,35 @@ class SaleOrder(models.Model):
             ValidationError: If required fields are missing
             AccessError: If user lacks creation permissions
         """
-        try:
-            # Add strict validation logic here for incoming JSON data
-            chantier_id = vals.get('chantier_id')
-            if not chantier_id:
-                _logger.warning("SPA Quote created without chantier_id")
-            
-            # Support custom name for revisions (e.g., "ChantierDupont-001-v2")
-            name_override = vals.pop('name_override', None)
-            
-            # Generate custom name: {chantier_name}-{seq}-v1
-            if chantier_id and not name_override:
-                chantier = self.env['construction.chantier'].browse(chantier_id)
-                if chantier:
-                    # Count existing quotes for this chantier to get sequence
-                    existing_quotes = self.search_count([('chantier_id', '=', chantier_id)])
-                    seq_num = str(existing_quotes + 1).zfill(3)
-                    chantier_short = chantier.name[:20].replace(' ', '-')
-                    name_override = f"{chantier_short}-{seq_num}-v1"
-                    _logger.info(f"Generated quote name: {name_override}")
-            
-            order = super().create(vals)
-            
-            # Apply custom name if provided (for revisions or new quotes)
-            if name_override:
-                order.write({'name': name_override})
-            
-            # Auto-resequence lines by lot after creation
-            order._resequence_lines_by_lot()
-            
-            return {
-                'id': order.id,
-                'name': order.name,
-                'state': order.state,
-            }
-        except Exception as e:
-            _logger.error(f"SPA Creation Error: {str(e)}")
-            raise
+        chantier_id = vals.get('chantier_id')
+        if not chantier_id:
+            _logger.warning("SPA Quote created without chantier_id")
+
+        # Support custom name for revisions (e.g., "ChantierDupont-001-v2")
+        name_override = vals.pop('name_override', None)
+
+        # Generate custom name: {chantier_name}-{seq}-v1
+        if chantier_id and not name_override:
+            chantier = self.env['construction.chantier'].browse(chantier_id)
+            if chantier:
+                existing_quotes = self.search_count([('chantier_id', '=', chantier_id)])
+                seq_num = str(existing_quotes + 1).zfill(3)
+                chantier_short = chantier.name[:20].replace(' ', '-')
+                name_override = f"{chantier_short}-{seq_num}-v1"
+                _logger.debug("Generated quote name: %s", name_override)
+
+        order = super().create(vals)
+
+        if name_override:
+            order.write({'name': name_override})
+
+        order._resequence_lines_by_lot()
+
+        return {
+            'id': order.id,
+            'name': order.name,
+            'state': order.state,
+        }
 
     def action_open_quote_builder(self) -> dict:
         """Open the React/Owl Quote Builder for this order.
@@ -262,38 +254,27 @@ class SaleOrder(models.Model):
             List of product dictionaries with minimal fields for performance:
             [{'id': 1, 'name': '...', 'list_price': 100.0, ...}, ...]
         """
-        # DEBUG: Log received parameters
-        _logger.info("[QUOTE_BUILDER] search_products_for_spa called with:")
-        _logger.info("[QUOTE_BUILDER]   search_term='%s', lot_category_id=%s (type=%s), limit=%s",
-                     search_term, lot_category_id, type(lot_category_id).__name__, limit)
-        
+        _logger.debug(
+            "search_products_for_spa: term=%r, category=%s, limit=%s",
+            search_term, lot_category_id, limit,
+        )
+
         domain = [('sale_ok', '=', True)]
-        
-        # FIX FILTRAGE: Filter by lot category if specified
-        # Use 'in' operator for Many2many field lot_category_ids
+
         if lot_category_id and int(lot_category_id) > 0:
-            # For Many2many: ('lot_category_ids', 'in', [category_id]) 
-            # This returns products where ANY of their categories matches
             domain.append(('lot_category_ids', 'in', [int(lot_category_id)]))
-            _logger.info("[QUOTE_BUILDER]   Filtering by lot_category_ids IN [%s]", lot_category_id)
-        else:
-            _logger.info("[QUOTE_BUILDER]   No lot filter applied (showing all products)")
-        
+
         if search_term:
             domain += ['|', ('name', 'ilike', search_term), ('default_code', 'ilike', search_term)]
-        
-        # DEBUG: Log final domain
-        _logger.info("[QUOTE_BUILDER]   Final domain: %s", domain)
-        
-        # Fixed field list - includes uom for dimension calculator and lot_category_ids
+
         result = self.env['product.product'].search_read(
             domain,
             ['id', 'display_name', 'name', 'list_price', 'default_code', 'uom_id', 'standard_price', 'lot_category_ids'],
-            limit=min(limit, 200),  # Governor limit for performance
-            order='name asc'
+            limit=min(limit, 200),
+            order='name asc',
         )
-        
-        _logger.info("[QUOTE_BUILDER]   Found %s products", len(result))
+
+        _logger.debug("search_products_for_spa: found %d products", len(result))
         return result
 
     # ============================================================
