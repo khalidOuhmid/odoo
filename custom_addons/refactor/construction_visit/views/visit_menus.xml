@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <menuitem id="menu_visit_root"
-              name="Visites"
-              parent="construction_core.menu_construction_root"
-              sequence="15"/>
-</odoo>

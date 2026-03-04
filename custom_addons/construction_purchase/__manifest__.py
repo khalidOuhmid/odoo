@@ -51,4 +51,5 @@ Compatibilité : Odoo 18.0
     'application': False,
     'auto_install': False,
     'sequence': 110,
+    'test_dependencies': ['construction_core'],
 }

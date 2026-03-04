@@ -1,17 +1,52 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    
-    <!-- Top Level Menu -->
+
+    <!-- Menu racine Finance -->
     <menuitem id="menu_construction_finance_root"
               name="Finance"
               web_icon="construction_finance,static/description/icon.png"
               sequence="40"/>
 
-    <!-- Dashboard Submenu -->
-    <menuitem id="menu_finance_dashboard"
-              name="Cockpit"
+    <!-- Vue 1 : Tour de Contrôle (Kanban) -->
+    <menuitem id="menu_finance_tour_de_controle"
+              name="🏗️ Tour de Contrôle"
               parent="menu_construction_finance_root"
-              action="action_finance_dashboard"
+              action="action_finance_tour_de_controle"
               sequence="1"/>
+
+    <!-- Vue 2 : Analyse des Marges -->
+    <menuitem id="menu_finance_marges"
+              name="📊 Analyse des Marges"
+              parent="menu_construction_finance_root"
+              action="action_finance_marges"
+              sequence="2"/>
+
+    <!-- Vue 3 : Facturation & Encaissements -->
+    <menuitem id="menu_finance_facturation"
+              name="💰 Facturation"
+              parent="menu_construction_finance_root"
+              action="action_finance_facturation"
+              sequence="3"/>
+
+    <!-- Vue 4 : Prévisions M+1/M+2/M+3 -->
+    <menuitem id="menu_finance_previsions"
+              name="🔭 Prévisions"
+              parent="menu_construction_finance_root"
+              action="action_finance_previsions"
+              sequence="4"/>
+
+    <!-- Vue 5 : Sous-Traitants -->
+    <menuitem id="menu_finance_sous_traitants"
+              name="🏢 Sous-Traitants"
+              parent="menu_construction_finance_root"
+              action="action_finance_sous_traitants"
+              sequence="5"/>
+
+    <!-- Alertes -->
+    <menuitem id="menu_finance_alerts"
+              name="🔔 Alertes"
+              parent="menu_construction_finance_root"
+              action="action_finance_alerts"
+              sequence="10"/>
 
 </odoo>

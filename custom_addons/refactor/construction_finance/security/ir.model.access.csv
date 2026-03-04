@@ -1,5 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_construction_progress_billing,construction.progress.billing,model_construction_progress_billing,base.group_user,1,1,1,1
-access_construction_progress_billing,construction.progress.billing,model_construction_progress_billing,base.group_user,1,1,1,1
-access_construction_dgd,construction.dgd,model_construction_dgd,base.group_user,1,1,1,1
-access_construction_invoice_schedule,construction.invoice.schedule,model_construction_invoice_schedule,base.group_user,1,1,1,1

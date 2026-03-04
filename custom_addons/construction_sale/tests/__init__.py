@@ -12,6 +12,7 @@ from . import common
 # New test suites
 from .unit import test_sale_order
 from .unit import test_sale_order_line
+from .unit import test_sale_monetary
 from .unit import test_construction_lot
 from .integration import test_create_from_spa
 from .integration import test_search_products_spa

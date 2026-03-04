@@ -262,6 +262,19 @@ class SaleOrderLine(models.Model):
                     % (line.name or line.product_id.name)
                 )
 
+    @api.constrains('price_unit', 'discount')
+    def _check_locked_prices(self):
+        """
+        Phase 2: Verrouillage des Lignes.
+        Interdire la modification des montants si la commande est validée.
+        """
+        for line in self:
+            if line.order_id.state in ['sale', 'done']:
+                raise ValidationError(
+                    _("Vous ne pouvez pas modifier le prix unitaire ou la remise d'une ligne sur un devis confirmé (%s).") 
+                    % line.order_id.name
+                )
+
     @api.constrains('price_unit', 'product_uom_qty')
     def _check_construction_values(self):
         """

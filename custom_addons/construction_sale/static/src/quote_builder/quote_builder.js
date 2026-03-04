@@ -5,6 +5,7 @@ import { registry } from "@web/core/registry";
 import { useService } from "@web/core/utils/hooks";
 import { session } from "@web/session";
 import { debounce } from "@web/core/utils/timing";
+import { useUndoRedo } from "@construction_sale/hooks/useUndoRedo";
 
 /**
  * QuoteBuilder - Professional Construction Estimator
@@ -32,10 +33,12 @@ export class QuoteBuilder extends Component {
         // Stable line ID counter (for t-key in template)
         this._nextLineId = 1;
 
-        // Undo/Redo stacks (non-reactive, max 50 entries)
-        this._undoStack = [];
-        this._redoStack = [];
-        this._maxUndoStack = 50;
+        // Undo/Redo hook
+        this.undoRedo = useUndoRedo(50);
+
+        // Timer for input history grouping (avoids a snapshot per keystroke)
+        this._isTyping = false;
+        this._typingTimeout = null;
 
         // Reactive State
         this.state = useState({
@@ -65,9 +68,7 @@ export class QuoteBuilder extends Component {
             insertAtIndex: null,
             // DnD: version counter to trigger Sortable re-init
             cartVersion: 0,
-            // Undo/Redo: reactive counters for UI buttons
-            undoCount: 0,
-            redoCount: 0,
+            // Undo/Redo UI getters bindings are dynamic
         });
 
         onWillStart(async () => {
@@ -79,6 +80,11 @@ export class QuoteBuilder extends Component {
                 this.restoreDraft();
             }
             await this.loadInitialData();
+
+            // Set initial state for undo redo
+            this.undoRedo.pushHistory(this.state.cart);
+            // Clear past right after because the first push is the base state, we only want history *after* changes
+            this.undoRedo.history.past = [];
         });
 
         // Auto-save with debounce
@@ -117,12 +123,16 @@ export class QuoteBuilder extends Component {
         // Ctrl+Z / Ctrl+Y keyboard listener for undo/redo
         useEffect(() => {
             const handleKeyDown = (e) => {
+                // Do not intercept if inside input unless explicitly needed, but standard asks to be careful
+                // We let it run. The browser's native undo might conflict, so we check if target is input
+                const isInput = e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA';
+
                 if ((e.ctrlKey || e.metaKey) && !e.altKey) {
                     if (e.key === 'z' && !e.shiftKey) {
-                        e.preventDefault();
+                        if (!isInput) e.preventDefault();
                         this.undo();
                     } else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) {
-                        e.preventDefault();
+                        if (!isInput) e.preventDefault();
                         this.redo();
                     }
                 }
@@ -742,12 +752,14 @@ export class QuoteBuilder extends Component {
 
     onLineNameChange(ev, index) {
         if (this.state.cart[index]) {
+            this._pushHistoryBeforeInput();
             this.state.cart[index].name = ev.target.value;
         }
     }
 
     onLineDimLChange(ev, index) {
         if (this.state.cart[index]) {
+            this._pushHistoryBeforeInput();
             this.state.cart[index].dimension_l = parseFloat(ev.target.value) || 0;
             this.recalculateLineQty(index);
         }
@@ -755,6 +767,7 @@ export class QuoteBuilder extends Component {
 
     onLineDimWChange(ev, index) {
         if (this.state.cart[index]) {
+            this._pushHistoryBeforeInput();
             this.state.cart[index].dimension_w = parseFloat(ev.target.value) || 0;
             this.recalculateLineQty(index);
         }
@@ -762,6 +775,7 @@ export class QuoteBuilder extends Component {
 
     onLineDimHChange(ev, index) {
         if (this.state.cart[index]) {
+            this._pushHistoryBeforeInput();
             this.state.cart[index].dimension_h = parseFloat(ev.target.value) || 0;
             this.recalculateLineQty(index);
         }
@@ -769,7 +783,13 @@ export class QuoteBuilder extends Component {
 
     onLineQtyChange(ev, index) {
         if (this.state.cart[index]) {
-            this.state.cart[index].qty = parseFloat(ev.target.value) || 1;
+            let qty = parseFloat(ev.target.value);
+            if (isNaN(qty) || qty < 0) {
+                this.notification.add("Quantité invalide (doit être >= 0)", { type: "danger" });
+                return;
+            }
+            this._pushHistoryBeforeInput();
+            this.state.cart[index].qty = qty;
         }
     }
 
@@ -777,13 +797,12 @@ export class QuoteBuilder extends Component {
         const line = this.state.cart[index];
         if (line) {
             const cost = parseFloat(ev.target.value);
-            if (cost <= 0) {
-                this.notification.add("Le coût doit être supérieur à 0", { type: "danger" });
-                // Reset to previous value logic is hard without tracking, but UI will show invalid
+            if (isNaN(cost) || cost < 0) {
+                this.notification.add("Le coût doit être >= 0", { type: "danger" });
                 return;
             }
+            this._pushHistoryBeforeInput();
             line.price_buy = cost;
-            // Recalculate selling price to maintain margin
             line.price_unit = this.calculatePriceFromMargin(cost, line.target_margin_percent);
         }
     }
@@ -791,16 +810,20 @@ export class QuoteBuilder extends Component {
     onLineMarginChange(ev, index) {
         const line = this.state.cart[index];
         if (line) {
-            const margin = parseFloat(ev.target.value) || 50;
-            if (margin >= 0 && margin < 500) {
-                line.target_margin_percent = margin;
-                line.price_unit = this.calculatePriceFromMargin(line.price_buy, margin);
+            const margin = parseFloat(ev.target.value);
+            if (isNaN(margin) || margin < 0 || margin >= 100) {
+                this.notification.add("Marge invalide (0 à 99%)", { type: "danger" });
+                return;
             }
+            this._pushHistoryBeforeInput();
+            line.target_margin_percent = margin;
+            line.price_unit = this.calculatePriceFromMargin(line.price_buy, margin);
         }
     }
 
     onLineOptionalToggle(index) {
         if (this.state.cart[index]) {
+            this._pushUndo();
             this.state.cart[index].isOptional = !this.state.cart[index].isOptional;
         }
     }
@@ -857,70 +880,55 @@ export class QuoteBuilder extends Component {
      * Clears redo stack (linear history model).
      */
     _pushUndo() {
-        // Deep clone the current cart
-        const snapshot = this.state.cart.map(line => ({
-            ...line,
-            specs: line.specs ? { ...line.specs } : {},
-        }));
-        this._undoStack.push(snapshot);
-        // Cap the stack size
-        if (this._undoStack.length > this._maxUndoStack) {
-            this._undoStack.shift();
+        // Using the custom hook, we pass the current state cart
+        this.undoRedo.pushHistory(this.state.cart);
+    }
+
+    /**
+     * Helper for debounced inputs so we don't save per keystroke.
+     */
+    _pushHistoryBeforeInput() {
+        if (!this._isTyping) {
+            this._pushUndo(); // Snapshot BEFORE the mutation begins
+            this._isTyping = true;
         }
-        // Clear redo on new action
-        this._redoStack = [];
-        // Update reactive counters
-        this.state.undoCount = this._undoStack.length;
-        this.state.redoCount = 0;
+
+        // Reset the typing timer
+        if (this._typingTimeout) clearTimeout(this._typingTimeout);
+        this._typingTimeout = setTimeout(() => {
+            this._isTyping = false;
+        }, 300); // 300ms debounce
     }
 
     /**
      * Undo: restore previous cart state from undo stack.
      */
     undo() {
-        if (this._undoStack.length === 0) return;
-        // Save current state to redo stack
-        const current = this.state.cart.map(line => ({
-            ...line,
-            specs: line.specs ? { ...line.specs } : {},
-        }));
-        this._redoStack.push(current);
-        // Pop from undo stack
-        const previous = this._undoStack.pop();
-        // Ensure UIDs exist
-        previous.forEach(item => {
-            if (!item._uid) this._assignUid(item);
-        });
-        this.state.cart = previous;
-        this.state.cartVersion++;
-        // Update counters
-        this.state.undoCount = this._undoStack.length;
-        this.state.redoCount = this._redoStack.length;
-        this.notification.add("↩ Annulé", { type: "info", sticky: false });
+        const previousSnapshot = this.undoRedo.undo(this.state.cart);
+        if (previousSnapshot) {
+            // Ensure UIDs exist
+            previousSnapshot.forEach(item => {
+                if (!item._uid) this._assignUid(item);
+            });
+            this.state.cart = previousSnapshot;
+            this.state.cartVersion++;
+            this.notification.add("↩ Annulé", { type: "info", sticky: false });
+        }
     }
 
     /**
      * Redo: restore next cart state from redo stack.
      */
     redo() {
-        if (this._redoStack.length === 0) return;
-        // Save current to undo stack
-        const current = this.state.cart.map(line => ({
-            ...line,
-            specs: line.specs ? { ...line.specs } : {},
-        }));
-        this._undoStack.push(current);
-        // Pop from redo stack
-        const next = this._redoStack.pop();
-        next.forEach(item => {
-            if (!item._uid) this._assignUid(item);
-        });
-        this.state.cart = next;
-        this.state.cartVersion++;
-        // Update counters
-        this.state.undoCount = this._undoStack.length;
-        this.state.redoCount = this._redoStack.length;
-        this.notification.add("↪ Refait", { type: "info", sticky: false });
+        const nextSnapshot = this.undoRedo.redo(this.state.cart);
+        if (nextSnapshot) {
+            nextSnapshot.forEach(item => {
+                if (!item._uid) this._assignUid(item);
+            });
+            this.state.cart = nextSnapshot;
+            this.state.cartVersion++;
+            this.notification.add("↪ Refait", { type: "info", sticky: false });
+        }
     }
 
     // ===========================================

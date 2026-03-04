@@ -1,57 +1,212 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- SEARCH VIEW — TASK-012: Enhanced filters -->
+    <!-- ================================================================
+         VUE 1 : TOUR DE CONTRÔLE — Kanban Chantiers
+         Question : "Lequel de mes 100 chantiers mérite mon attention ?"
+         ================================================================ -->
+
+    <!-- Search View enrichie -->
     <record id="view_finance_analysis_search" model="ir.ui.view">
         <field name="name">construction.finance.analysis.report.search</field>
         <field name="model">construction.finance.analysis.report</field>
         <field name="arch" type="xml">
-            <search string="Analyse Financière">
-                <field name="chantier_id"/>
-                <field name="partner_id"/>
-                <field name="company_id"/>
-                <!-- KPI Quick Filters -->
-                <filter string="Marge &gt; 15%" name="healthy_margin"
-                        domain="[('margin_percent', '&gt;', 15)]"/>
-                <filter string="Marge Faible (&lt; 15%)" name="low_margin"
-                        domain="[('margin_percent', '&lt;', 15), ('invoiced_revenue', '&gt;', 0)]"/>
-                <filter string="Chantiers à Perte" name="negative_margin"
-                        domain="[('margin', '&lt;', 0)]"/>
+            <search string="Tour de Contrôle Financière">
+                <field name="chantier_id" string="Chantier"/>
+                <field name="partner_id" string="Client"/>
+
+                <!-- Filtres rapides par état de santé -->
+                <filter string="🔴 En danger" name="health_red"
+                        domain="[('health_score','=','red')]"/>
+                <filter string="🟠 À surveiller" name="health_orange"
+                        domain="[('health_score','=','orange')]"/>
+                <filter string="✅ Sains" name="health_green"
+                        domain="[('health_score','=','green')]"/>
                 <separator/>
+
+                <!-- Filtres marge -->
+                <filter string="Marge OK (≥ 15%)" name="healthy_margin"
+                        domain="[('margin_percent','>=',15)]"/>
+                <filter string="Marge Faible (5–15%)" name="low_margin"
+                        domain="[('margin_percent','>=',5),('margin_percent','&lt;',15)]"/>
+                <filter string="Marge Critique (&lt; 5%)" name="critical_margin"
+                        domain="[('margin_percent','&lt;',5),('invoiced_revenue','&gt;',0)]"/>
+                <separator/>
+
+                <!-- Filtres période -->
                 <filter string="Ce Mois" name="this_month"
-                        domain="[('date', '&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                        domain="[('date','&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
                 <filter string="Ce Trimestre" name="this_quarter"
-                        domain="[('date', '&gt;=', (context_today() - relativedelta(months=3)).strftime('%Y-%m-%d'))]"/>
+                        domain="[('date','&gt;=', (context_today() - relativedelta(months=3)).strftime('%Y-%m-%d'))]"/>
                 <separator/>
+
                 <group expand="1" string="Regrouper par">
-                    <filter string="Chantier" name="group_chantier" context="{'group_by':'chantier_id'}"/>
-                    <filter string="Partenaire" name="group_partner" context="{'group_by':'partner_id'}"/>
-                    <filter string="Mois" name="group_date" context="{'group_by':'date:month'}"/>
+                    <filter string="Chantier" name="group_chantier"
+                            context="{'group_by':'chantier_id'}"/>
+                    <filter string="État" name="group_health"
+                            context="{'group_by':'health_score'}"/>
+                    <filter string="Mois" name="group_date"
+                            context="{'group_by':'date:month'}"/>
                 </group>
             </search>
         </field>
     </record>
 
-    <!-- GRAPH VIEW: Revenue vs Cost (The Jaws) -->
-    <record id="view_finance_analysis_graph" model="ir.ui.view">
-        <field name="name">construction.finance.analysis.report.graph</field>
+    <!-- Kanban Tour de Contrôle -->
+    <record id="view_finance_tour_de_controle_kanban" model="ir.ui.view">
+        <field name="name">construction.finance.analysis.report.kanban.tour</field>
         <field name="model">construction.finance.analysis.report</field>
         <field name="arch" type="xml">
-            <graph string="Analyse Financière" type="line" sample="1">
-                <field name="date" type="row" interval="month"/>
+            <kanban default_group_by="health_score"
+                    class="o_finance_kanban"
+                    sample="1">
+
+                <field name="chantier_id"/>
+                <field name="margin_percent"/>
+                <field name="margin"/>
+                <field name="invoiced_revenue"/>
+                <field name="planned_revenue"/>
+                <field name="days_since_last_invoice"/>
+                <field name="invoice_pipeline_30d"/>
+                <field name="budget_drift_percent"/>
+                <field name="health_score"/>
+                <field name="currency_id"/>
+
+                <templates>
+                    <t t-name="card">
+                        <!-- Couleur de la card selon health_score -->
+                        <div t-attf-class="o_finance_card #{record.health_score.raw_value == 'red' ? 'o_finance_card_red' : record.health_score.raw_value == 'orange' ? 'o_finance_card_orange' : 'o_finance_card_green'}">
+
+                            <!-- En-tête : Nom + Badge -->
+                            <div class="o_finance_card_header">
+                                <strong class="o_finance_chantier_name">
+                                    <field name="chantier_id"/>
+                                </strong>
+                                <span t-attf-class="badge #{record.health_score.raw_value == 'red' ? 'bg-danger' : record.health_score.raw_value == 'orange' ? 'bg-warning text-dark' : 'bg-success'}">
+                                    <field name="health_score"/>
+                                </span>
+                            </div>
+
+                            <!-- KPIs principaux -->
+                            <div class="o_finance_card_body mt-2">
+                                <!-- Marge -->
+                                <div class="o_finance_kpi_row">
+                                    <span class="o_finance_kpi_label">Marge brute</span>
+                                    <span t-attf-class="o_finance_kpi_value fw-bold #{record.margin_percent.raw_value &lt; 5 ? 'text-danger' : record.margin_percent.raw_value &lt; 15 ? 'text-warning' : 'text-success'}">
+                                        <field name="margin_percent" widget="percentage" digits="[6,1]"/>
+                                    </span>
+                                </div>
+                                <!-- CA Facturé vs Prévu -->
+                                <div class="o_finance_kpi_row">
+                                    <span class="o_finance_kpi_label">Facturé / Prévu</span>
+                                    <span class="o_finance_kpi_value">
+                                        <field name="invoiced_revenue" widget="monetary"/>
+                                        &nbsp;/&nbsp;
+                                        <field name="planned_revenue" widget="monetary"/>
+                                    </span>
+                                </div>
+                                <!-- Jours sans facture -->
+                                <div class="o_finance_kpi_row">
+                                    <span class="o_finance_kpi_label">Sans facture depuis</span>
+                                    <span t-attf-class="o_finance_kpi_value #{record.days_since_last_invoice.raw_value &gt; 60 ? 'text-danger fw-bold' : record.days_since_last_invoice.raw_value &gt; 30 ? 'text-warning' : ''}">
+                                        <field name="days_since_last_invoice"/> jours
+                                    </span>
+                                </div>
+                                <!-- Pipeline 30j -->
+                                <div class="o_finance_kpi_row" t-if="record.invoice_pipeline_30d.raw_value &gt; 0">
+                                    <span class="o_finance_kpi_label">À facturer (30j)</span>
+                                    <span class="o_finance_kpi_value text-primary fw-bold">
+                                        <field name="invoice_pipeline_30d" widget="monetary"/>
+                                    </span>
+                                </div>
+                                <!-- Dérive budget -->
+                                <div class="o_finance_kpi_row" t-if="record.budget_drift_percent.raw_value &gt; 0">
+                                    <span class="o_finance_kpi_label">⚠️ Dérive budget</span>
+                                    <span class="o_finance_kpi_value text-danger">
+                                        +<field name="budget_drift_percent" digits="[6,1]"/>%
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Boutons action rapide -->
+                            <div class="o_finance_card_footer mt-2 d-flex gap-2">
+                                <button name="action_view_chantier" type="object"
+                                        class="btn btn-sm btn-outline-primary w-100">
+                                    Voir le chantier
+                                </button>
+                                <button name="action_create_invoice" type="object"
+                                        class="btn btn-sm btn-success w-100"
+                                        t-if="record.invoice_pipeline_30d.raw_value &gt; 0">
+                                    Facturer
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         VUE 2 : ANALYSE DES MARGES — Graph
+         Question : "Où gagne-t-on le plus ?"
+         ================================================================ -->
+    <record id="view_finance_marges_graph" model="ir.ui.view">
+        <field name="name">construction.finance.analysis.report.graph.marges</field>
+        <field name="model">construction.finance.analysis.report</field>
+        <field name="arch" type="xml">
+            <graph string="Où gagne-t-on le plus ce mois ?" type="bar" sample="1">
+                <field name="chantier_id" type="row"/>
+                <field name="margin" type="measure"/>
                 <field name="invoiced_revenue" type="measure"/>
                 <field name="invoiced_cost" type="measure"/>
-                <field name="margin" type="measure"/>
             </graph>
         </field>
     </record>
 
-    <!-- PIVOT VIEW — TASK-012: Added margin_percent + commission -->
+    <!-- ================================================================
+         VUE 3 : LISTE MARGES — Classement détaillé
+         ================================================================ -->
+    <record id="view_finance_marges_list" model="ir.ui.view">
+        <field name="name">construction.finance.analysis.report.list.marges</field>
+        <field name="model">construction.finance.analysis.report</field>
+        <field name="arch" type="xml">
+            <list string="Classement des Marges"
+                  default_order="margin_percent desc"
+                  decoration-danger="margin_percent &lt; 5"
+                  decoration-warning="margin_percent &gt;= 5 and margin_percent &lt; 15"
+                  decoration-success="margin_percent &gt;= 15">
+                <field name="chantier_id" string="Chantier"/>
+                <field name="health_score" string="État" widget="badge"
+                       decoration-danger="health_score == 'red'"
+                       decoration-warning="health_score == 'orange'"
+                       decoration-success="health_score == 'green'"/>
+                <field name="planned_revenue" string="CA Prévu" sum="Total Prévu"/>
+                <field name="invoiced_revenue" string="CA Facturé" sum="Total Facturé"/>
+                <field name="invoiced_cost" string="Coût Réel" sum="Total Coûts"/>
+                <field name="margin" string="Marge Brute (€)" sum="Marge Totale"/>
+                <field name="margin_percent" string="Marge (%)" avg="Marge Moy."/>
+                <field name="budget_drift_percent" string="Dérive Budget (%)"
+                       decoration-danger="budget_drift_percent &gt; 10"/>
+                <field name="days_since_last_invoice" string="Jours sans facture"
+                       decoration-warning="days_since_last_invoice &gt; 30"
+                       decoration-danger="days_since_last_invoice &gt; 60"/>
+                <field name="invoice_pipeline_30d" string="Pipeline 30j (€)"/>
+                <field name="currency_id" invisible="1"/>
+                <button name="action_view_chantier" type="object"
+                        string="Voir" icon="fa-external-link" class="btn-sm btn-outline-primary"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ================================================================
+         VUE PIVOT : Analyse multi-dimensionnelle
+         ================================================================ -->
     <record id="view_finance_analysis_pivot" model="ir.ui.view">
         <field name="name">construction.finance.analysis.report.pivot</field>
         <field name="model">construction.finance.analysis.report</field>
         <field name="arch" type="xml">
-            <pivot string="Tableau de Bord Financier" sample="1" disable_linking="True">
+            <pivot string="Analyse Financière Détaillée" sample="1" disable_linking="True">
                 <field name="chantier_id" type="row"/>
                 <field name="planned_revenue" type="measure"/>
                 <field name="invoiced_revenue" type="measure"/>
@@ -64,34 +219,45 @@
         </field>
     </record>
 
-    <!-- TREE VIEW: KPI List — TASK-012: Added margin_percent + color coding -->
-    <record id="view_finance_analysis_tree" model="ir.ui.view">
-        <field name="name">construction.finance.analysis.report.list</field>
-        <field name="model">construction.finance.analysis.report</field>
-        <field name="arch" type="xml">
-            <list string="Détail Financier"
-                  decoration-danger="margin &lt; 0"
-                  decoration-warning="margin_percent &gt;= 0 and margin_percent &lt; 15"
-                  decoration-success="margin_percent &gt;= 15">
-                <field name="date"/>
-                <field name="chantier_id"/>
-                <field name="planned_revenue" sum="Total Prévisionnel"/>
-                <field name="invoiced_revenue" sum="Total CA"/>
-                <field name="committed_cost" sum="Total Engagé"/>
-                <field name="invoiced_cost" sum="Total Coût"/>
-                <field name="commission_cost" sum="Total Commissions"/>
-                <field name="margin" sum="Marge Nette"/>
-                <field name="margin_percent" avg="Marge Moy. %"/>
-            </list>
+    <!-- ================================================================
+         ACTIONS
+         ================================================================ -->
+
+    <!-- Action Tour de Contrôle (Kanban) -->
+    <record id="action_finance_tour_de_controle" model="ir.actions.act_window">
+        <field name="name">🏗️ Tour de Contrôle</field>
+        <field name="res_model">construction.finance.analysis.report</field>
+        <field name="view_mode">kanban,list,graph,pivot</field>
+        <field name="context">{'search_default_health_red': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune donnée financière disponible.
+            </p>
+            <p>Commencez par créer des chantiers et des devis validés.</p>
         </field>
     </record>
 
-    <!-- ACTION — TASK-012: Default to pivot with chantier grouping -->
-    <record id="action_finance_dashboard" model="ir.actions.act_window">
-        <field name="name">Cockpit Financier</field>
+    <!-- Action Analyse des Marges (Graph en premier) -->
+    <record id="action_finance_marges" model="ir.actions.act_window">
+        <field name="name">📊 Où gagne-t-on le plus ?</field>
         <field name="res_model">construction.finance.analysis.report</field>
-        <field name="view_mode">pivot,graph,list</field>
+        <field name="view_mode">graph,list,pivot</field>
         <field name="context">{'search_default_group_chantier': 1}</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_finance_marges_graph')}),
+            (0, 0, {'view_mode': 'list',  'view_id': ref('view_finance_marges_list')}),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_finance_analysis_pivot')}),
+        ]"/>
+    </record>
+
+    <!-- Action Alertes Financières -->
+    <record id="action_finance_alerts" model="ir.actions.act_window">
+        <field name="name">🔔 Alertes Financières</field>
+        <field name="res_model">construction.finance.alert</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('is_resolved','=',False)]</field>
+        <field name="context">{'search_default_unread': 1}</field>
     </record>
 
 </odoo>

@@ -1,21 +1,6 @@
 /** @odoo-module **/
 /* global Sortable */
 
-/**
- * QuoteBuilder — SortableJS Drag & Drop Patch
- * ============================================
- * Patches the existing QuoteBuilder prototype to add drag & drop
- * reordering of cart lines within lot groups.
- *
- * ARCHITECTURE:
- *   - Does NOT modify quote_builder.js
- *   - Patches prototype with initSortable() / destroySortable()
- *   - Uses this.el.querySelectorAll('[data-lot-id]') to find containers
- *   - One Sortable instance per lot group
- *   - useEffect hook triggers init when state.loading becomes false
- *   - Cleans up on willUnmount
- */
-
 import { QuoteBuilder } from "./quote_builder";
 import { useEffect, onWillUnmount } from "@odoo/owl";
 
@@ -33,18 +18,24 @@ QuoteBuilder.prototype.setup = function () {
     useEffect(
         () => {
             if (!this.state.loading) {
-                // Small delay to ensure DOM is fully rendered after OWL patch
-                const timer = setTimeout(() => {
-                    this.destroySortable();
+                // Using requestAnimationFrame to ensure the DOM is fully painted by Owl
+                window.requestAnimationFrame(() => {
                     this.initSortable();
-                }, 50);
-                return () => clearTimeout(timer);
+                });
             }
+
+            // Clean up instances BEFORE the next effect runs or on unmount
+            return () => this.destroySortable();
         },
-        () => [this.state.loading, this.state.cart.length]
+        () => [
+            this.state.loading,
+            this.state.cart.length,
+            // Re-run if we detect a change in the grouped structure ids to attach to new DOM nodes
+            this.getGroupedCart().map(g => g.id).join(',')
+        ]
     );
 
-    // Cleanup on unmount
+    // Final cleanup on unmount
     onWillUnmount(() => {
         this.destroySortable();
     });
@@ -52,18 +43,19 @@ QuoteBuilder.prototype.setup = function () {
 
 /**
  * Initialize a Sortable instance for each lot group container.
- * Containers are identified by the `data-lot-id` HTML attribute.
  */
 QuoteBuilder.prototype.initSortable = function () {
-    if (!this.el) return;
+    // Make sure we clean up any orphaned instances first
+    this.destroySortable();
 
-    const containers = this.el.querySelectorAll('[data-lot-id]');
-    if (!containers.length) return;
+    const containers = document.querySelectorAll('.qb__sortable-container');
+    if (!containers || !containers.length) return;
 
     containers.forEach((container) => {
         const lotId = container.getAttribute('data-lot-id');
 
         const instance = new Sortable(container, {
+            group: 'quote-lines', // Enable drag between lists
             animation: 180,
             handle: '.qb__row-handle',
             ghostClass: 'sortable-ghost',
@@ -71,71 +63,106 @@ QuoteBuilder.prototype.initSortable = function () {
             chosenClass: 'sortable-chosen',
             easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
             forceFallback: false,
+            // Prevent Owl from trying to patch while sorting
+            filter: 'input, textarea',
+            preventOnFilter: false,
 
             onEnd: (evt) => {
-                const { oldIndex, newIndex } = evt;
-                if (oldIndex === newIndex) return;
+                const { oldIndex, newIndex, from, to } = evt;
 
-                // 1. Get all lines for this lot group
-                const lotIdParsed = lotId === 'unassigned' ? null : parseInt(lotId);
-                const groupLines = [];
+                const fromLotId = from.getAttribute('data-lot-id');
+                const toLotId = to.getAttribute('data-lot-id');
+
+                if (fromLotId === toLotId && oldIndex === newIndex) return;
+
+                // Push history for undo/redo before changing state
+                if (typeof this._pushUndo === 'function') {
+                    this._pushUndo();
+                }
+
+                // Parse lot IDs
+                const fromLotParsed = fromLotId === 'unassigned' ? null : parseInt(fromLotId);
+                const toLotParsed = toLotId === 'unassigned' ? null : parseInt(toLotId);
+
+                // Reconstruct groups as they exist visually to figure out what was where
+                const fromGroupLines = [];
+                const toGroupLines = [];
 
                 this.state.cart.forEach((line, idx) => {
                     const lineLotId = line.lot_id || null;
-                    // Match: both null (unassigned) OR same lot_id
-                    if (
-                        (lotIdParsed === null && lineLotId === null) ||
-                        (lotIdParsed !== null && lineLotId === lotIdParsed)
-                    ) {
-                        groupLines.push({ ...line, _index: idx });
+                    if (lineLotId === fromLotParsed) {
+                        fromGroupLines.push({ ...line, _index: idx });
+                    }
+                    if (lineLotId === toLotParsed) {
+                        toGroupLines.push({ ...line, _index: idx });
                     }
                 });
 
-                if (oldIndex >= groupLines.length || newIndex >= groupLines.length) {
-                    console.warn('[QuoteBuilder DnD] Index out of bounds', { oldIndex, newIndex, groupSize: groupLines.length });
-                    return;
-                }
+                if (oldIndex >= fromGroupLines.length) return;
 
-                // 2. Get the global indexes
-                const globalOldIndex = groupLines[oldIndex]._index;
-                const globalNewIndex = groupLines[newIndex]._index;
-
-                // 3. Splice: remove from old position, insert at new position
+                // 2. Extirpate the moved item from the actual cart
+                const globalOldIndex = fromGroupLines[oldIndex]._index;
                 const [movedItem] = this.state.cart.splice(globalOldIndex, 1);
 
-                // After removing, if globalNewIndex > globalOldIndex, the target index shifted by -1
-                const adjustedNewIndex = globalNewIndex > globalOldIndex
-                    ? globalNewIndex - 1
-                    : globalNewIndex;
+                // Update section assignment if moved cross-sections
+                if (fromLotId !== toLotId) {
+                    movedItem.lot_id = toLotParsed;
+                }
 
+                // 3. Figure out precisely where to splice it back in
+                let adjustedNewIndex = this.state.cart.length;
+
+                if (fromLotId === toLotId) {
+                    // Simple reorder within same list
+                    const globalNewIndex = fromGroupLines[newIndex]._index;
+                    adjustedNewIndex = globalNewIndex > globalOldIndex
+                        ? globalNewIndex - 1
+                        : globalNewIndex;
+                } else {
+                    // Cross-list drop logic
+                    if (toGroupLines.length === 0) {
+                        // Easy, just put it anywhere, getGroupedCart handles visually grouping it
+                        adjustedNewIndex = this.state.cart.length;
+                    } else if (newIndex < toGroupLines.length) {
+                        // Dropped amidst existing lines in the new section
+                        const targetGlobalIndex = toGroupLines[newIndex]._index;
+                        adjustedNewIndex = targetGlobalIndex > globalOldIndex
+                            ? targetGlobalIndex - 1
+                            : targetGlobalIndex;
+                    } else {
+                        // Dropped at the very bottom of the new section
+                        const lastGlobalIndex = toGroupLines[toGroupLines.length - 1]._index;
+                        adjustedNewIndex = lastGlobalIndex > globalOldIndex
+                            ? lastGlobalIndex
+                            : lastGlobalIndex + 1;
+                    }
+                }
+
+                // Plop it into its new index
                 this.state.cart.splice(adjustedNewIndex, 0, movedItem);
 
-                console.log('[QuoteBuilder DnD] Moved line', {
-                    lot: lotId,
-                    from: globalOldIndex,
-                    to: adjustedNewIndex,
-                    item: movedItem.name,
-                });
+                // The state mutation triggers Owl to re-render, and since our dependencies changed, the useEffect rebuilds Sortable.
+
+                // Save draft dynamically tracking
+                if (typeof this.saveDraft === 'function') {
+                    this.saveDraft();
+                }
             },
         });
 
         this._sortableInstances.push(instance);
     });
-
-    console.log('[QuoteBuilder DnD] Initialized', this._sortableInstances.length, 'sortable instances');
 };
 
 /**
  * Destroy all Sortable instances and clear the array.
  */
 QuoteBuilder.prototype.destroySortable = function () {
-    if (this._sortableInstances) {
+    if (this._sortableInstances && this._sortableInstances.length) {
         this._sortableInstances.forEach((instance) => {
             try {
                 instance.destroy();
-            } catch (e) {
-                // Silently ignore if already destroyed
-            }
+            } catch (e) { }
         });
         this._sortableInstances = [];
     }

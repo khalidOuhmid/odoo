@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Vue liste des alertes -->
+    <record id="view_finance_alert_list" model="ir.ui.view">
+        <field name="name">construction.finance.alert.list</field>
+        <field name="model">construction.finance.alert</field>
+        <field name="arch" type="xml">
+            <list string="Alertes Financières"
+                  default_order="severity desc, triggered_at desc"
+                  decoration-danger="severity == 'critical'"
+                  decoration-warning="severity == 'warning'">
+                <field name="chantier_id" string="Chantier"/>
+                <field name="alert_type" string="Type" widget="badge"
+                       decoration-danger="alert_type in ('margin','overrun')"
+                       decoration-warning="alert_type in ('dependency','no_invoice','late_invoice')"/>
+                <field name="severity" string="Sévérité" widget="badge"
+                       decoration-danger="severity == 'critical'"
+                       decoration-warning="severity == 'warning'"/>
+                <field name="message" string="Message"/>
+                <field name="recommended_action" string="Action recommandée"/>
+                <field name="detail_value" string="Valeur" digits="[6,1]"/>
+                <field name="threshold_value" string="Seuil" digits="[6,1]"/>
+                <field name="triggered_at" string="Déclenchée le"/>
+                <field name="is_read" string="Lue" widget="boolean_toggle"/>
+                <field name="is_resolved" string="Résolue" widget="boolean_toggle"/>
+                <button name="action_view_chantier" type="object"
+                        string="Voir" icon="fa-external-link" class="btn-sm btn-outline-primary"/>
+                <button name="action_resolve" type="object"
+                        string="Résoudre" icon="fa-check" class="btn-sm btn-success"
+                        attrs="{'invisible': [('is_resolved','=',True)]}"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vue form des alertes -->
+    <record id="view_finance_alert_form" model="ir.ui.view">
+        <field name="name">construction.finance.alert.form</field>
+        <field name="model">construction.finance.alert</field>
+        <field name="arch" type="xml">
+            <form string="Alerte Financière">
+                <header>
+                    <button name="action_mark_read" type="object" string="Marquer comme lue"
+                            class="btn-secondary" attrs="{'invisible': [('is_read','=',True)]}"/>
+                    <button name="action_resolve" type="object" string="✅ Résoudre l'alerte"
+                            class="btn-success" attrs="{'invisible': [('is_resolved','=',True)]}"/>
+                    <button name="action_view_chantier" type="object" string="Voir le chantier"
+                            class="btn-primary"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="message"/></h1>
+                    </div>
+                    <group>
+                        <group string="Contexte">
+                            <field name="chantier_id"/>
+                            <field name="alert_type" widget="badge"/>
+                            <field name="severity" widget="badge"
+                                   decoration-danger="severity == 'critical'"
+                                   decoration-warning="severity == 'warning'"/>
+                            <field name="triggered_at"/>
+                        </group>
+                        <group string="Seuils">
+                            <field name="detail_value" string="Valeur déclenchante"/>
+                            <field name="threshold_value" string="Seuil paramétré"/>
+                        </group>
+                    </group>
+                    <group string="Action recommandée">
+                        <field name="recommended_action" nolabel="1"/>
+                    </group>
+                    <group string="Résolution" attrs="{'invisible': [('is_resolved','=',False)]}">
+                        <field name="resolved_at" string="Résolue le" readonly="1"/>
+                        <field name="resolved_by" string="Résolue par" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search view Alertes -->
+    <record id="view_finance_alert_search" model="ir.ui.view">
+        <field name="name">construction.finance.alert.search</field>
+        <field name="model">construction.finance.alert</field>
+        <field name="arch" type="xml">
+            <search string="Alertes">
+                <field name="chantier_id"/>
+                <field name="message"/>
+                <filter string="Non résolues" name="unread"
+                        domain="[('is_resolved','=',False)]"/>
+                <filter string="Critiques" name="critical"
+                        domain="[('severity','=','critical')]"/>
+                <filter string="Marge faible" name="margin"
+                        domain="[('alert_type','=','margin')]"/>
+                <filter string="Budget dépassé" name="overrun"
+                        domain="[('alert_type','=','overrun')]"/>
+                <group expand="0" string="Regrouper par">
+                    <filter string="Chantier" context="{'group_by':'chantier_id'}"/>
+                    <filter string="Type" context="{'group_by':'alert_type'}"/>
+                    <filter string="Sévérité" context="{'group_by':'severity'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+</odoo>

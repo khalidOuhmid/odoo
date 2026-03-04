@@ -1,0 +1,214 @@
+/**
+ * Tour de Contrôle Financière — Premium SCSS
+ * =============================================
+ * Styles pour les 5 vues du dashboard Finance BLG.
+ * Mobile-first, inspiré SAP Fiori + Salesforce Lightning.
+ */
+
+// ============================================================
+// Variables BLG
+// ============================================================
+$blg-green: #22c55e;
+$blg-orange: #f59e0b;
+$blg-red: #ef4444;
+$blg-primary: #3b82f6;
+$blg-dark: #1e293b;
+$blg-card-bg: #ffffff;
+$blg-radius: 12px;
+
+// ============================================================
+// Tour de Contrôle — Kanban Cards
+// ============================================================
+.o_finance_kanban {
+    .o_kanban_view {
+        background: #f8fafc;
+    }
+
+    .o_finance_card {
+        border-radius: $blg-radius;
+        padding: 1rem;
+        background: $blg-card-bg;
+        box-shadow: 0 1px 6px rgba(0, 0, 0, 0.08);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+        height: 100%;
+
+        &:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+        }
+
+        // Barre de couleur à gauche selon health_score
+        border-left: 5px solid $blg-primary;
+
+        &.o_finance_card_green {
+            border-left-color: $blg-green;
+        }
+
+        &.o_finance_card_orange {
+            border-left-color: $blg-orange;
+        }
+
+        &.o_finance_card_red {
+            border-left-color: $blg-red;
+        }
+    }
+
+    .o_finance_card_header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+
+    .o_finance_chantier_name {
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: $blg-dark;
+        line-height: 1.3;
+    }
+
+    .o_finance_card_body {
+        border-top: 1px solid #f1f5f9;
+        padding-top: 0.75rem;
+    }
+
+    .o_finance_kpi_row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.4rem;
+        font-size: 0.82rem;
+    }
+
+    .o_finance_kpi_label {
+        color: #64748b;
+        font-weight: 500;
+    }
+
+    .o_finance_kpi_value {
+        font-weight: 600;
+        color: $blg-dark;
+        text-align: right;
+    }
+
+    .o_finance_card_footer {
+        border-top: 1px solid #f1f5f9;
+        padding-top: 0.75rem;
+        margin-top: 0.5rem;
+    }
+}
+
+// ============================================================
+// Responsive — Vue Mobile (< 768px)
+// ============================================================
+@media (max-width: 768px) {
+
+    // Kanban pleine largeur sur mobile
+    .o_finance_kanban .o_kanban_record {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    // Réduction padding listes
+    .o_list_table td,
+    .o_list_table th {
+        padding: 0.4rem 0.5rem !important;
+        font-size: 0.8rem !important;
+    }
+
+    // Masquer colonnes secondaires sur mobile
+    .o_optional_columns_dropdown {
+        display: none;
+    }
+}
+
+// ============================================================
+// Health Score Badges améliorés
+// ============================================================
+.badge {
+    &.bg-success {
+        background-color: $blg-green !important;
+    }
+
+    &.bg-warning {
+        background-color: $blg-orange !important;
+        color: #1e293b !important;
+    }
+
+    &.bg-danger {
+        background-color: $blg-red !important;
+    }
+}
+
+// ============================================================
+// Liste Facturation — surbrillance lignes en retard
+// ============================================================
+.o_list_table {
+    tr.o_data_row {
+
+        // Ligne critique (90+ jours)
+        &.text-danger td {
+            font-weight: 600;
+        }
+
+        // Ligne warning (30-60 jours)
+        &.text-warning td {
+            font-style: italic;
+        }
+    }
+}
+
+// ============================================================
+// KPI Banner (futur composant OWL)
+// ============================================================
+.o_finance_kpi_banner {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    border-radius: $blg-radius;
+    margin-bottom: 1rem;
+
+    .o_kpi_card {
+        flex: 1;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        text-align: center;
+
+        .o_kpi_label {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .o_kpi_value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            margin: 0.25rem 0;
+        }
+
+        &.o_kpi_danger .o_kpi_value {
+            color: #fca5a5;
+        }
+
+        &.o_kpi_warning .o_kpi_value {
+            color: #fcd34d;
+        }
+
+        &.o_kpi_success .o_kpi_value {
+            color: #86efac;
+        }
+    }
+
+    // Responsive
+    @media (max-width: 768px) {
+        flex-direction: column;
+
+        .o_kpi_card {
+            text-align: left;
+        }
+    }
+}

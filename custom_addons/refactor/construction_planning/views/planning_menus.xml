@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo>
-    <menuitem id="menu_planning_root"
-              name="Planning"
-              parent="construction_core.menu_construction_root"
-              sequence="20"/>
-</odoo>

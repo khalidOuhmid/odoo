@@ -30,6 +30,7 @@
             'construction_sale/static/lib/sortable/Sortable.min.js',
             'construction_sale/static/src/stub_widgets.xml',
             'construction_sale/static/src/stub_widgets.js',
+            'construction_sale/static/src/hooks/useUndoRedo.js',
             'construction_sale/static/src/quote_builder/quote_builder.xml',
             'construction_sale/static/src/quote_builder/quote_builder.scss',
             'construction_sale/static/src/quote_builder/quote_builder.js',

@@ -1,3 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_construction_contract,construction.contract,model_construction_contract,base.group_user,1,1,1,1
-access_construction_compliance_doc,construction.compliance.document,model_construction_compliance_document,base.group_user,1,1,1,1

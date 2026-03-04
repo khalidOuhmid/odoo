@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         VUE 4 : PRÉVISIONS M+1 / M+2 / M+3
+         Question : "Combien vais-je encaisser dans les 3 prochains mois ?"
+         ================================================================ -->
+
+    <!-- Search view prévisions -->
+    <record id="view_finance_forecast_search" model="ir.ui.view">
+        <field name="name">construction.finance.forecast.search</field>
+        <field name="model">construction.finance.forecast</field>
+        <field name="arch" type="xml">
+            <search string="Prévisions Financières">
+                <filter string="✅ Pipeline solide" name="healthy"
+                        domain="[('carnet_health','=','green')]"/>
+                <filter string="⚠️ Pipeline moyen" name="medium"
+                        domain="[('carnet_health','=','orange')]"/>
+                <filter string="🔴 Pipeline critique" name="critical"
+                        domain="[('carnet_health','=','red')]"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Graph prévisions : CA + Marge par mois -->
+    <record id="view_finance_forecast_graph" model="ir.ui.view">
+        <field name="name">construction.finance.forecast.graph</field>
+        <field name="model">construction.finance.forecast</field>
+        <field name="arch" type="xml">
+            <graph string="Combien vais-je encaisser les 3 prochains mois ?"
+                   type="bar" sample="1">
+                <field name="forecast_month" type="row" interval="month"/>
+                <field name="forecast_revenue" type="measure"/>
+                <field name="forecast_margin" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Liste prévisions : détail par mois -->
+    <record id="view_finance_forecast_list" model="ir.ui.view">
+        <field name="name">construction.finance.forecast.list</field>
+        <field name="model">construction.finance.forecast</field>
+        <field name="arch" type="xml">
+            <list string="Prévisions par Mois"
+                  default_order="forecast_month asc"
+                  decoration-danger="carnet_health == 'red'"
+                  decoration-warning="carnet_health == 'orange'"
+                  decoration-success="carnet_health == 'green'">
+
+                <field name="forecast_month" string="Mois"/>
+
+                <!-- Feux tricolores santé carnet -->
+                <field name="carnet_health" string="Santé du carnet" widget="badge"
+                       decoration-danger="carnet_health == 'red'"
+                       decoration-warning="carnet_health == 'orange'"
+                       decoration-success="carnet_health == 'green'"/>
+
+                <field name="active_chantiers" string="Chantiers actifs"/>
+                <field name="schedules_count" string="Échéances planifiées"/>
+                <field name="forecast_revenue" string="CA Prévu (€)" sum="Total CA Prévu"/>
+                <field name="forecast_margin" string="Marge Prévue (€)" sum="Total Marge Prévue"/>
+                <field name="forecast_margin_pct" string="Marge (%)" avg="Marge Moy."/>
+
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Action Prévisions -->
+    <record id="action_finance_previsions" model="ir.actions.act_window">
+        <field name="name">🔭 Prévisions M+1/M+2/M+3</field>
+        <field name="res_model">construction.finance.forecast</field>
+        <field name="view_mode">graph,list</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_finance_forecast_graph')}),
+            (0, 0, {'view_mode': 'list',  'view_id': ref('view_finance_forecast_list')}),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune échéance planifiée dans les 3 prochains mois.
+            </p>
+            <p>
+                Les prévisions apparaissent dès que vous planifiez des échéances de facturation
+                sur vos chantiers (Planning de facturation).
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         VUE 5 : SOUS-TRAITANTS — "Qui travaille le plus, qui coûte le plus ?"
+         ================================================================ -->
+
+    <!-- Search view -->
+    <record id="view_subcontractor_analysis_search" model="ir.ui.view">
+        <field name="name">construction.subcontractor.analysis.search</field>
+        <field name="model">construction.subcontractor.analysis</field>
+        <field name="arch" type="xml">
+            <search string="Analyse Sous-Traitants">
+                <field name="partner_id" string="Sous-Traitant"/>
+                <filter string="⚠️ Dépendance élevée (&gt;40%)" name="high_dependency"
+                        domain="[('is_high_dependency','=',True)]"/>
+                <filter string="Actifs sur 2+ chantiers" name="multi_chantier"
+                        domain="[('nb_chantiers','&gt;=',2)]"/>
+                <group expand="1" string="Regrouper par">
+                    <filter string="Sous-Traitant" context="{'group_by':'partner_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Vue liste : Classement sous-traitants -->
+    <record id="view_subcontractor_analysis_list" model="ir.ui.view">
+        <field name="name">construction.subcontractor.analysis.list</field>
+        <field name="model">construction.subcontractor.analysis</field>
+        <field name="arch" type="xml">
+            <list string="Classement des Sous-Traitants"
+                  default_order="total_facture desc"
+                  decoration-danger="is_high_dependency == True"
+                  decoration-warning="pct_volume_total &gt;= 20 and pct_volume_total &lt;= 40">
+
+                <field name="partner_id" string="Sous-Traitant"/>
+
+                <!-- Badge dépendance -->
+                <field name="is_high_dependency" string="⚠️" widget="boolean"
+                       attrs="{'invisible': [('is_high_dependency','=',False)]}"/>
+
+                <field name="nb_chantiers" string="Nb Chantiers"/>
+                <field name="nb_orders" string="Nb Commandes"/>
+                <field name="total_facture" string="Total Facturé (€)" sum="Total Global"/>
+                <field name="pct_volume_total" string="% Volume Total"
+                       decoration-danger="pct_volume_total &gt; 40"
+                       decoration-warning="pct_volume_total &gt;= 20"/>
+
+                <!-- Bouton one-click vers les commandes -->
+                <button name="action_view_purchase_orders" type="object"
+                        string="Voir commandes" icon="fa-list" class="btn-sm btn-outline-primary"/>
+
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Vue graph : "Qui coûte le plus ?" -->
+    <record id="view_subcontractor_analysis_graph" model="ir.ui.view">
+        <field name="name">construction.subcontractor.analysis.graph</field>
+        <field name="model">construction.subcontractor.analysis</field>
+        <field name="arch" type="xml">
+            <graph string="Qui coûte le plus en sous-traitance ?" type="bar" sample="1">
+                <field name="partner_id" type="row"/>
+                <field name="total_facture" type="measure"/>
+                <field name="nb_chantiers" type="measure"/>
+            </graph>
+        </field>
+    </record>
+
+    <!-- Vue pivot sous-traitants -->
+    <record id="view_subcontractor_analysis_pivot" model="ir.ui.view">
+        <field name="name">construction.subcontractor.analysis.pivot</field>
+        <field name="model">construction.subcontractor.analysis</field>
+        <field name="arch" type="xml">
+            <pivot string="Analyse Sous-Traitants" sample="1" disable_linking="True">
+                <field name="partner_id" type="row"/>
+                <field name="total_facture" type="measure"/>
+                <field name="nb_chantiers" type="measure"/>
+                <field name="nb_orders" type="measure"/>
+                <field name="pct_volume_total" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!-- Action Sous-Traitants -->
+    <record id="action_finance_sous_traitants" model="ir.actions.act_window">
+        <field name="name">🏢 Tableau Sous-Traitants</field>
+        <field name="res_model">construction.subcontractor.analysis</field>
+        <field name="view_mode">list,graph,pivot</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'list',  'view_id': ref('view_subcontractor_analysis_list')}),
+            (0, 0, {'view_mode': 'graph', 'view_id': ref('view_subcontractor_analysis_graph')}),
+            (0, 0, {'view_mode': 'pivot', 'view_id': ref('view_subcontractor_analysis_pivot')}),
+        ]"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucune commande fournisseur confirmée.
+            </p>
+            <p>Les données apparaissent dès qu'une commande fournisseur est confirmée sur un chantier.</p>
+        </field>
+    </record>
+
+</odoo>

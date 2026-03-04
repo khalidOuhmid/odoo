@@ -1,4 +1,0 @@
-id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_construction_invoice_type,construction.invoice.type,model_construction_invoice_type,base.group_user,1,1,1,1
-access_construction_invoice_type_line,construction.invoice.type.line,model_construction_invoice_type_line,base.group_user,1,1,1,1
-access_construction_invoice_schedule,construction.invoice.schedule,model_construction_invoice_schedule,base.group_user,1,1,1,1

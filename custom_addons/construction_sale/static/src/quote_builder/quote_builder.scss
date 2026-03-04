@@ -614,13 +614,22 @@
 /* Drag Handle */
 .qb__row-handle {
     font-size: 16px;
-    color: var(--qb-text-light);
+    color: var(--qb-text-muted);
     cursor: grab;
-    opacity: 0;
+    opacity: 1;
+    /* Always visible for reliable grabbing */
     transition: var(--qb-transition);
     text-align: center;
     user-select: none;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+}
+
+.qb__row-handle:active {
+    cursor: grabbing;
 }
 
 /* Row: Name */

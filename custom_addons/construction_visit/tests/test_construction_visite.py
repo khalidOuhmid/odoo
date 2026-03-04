@@ -340,3 +340,33 @@ class TestConstructionVisite(TransactionCase):
         visite._compute_button_visibility()
         
         self.assertTrue(visite.show_generate_report)
+
+    # ============= Regression Tests (AAA Pattern) ============= #
+    def test_notification_skips_partner_without_email(self):
+        """Test (AAA): Users without email do not crash the notification process."""
+        # Arrange
+        partner_no_email = self.env['res.partner'].create({'name': 'No Email', 'email': False})
+        visite = self._create_valid_visit(
+            participant_ids=[(6, 0, [self.participant.id, partner_no_email.id])]
+        )
+        visite.state = 'confirmed'
+        
+        # Act
+        result = visite.action_send_notification()
+        
+        # Assert
+        self.assertTrue(visite.notification_sent, "Notification flag should be true despite one missing email")
+        self.assertEqual(result.get('type'), 'ir.actions.client', "Should return success action irrespective of missing emails")
+
+    def test_visit_cascade_deletion(self):
+        """Test (AAA): Visit cleanly deleted if Chantier is deleted to prevent zombies."""
+        # Arrange
+        visite = self._create_valid_visit()
+        visit_id = visite.id
+        
+        # Act
+        self.chantier.unlink()
+        
+        # Assert
+        deleted_visit = self.env['construction.visit'].search([('id', '=', visit_id)])
+        self.assertFalse(deleted_visit, "Visit must be deleted when chantier is deleted")

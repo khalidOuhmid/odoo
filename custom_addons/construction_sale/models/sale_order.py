@@ -116,9 +116,10 @@ class SaleOrder(models.Model):
         for order in self:
             if order.chantier_id and order.chantier_id.client and order.partner_id:
                 if order.partner_id != order.chantier_id.client:
-                    _logger.warning(
-                        "Order %s: partner %s differs from chantier client %s",
-                        order.name, order.partner_id.name, order.chantier_id.client.name,
+                    raise models.ValidationError(
+                        _("Order %s: partner %s differs from chantier client %s") % (
+                            order.name, order.partner_id.name, order.chantier_id.client.name
+                        )
                     )
 
     @api.constrains('amount_total', 'state')

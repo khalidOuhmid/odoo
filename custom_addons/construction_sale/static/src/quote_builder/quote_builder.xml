@@ -156,6 +156,24 @@
                                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
                                     Brouillon sauvegardé
                                 </span>
+                                <!-- Undo Button -->
+                                <button class="qb__btn qb__btn--secondary qb__btn--icon"
+                                        t-att-disabled="!undoRedo.canUndo() ? 'disabled' : undefined"
+                                        t-on-click="undo"
+                                        title="Annuler (Ctrl+Z)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M3 7v6h6"/><path d="M21 17a9 9 0 00-9-9 9 9 0 00-6 2.3L3 13"/>
+                                    </svg>
+                                </button>
+                                <!-- Redo Button -->
+                                <button class="qb__btn qb__btn--secondary qb__btn--icon"
+                                        t-att-disabled="!undoRedo.canRedo() ? 'disabled' : undefined"
+                                        t-on-click="redo"
+                                        title="Rétablir (Ctrl+Y)">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M21 7v6h-6"/><path d="M3 17a9 9 0 019-9 9 9 0 016 2.3l3 2.7"/>
+                                    </svg>
+                                </button>
                                 <button t-if="state.cart.length > 0"
                                         class="qb__btn qb__btn--danger-outline"
                                         t-on-click="onResetClick">
@@ -192,7 +210,7 @@
 
                                     <!-- Sortable Container -->
                                     <div class="qb__sortable-container" t-att-data-lot-id="group.id">
-                                        <t t-foreach="group.lines" t-as="line" t-key="line._index">
+                                        <div t-foreach="group.lines" t-as="line" t-key="line._uid" class="qb__sortable-item">
                                             <!-- Insert Zone (before each line) -->
                                             <div class="qb__insert-zone" t-on-click="() => this.onInsertLineAt(line._index)">
                                                 <div class="qb__insert-zone-line"></div>
@@ -298,7 +316,7 @@
                                                     </button>
                                                 </div>
                                             </div>
-                                        </t>
+                                        </div>
                                     </div>
                                 </t>
                             </t>

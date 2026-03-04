@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ================================================================
+         VUE 3 : FACTURATION — "Qu'est-ce qu'on peut encaisser maintenant ?"
+         ================================================================ -->
+
+    <!-- Search view pour les schedules -->
+    <record id="view_invoice_schedule_finance_search" model="ir.ui.view">
+        <field name="name">construction.invoice.schedule.finance.search</field>
+        <field name="model">construction.invoice.schedule</field>
+        <field name="arch" type="xml">
+            <search string="Facturation — Tour de Contrôle">
+                <field name="chantier_id" string="Chantier"/>
+                <field name="name" string="Description"/>
+
+                <!-- Filtres rapides par statut -->
+                <filter string="🟢 Prêt à facturer" name="ready_to_invoice"
+                        domain="[('invoiceable_now','=',True),('state','=','planned')]"/>
+                <filter string="🔴 En retard &gt; 90 jours" name="overdue_90"
+                        domain="[('overdue_bucket','=','d90plus')]"/>
+                <filter string="🟠 En retard 60–90j" name="overdue_60"
+                        domain="[('overdue_bucket','=','d60')]"/>
+                <filter string="⚠️ En retard 30–60j" name="overdue_30"
+                        domain="[('overdue_bucket','=','d30')]"/>
+                <separator/>
+                <filter string="Pipeline 30 jours" name="pipeline_30"
+                        domain="[('planned_date','&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d')),
+                                  ('state','in',['planned','ready'])]"/>
+                <separator/>
+                <!-- Filtres état -->
+                <filter string="Brouillon / Planifié" name="draft_planned"
+                        domain="[('state','in',['draft','planned'])]"/>
+                <filter string="Prêt" name="ready" domain="[('state','=','ready')]"/>
+                <filter string="Facturé" name="invoiced" domain="[('state','=','invoiced')]"/>
+                <separator/>
+                <group expand="1" string="Regrouper par">
+                    <filter string="Chantier" context="{'group_by':'chantier_id'}"/>
+                    <filter string="Ancienneté" context="{'group_by':'overdue_bucket'}"/>
+                    <filter string="État" context="{'group_by':'state'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Liste Facturation — regroupée par bucket d'ancienneté -->
+    <record id="view_invoice_schedule_finance_list" model="ir.ui.view">
+        <field name="name">construction.invoice.schedule.finance.list</field>
+        <field name="model">construction.invoice.schedule</field>
+        <field name="arch" type="xml">
+            <list string="Calendrier de Facturation"
+                  default_order="age_days desc"
+                  decoration-danger="overdue_bucket == 'd90plus'"
+                  decoration-warning="overdue_bucket in ('d60','d30')"
+                  decoration-success="invoiceable_now == True and state == 'planned'"
+                  decoration-muted="state in ('invoiced','paid','cancelled')">
+
+                <!-- Bucket en tête de ligne -->
+                <field name="overdue_bucket" string="Ancienneté" widget="badge"
+                       decoration-danger="overdue_bucket == 'd90plus'"
+                       decoration-warning="overdue_bucket in ('d60','d30')"
+                       decoration-info="overdue_bucket == 'future'"
+                       decoration-success="overdue_bucket == 'current'"/>
+
+                <field name="chantier_id" string="Chantier"/>
+                <field name="name" string="Description"/>
+                <field name="amount_percentage" string="%"/>
+                <field name="amount_fixed" string="Montant (€)" sum="Total"/>
+                <field name="planned_date" string="Date prévue"/>
+                <field name="age_days" string="Âge (jours)"
+                       decoration-danger="age_days &gt; 90"
+                       decoration-warning="age_days &gt; 30"/>
+                <field name="trigger_percentage" string="Seuil avancement (%)"/>
+                <field name="state" string="Statut" widget="badge"
+                       decoration-info="state == 'planned'"
+                       decoration-success="state in ('ready','invoiced','paid')"
+                       decoration-muted="state == 'cancelled'"/>
+                <field name="invoiceable_now" string="Prêt ?" widget="boolean"/>
+                <field name="invoice_id" string="Facture"/>
+
+                <!-- Bouton action rapide au bout de chaque ligne -->
+                <button name="action_mark_ready" type="object"
+                        string="▶ Activer" class="btn-sm btn-outline-warning"
+                        attrs="{'invisible': [('state','!=','planned'),('invoiceable_now','=',False)]}"/>
+                <button name="action_create_invoice" type="object"
+                        string="🧾 Facturer" class="btn-sm btn-success"
+                        attrs="{'invisible': [('state','!=','ready')]}"/>
+
+                <field name="currency_id" invisible="1"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Kanban Facturation — vue visuelle par état -->
+    <record id="view_invoice_schedule_finance_kanban" model="ir.ui.view">
+        <field name="name">construction.invoice.schedule.finance.kanban</field>
+        <field name="model">construction.invoice.schedule</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="overdue_bucket" sample="1">
+                <field name="chantier_id"/>
+                <field name="amount_fixed"/>
+                <field name="age_days"/>
+                <field name="overdue_bucket"/>
+                <field name="state"/>
+                <field name="invoiceable_now"/>
+                <field name="currency_id"/>
+                <field name="name"/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="p-2 #{record.overdue_bucket.raw_value == 'd90plus' ? 'border-danger' : record.overdue_bucket.raw_value in ['d60','d30'] ? 'border-warning' : 'border-success'} border rounded">
+                            <strong><field name="chantier_id"/></strong>
+                            <div class="text-muted small"><field name="name"/></div>
+                            <div class="mt-1 fw-bold fs-5">
+                                <field name="amount_fixed" widget="monetary"/>
+                            </div>
+                            <div class="d-flex justify-content-between mt-1">
+                                <span class="small text-muted">Âge: <field name="age_days"/> j</span>
+                                <field name="state" widget="badge"/>
+                            </div>
+                            <div class="mt-2" t-if="record.state.raw_value == 'ready'">
+                                <button name="action_create_invoice" type="object"
+                                        class="btn btn-sm btn-success w-100">
+                                    🧾 Créer la facture
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- Action Facturation -->
+    <record id="action_finance_facturation" model="ir.actions.act_window">
+        <field name="name">💰 Facturation &amp; Encaissements</field>
+        <field name="res_model">construction.invoice.schedule</field>
+        <field name="view_mode">list,kanban</field>
+        <field name="domain">[('state','not in',['paid','cancelled'])]</field>
+        <field name="context">{'search_default_draft_planned': 1}</field>
+        <field name="view_ids" eval="[
+            (5, 0, 0),
+            (0, 0, {'view_mode': 'list',   'view_id': ref('view_invoice_schedule_finance_list')}),
+            (0, 0, {'view_mode': 'kanban', 'view_id': ref('view_invoice_schedule_finance_kanban')}),
+        ]"/>
+    </record>
+
+</odoo>

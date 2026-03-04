@@ -1,2 +1,0 @@
-from . import sale_order_extension
-from . import product_template
