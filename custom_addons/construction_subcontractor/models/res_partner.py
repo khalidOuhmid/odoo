@@ -778,7 +778,7 @@ class ResPartner(models.Model):
         validated_by = getattr(partner, f'{field_name}_validated_by', False)
         validated_at = getattr(partner, f'{field_name}_validated_at', False)
         
-        self.env['subcontractor.document.archive'].create({
+        self.env['subcontractor.document.archive'].sudo().create({
             'partner_id': partner.id,
             'document_type': doc_key,
             'file_data': current_file,
@@ -814,11 +814,21 @@ class ResPartner(models.Model):
                         
                         # Case 1: Uploading new file (replace)
                         if new_file:
-                            # CRITICAL: Reset validation state for new uploads
+                            # SAP-Level Enhancement: Auto-validate if uploaded by an admin/manager
+                            # This addresses the "status doesn't update" critique for internal manual uploads
+                            is_manager = self.env.user.has_group('construction_core.group_construction_admin')
+                            
                             if validation_field:
-                                vals[validation_field] = False
-                                vals[f'{field_name}_validated_by'] = False
-                                vals[f'{field_name}_validated_at'] = False
+                                if is_manager:
+                                    vals[validation_field] = True
+                                    vals[f'{field_name}_validated_by'] = self.env.user.id
+                                    vals[f'{field_name}_validated_at'] = fields.Datetime.now()
+                                    _logger.info("Admin upload: Auto-validating document %s for partner %s", field_name, partner.name)
+                                else:
+                                    # CRITICAL: Reset validation state for new uploads from portal/non-admins
+                                    vals[validation_field] = False
+                                    vals[f'{field_name}_validated_by'] = False
+                                    vals[f'{field_name}_validated_at'] = False
                             
                             # Archive old file if exists and different
                             if current_file and current_file != new_file:
@@ -850,10 +860,14 @@ class ResPartner(models.Model):
                         partner.subcontractor_stage = 'compliant'
                         # Reset reminders
                         partner.reminder_count = 0
-                    # Fallback if became incomplete
-                    # Fallback if became incomplete
-                    elif partner.compliance_state != 'compliant' and partner.subcontractor_stage in ['compliant', 'bloque']:
-                        partner.subcontractor_stage = 'incomplete'
+                    # Fallback or Advance to incomplete if documents are provided but not compliant
+                    elif partner.compliance_state in ('incomplete', 'expired'):
+                        if partner.subcontractor_stage not in ('incomplete', 'blocked'):
+                            partner.subcontractor_stage = 'incomplete'
+                    # Fallback if became missing but was compliant
+                    elif partner.compliance_state == 'missing':
+                        if partner.subcontractor_stage == 'compliant':
+                            partner.subcontractor_stage = 'incomplete'
                         
         return res
 

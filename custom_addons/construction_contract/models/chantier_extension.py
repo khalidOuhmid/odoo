@@ -27,10 +27,21 @@ class ChantierExtension(models.Model):
         help="Contracts signed with subcontractors for this site"
     )
 
+    planning_general_attachment_id = fields.Many2one(
+        'ir.attachment',
+        string='Planning Général du Chantier',
+        help="Fichier (PDF) du planning global lié à ce chantier"
+    )
+
     contract_count = fields.Integer(
         string='Contract Count',
         compute='_compute_contract_count',
         help="Number of contracts for this construction site"
+    )
+
+    lots_without_subcontractor_count = fields.Integer(
+        string='Lots Sans Sous-Traitant',
+        compute='_compute_lots_without_subcontractor'
     )
 
     # Contract statistics
@@ -62,6 +73,12 @@ class ChantierExtension(models.Model):
         """Count total contracts"""
         for chantier in self:
             chantier.contract_count = len(chantier.contract_ids)
+
+    @api.depends('lots_ids', 'lots_ids.subcontractor_id')
+    def _compute_lots_without_subcontractor(self):
+        """Count lots that don't have a subcontractor assigned yet"""
+        for chantier in self:
+            chantier.lots_without_subcontractor_count = len(chantier.lots_ids.filtered(lambda l: not l.subcontractor_id and l.execution_type == 'external'))
 
     @api.depends('contract_ids', 'contract_ids.state', 'contract_ids.total_amount_ttc')
     def _compute_contract_statistics(self):

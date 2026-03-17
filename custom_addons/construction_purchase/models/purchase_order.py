@@ -270,6 +270,7 @@ class PurchaseOrderConstruction(models.Model):
             'display_type': 'line_section',
             'name': _('📦 Lot : %s') % lot.name,
             'sequence': sequence,
+            'product_qty': 0.0,
         }
         
         self.env['purchase.order.line'].create(section_vals)

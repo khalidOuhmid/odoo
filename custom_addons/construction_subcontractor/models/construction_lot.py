@@ -41,11 +41,10 @@ class ConstructionLot(models.Model):
     )
     
     # ============= DOCUMENT STATUS (New Fix) ============= #
-    document_status = fields.Selection([
-        ('success', 'Valid'),
-        ('warning', 'Warning'),
-        ('danger', 'Danger')
-    ], compute='_compute_document_status', string='Statut Documentaire')
+    document_status = fields.Selection(
+        compute='_compute_document_status',
+        string='Statut Documentaire',
+    )
 
     @api.depends('subcontractor_id', 
                  'subcontractor_id.doc_kbis_status',
@@ -90,12 +89,11 @@ class ConstructionLot(models.Model):
             
             # Evaluate based on priority: danger > warning > success
             if any(s in ('missing', 'expired', 'rejected') for s in statuses):
-                lot.document_status = 'danger'
+                lot.document_status = 'error'
             elif any(s in ('expiring', 'to_check') for s in statuses):
                 lot.document_status = 'warning'
             else:
-                # All 'valid'
-                lot.document_status = 'success'
+                lot.document_status = 'ok'
 
     # ============= COMPUTE METHODS ============= #
     @api.depends('subcontractor_id', 'chantier_id.date_end_contract', 'chantier_id.date_end_internal')

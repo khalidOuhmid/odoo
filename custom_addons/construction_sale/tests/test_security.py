@@ -27,9 +27,9 @@ class TestSecurityAccess(common.TransactionCase):
             'name': 'Security Test Site',
             'client': cls.partner.id,
         })
+        cls.lot_cat = cls.env['construction.lot.category'].create({'name': 'Security Cat', 'code': 'SEC_T'})
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Lot Security Test',
-            'code': 'LST01',
+            'category_id': cls.lot_cat.id,
             'chantier_id': cls.chantier.id,
         })
         cls.product = cls.env['product.product'].create({

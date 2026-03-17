@@ -39,17 +39,16 @@
                     
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="Nom du lot (ex: Électricité R+1)"/>
+                            <field name="category_id" placeholder="Choisir une catégorie de lot" options="{'no_create': True}"/>
                         </h1>
-                        <h3>
-                            <field name="category_id" placeholder="Catégorie" options="{'no_create': True}"/>
+                        <h3 class="text-muted">
+                            <field name="code" readonly="1"/> — <field name="name" readonly="1"/>
                         </h3>
                     </div>
 
                     <group>
                         <group>
                             <field name="chantier_id" readonly="1"/>
-                            <field name="code"/>
                         </group>
                     </group>
 
@@ -127,14 +126,14 @@
                             <!-- ACTIONS PANEL (External Only) -->
                             <group string="Bon de Commande" invisible="execution_type != 'external'">
                                 <group>
-                                    <button name="action_generate_po_safe" 
+                                    <button name="action_generate_po_safe"
                                             string="Générer le Bon de Commande"
-                                            type="object" 
+                                            type="object"
                                             class="btn-primary"
                                             icon="fa-shopping-cart"
                                             invisible="purchase_order_id"
                                             confirm="Générer un bon de commande pour ce lot ?"/>
-                                    <field name="purchase_order_id" readonly="1" 
+                                    <field name="purchase_order_id" readonly="1"
                                            invisible="not purchase_order_id"
                                            widget="many2one_button"/>
                                     <field name="po_state" invisible="not purchase_order_id" readonly="1"
@@ -144,36 +143,6 @@
                                            decoration-success="po_state in ('purchase', 'done')"/>
                                     <field name="po_amount_total" invisible="not purchase_order_id" readonly="1"
                                            widget="monetary"/>
-                                </group>
-                            </group>
-                            
-                            <separator invisible="execution_type != 'external'"/>
-                            
-                            <group string="Contrat de Sous-Traitance" invisible="execution_type != 'external'">
-                                <div class="alert alert-secondary mb-3" role="alert" style="font-size: 13px;">
-                                    <strong>Prérequis :</strong><br/>
-                                    <field name="prerequisites_html" readonly="1" widget="html" nolabel="1"/>
-                                </div>
-                                
-                                <group>
-                                    <field name="can_generate_contract" invisible="1"/>
-                                    <button name="action_generate_contract_safe" 
-                                            string="Générer le Contrat"
-                                            type="object" 
-                                            class="btn-success"
-                                            icon="fa-file-text-o"
-                                            invisible="contract_id or not can_generate_contract"/>
-                                    <button string="Prérequis non remplis" 
-                                            class="btn-secondary"
-                                            disabled="1"
-                                            invisible="contract_id or can_generate_contract"/>
-                                    <button name="action_open_contract" 
-                                            string="✓ Ouvrir le Contrat"
-                                            type="object" 
-                                            class="btn-info"
-                                            icon="fa-external-link"
-                                            invisible="not contract_id"/>
-                                    <field name="contract_id" readonly="1" invisible="1"/>
                                 </group>
                             </group>
 
@@ -196,12 +165,6 @@
                                             type="object" 
                                             class="btn-outline-warning me-2"
                                             icon="fa-shopping-cart"
-                                            invisible="execution_type != 'external'"/>
-                                    <button name="action_create_additional_contract" 
-                                            string="Nouveau Contrat ST"
-                                            type="object" 
-                                            class="btn-outline-success"
-                                            icon="fa-file-contract"
                                             invisible="execution_type != 'external'"/>
                                 </group>
                             </group>
@@ -260,9 +223,9 @@
                   decoration-success="is_finished == True"
                   decoration-muted="is_finished == True">
                 <field name="sequence" widget="handle"/>
-                <field name="code" string="N°"/>
-                <field name="name"/>
-                <field name="category_id" optional="show"/>
+                <field name="category_id" string="Catégorie" options="{'no_create': True}"/>
+                <field name="code" string="Code" readonly="1"/>
+                <field name="name" readonly="1"/>
                 <field name="chantier_id"/>
                 <field name="price" widget="monetary" sum="Total"/>
                 <field name="subcontractor_ids" widget="many2many_tags" 

@@ -42,9 +42,14 @@
                             <group>
                                 <!-- External Mode: Subcontractor Assignment -->
                                 <group string="Sous-Traitant" invisible="execution_type != 'external'">
-                                    <field name="subcontractor_id" 
+                                    <field name="subcontractor_id"
                                            placeholder="Sélectionner un sous-traitant..."
                                            options="{'no_create': True}"/>
+                                    <div class="text-muted small" style="padding-left:8px"
+                                         invisible="not is_subcontractor_already_assigned">
+                                        <i class="fa fa-pencil me-1"/>
+                                        Vous pouvez modifier ce sous-traitant directement.
+                                    </div>
                                 </group>
                                 
                                 <!-- Internal Mode: Responsible User -->

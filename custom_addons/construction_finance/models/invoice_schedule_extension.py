@@ -30,10 +30,12 @@ class InvoiceScheduleFinance(models.Model):
         ('d60',      '🟠 60 jours'),
         ('d90plus',  '🔴 90+ jours (Critique)'),
     ], string='Ancienneté', compute='_compute_age_bucket',
+       store=True,
        help="Tranche d'âge de la facture planifiée"
     )
     is_overdue = fields.Boolean(
         'En retard', compute='_compute_age_bucket',
+        store=True,
         help="Vrai si la date prévue est dépassée et non encore facturée"
     )
 
@@ -67,6 +69,7 @@ class InvoiceScheduleFinance(models.Model):
     invoiceable_now = fields.Boolean(
         'Prêt à facturer',
         compute='_compute_invoiceable_now',
+        store=True,
         help="Vrai si ce chantier a atteint le seuil d'avancement et n'est pas encore facturé"
     )
 

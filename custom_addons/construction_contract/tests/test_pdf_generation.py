@@ -6,6 +6,7 @@ Tests the WeasyPrint-based PDF generation
 
 from odoo.tests import common, tagged
 from odoo.exceptions import UserError
+from datetime import date, timedelta
 import base64
 
 
@@ -18,28 +19,36 @@ class TestPDFGeneration(common.TransactionCase):
         super().setUpClass()
         
         # Create test data
+        cls.client = cls.env['res.partner'].create({'name': 'Client PDF Test'})
         cls.chantier = cls.env['construction.chantier'].create({
             'name': 'Test Construction Site',
-            'reference': 'SITE-001',
+            'client': cls.client.id,
             'address': '123 Test Street',
             'city': 'Paris',
             'zip_code': '75001',
         })
         
+        _mock_doc = base64.b64encode(b'%PDF-1.4 mock').decode('ascii')
+        _expiry = date.today() + timedelta(days=365)
         cls.subcontractor = cls.env['res.partner'].create({
-            'name': 'Test Subcontractor',
-            'contact_type': 'sous_traitant',
+            'name': 'Test Subcontractor PDF',
+            'is_subcontractor': True,
             'company_registry': '12345678901234',
             'email': 'test@subcontractor.com',
             'phone': '+33123456789',
-            # Mock required documents
-            'document_URSSAF_status': 'valid',
-            'document_KBIS_status': 'valid',
-            'document_insurance_status': 'valid',
+        })
+        # Write docs separately to trigger admin auto-validation
+        cls.subcontractor.write({
+            'doc_kbis': _mock_doc, 'doc_kbis_expiry': _expiry,
+            'doc_urssaf': _mock_doc, 'doc_urssaf_expiry': _expiry,
+            'doc_insurance_dec': _mock_doc, 'doc_insurance_dec_expiry': _expiry,
         })
         
+        cls.lot_category = cls.env['construction.lot.category'].create({
+            'name': 'Work Package PDF', 'code': 'WP_PDF',
+        })
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Test Work Package',
+            'category_id': cls.lot_category.id,
             'chantier_id': cls.chantier.id,
             'description': 'Test description',
         })

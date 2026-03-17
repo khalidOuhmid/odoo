@@ -20,7 +20,7 @@ class LotCategory(models.Model):
     _description = 'Catégorie de Lot'
     _order = 'code, name'
 
-    name = fields.Char(string='Nom', required=True, translate=True)
+    name = fields.Char(string='Nom', required=True)
     code = fields.Char(string='Code', required=True, help="Code unique (ex: 01)")
     urssaf_code = fields.Char(string='Code URSSAF', help="Code URSSAF pour les contrats")
     color = fields.Integer(string='Couleur', default=0)
@@ -47,9 +47,25 @@ class Lot(models.Model):
     _order = 'sequence, code, name'
 
     # ============= Identity ============= #
-    category_id = fields.Many2one('construction.lot.category', string='Catégorie Standard')
-    name = fields.Char(string='Nom du Lot', required=True, tracking=True)
-    code = fields.Char(string='Code', required=True, tracking=True)
+    category_id = fields.Many2one(
+        'construction.lot.category',
+        string='Catégorie',
+        required=True,
+        tracking=True,
+        help="Lot name and code are inherited from the selected category."
+    )
+    name = fields.Char(
+        string='Nom du Lot',
+        related='category_id.name',
+        store=True,
+        readonly=True,
+    )
+    code = fields.Char(
+        string='Code',
+        related='category_id.code',
+        store=True,
+        readonly=True,
+    )
     
     chantier_id = fields.Many2one(
         'construction.chantier',
@@ -247,7 +263,7 @@ class Lot(models.Model):
         ('positive_price', 'CHECK(price >= 0)', 'Le prix doit être positif.'),
         ('completion_positive', 'CHECK(completion_percentage >= 0)',
          'Le pourcentage doit être positif (surfacturation > 100% autorisée).'),
-        ('unique_lot_per_chantier', 'unique(code, chantier_id)', 'Le code du lot doit être unique par chantier.'),
+        ('unique_category_per_chantier', 'unique(category_id, chantier_id)', 'Cette catégorie de lot existe déjà sur ce chantier.'),
     ]
 
     # ============= Computes ============= #
@@ -329,21 +345,6 @@ class Lot(models.Model):
         currency_field='currency_id',
         readonly=True
     )
-    contract_id = fields.Many2one(
-        'construction.contract',
-        string='Contrat Actif',
-        compute='_compute_related_single_records',
-        help="Contrat principal lié à ce lot"
-    )
-    
-    prerequisites_html = fields.Html(
-        string='Prérequis Contrat',
-        compute='_compute_prerequisites',
-        help="Checklist pour la génération du contrat"
-    )
-    can_generate_contract = fields.Boolean(
-        compute='_compute_prerequisites'
-    )
     
     @api.depends('price')
     def _compute_planned_financials(self):
@@ -388,74 +389,16 @@ class Lot(models.Model):
                 if not po:
                     po = lot.purchase_order_ids
             elif self.env['ir.module.module'].search_count([('name', '=', 'purchase'), ('state', '=', 'installed')]):
-                 # Fallback search
-                 po = self.env['purchase.order'].search([
-                    ('lot_ids', 'in', [lot.id]),
-                    ('state', 'in', ['purchase', 'done'])
-                 ], limit=1)
-            
-            lot.purchase_order_id = po[0] if po else False
-            
-            # Contract
-            contract = False
-            if 'construction.contract' in self.env:
-                Contract = self.env['construction.contract']
-                if 'lot_ids' in Contract._fields:
-                    contract = Contract.search([('lot_ids', 'in', [lot.id])], limit=1)
-            lot.contract_id = contract.id if contract else False
-
-    @api.depends('subcontractor_id', 'document_cctp')
-    def _compute_prerequisites(self):
-        """Checklist logic from Wizard."""
-        for lot in self:
-            if lot.execution_type != 'external':
-                lot.prerequisites_html = ''
-                lot.can_generate_contract = False
-                continue
-            
-            checks = []
-            all_passed = True
-            
-            # 1. Subcontractor
-            if lot.subcontractor_id:
-                checks.append('✅ Sous-traitant assigné')
-            else:
-                checks.append('❌ Sous-traitant assigné')
-                all_passed = False
-            
-            # 2. PO generated
-            has_po = False
-            if hasattr(lot, 'purchase_order_ids') and lot.purchase_order_ids:
-                has_po = True
-            else:
-                # Fallback search if field not available/visible
-                if self.env['ir.module.module'].search_count([('name', '=', 'purchase'), ('state', '=', 'installed')]):
-                    has_po = bool(self.env['purchase.order'].search_count([
+                 # Fallback search — only if lot_ids field exists on purchase.order
+                 PO = self.env['purchase.order']
+                 if 'lot_ids' in PO._fields:
+                     po = PO.search([
                         ('lot_ids', 'in', [lot.id]),
                         ('state', 'in', ['purchase', 'done'])
-                    ]))
+                     ], limit=1)
             
-            if has_po:
-                checks.append('✅ Bon de commande généré')
-            else:
-                checks.append('❌ Bon de commande généré')
-                all_passed = False
-            
-            # 3. CCTP
-            if lot.document_cctp:
-                checks.append('✅ CCTP chargé')
-            else:
-                checks.append('❌ CCTP chargé')
-                all_passed = False
-            
-            # 4. Planning (Optional/Warning)
-            if lot.document_planning_chantier or lot.document_planning_sous_traitant:
-                checks.append('✅ Planning chargé')
-            else:
-                checks.append('⚠️ Planning non chargé (optionnel)')
-            
-            lot.prerequisites_html = '<br/>'.join(checks)
-            lot.can_generate_contract = all_passed
+            lot.purchase_order_id = po[0] if po else False
+
 
 
     def _compute_document_count(self):
@@ -661,13 +604,7 @@ class Lot(models.Model):
     # Note: _compute_subcontractor_doc_warning is defined in construction_subcontractor module
 
 
-    # ============= Onchange ============= #
-    @api.onchange('category_id')
-    def _onchange_category_id(self):
-        """Update lot name and code when category changes."""
-        if self.category_id:
-            self.name = self.category_id.name
-            self.code = self.category_id.code
+
 
     @api.onchange('is_finished')
     def _onchange_is_finished(self):
@@ -684,19 +621,30 @@ class Lot(models.Model):
             self.internal_team_user_ids = [(5, 0, 0)]  # Clear
 
     # ============= Constraints ============= #
-    @api.constrains('chantier_id', 'code')
-    def _check_unique_lot_code(self):
-        """Ensure lot codes are unique within the same chantier."""
+    @api.constrains('chantier_id', 'category_id')
+    def _check_unique_lot_category(self):
+        """Ensure lot categories are unique within the same chantier."""
         for record in self:
-            existing = self.search([
-                ('chantier_id', '=', record.chantier_id.id),
-                ('code', '=', record.code),
-                ('id', '!=', record.id)
-            ])
-            if existing:
+            if not record.category_id:
+                continue
+            # Use a direct SQL query to avoid triggering an ORM flush, which
+            # would call jsonb_path_query_first on the translate=True `name`
+            # column (still character varying in DB) and raise a PostgreSQL
+            # UndefinedFunction error.
+            self.env.cr.execute(
+                """
+                SELECT id FROM construction_lot
+                WHERE chantier_id = %s
+                  AND category_id = %s
+                  AND id != %s
+                LIMIT 1
+                """,
+                (record.chantier_id.id, record.category_id.id, record.id or 0),
+            )
+            if self.env.cr.fetchone():
                 raise ValidationError(_(
-                    "Un lot avec le code '%s' existe déjà sur ce chantier."
-                ) % record.code)
+                    "La catégorie '%s' existe déjà sur ce chantier."
+                ) % record.category_id.name)
 
     @api.constrains('completion_percentage')
     def _check_completion_percentage(self):

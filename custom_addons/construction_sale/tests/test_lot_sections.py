@@ -32,23 +32,25 @@ class TestLotSections(common.TransactionCase):
         cls.partner = cls.env['res.partner'].create({'name': 'Test Partner Sections'})
         cls.chantier = cls.env['construction.chantier'].create({
             'name': 'Section Test Site',
-            'partner_id': cls.partner.id,
+            'client': cls.partner.id,
         })
-        
+
+        LotCat = cls.env['construction.lot.category']
+        cls.cat_plumb = LotCat.create({'name': 'Plomberie Sect', 'code': 'PLB_S'})
+        cls.cat_elec = LotCat.create({'name': 'Electricite Sect', 'code': 'ELC_S'})
+        cls.cat_paint = LotCat.create({'name': 'Peinture Sect', 'code': 'PNT_S'})
+
         # Create multiple lots
         cls.lot_plumbing = cls.env['construction.lot'].create({
-            'name': 'Plomberie',
-            'code': '01',
+            'category_id': cls.cat_plumb.id,
             'chantier_id': cls.chantier.id,
         })
         cls.lot_electrical = cls.env['construction.lot'].create({
-            'name': 'Électricité',
-            'code': '02',
+            'category_id': cls.cat_elec.id,
             'chantier_id': cls.chantier.id,
         })
         cls.lot_painting = cls.env['construction.lot'].create({
-            'name': 'Peinture',
-            'code': '03',
+            'category_id': cls.cat_paint.id,
             'chantier_id': cls.chantier.id,
         })
         

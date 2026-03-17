@@ -29,11 +29,11 @@ class TestMetreCalculation(common.TransactionCase):
         cls.partner = cls.env['res.partner'].create({'name': 'Test Partner Metre'})
         cls.chantier = cls.env['construction.chantier'].create({
             'name': 'Metre Test Site',
-            'partner_id': cls.partner.id,
+            'client': cls.partner.id,
         })
+        cls.lot_cat = cls.env['construction.lot.category'].create({'name': 'Metre Cat', 'code': 'MET_T'})
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Lot Metre Test',
-            'code': 'LME01',
+            'category_id': cls.lot_cat.id,
             'chantier_id': cls.chantier.id,
         })
         

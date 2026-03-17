@@ -57,9 +57,11 @@ class TestContractModel(common.TransactionCase):
             'doc_insurance_dec_status': 'valid',
         })
 
+        cls.lot_category = cls.env['construction.lot.category'].create({
+            'name': 'Work Package CM', 'code': 'WP_CM',
+        })
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Test Work Package',
-            'code': 'LOT-001',
+            'category_id': cls.lot_category.id,
             'chantier_id': cls.chantier.id,
             'description': 'Test description',
         })

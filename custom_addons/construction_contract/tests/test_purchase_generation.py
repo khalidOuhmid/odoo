@@ -29,18 +29,24 @@ class TestPurchaseGeneration(TransactionCase):
             'client': cls.env['res.partner'].create({'name': 'Client Test'}).id,
         })
         
-        # 4. Lots
+        # 4. Lot categories (required since category_id is NOT NULL on construction.lot)
+        cls.cat_elec = cls.env['construction.lot.category'].create({
+            'name': 'Electricité PO', 'code': 'ELEC_PO',
+        })
+        cls.cat_mac = cls.env['construction.lot.category'].create({
+            'name': 'Maçonnerie PO', 'code': 'MAC_PO',
+        })
+
+        # 5. Lots
         cls.lot_elec = cls.env['construction.lot'].create({
-            'name': 'Electricité (Ext)',
-            'code': 'ELEC_TEST',
+            'category_id': cls.cat_elec.id,
             'chantier_id': cls.chantier.id,
             'execution_type': 'external',
             'subcontractor_id': cls.subcontractor.id,
         })
-        
+
         cls.lot_regie = cls.env['construction.lot'].create({
-            'name': 'Maçonnerie (Int)',
-            'code': 'MAC_REGIE',
+            'category_id': cls.cat_mac.id,
             'chantier_id': cls.chantier.id,
             'execution_type': 'internal',
         })

@@ -60,10 +60,9 @@
                             class="btn-danger"
                             icon="fa-times-circle"
                             confirm="Êtes-vous sûr de vouloir classer ce chantier Sans Suite ? Cette action est irréversible."/>
-                    <button name="action_cancel" 
-                            string="Annuler" 
-                            type="object" 
-                            class="btn-secondary"/>
+                    <button string="Annuler"
+                            class="btn-secondary"
+                            special="cancel"/>
                 </footer>
             </form>
         </field>

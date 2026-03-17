@@ -138,16 +138,6 @@ class ConstructionContractDeliverable(models.Model):
         help="ID of the record that generated this deliverable"
     )
 
-    # For planning deliverables
-    planning_task_ids = fields.Many2many(
-        'construction.planning.task',
-        'deliverable_planning_task_rel',
-        'deliverable_id',
-        'task_id',
-        string='Related Planning Tasks',
-        help="Planning tasks included in this deliverable"
-    )
-
     # For document deliverables from subcontractor
     partner_document_type = fields.Selection([
         ('urssaf', 'URSSAF Certificate'),
@@ -258,7 +248,6 @@ class ConstructionContractDeliverable(models.Model):
             'document_name': f'planning_{contract.name}.pdf',
             'is_generated': True,
             'generation_date': fields.Datetime.now(),
-            'planning_task_ids': [(6, 0, planning_tasks.ids)],
             'source_model': 'construction.planning.task',
             'is_mandatory': True,
             'included_in_contract': True,

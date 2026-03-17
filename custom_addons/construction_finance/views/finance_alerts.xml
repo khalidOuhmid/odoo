@@ -28,7 +28,7 @@
                         string="Voir" icon="fa-external-link" class="btn-sm btn-outline-primary"/>
                 <button name="action_resolve" type="object"
                         string="Résoudre" icon="fa-check" class="btn-sm btn-success"
-                        attrs="{'invisible': [('is_resolved','=',True)]}"/>
+                        invisible="is_resolved"/>
             </list>
         </field>
     </record>
@@ -41,9 +41,9 @@
             <form string="Alerte Financière">
                 <header>
                     <button name="action_mark_read" type="object" string="Marquer comme lue"
-                            class="btn-secondary" attrs="{'invisible': [('is_read','=',True)]}"/>
+                            class="btn-secondary" invisible="is_read"/>
                     <button name="action_resolve" type="object" string="✅ Résoudre l'alerte"
-                            class="btn-success" attrs="{'invisible': [('is_resolved','=',True)]}"/>
+                            class="btn-success" invisible="is_resolved"/>
                     <button name="action_view_chantier" type="object" string="Voir le chantier"
                             class="btn-primary"/>
                 </header>
@@ -68,7 +68,7 @@
                     <group string="Action recommandée">
                         <field name="recommended_action" nolabel="1"/>
                     </group>
-                    <group string="Résolution" attrs="{'invisible': [('is_resolved','=',False)]}">
+                    <group string="Résolution" invisible="not is_resolved">
                         <field name="resolved_at" string="Résolue le" readonly="1"/>
                         <field name="resolved_by" string="Résolue par" readonly="1"/>
                     </group>
@@ -85,6 +85,8 @@
             <search string="Alertes">
                 <field name="chantier_id"/>
                 <field name="message"/>
+                <field name="alert_type"/>
+                <field name="severity"/>
                 <filter string="Non résolues" name="unread"
                         domain="[('is_resolved','=',False)]"/>
                 <filter string="Critiques" name="critical"
@@ -94,9 +96,9 @@
                 <filter string="Budget dépassé" name="overrun"
                         domain="[('alert_type','=','overrun')]"/>
                 <group expand="0" string="Regrouper par">
-                    <filter string="Chantier" context="{'group_by':'chantier_id'}"/>
-                    <filter string="Type" context="{'group_by':'alert_type'}"/>
-                    <filter string="Sévérité" context="{'group_by':'severity'}"/>
+                    <filter string="Chantier" name="group_by_chantier" context="{'group_by':'chantier_id'}"/>
+                    <filter string="Type" name="group_by_type" context="{'group_by':'alert_type'}"/>
+                    <filter string="Sévérité" name="group_by_severity" context="{'group_by':'severity'}"/>
                 </group>
             </search>
         </field>

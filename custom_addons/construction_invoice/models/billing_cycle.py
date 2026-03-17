@@ -27,10 +27,11 @@ class BillingCycle(models.Model):
         ('over_billed', 'Over Billed')
     ], compute='_compute_billing_status', store=True, string="Billing Status")
 
-    @api.depends('chantier_id.quotation_ids.state', 'chantier_id.quotation_ids.amount_total', 'chantier_id.total_cost')
+    @api.depends('chantier_id.quotation_ids.state', 'chantier_id.quotation_ids.amount_untaxed', 'chantier_id.total_cost')
     def _compute_total_amount_confirmed(self):
         """
-        Compute total confirmed amount from validated sale orders.
+        Compute total confirmed amount (HT) from validated sale orders.
+        Uses amount_untaxed (HT) since construction billing is always HT in France.
         Falls back to chantier.total_cost if no confirmed orders.
         """
         for cycle in self:
@@ -39,7 +40,7 @@ class BillingCycle(models.Model):
                     lambda q: q.state in ['sale', 'done']
                 )
                 if confirmed_orders:
-                    cycle.total_amount_confirmed = sum(confirmed_orders.mapped('amount_total'))
+                    cycle.total_amount_confirmed = sum(confirmed_orders.mapped('amount_untaxed'))
                 else:
                     # Fallback to chantier total_cost
                     cycle.total_amount_confirmed = cycle.chantier_id.total_cost or 0.0

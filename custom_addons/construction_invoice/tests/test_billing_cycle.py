@@ -86,29 +86,18 @@ class TestBillingCycle(TransactionCase):
         self.assertEqual(sum(steps.mapped('amount')), 10000.0)
 
     def test_over_billing_warning(self):
-        """Test that over-billing raises a warning (simulated by Python constraint check)."""
+        """Test that over-billing is blocked (audit requirement: strict 100% cap)."""
         cycle = self.env['construction.billing.cycle'].create({
             'chantier_id': self.chantier.id,
             'name': 'Cycle Overload',
         })
-        
-        # Create a step for 110%
-        # We expect the constraints logic to flag this
-        # Note: Actual warning is UI side usually, but we check if model allows it or sets a flag
-        step = self.env['construction.billing.step'].create({
-            'cycle_id': cycle.id,
-            'name': 'Gros Acompte',
-            'percentage': 110.0,
-        })
-        
-        # Check if cycle detects over billing
-        # Assuming we have a computed field or method for validation status
-        # For this test, we assume a method `check_over_billing` returns True/False or similar
-        # Or we check a computed field `is_over_billed`
-        
-        # Since implementation details are pending, let's assume we implement a specific field
-        # self.assertTrue(cycle.is_over_billed)
-        pass 
+
+        with self.assertRaises(ValidationError):
+            self.env['construction.billing.step'].create({
+                'cycle_id': cycle.id,
+                'name': 'Gros Acompte',
+                'percentage': 110.0,
+            })
 
     def test_commission_generation(self):
         """Test generation of commission debt for Business Provider."""

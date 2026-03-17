@@ -145,8 +145,8 @@ class SansSuiteWizard(models.TransientModel):
         if self.reason_details:
             reason_text += f"\n\nDétails: {self.reason_details}"
         
-        # Update chantier
-        chantier.write({
+        # Update chantier (bypass stage validation — wizard is authorised to do this)
+        chantier.with_context(bypass_stage_validation=True).write({
             'stage_id': sans_suite_stage.id,
             'sans_suite_reason': self.reason,
             'sans_suite_details': self.reason_details,

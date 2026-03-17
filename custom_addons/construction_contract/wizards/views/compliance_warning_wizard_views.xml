@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_contract_compliance_warning_wizard_form" model="ir.ui.view">
+        <field name="name">contract.compliance.warning.wizard.form</field>
+        <field name="model">contract.compliance.warning.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Avertissement — Documents non conformes">
+                <sheet>
+                    <div class="alert alert-warning o_field_widget" role="alert">
+                        <i class="fa fa-exclamation-triangle me-2"/>
+                        <strong>Documents non conformes</strong>
+                        <hr/>
+                        <field name="warning_message" readonly="1" nolabel="1"/>
+                    </div>
+                    <p class="mt-2">
+                        Voulez-vous continuer la création du contrat malgré ces non-conformités ?
+                    </p>
+                </sheet>
+                <footer>
+                    <button string="Continuer quand même"
+                            name="action_force_proceed"
+                            type="object"
+                            class="btn-warning"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>

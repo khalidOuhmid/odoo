@@ -11,6 +11,8 @@ Nouveaux champs vs version originale :
   - budget_drift_percent    : Dérive coût réel vs coût planifié (%)
 """
 from odoo import tools, models, fields, api
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class ConstructionFinanceAnalysisReport(models.Model):
@@ -38,7 +40,7 @@ class ConstructionFinanceAnalysisReport(models.Model):
     invoiced_cost = fields.Monetary('Coût Réel', readonly=True)
     commission_cost = fields.Monetary('Commissions', readonly=True)
     margin = fields.Monetary('Marge Brute (€)', readonly=True)
-    margin_percent = fields.Float('Marge (%)', readonly=True, group_operator='avg')
+    margin_percent = fields.Float('Marge (%)', readonly=True, aggregator='avg')
     currency_id = fields.Many2one('res.currency', 'Devise', readonly=True)
 
     # ============= NOUVEAUX INDICATEURS ============= #
@@ -64,8 +66,8 @@ class ConstructionFinanceAnalysisReport(models.Model):
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute("""
-            CREATE OR REPLACE VIEW %s AS (
+        query = """
+            CREATE OR REPLACE VIEW {table} AS (
                 WITH
                 -- ================================================================
                 -- CTE 1 : Agrégation financière de base par chantier + date
@@ -227,7 +229,13 @@ class ConstructionFinanceAnalysisReport(models.Model):
                 LEFT JOIN last_invoice li ON li.chantier_id = b.chantier_id
                 LEFT JOIN pipeline p      ON p.chantier_id  = b.chantier_id
             )
-        """ % (self._table,))
+        """.format(table=self._table)
+        try:
+            self.env.cr.execute(query)
+        except Exception as e:
+            _logger.error("Error in finance_analysis.init: %s", e)
+            _logger.error("Query was: %s", query)
+            raise
 
     # ============= ACTIONS SMART BUTTONS ============= #
 

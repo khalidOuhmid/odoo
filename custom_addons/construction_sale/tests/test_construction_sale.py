@@ -16,11 +16,13 @@ class TestConstructionSale(common.TransactionCase):
         cls.partner = cls.env['res.partner'].create({'name': 'Test Customer'})
         cls.chantier = cls.env['construction.chantier'].create({
             'name': 'Chantier Test',
-            'partner_id': cls.partner.id
+            'client': cls.partner.id
+        })
+        cls.lot_category = cls.env['construction.lot.category'].create({
+            'name': 'Test Category', 'code': 'TC_SALE',
         })
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Lot Test',
-            'code': 'TEST01',
+            'category_id': cls.lot_category.id,
             'chantier_id': cls.chantier.id,
         })
         cls.product = cls.env['product.product'].create({

@@ -96,7 +96,7 @@ class TestConstructionVisite(TransactionCase):
             'chantier_id': self.chantier.id,
             'date': fields.Datetime.now() + timedelta(days=2),
             'duration': 2.0,
-            'visit_type': 'progress',
+            'visit_type': 'follow_up',
         }
         defaults.update(kwargs)
         return self.env['construction.visit'].create(defaults)
@@ -118,41 +118,7 @@ class TestConstructionVisite(TransactionCase):
             "Visit should be linked to correct chantier"
         )
 
-    # ============= 24h Date Validation Buffer ============= #
-    def test_visite_date_validation_24h_buffer_raises(self):
-        """Test: Validation raises error if date < 24 hours from now."""
-        with self.assertRaises(ValidationError) as context:
-            self.env['construction.visit'].create({
-                'name': 'Visite Invalide',
-                'chantier_id': self.chantier.id,
-                'date': fields.Datetime.now() + timedelta(hours=2),
-                'visit_type': 'progress',
-            })
-        self.assertIn(
-            '24 heures',
-            str(context.exception),
-            "Error message should mention 24 hours"
-        )
-
-    def test_visite_date_validation_exactly_24h_passes(self):
-        """Test: Date exactly 24 hours ahead is valid."""
-        visit = self.env['construction.visit'].create({
-            'name': 'Visite Limite',
-            'chantier_id': self.chantier.id,
-            'date': fields.Datetime.now() + timedelta(hours=25),
-            'visit_type': 'progress',
-        })
-        self.assertTrue(visit.id, "Visit with 25h buffer should be created")
-
-    def test_visite_date_validation_past_date_raises(self):
-        """Test: Past date raises validation error."""
-        with self.assertRaises(ValidationError):
-            self.env['construction.visit'].create({
-                'name': 'Visite Passee',
-                'chantier_id': self.chantier.id,
-                'date': fields.Datetime.now() - timedelta(days=1),
-                'visit_type': 'progress',
-            })
+    # 24h constraint removed — now only warning via onchange, not hard constraint
 
     # ============= US-V002: ICS Calendar Generation ============= #
     def test_ics_generation_creates_valid_binary(self):
@@ -218,7 +184,7 @@ class TestConstructionVisite(TransactionCase):
         visite = self._create_valid_visit()
         maps_url = visite.get_maps_url()
         
-        self.assertIn('maps.google.com', maps_url)
+        self.assertIn('google.com/maps', maps_url)
         self.assertIn('query=', maps_url)
 
     def test_waze_url_generation(self):

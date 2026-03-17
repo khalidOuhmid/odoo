@@ -22,9 +22,6 @@
                                 type="object"
                                 class="btn-secondary"
                                 invisible="not latest_contract_id"/>
-                        <button special="cancel"
-                                string="Fermer"
-                                class="btn-secondary"/>
                     </header>
 
                     <sheet class="o_form_sheet_bg">

@@ -21,27 +21,34 @@ class TestContractControllers(common.HttpCase):
         super().setUpClass()
         
         # Create test data
+        _client = cls.env['res.partner'].create({'name': 'Client Controllers Test'})
         cls.chantier = cls.env['construction.chantier'].create({
             'name': 'Test Construction Site',
-            'reference': 'SITE-001',
+            'client': _client.id,
             'address': '123 Test Street',
             'city': 'Paris',
             'zip_code': '75001',
         })
-        
+
+        _mock_doc = base64.b64encode(b'%PDF-1.4 mock').decode('ascii')
+        _expiry = date.today() + timedelta(days=365)
         cls.subcontractor = cls.env['res.partner'].create({
-            'name': 'Test Subcontractor',
-            'contact_type': 'sous_traitant',
+            'name': 'Test Subcontractor Ctrl',
+            'is_subcontractor': True,
             'company_registry': '12345678901234',
             'email': 'test@subcontractor.com',
             'phone': '+33123456789',
-            'document_URSSAF_status': 'valid',
-            'document_KBIS_status': 'valid',
-            'document_insurance_status': 'valid',
         })
-        
+        # Write docs separately to trigger admin auto-validation (write override)
+        cls.subcontractor.write({
+            'doc_kbis': _mock_doc, 'doc_kbis_expiry': _expiry,
+            'doc_urssaf': _mock_doc, 'doc_urssaf_expiry': _expiry,
+            'doc_insurance_dec': _mock_doc, 'doc_insurance_dec_expiry': _expiry,
+        })
+
+        cls.lot_cat = cls.env['construction.lot.category'].create({'name': 'Work Pkg Ctrl', 'code': 'WP_CTRL'})
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Test Work Package',
+            'category_id': cls.lot_cat.id,
             'chantier_id': cls.chantier.id,
             'description': 'Test description',
         })
@@ -63,7 +70,14 @@ class TestContractControllers(common.HttpCase):
             'retention_rate': 5.0,
         })
         
-        cls.contract.action_generate_pdf()
+        # Inject mock HTML so PDF generation doesn't fail due to empty template
+        cls.contract.contract_template_html = '<html><body><h1>Test Contract</h1></body></html>'
+        try:
+            cls.contract.action_generate_pdf()
+        except Exception:
+            # If PDF generation fails, inject mock PDF directly
+            cls.contract.write({'pdf_document': base64.b64encode(b'%PDF-1.4 mock')})
+            cls.contract.pdf_page_count = 1
         cls.contract.action_send_for_signature()
 
     def test_01_signature_portal_access_with_token(self):

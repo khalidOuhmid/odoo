@@ -58,7 +58,6 @@ class ConstructionPurchaseWizard(models.TransientModel):
     
     search_term = fields.Char(
         string='Rechercher un produit',
-        placeholder="Nom, référence, description..."
     )
     
     category_filter_id = fields.Many2one(

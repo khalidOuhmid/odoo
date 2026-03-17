@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import models, fields, api, _
+from odoo.exceptions import ValidationError, UserError
 from odoo.tools import float_round
 
 class BillingStep(models.Model):
@@ -27,14 +28,14 @@ class BillingStep(models.Model):
     @api.model
     def create(self, vals):
         step = super(BillingStep, self).create(vals)
-        # Audit Requirement: Strict Blocking Error if > 100%
-        # We check the cycle total after adding this step
         if step.cycle_id:
-             # Recompute total
-             total_pct = sum(step.cycle_id.step_ids.mapped('percentage'))
-             if total_pct > 100.001: # Small float tolerance
-                 raise ValidationError(_("BLOCKING ERROR: The billing cycle cannot exceed 100% (Current: %.2f%%)") % total_pct)
+            total_pct = sum(step.cycle_id.step_ids.mapped('percentage'))
+            if total_pct > 100.001:
+                raise ValidationError(
+                    _("BLOCKING ERROR: The billing cycle cannot exceed 100%% (Current: %.2f%%)") % total_pct
+                )
         return step
+    @api.depends('percentage', 'cycle_id.total_amount_confirmed')
     def _compute_amount(self):
         for step in self:
             if step.percentage:

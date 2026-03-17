@@ -103,7 +103,7 @@
                         <div class="sidebar-field mb-3">
                             <label style="font-size: 11px; color: rgba(255,255,255,0.6); display: block; margin-bottom: 3px;">Retenue de garantie (%)</label>
                             <input type="number" class="sidebar-input" t-att-value="state.retentionRate"
-                                   t-on-change="(ev) => this.onFieldChange('retention_rate', parseFloat(ev.target.value) || 0)"
+                                   t-on-change="(ev) => this.onFieldChange('retention_rate', ev.target.value)"
                                    min="0" max="20" step="0.5"
                                    style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; padding: 6px 8px; font-size: 13px;"/>
                         </div>
@@ -111,7 +111,7 @@
                         <div class="sidebar-field mb-3">
                             <label style="font-size: 11px; color: rgba(255,255,255,0.6); display: block; margin-bottom: 3px;">Durée GPA (mois)</label>
                             <input type="number" class="sidebar-input" t-att-value="state.gpaDuration"
-                                   t-on-change="(ev) => this.onFieldChange('gpa_duration', parseInt(ev.target.value) || 12)"
+                                   t-on-change="(ev) => this.onFieldChange('gpa_duration', ev.target.value)"
                                    min="1" max="36"
                                    style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; padding: 6px 8px; font-size: 13px;"/>
                         </div>
@@ -127,14 +127,14 @@
                             <div style="flex: 1;">
                                 <label style="font-size: 10px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 2px;">Retard/jour</label>
                                 <input type="number" class="sidebar-input" t-att-value="state.penaltyRetardJour"
-                                       t-on-change="(ev) => this.onFieldChange('penalty_retard_jour', parseFloat(ev.target.value) || 0)"
+                                       t-on-change="(ev) => this.onFieldChange('penalty_retard_jour', ev.target.value)"
                                        min="0" step="10"
                                        style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; padding: 5px 6px; font-size: 12px;"/>
                             </div>
                             <div style="flex: 1;">
                                 <label style="font-size: 10px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 2px;">Retard docs</label>
                                 <input type="number" class="sidebar-input" t-att-value="state.penaltyDocsDelay"
-                                       t-on-change="(ev) => this.onFieldChange('penalty_docs_delay', parseFloat(ev.target.value) || 0)"
+                                       t-on-change="(ev) => this.onFieldChange('penalty_docs_delay', ev.target.value)"
                                        min="0" step="10"
                                        style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; padding: 5px 6px; font-size: 12px;"/>
                             </div>
@@ -144,14 +144,14 @@
                             <div style="flex: 1;">
                                 <label style="font-size: 10px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 2px;">Sécurité</label>
                                 <input type="number" class="sidebar-input" t-att-value="state.penaltySafety"
-                                       t-on-change="(ev) => this.onFieldChange('penalty_safety', parseFloat(ev.target.value) || 0)"
+                                       t-on-change="(ev) => this.onFieldChange('penalty_safety', ev.target.value)"
                                        min="0" step="10"
                                        style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; padding: 5px 6px; font-size: 12px;"/>
                             </div>
                             <div style="flex: 1;">
                                 <label style="font-size: 10px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 2px;">Nettoyage</label>
                                 <input type="number" class="sidebar-input" t-att-value="state.penaltyCleaning"
-                                       t-on-change="(ev) => this.onFieldChange('penalty_cleaning', parseFloat(ev.target.value) || 0)"
+                                       t-on-change="(ev) => this.onFieldChange('penalty_cleaning', ev.target.value)"
                                        min="0" step="10"
                                        style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; padding: 5px 6px; font-size: 12px;"/>
                             </div>
@@ -161,14 +161,14 @@
                             <div style="flex: 1;">
                                 <label style="font-size: 10px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 2px;">Justificatifs</label>
                                 <input type="number" class="sidebar-input" t-att-value="state.penaltyJustificatifs"
-                                       t-on-change="(ev) => this.onFieldChange('penalty_justificatifs', parseFloat(ev.target.value) || 0)"
+                                       t-on-change="(ev) => this.onFieldChange('penalty_justificatifs', ev.target.value)"
                                        min="0" step="10"
                                        style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; padding: 5px 6px; font-size: 12px;"/>
                             </div>
                             <div style="flex: 1;">
                                 <label style="font-size: 10px; color: rgba(255,255,255,0.5); display: block; margin-bottom: 2px;">Prototypes</label>
                                 <input type="number" class="sidebar-input" t-att-value="state.penaltyPrototypes"
-                                       t-on-change="(ev) => this.onFieldChange('penalty_prototypes', parseFloat(ev.target.value) || 0)"
+                                       t-on-change="(ev) => this.onFieldChange('penalty_prototypes', ev.target.value)"
                                        min="0" step="10"
                                        style="width: 100%; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); border-radius: 6px; color: #fff; padding: 5px 6px; font-size: 12px;"/>
                             </div>

@@ -16,14 +16,10 @@ class TestContractPortal(HttpCase, ContractTestMixin):
         super().setUpClass()
         cls.setUpContractData()
         
-        # Prepare contract for portal access
-        # Generate PDF mock (we need a real PDF for portal to render? 
-        # The portal logic uses PdfJS which loads the PDF via URL.
-        # We just need pdf_document to be present.)
-        cls.contract.pdf_document = base64.b64encode(b'%PDF-1.4... Content ...')
-        cls.contract._compute_pdf_page_count() # Should be 0 or 1 for mock
-        cls.contract.pdf_page_count = 1 # Force 1 page
-        
+        # Prepare contract for portal access - inject mock PDF without triggering PyPDF2
+        cls.contract.write({'pdf_document': base64.b64encode(b'%PDF-1.4 mock')})
+        cls.contract.pdf_page_count = 1  # Force 1 page without calling compute
+
         # Send to generate token
         cls.contract.action_send_for_signature()
 

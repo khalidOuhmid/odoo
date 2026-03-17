@@ -66,16 +66,18 @@ class TestConstructionLot(TestCommon):
     # =========================================================================
 
     def test_duplicate_lot_code_same_chantier_raises_error(self):
-        """BR-007: Two lots with same code in same chantier is forbidden."""
-        # Arrange — lot_go already has code='GO' on self.chantier
+        """BR-007: Two lots with same category in same chantier is forbidden."""
+        # Arrange — lot_go already uses lot_cat_go on self.chantier
 
         # Act & Assert
-        with self.assertRaises((ValidationError, Exception)):
-            self.env['construction.lot'].create({
-                'name': 'Duplicate GO',
-                'code': 'GO',
-                'chantier_id': self.chantier.id,
-            })
+        with self.assertRaises(Exception):
+            with self.env.cr.savepoint():
+                self.env['construction.lot'].create({
+                    'name': 'Duplicate GO',
+                    'code': 'GO2',
+                    'chantier_id': self.chantier.id,
+                    'category_id': self.lot_cat_go.id,
+                })
 
     def test_same_lot_code_different_chantier_is_valid(self):
         """Same code on different chantiers is allowed."""
@@ -90,6 +92,7 @@ class TestConstructionLot(TestCommon):
             'name': 'Gros Oeuvre 2',
             'code': 'GO',
             'chantier_id': chantier_2.id,
+            'category_id': self.lot_cat_go.id,
         })
 
         # Assert

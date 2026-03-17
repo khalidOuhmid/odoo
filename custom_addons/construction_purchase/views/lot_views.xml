@@ -23,8 +23,8 @@
         <field name="inherit_id" ref="construction_core.view_construction_lot_tree"/>
         <field name="arch" type="xml">
             <field name="price" position="after">
-                <field name="purchase_total" optional="show" sum="Total Achats"/>
-                <field name="purchase_margin" optional="show" sum="Marge"/>
+                <field name="purchase_total" sum="Total Achats"/>
+                <field name="purchase_margin" sum="Marge"/>
                 <field name="purchase_margin_percent" optional="hide" widget="percentage"/>
             </field>
         </field>

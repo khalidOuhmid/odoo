@@ -6,13 +6,13 @@ Central location for all module constants and enumerations
 
 # Contract workflow states
 CONTRACT_STATES = [
-    ('draft', 'Draft'),
-    ('generated', 'PDF Generated'),
-    ('sent', 'Sent to Subcontractor'),
-    ('in_progress', 'Signature in Progress'),
-    ('signed', 'Signed'),
-    ('cancelled', 'Cancelled'),
-    ('archived', 'Archived'),
+    ('draft', 'Brouillon'),
+    ('generated', 'Validation Interne'),
+    ('sent', 'Envoyé'),
+    ('in_progress', 'En Signature'),
+    ('signed', 'Signé'),
+    ('cancelled', 'Annulé'),
+    ('archived', 'Archivé'),
 ]
 
 # Authentication methods for signature

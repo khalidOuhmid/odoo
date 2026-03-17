@@ -23,29 +23,176 @@
                 </button>
             </xpath>
 
-            <!-- Add Generate PO button in Header -->
-            <xpath expr="//header" position="inside">
-                 <button name="action_generate_purchase_order"
-                        type="object"
-                        string="Générer Bon de Commande"
-                        class="btn-secondary"
-                        invisible="execution_type != 'external' or not subcontractor_id"/>
-            </xpath>
+            <!-- Removed redundant header buttons to keep actions contextual in the document tab -->
 
 
 
-            <!-- Add Generate Contract button in Documents tab -->
-            <xpath expr="//page[@name='documents']/group[1]" position="before">
-                <div class="mb-3">
-                     <button name="action_generate_contract_wizard" 
-                            type="object" 
-                            string="📄 Générer Contrat Sous-traitance"
-                            class="btn btn-primary"
-                            invisible="execution_type != 'external' or not subcontractor_id or has_contract"/>
-                     <span invisible="not has_contract" class="text-success ms-2">
-                         ✓ Contrat déjà généré
-                     </span>
-                </div>
+            <!-- Refonte complète de l'onglet Documents et Actions -->
+            <xpath expr="//page[@name='documents']" position="replace">
+                <page string="Documents et Actions" name="documents">
+                    <div class="o_horizontal_separator mt-2 mb-4 text-uppercase fw-bolder small">
+                        Documents Techniques
+                    </div>
+                    <group name="tech_docs">
+                        <group>
+                            <field name="document_cctp" widget="binary" filename="document_cctp_filename"/>
+                            <field name="document_cctp_filename" invisible="1"/>
+                        </group>
+                        <group>
+                            <field name="document_planning_chantier" widget="binary" filename="document_planning_chantier_filename"/>
+                            <field name="document_planning_chantier_filename" invisible="1"/>
+                        </group>
+                    </group>
+                    <group name="external_docs" invisible="execution_type != 'external'">
+                        <group>
+                            <field name="document_planning_sous_traitant" widget="binary" filename="document_planning_sous_traitant_filename"/>
+                            <field name="document_planning_sous_traitant_filename" invisible="1"/>
+                        </group>
+                    </group>
+
+                    <div class="row mt-4" invisible="execution_type != 'external'">
+                        <!-- BLOC 1: BON DE COMMANDE -->
+                        <div class="col-md-6">
+                            <div class="card shadow-sm h-100 pb-3">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold"><i class="fa fa-shopping-cart me-2 text-primary"/>Bon de Commande</h6>
+                                    <field name="purchase_order_state" widget="badge" 
+                                           decoration-secondary="purchase_order_state == 'none'"
+                                           decoration-warning="purchase_order_state == 'pending'"
+                                           decoration-success="purchase_order_state == 'validated'"
+                                           nolabel="1"/>
+                                </div>
+                                <div class="card-body">
+                                    <!-- State: Aucun BC -->
+                                    <div invisible="purchase_order_state != 'none'" class="text-center py-4">
+                                        <p class="text-muted small mb-4">Aucun bon de commande n'a encore été généré pour ce lot.</p>
+                                        <button name="action_generate_purchase_order"
+                                                string="Générer le Bon de Commande"
+                                                type="object"
+                                                class="btn btn-primary px-4"
+                                                icon="fa-plus-circle"/>
+                                    </div>
+                                    
+                                    <!-- State: En cours ou Validé -->
+                                    <div invisible="purchase_order_state == 'none'">
+                                        <group container_bundle="1">
+                                            <field name="purchase_order_ids" widget="many2many_tags" readonly="1" string="BC liés"/>
+                                        </group>
+                                        <div class="d-flex gap-2 mt-4 px-3">
+                                             <button name="action_view_purchase_orders"
+                                                     string="Voir les BC"
+                                                     type="object"
+                                                     class="btn btn-secondary flex-grow-1"
+                                                     icon="fa-external-link"/>
+                                             <button name="action_generate_purchase_order"
+                                                     string="Recréer"
+                                                     type="object"
+                                                     class="btn btn-outline-warning"
+                                                     icon="fa-refresh"
+                                                     invisible="purchase_order_state != 'validated'"
+                                                     confirm="Êtes-vous sûr de vouloir recréer un nouveau BC ? Cela n'annulera pas les existants."/>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- BLOC 2: CONTRAT DE SOUS-TRAITANCE -->
+                        <div class="col-md-6">
+                            <div class="card shadow-sm h-100 pb-3">
+                                <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 fw-bold"><i class="fa fa-file-signature me-2 text-success"/>Contrat de Sous-traitance</h6>
+                                    <field name="contract_status" widget="badge"
+                                           decoration-secondary="contract_status == 'none'"
+                                           decoration-info="contract_status == 'draft'"
+                                           decoration-warning="contract_status == 'sent'"
+                                           decoration-success="contract_status == 'signed'"
+                                           nolabel="1"/>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Checklist Prérequis (Seulement si pas de contrat ou brouillon) -->
+                                    <div invisible="contract_status in ('sent', 'signed')" class="mb-4">
+                                        <div class="text-uppercase text-muted small fw-bolder border-bottom pb-1 mb-2">Prérequis de génération</div>
+                                        <ul class="list-unstyled mb-0 ms-2">
+                                            <li class="d-flex align-items-center mb-1">
+                                                <i class="fa fa-check-circle text-success me-2" invisible="not has_subcontractor"/>
+                                                <i class="fa fa-times-circle text-danger me-2" invisible="has_subcontractor"/>
+                                                <span class="small" invisible="not has_subcontractor">Sous-traitant assigné</span>
+                                                <span class="small text-danger fw-bold" invisible="has_subcontractor">Sous-traitant non assigné</span>
+                                            </li>
+                                            <li class="d-flex align-items-center mb-1">
+                                                <i class="fa fa-check-circle text-success me-2" invisible="not is_external_execution"/>
+                                                <i class="fa fa-times-circle text-danger me-2" invisible="is_external_execution"/>
+                                                <span class="small" invisible="not is_external_execution">Type d'exécution : Sous-Traitance</span>
+                                                <span class="small text-danger fw-bold" invisible="is_external_execution">Type d'exécution invalide</span>
+                                            </li>
+                                            <li class="d-flex align-items-center mb-1">
+                                                <i class="fa fa-check-circle text-success me-2" invisible="not has_validated_po"/>
+                                                <i class="fa fa-times-circle text-danger me-2" invisible="has_validated_po"/>
+                                                <span class="small" invisible="not has_validated_po">Bon de Commande validé</span>
+                                                <span class="small text-danger fw-bold" invisible="has_validated_po">Bon de Commande manquant ou non validé</span>
+                                            </li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- État : Prérequis non remplis -->
+                                    <div invisible="contract_status != 'none' or all_prerequisites_met" class="text-center py-2 px-3">
+                                        <div class="alert alert-light border small text-muted mb-3">
+                                            Veuillez compléter les prérequis ci-dessus pour débloquer la génération.
+                                        </div>
+                                        <button string="Générer Contrat"
+                                                class="btn btn-secondary w-100 opacity-50"
+                                                disabled="1"/>
+                                    </div>
+
+                                    <!-- État : Prérequis OK ou Brouillon -->
+                                    <div invisible="contract_status in ('sent', 'signed') or not all_prerequisites_met" class="text-center py-2 px-3">
+                                        <button name="action_generate_contract_wizard" 
+                                                type="object" 
+                                                string="Générer le Contrat"
+                                                class="btn btn-primary w-100 py-2"
+                                                icon="fa-magic"
+                                                invisible="contract_status != 'none'"/>
+                                        <div invisible="contract_status != 'draft'">
+                                            <div class="alert alert-success border small mb-3">
+                                                <field name="contract_name" class="fw-bold d-block"/>
+                                                Référencé en tant que brouillon.
+                                            </div>
+                                            <button name="action_open_contract_editor" 
+                                                    type="object" 
+                                                    string="Éditer le Contrat"
+                                                    class="btn btn-success w-100"
+                                                    icon="fa-edit"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- État : Envoyé ou Signé -->
+                                    <div invisible="contract_status not in ('sent', 'signed')" class="px-1">
+                                         <div class="alert alert-info border small mb-3">
+                                             <div class="d-flex justify-content-between">
+                                                 <span class="fw-bold"><field name="contract_name"/></span>
+                                                 <span class="text-muted"><field name="contract_date"/></span>
+                                             </div>
+                                         </div>
+                                         <div class="d-flex gap-2">
+                                             <button name="action_view_contract"
+                                                     string="Ouvrir"
+                                                     type="object"
+                                                     class="btn btn-secondary flex-grow-1"
+                                                     icon="fa-external-link"/>
+                                             <button name="action_generate_contract_wizard"
+                                                     string="Regénérer"
+                                                     type="object"
+                                                     class="btn btn-outline-warning"
+                                                     icon="fa-refresh"
+                                                     confirm="Regénérer le contrat écrasera le brouillon actuel (si non signé). Continuer ?"/>
+                                         </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </page>
             </xpath>
         </field>
     </record>

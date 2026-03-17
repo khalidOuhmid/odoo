@@ -10,6 +10,8 @@ Réponse aux questions :
   - Suis-je trop dépendant d'un seul sous-traitant ?
 """
 from odoo import tools, models, fields, api
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class ConstructionSubcontractorAnalysis(models.Model):
@@ -37,7 +39,7 @@ class ConstructionSubcontractorAnalysis(models.Model):
                                help="Nombre de bons de commande envoyés à ce sous-traitant")
     total_facture = fields.Monetary('Total Facturé (€)', readonly=True,
                                     help="Montant total des commandes confirmées")
-    pct_volume_total = fields.Float('% du Volume Total', readonly=True,
+    pct_volume_total = fields.Float('Volume Total (%)', readonly=True,
                                     group_operator=False,
                                     help="Part de ce sous-traitant dans le volume total achats")
     is_high_dependency = fields.Boolean('Dépendance élevée', readonly=True,
@@ -45,10 +47,10 @@ class ConstructionSubcontractorAnalysis(models.Model):
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute("""
-            CREATE OR REPLACE VIEW %s AS (
+        query = """
+            CREATE OR REPLACE VIEW {table} AS (
                 WITH
-                -- Total global par entreprise (dénominateur pour % dépendance)
+                -- Total global par entreprise (denominateur pour dependance)
                 total_global AS (
                     SELECT
                         company_id,
@@ -57,13 +59,13 @@ class ConstructionSubcontractorAnalysis(models.Model):
                     WHERE state IN ('purchase','done')
                     GROUP BY company_id
                 ),
-                -- Agrégation par sous-traitant
+                -- Agregation par sous-traitant
                 agg AS (
                     SELECT
                         ROW_NUMBER() OVER (ORDER BY po.partner_id) AS id,
                         po.partner_id,
                         po.company_id,
-                        -- On prend la devise de la 1ère commande (simplification)
+                        -- On prend la devise de la 1ere commande (simplification)
                         MIN(po.currency_id) AS currency_id,
                         COUNT(DISTINCT po.chantier_id) AS nb_chantiers,
                         COUNT(po.id)                   AS nb_orders,
@@ -81,13 +83,13 @@ class ConstructionSubcontractorAnalysis(models.Model):
                     a.nb_chantiers,
                     a.nb_orders,
                     a.total_facture,
-                    -- % du volume global
+                    -- part du volume global
                     CASE
                         WHEN tg.grand_total > 0
                         THEN ROUND((a.total_facture / tg.grand_total * 100)::numeric, 1)
                         ELSE 0
                     END AS pct_volume_total,
-                    -- Alerte dépendance (seuil 40%%)
+                    -- Alerte dependance (seuil 40)
                     CASE
                         WHEN tg.grand_total > 0
                          AND (a.total_facture / tg.grand_total * 100) > 40
@@ -97,7 +99,13 @@ class ConstructionSubcontractorAnalysis(models.Model):
                 FROM agg a
                 LEFT JOIN total_global tg ON tg.company_id = a.company_id
             )
-        """ % (self._table,))
+        """.format(table=self._table)
+        try:
+            self.env.cr.execute(query)
+        except Exception as e:
+            _logger.error("Error in subcontractor_analysis.init: %s", e)
+            _logger.error("Query was: %s", query)
+            raise
 
     # ============= ACTIONS ============= #
     def action_view_purchase_orders(self):

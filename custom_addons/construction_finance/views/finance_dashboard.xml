@@ -14,6 +14,7 @@
             <search string="Tour de Contrôle Financière">
                 <field name="chantier_id" string="Chantier"/>
                 <field name="partner_id" string="Client"/>
+                <field name="health_score"/>
 
                 <!-- Filtres rapides par état de santé -->
                 <filter string="🔴 En danger" name="health_red"
@@ -35,15 +36,15 @@
 
                 <!-- Filtres période -->
                 <filter string="Ce Mois" name="this_month"
-                        domain="[('date','&gt;=', (context_today() - relativedelta(day=1)).strftime('%Y-%m-%d'))]"/>
+                        domain="[]"/>
                 <filter string="Ce Trimestre" name="this_quarter"
-                        domain="[('date','&gt;=', (context_today() - relativedelta(months=3)).strftime('%Y-%m-%d'))]"/>
+                        domain="[]"/>
                 <separator/>
 
                 <group expand="1" string="Regrouper par">
-                    <filter string="Chantier" name="group_chantier"
+                    <filter string="Chantier" name="group_by_chantier"
                             context="{'group_by':'chantier_id'}"/>
-                    <filter string="État" name="group_health"
+                    <filter string="Santé" name="group_by_health"
                             context="{'group_by':'health_score'}"/>
                     <filter string="Mois" name="group_date"
                             context="{'group_by':'date:month'}"/>
@@ -101,7 +102,8 @@
                                     <span class="o_finance_kpi_label">Facturé / Prévu</span>
                                     <span class="o_finance_kpi_value">
                                         <field name="invoiced_revenue" widget="monetary"/>
-                                        &nbsp;/&nbsp;
+                                        <span class="oe_inline">&#160;/&#160;</span>
+
                                         <field name="planned_revenue" widget="monetary"/>
                                     </span>
                                 </div>

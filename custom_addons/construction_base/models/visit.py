@@ -8,8 +8,8 @@ class Visit(models.Model):
     _description = 'Construction Visit'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'date desc'
-    name = fields.Char('Name', required=True, translate=True)
-    description = fields.Text('Description', translate=True)
+    name = fields.Char('Name', required=True)
+    description = fields.Text('Description')
     chantier_id = fields.Many2one('construction.chantier', string='Chantier', required=True, ondelete='cascade')
     date = fields.Datetime('Date et heure', required=True, tracking=True)
     duration = fields.Float('Durée (heures)', default=2.0)

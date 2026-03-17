@@ -327,7 +327,7 @@ class TestComplianceFlow(TransactionCase):
     # ============= STAGE AUTOMATION TESTS ============= #
     
     def test_stage_updates_on_document_upload(self):
-        """Subcontractor stage should update when documents uploaded."""
+        """Subcontractor stage should update from draft to compliant when all docs uploaded."""
         self.plumber.subcontractor_stage = 'draft'
         
         # Upload all required docs
@@ -338,13 +338,57 @@ class TestComplianceFlow(TransactionCase):
             'doc_urssaf_expiry': self.future_date,
             'doc_insurance_dec': self.sample_doc,
             'doc_insurance_dec_expiry': self.future_date,
+            'doc_cni': self.sample_doc,
             'doc_cni_expiry': self.future_date,
         })
         self._validate_all_docs()
         
         self.assertEqual(
             self.plumber.subcontractor_stage, 'compliant',
-            "Stage should auto-update to 'compliant'"
+            "Stage should auto-update to 'compliant' when fully compliant"
+        )
+        
+    def test_stage_updates_to_incomplete_on_single_upload(self):
+        """AAA Test: Stage should advance to 'incomplete' on partial manual upload."""
+        # Arrange
+        self.plumber.subcontractor_stage = 'draft'
+        self.assertEqual(self.plumber.compliance_state, 'missing')
+        
+        # Act: Upload just ONE document (KBIS) without validation
+        self.plumber.write({
+            'doc_kbis': self.sample_doc,
+            'doc_kbis_filename': 'test_kbis.pdf'
+        })
+        
+        # Assert:
+        self.assertEqual(self.plumber.doc_kbis_status, 'to_check', "Newly uploaded manual doc should be strictly 'to_check'")
+        self.assertEqual(self.plumber.compliance_state, 'incomplete', "Compliance state should be incomplete (missing others + to_check)")
+        self.assertEqual(
+            self.plumber.subcontractor_stage, 'incomplete',
+            "Subcontractor stage should auto-advance from 'draft' to 'incomplete' when dossier starts being populated"
+        )
+        
+    def test_stage_fallback_to_incomplete_on_missing_doc(self):
+        """AAA Test: Stage should fallback to 'incomplete' if a required doc is deleted."""
+        # Arrange
+        self.plumber.write({
+            'doc_kbis': self.sample_doc, 'doc_kbis_expiry': self.future_date,
+            'doc_urssaf': self.sample_doc, 'doc_urssaf_expiry': self.future_date,
+            'doc_insurance_dec': self.sample_doc, 'doc_insurance_dec_expiry': self.future_date,
+            'doc_cni': self.sample_doc, 'doc_cni_expiry': self.future_date,
+        })
+        self._validate_all_docs()
+        self.assertEqual(self.plumber.subcontractor_stage, 'compliant')
+        
+        # Act: Delete KBIS
+        self.plumber.write({'doc_kbis': False})
+        
+        # Assert
+        self.assertEqual(self.plumber.doc_kbis_status, 'missing')
+        self.assertEqual(self.plumber.compliance_state, 'incomplete')
+        self.assertEqual(
+            self.plumber.subcontractor_stage, 'incomplete',
+            "Stage should fallback to 'incomplete' when a document is deleted"
         )
     
     # ============= CRON TESTS ============= #
@@ -365,10 +409,9 @@ class TestComplianceFlow(TransactionCase):
         # Run cron
         self.Partner.cron_check_document_expiry()
         
-        # Check for activity
+        # Check for activity (cron creates "Rappel conformité #N")
         activity = self.env['mail.activity'].search([
             ('res_id', '=', self.plumber.id),
             ('res_model', '=', 'res.partner'),
-            ('summary', '=', 'Documents expirés')
         ])
         self.assertTrue(activity, "Should create activity for expired docs")

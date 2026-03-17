@@ -376,28 +376,38 @@
 
 
 
-                        <!-- Tab 7: Documents (Always visible) -->
+                        <!-- Tab 7: Documents (Always visible) - BUG-07 Centralized -->
                         <page string="Documents" name="documents">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="mb-0">
                                     <i class="fa fa-folder-open me-2"/>Documents du Chantier
                                 </h4>
-                                <div class="btn-group">
-                                    <button name="action_upload_document" 
-                                            type="object" 
-                                            string="Ajouter Document"
-                                            class="btn btn-primary btn-sm"/>
-                                    <button name="action_view_all_documents" 
-                                            type="object" 
-                                            string="Tous les Documents"
-                                            class="btn btn-outline-secondary btn-sm"/>
-                                </div>
                             </div>
-                            <div class="alert alert-info mb-3">
-                                <i class="fa fa-info-circle me-2"/>
-                                <strong>Module requis:</strong> Le module <em>construction_document</em> 
-                                doit être installé pour la GED complète (Plans, Devis, Contrats, etc.).
-                            </div>
+                            <field name="documents_summary_html" readonly="1" nolabel="1" class="w-100"/>
+                        </page>
+
+                        <!-- Tab 8: Avancement (Always visible) - BUG-04 -->
+                        <page string="Avancement" name="progress_tab">
+                            <group>
+                                <group string="Progression Globale">
+                                    <field name="progress" widget="progressbar"/>
+                                </group>
+                            </group>
+                            <separator string="Avancement par Lot"/>
+                            <field name="lots_ids" readonly="1">
+                                <list decoration-success="is_finished == True"
+                                      decoration-warning="completion_percentage &gt; 0 and completion_percentage &lt; 100"
+                                      decoration-muted="completion_percentage == 0">
+                                    <field name="code" string="N°"/>
+                                    <field name="name"/>
+                                    <field name="execution_type" widget="badge"/>
+                                    <field name="completion_percentage" widget="progressbar"
+                                           options="{'editable': true, 'max_value': 100}"/>
+                                    <field name="price" widget="monetary" sum="Total"/>
+                                    <field name="weighted_value" string="Valeur Réalisée" widget="monetary"/>
+                                    <field name="is_finished" widget="boolean_toggle"/>
+                                </list>
+                            </field>
                         </page>
 
                         <!-- Note: Facturation tab removed from core - managed by construction_invoice module -->

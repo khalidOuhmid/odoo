@@ -42,6 +42,28 @@ class Lot(models.Model):
         string='Nb BC',
     )
 
+    purchase_order_state = fields.Selection([
+        ('none', 'Aucun BC'),
+        ('pending', 'BC en attente de validation'),
+        ('validated', 'BC Validé')
+    ], string='État BC', compute='_compute_purchase_order_state', store=False)
+
+    contract_status = fields.Selection([
+        ('none', 'Non généré'),
+        ('draft', 'Brouillon'),
+        ('sent', 'Envoyé'),
+        ('signed', 'Signé')
+    ], string='État Contrat', compute='_compute_contract_status', store=False)
+
+    contract_name = fields.Char(related='contract_id.name', string='Nom du Contrat', readonly=True)
+    contract_date = fields.Date(related='contract_id.date', string='Date de Génération', readonly=True)
+
+    # Prerequisite Checklist Fields
+    has_subcontractor = fields.Boolean(compute='_compute_contract_prerequisites')
+    has_validated_po = fields.Boolean(compute='_compute_contract_prerequisites')
+    is_external_execution = fields.Boolean(compute='_compute_contract_prerequisites')
+    all_prerequisites_met = fields.Boolean(compute='_compute_contract_prerequisites')
+
     @api.depends('contract_id')
     def _compute_has_contract(self):
         for record in self:
@@ -55,6 +77,37 @@ class Lot(models.Model):
             ])
             lot.purchase_order_ids = pos
             lot.purchase_order_count = len(pos)
+
+    @api.depends('purchase_order_ids', 'purchase_order_ids.state')
+    def _compute_purchase_order_state(self):
+        for lot in self:
+            if not lot.purchase_order_ids:
+                lot.purchase_order_state = 'none'
+            elif any(po.state in ('purchase', 'done') for po in lot.purchase_order_ids):
+                lot.purchase_order_state = 'validated'
+            else:
+                lot.purchase_order_state = 'pending'
+
+    @api.depends('contract_id', 'contract_id.state')
+    def _compute_contract_status(self):
+        for lot in self:
+            if not lot.contract_id:
+                lot.contract_status = 'none'
+            else:
+                lot.contract_status = lot.contract_id.state
+
+    @api.depends('subcontractor_id', 'execution_type', 'purchase_order_ids.state')
+    def _compute_contract_prerequisites(self):
+        for lot in self:
+            lot.has_subcontractor = bool(lot.subcontractor_id)
+            lot.is_external_execution = lot.execution_type == 'external'
+            lot.has_validated_po = any(po.state in ('purchase', 'done') for po in lot.purchase_order_ids)
+            
+            lot.all_prerequisites_met = (
+                lot.has_subcontractor and 
+                lot.is_external_execution and 
+                lot.has_validated_po
+            )
 
     def action_view_purchase_orders(self):
         """TASK-008: Smart button action to view related purchase orders."""
@@ -179,6 +232,13 @@ class Lot(models.Model):
             'view_mode': 'form',
             'target': 'current',
         }
+
+    def action_open_contract_editor(self):
+        """Wrapper to open the contract editor from the lot view."""
+        self.ensure_one()
+        if not self.contract_id:
+            raise UserError(_("Aucun contrat n'est encore lié à ce lot."))
+        return self.contract_id.action_open_contract_editor()
 
 
     def action_generate_purchase_order(self):

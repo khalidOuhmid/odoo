@@ -5,52 +5,83 @@
         <field name="name">contract.creation.wizard.form</field>
         <field name="model">contract.creation.wizard</field>
         <field name="arch" type="xml">
-            <form string="Create Contract">
+            <form string="Générer un Contrat">
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="step1,step2,step3,step4"/>
+                </header>
+                
                 <sheet>
                     <div class="oe_title">
-                        <h1>Generate Subcontractor Contract</h1>
+                        <h1>Génération de Contrat Sous-Traitant</h1>
                     </div>
 
-                    <group>
-                        <group string="Construction Site &amp; Subcontractor">
-                            <field name="chantier_id" options="{'no_create': True}"/>
-                            <field name="subcontractor_id" options="{'no_create': True}"/>
-                            <field name="subcontractor_documents_valid" invisible="1"/>
-                            <field name="subcontractor_warning"
-                                   widget="text"
-                                   invisible="not subcontractor_warning"
-                                   class="text-warning"/>
-                        </group>
+                    <!-- STEP 1: SOUS-TRAITANT -->
+                    <group invisible="state != 'step1'" string="1. Sélection du Sous-Traitant et Chantier">
+                        <field name="chantier_id" options="{'no_create': True}"/>
+                        <field name="subcontractor_id" options="{'no_create': True}"/>
+                        <field name="subcontractor_documents_valid" invisible="1"/>
+                        <div colspan="2" invisible="not subcontractor_warning" class="alert alert-warning" role="alert">
+                            <field name="subcontractor_warning"/>
+                        </div>
+                    </group>
 
-                        <group string="Lots">
-                            <field name="available_lot_ids" invisible="1"/>
-                            <field name="lot_ids" widget="many2many_tags"
-                                   options="{'no_create': True}"
-                                   required="chantier_id != False"/>
-                        </group>
+                    <!-- STEP 2: LOTS -->
+                    <group invisible="state != 'step2'" string="2. Sélection des Lots">
+                        <field name="show_aggregation_warning" invisible="1"/>
+                        <div colspan="2" invisible="not show_aggregation_warning" class="alert alert-info" role="alert">
+                            <field name="aggregation_message"/>
+                        </div>
+                        <field name="available_lot_ids" invisible="1"/>
+                        <field name="lot_ids" widget="many2many_checkboxes" domain="[('id', 'in', available_lot_ids)]"/>
+                    </group>
 
-                        <group string="Schedule &amp; Amounts">
+                    <!-- STEP 3: DOCUMENTS -->
+                    <group invisible="state != 'step3'" string="3. Validation des Documents Contractuels">
+                        <field name="step3_valid" invisible="1"/>
+                        <field name="has_planning_general" invisible="1"/>
+                        <field name="missing_cctp_lots" invisible="1"/>
+                        <field name="missing_planning_lots" invisible="1"/>
+                        <field name="missing_po_lots" invisible="1"/>
+                        <field name="currency_id" invisible="1"/>
+                        
+                        <div colspan="2">
+                            <div class="alert alert-success" invisible="not has_planning_general"><i class="fa fa-check"/> Planning Général du Chantier PRÉSENT</div>
+                            <div class="alert alert-danger" invisible="has_planning_general"><i class="fa fa-times"/> Planning Général du Chantier MANQUANT</div>
+                            
+                            <div class="alert alert-success" invisible="missing_cctp_lots != '' and missing_cctp_lots != False"><i class="fa fa-check"/> CCTP PRÉSENTS pour tous les lots</div>
+                            <div class="alert alert-danger" invisible="missing_cctp_lots == '' or missing_cctp_lots == False"><i class="fa fa-times"/> CCTP MANQUANTS pour les lots : <field name="missing_cctp_lots" nolabel="1" readonly="1" class="oe_inline"/></div>
+                            
+                            <div class="alert alert-success" invisible="missing_planning_lots != '' and missing_planning_lots != False"><i class="fa fa-check"/> Plannings Sous-Traitant PRÉSENTS pour tous les lots</div>
+                            <div class="alert alert-danger" invisible="missing_planning_lots == '' or missing_planning_lots == False"><i class="fa fa-times"/> Plannings ST MANQUANTS pour les lots : <field name="missing_planning_lots" nolabel="1" readonly="1" class="oe_inline"/></div>
+                            
+                            <div class="alert alert-success" invisible="missing_po_lots != '' and missing_po_lots != False"><i class="fa fa-check"/> Bons de Commande VALIDÉS pour tous les lots</div>
+                            <div class="alert alert-danger" invisible="missing_po_lots == '' or missing_po_lots == False"><i class="fa fa-times"/> Bons de Commande MANQUANTS/BROUILLON pour les lots : <field name="missing_po_lots" nolabel="1" readonly="1" class="oe_inline"/></div>
+                            
+                            <h4 class="mt-4">Montant Total des Bons de Commande validés : <field name="total_po_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/></h4>
+                        </div>
+                    </group>
+
+                    <!-- STEP 4: RECAPITULATIF & OPTIONS -->
+                    <group invisible="state != 'step4'" string="4. Récapitulatif et Options">
+                        <group string="Planning &amp; Montants">
                             <field name="contract_date"/>
                             <field name="start_date"/>
                             <field name="end_date"/>
                             <field name="retention_rate"/>
                         </group>
-
-                        <group string="Template &amp; Options">
+                        <group string="Génération">
                             <field name="template_id"/>
                             <field name="generate_deliverables"/>
-                            <field name="send_immediately"
-                                   invisible="template_id == False"/>
+                            <field name="send_immediately" invisible="template_id == False"/>
                         </group>
                     </group>
                 </sheet>
 
                 <footer>
-                    <button string="Generate Contract"
-                            name="action_create_contract"
-                            type="object"
-                            class="btn-primary"/>
-                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                    <button string="Suivant" name="action_next" type="object" class="btn-primary" invisible="state == 'step4'"/>
+                    <button string="Créer le Contrat" name="action_create_contract" type="object" class="btn-primary" invisible="state != 'step4'"/>
+                    <button string="Précédent" name="action_previous" type="object" class="btn-secondary" invisible="state == 'step1'"/>
+                    <button string="Annuler" class="btn-secondary" special="cancel"/>
                 </footer>
             </form>
         </field>
@@ -58,7 +89,7 @@
 
     <!-- Wizard Action -->
     <record id="action_contract_creation_wizard" model="ir.actions.act_window">
-        <field name="name">Create Contract</field>
+        <field name="name">Créer un Contrat</field>
         <field name="res_model">contract.creation.wizard</field>
         <field name="view_mode">form</field>
         <field name="target">new</field>

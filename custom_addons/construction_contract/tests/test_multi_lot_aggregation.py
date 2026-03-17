@@ -33,43 +33,59 @@ class TestMultiLotAggregation(TransactionCase):
         cls.chantier_model = cls.env['construction.chantier']
         cls.lot_model = cls.env['construction.lot']
         cls.contract_model = cls.env['construction.contract']
-        cls.wizard_model = cls.env['construction.contract.creation.wizard']
+        cls.wizard_model = cls.env['contract.creation.wizard']
 
-        # Create subcontractor
+        import base64
+        from datetime import date, timedelta
+        _mock_doc = base64.b64encode(b'%PDF-1.4 mock').decode('ascii')
+        _expiry = date.today() + timedelta(days=365)
+
+        # Create subcontractor with compliant docs and SIRET
         cls.subcontractor = cls.partner_model.create({
             'name': 'Test Subcontractor Multi-Lot',
             'company_type': 'company',
             'is_company': True,
+            'company_registry': '12345678901234',
         })
+        cls.subcontractor.write({
+            'doc_urssaf': _mock_doc, 'doc_urssaf_expiry': _expiry,
+            'doc_kbis': _mock_doc, 'doc_kbis_expiry': _expiry,
+            'doc_insurance_dec': _mock_doc, 'doc_insurance_dec_expiry': _expiry,
+        })
+
+        # Create client partner
+        cls.client = cls.partner_model.create({'name': 'Client Multi-Lot Test'})
 
         # Create chantier
         cls.chantier = cls.chantier_model.create({
             'name': 'Test Chantier Multi-Lot',
-            'code': 'TMLOT001',
-            'date_start': date.today(),
-            'date_end': date.today() + timedelta(days=180),
+            'client': cls.client.id,
         })
+
+        # Create lot categories
+        LotCat = cls.env['construction.lot.category']
+        cls.cat_1 = LotCat.create({'name': 'Gros Oeuvre ML', 'code': 'GO_ML'})
+        cls.cat_2 = LotCat.create({'name': 'Electricite ML', 'code': 'ELEC_ML'})
+        cls.cat_3 = LotCat.create({'name': 'Plomberie ML', 'code': 'PLOM_ML'})
+        cls.cat_4 = LotCat.create({'name': 'Interne ML', 'code': 'INT_ML'})
 
         # Create 3 lots for the same subcontractor
         cls.lot_1 = cls.lot_model.create({
-            'name': 'Lot 1 - Gros Œuvre',
-            'code': 'L001',
+            'category_id': cls.cat_1.id,
             'chantier_id': cls.chantier.id,
             'subcontractor_id': cls.subcontractor.id,
             'execution_type': 'external',
         })
-        
+
         cls.lot_2 = cls.lot_model.create({
-            'name': 'Lot 2 - Électricité',
-            'code': 'L002',
+            'category_id': cls.cat_2.id,
             'chantier_id': cls.chantier.id,
             'subcontractor_id': cls.subcontractor.id,
             'execution_type': 'external',
         })
-        
+
         cls.lot_3 = cls.lot_model.create({
-            'name': 'Lot 3 - Plomberie',
-            'code': 'L003',
+            'category_id': cls.cat_3.id,
             'chantier_id': cls.chantier.id,
             'subcontractor_id': cls.subcontractor.id,
             'execution_type': 'external',
@@ -77,8 +93,7 @@ class TestMultiLotAggregation(TransactionCase):
 
         # Create an internal lot (should NOT be aggregated)
         cls.lot_internal = cls.lot_model.create({
-            'name': 'Lot 4 - Interne',
-            'code': 'L004',
+            'category_id': cls.cat_4.id,
             'chantier_id': cls.chantier.id,
             'execution_type': 'internal',  # No subcontractor
         })
@@ -109,12 +124,12 @@ class TestMultiLotAggregation(TransactionCase):
         """Test that wizard auto-selects all related lots on subcontractor change"""
         wizard = self.wizard_model.create({
             'chantier_id': self.chantier.id,
+            'subcontractor_id': self.subcontractor.id,
             'start_date': date.today(),
             'end_date': date.today() + timedelta(days=90),
         })
-        
-        # Trigger onchange
-        wizard.subcontractor_id = self.subcontractor.id
+
+        # Trigger onchange to auto-select lots
         wizard._onchange_auto_select_related_lots()
         
         # Check that all 3 external lots are selected
@@ -241,25 +256,34 @@ class TestProofFileGeneration(TransactionCase):
         super().setUpClass()
         
         # Create minimal contract for testing
+        import base64 as _b64
+        _mock_doc = _b64.b64encode(b'%PDF-1.4 mock').decode('ascii')
+        _expiry = date.today() + timedelta(days=365)
+
         cls.partner = cls.env['res.partner'].create({
-            'name': 'Test Subcontractor',
+            'name': 'Test Subcontractor Proof',
             'company_type': 'company',
+            'is_company': True,
+            'company_registry': '99988877701234',
         })
-        
+        cls.partner.write({
+            'doc_urssaf': _mock_doc, 'doc_urssaf_expiry': _expiry,
+            'doc_kbis': _mock_doc, 'doc_kbis_expiry': _expiry,
+            'doc_insurance_dec': _mock_doc, 'doc_insurance_dec_expiry': _expiry,
+        })
+
+        cls.client_proof = cls.env['res.partner'].create({'name': 'Client Proof'})
         cls.chantier = cls.env['construction.chantier'].create({
-            'name': 'Test Chantier',
-            'code': 'TPRF001',
-            'date_start': date.today(),
-            'date_end': date.today() + timedelta(days=180),
+            'name': 'Test Chantier Proof',
+            'client': cls.client_proof.id,
         })
-        
+
         template = cls.env['construction.contract.template'].search([], limit=1)
         if not template:
             template = cls.env['construction.contract.template'].create({
-                'name': 'Test Template',
-                'is_default': True,
+                'name': 'Test Template Proof',
             })
-        
+
         cls.contract = cls.env['construction.contract'].create({
             'chantier_id': cls.chantier.id,
             'subcontractor_id': cls.partner.id,
@@ -267,8 +291,9 @@ class TestProofFileGeneration(TransactionCase):
             'start_date': date.today(),
             'end_date': date.today() + timedelta(days=90),
             'pdf_hash_before_signature': 'abc123hash',
-            'pdf_page_count': 7,
+            'bypass_compliance_check': True,
         })
+        cls.contract.pdf_page_count = 7
 
     def test_01_proof_file_generates_json(self):
         """Test that proof file generation creates valid JSON"""

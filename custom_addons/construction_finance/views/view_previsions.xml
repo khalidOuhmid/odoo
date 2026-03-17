@@ -11,7 +11,8 @@
         <field name="name">construction.finance.forecast.search</field>
         <field name="model">construction.finance.forecast</field>
         <field name="arch" type="xml">
-            <search string="Prévisions Financières">
+            <search>
+                <field name="carnet_health"/>
                 <filter string="✅ Pipeline solide" name="healthy"
                         domain="[('carnet_health','=','green')]"/>
                 <filter string="⚠️ Pipeline moyen" name="medium"

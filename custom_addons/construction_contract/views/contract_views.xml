@@ -231,20 +231,7 @@
                     <!-- TITRE ET BOUTONS INTELLIGENTS                  -->
                     <!-- ============================================== -->
                     
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" readonly="1" class="oe_inline" placeholder="Référence du contrat"/>
-                        </h1>
-                    </div>
-
-                    <!-- Boutons intelligents -->
                     <div class="oe_button_box" name="button_box">
-                        <button name="action_view_deliverables" type="object"
-                                class="oe_stat_button" icon="fa-file-text-o"
-                                invisible="not deliverable_ids">
-                            <field name="deliverable_ids" widget="statinfo"
-                                   string="Documents"/>
-                        </button>
                         <button name="action_view_purchase_orders" type="object"
                                 class="oe_stat_button" icon="fa-shopping-cart"
                                 invisible="purchase_order_count == 0">
@@ -253,10 +240,29 @@
                         </button>
                     </div>
 
-                    <!-- ============================================== -->
-                    <!-- INFORMATIONS PRINCIPALES (STYLE CARTE)         -->
-                    <!-- ============================================== -->
-                    
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" readonly="1" class="oe_inline" placeholder="Référence du contrat"/>
+                        </h1>
+                        <!-- KPIs -->
+                        <div class="d-flex align-items-center mt-2 flex-wrap gap-2">
+                            <span class="badge rounded-pill text-bg-primary fs-6">
+                                <i class="fa fa-money"/> <field name="total_amount_ttc" widget="monetary" options="{'currency_field': 'currency_id'}" class="ms-1 oe_inline"/>
+                            </span>
+                            <span class="badge rounded-pill text-bg-info fs-6">
+                                <i class="fa fa-cubes"/> <field name="lot_count" class="ms-1 oe_inline"/> Lots
+                            </span>
+                            <span invisible="pending_deliverable_count == 0" class="badge rounded-pill text-bg-warning fs-6">
+                                <i class="fa fa-clock-o"/> <field name="pending_deliverable_count" class="ms-1 oe_inline"/> Livrables en attente
+                            </span>
+                            <span class="badge rounded-pill text-bg-danger fs-6" invisible="state not in ('sent', 'in_progress') or days_until_expiry > 2">
+                                <i class="fa fa-hourglass-end"/> <field name="days_until_expiry" class="ms-1 oe_inline"/> jours restants
+                            </span>
+                            <span class="badge rounded-pill text-bg-secondary fs-6" invisible="state not in ('sent', 'in_progress') or days_until_expiry &lt;= 2">
+                                <i class="fa fa-hourglass-half"/> <field name="days_until_expiry" class="ms-1 oe_inline"/> jours restants
+                            </span>
+                        </div>
+                    </div>
                     <group>
                         <group string="🏗️ Chantier" class="oe_group_card">
                             <field name="chantier_id" 
@@ -378,10 +384,87 @@
                     <!-- ONGLETS                                        -->
                     <!-- ============================================== -->
                     
+                    <!-- ============================================== -->
+                    <!-- ONGLETS                                        -->
+                    <!-- ============================================== -->
+                    
                     <notebook>
-                        <!-- Onglet: Document du Contrat -->
-                        <page string="📄 Contrat" name="pdf" invisible="not pdf_document">
-                            <div class="alert alert-info mb-3" role="alert" invisible="state != 'draft'">
+                        <!-- Onglet 1: Informations -->
+                        <page string="📋 Informations" name="info">
+                            <group>
+                                <group string="🏗️ Chantier" class="oe_group_card">
+                                    <field name="chantier_id" 
+                                           string="Chantier"
+                                           options="{'no_create': True}"
+                                           readonly="state != 'draft'"
+                                           help="Sélectionnez le chantier concerné par ce contrat"/>
+                                    <field name="lot_ids" 
+                                           string="Lots"
+                                           widget="many2many_tags"
+                                           domain="[('chantier_id', '=', chantier_id)]"
+                                           readonly="state != 'draft'"
+                                           help="Lots de travaux concernés par ce contrat"/>
+                                </group>
+        
+                                <group string="👷 Sous-Traitant" class="oe_group_card">
+                                    <field name="subcontractor_id" 
+                                           string="Sous-Traitant"
+                                           options="{'no_create': True}"
+                                           readonly="state != 'draft'"
+                                           help="Entreprise sous-traitante qui signera le contrat"/>
+                                </group>
+                            </group>
+                            
+                            <group>
+                                <group string="📝 Gestion du Modèle" class="oe_group_card" invisible="state != 'draft'">
+                                    <label for="template_id" string="Modèle de Contrat"/>
+                                    <div class="o_row">
+                                        <field name="template_id" 
+                                               readonly="state != 'draft'"
+                                               options="{'no_create': True}"
+                                               class="oe_inline"
+                                               help="Modèle utilisé pour générer le contrat"/>
+                                        <button name="%(action_construction_contract_template)d" 
+                                                string="Gérer les Modèles"
+                                                type="action"
+                                                icon="fa-cog"
+                                                class="btn-link oe_inline"
+                                                help="Ouvrir la gestion des modèles de contrat"/>
+                                    </div>
+                                    <div class="alert alert-info mt-2" role="alert" invisible="not template_id">
+                                        <i class="fa fa-info-circle"/> 
+                                        Le modèle sélectionné sera utilisé pour générer le document PDF du contrat.
+                                    </div>
+                                </group>
+                                <group string="📅 Calendrier" class="oe_group_card">
+                                    <field name="date" string="Date du Contrat" readonly="state != 'draft'"/>
+                                    <field name="start_date" string="Début des Travaux" readonly="state != 'draft'"/>
+                                    <field name="end_date" string="Fin des Travaux" readonly="state != 'draft'"/>
+                                    <field name="signature_date" string="Date de Signature" readonly="1" invisible="not signature_date"/>
+                                </group>
+                            </group>
+                            
+                            <group string="💰 Montants" class="oe_group_card">
+                                <field name="currency_id" invisible="1"/>
+                                <field name="total_amount_ht" string="Montant HT" widget="monetary" readonly="1"/>
+                                <field name="total_amount_tva" string="TVA" widget="monetary" readonly="1"/>
+                                <field name="total_amount_ttc" 
+                                       string="Montant Total TTC"
+                                       widget="monetary"
+                                       class="oe_subtotal_footer_separator"
+                                       style="font-size: 1.5em; font-weight: bold;"/>
+                                <field name="retention_rate" 
+                                       string="Taux de Retenue"
+                                       readonly="state != 'draft'"
+                                       widget="percentage"/>
+                                <field name="retention_amount" 
+                                       string="Montant de la Retenue"
+                                       widget="monetary"
+                                       invisible="retention_amount == 0"/>
+                            </group>
+                            
+                            <!-- PDF Preview embed -->
+                            <div class="alert alert-info mt-4" role="alert" invisible="state != 'draft' or not pdf_document">
                                 <i class="fa fa-info-circle"/> 
                                 <strong>Aperçu du contrat :</strong> Visualisez le document PDF généré ci-dessous.
                             </div>
@@ -389,131 +472,77 @@
                             <field name="pdf_document" 
                                    widget="pdf_viewer"
                                    filename="pdf_filename" 
-                                   nolabel="1"/>
+                                   nolabel="1"
+                                   invisible="not pdf_document"/>
                         </page>
 
-                        <!-- Onglet: Documents à Fusionner -->
-                        <page string="📎 Documents à Fusionner" name="deliverables">
+                        <!-- Onglet 2: Documents Contractuels -->
+                        <page string="📎 Documents Contractuels" name="contractual_docs">
                             <div class="alert alert-info mb-3" role="alert">
                                 <i class="fa fa-info-circle"/> 
-                                <strong>Fusion de documents :</strong> Cochez "Fusionner dans le contrat" pour inclure des documents 
-                                (planning, bons de commande) dans le PDF principal. Utilisez "Ordre de fusion" pour contrôler l'ordre d'apparition.
+                                Documents de référence issus des lots et du chantier qui constituent les annexes du contrat.
                             </div>
+                            <field name="contractual_document_ids" readonly="1" nolabel="1">
+                                <list>
+                                    <field name="document_type"/>
+                                    <field name="lot_id"/>
+                                    <field name="state" widget="badge" decoration-success="state == 'present'" decoration-danger="state == 'missing'"/>
+                                    <field name="is_auto_attached" widget="boolean_toggle"/>
+                                    <field name="attachment_id" filename="attachment_id"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Onglet 3: Livrables -->
+                        <page string="✅ Livrables" name="deliverables">
                             <field name="deliverable_ids" nolabel="1">
                                 <list editable="bottom">
                                     <field name="sequence" widget="handle"/>
                                     <field name="name" string="Nom"/>
                                     <field name="deliverable_type" string="Type"/>
                                     <field name="is_mandatory" string="Obligatoire" widget="boolean_toggle"/>
-                                    <field name="merge_in_contract" string="Fusionner" widget="boolean_toggle"/>
-                                    <field name="merge_order" string="Ordre" optional="show"/>
+                                    <field name="merge_in_contract" string="Fusionner au contrat" widget="boolean_toggle"/>
                                     <field name="document" string="Fichier" filename="document_name"/>
                                     <field name="document_name" invisible="1"/>
-                                    <field name="file_size_readable" string="Taille"/>
                                 </list>
                             </field>
                         </page>
 
-                        <!-- Onglet: Bons de Commande -->
-                        <page string="🛒 Bons de Commande" name="purchase_orders"
-                              invisible="not purchase_order_ids">
-                            <field name="purchase_order_ids" readonly="1" nolabel="1">
-                                <list>
-                                    <field name="name" string="Référence"/>
-                                    <field name="date_order" string="Date"/>
-                                    <field name="amount_total" string="Montant" sum="Total"/>
-                                    <field name="state" string="Statut" widget="badge"/>
-                                </list>
-                            </field>
-                        </page>
-
-                        <!-- Onglet: Progression de la Signature -->
-                        <page string="✍️ Signature" name="signature"
-                              invisible="state not in ('in_progress', 'signed')">
+                        <!-- Onglet 4: Signature -->
+                        <page string="🖋️ Signature" name="signature" invisible="state not in ('in_progress', 'signed')">
                             <group>
-                                <group string="Progression" class="oe_group_card">
-                                    <field name="pdf_page_count" 
-                                           string="Nombre de Pages" 
-                                           readonly="1"
-                                           help="Nombre total de pages du contrat"/>
-                                    <field name="signature_id" 
-                                           string="Enregistrement de Signature"
-                                           readonly="1" 
-                                           invisible="not signature_id"
-                                           help="Référence de l'enregistrement de signature électronique"/>
+                                <group string="Progression et Preuve" class="oe_group_card">
+                                    <field name="pdf_page_count" string="Nombre de Pages" readonly="1"/>
+                                    <!-- Signature BLG -->
+                                    <field name="blg_signatory_id" readonly="1"/>
+                                    <field name="blg_signature_date" readonly="1"/>
+                                    <field name="blg_signature_image" widget="image" readonly="1"/>
+                                    <!-- Signature ST -->
+                                    <field name="signer_full_name" readonly="1"/>
+                                    <field name="signer_ip" readonly="1"/>
+                                    <field name="signer_user_agent" readonly="1"/>
+                                    <field name="signer_gps" readonly="1"/>
+                                    <field name="document_hash_sha256" readonly="1"/>
                                 </group>
                             </group>
-                            
-                            <group string="Validation des Pages" invisible="not page_validation_ids">
-                                <field name="page_validation_ids" readonly="1" nolabel="1">
-                                    <list>
-                                        <field name="page_number" string="Page"/>
-                                        <field name="validated_date" string="Validée le" widget="datetime"/>
-                                        <field name="time_spent" string="Temps Passé" widget="float_time"/>
-                                    </list>
-                                </field>
+                            <group string="Logs de Validation des Pages" class="mt-4" invisible="not page_validation_log">
+                                <field name="page_validation_log" readonly="1" nolabel="1"/>
                             </group>
                         </page>
 
-                        <!-- Onglet: Certificat -->
-                        <page string="🏆 Certificat" name="certificate"
-                              invisible="not certificate_of_completion">
-                            <div class="alert alert-success mb-3" role="alert">
-                                <i class="fa fa-certificate"/> 
-                                <strong>Certificat de signature :</strong> Ce document certifie l'authenticité de la signature électronique.
-                            </div>
-                            <field name="certificate_filename" invisible="1"/>
-                            <field name="certificate_of_completion" 
-                                   widget="pdf_viewer"
-                                   filename="certificate_filename" 
-                                   nolabel="1"/>
-                        </page>
-
-                        <!-- Onglet: Détails Financiers -->
-                        <page string="💵 Détails Financiers" name="financial" invisible="state == 'draft'">
-                            <group>
-                                <group string="Montants" class="oe_group_card">
-                                    <field name="total_amount_ht" 
-                                           string="Montant HT"
-                                           widget="monetary"
-                                           help="Montant hors taxes"/>
-                                    <field name="total_amount_tva" 
-                                           string="TVA"
-                                           widget="monetary"
-                                           help="Montant de la TVA"/>
-                                    <field name="total_amount_ttc" 
-                                           string="Montant TTC"
-                                           widget="monetary"
-                                           class="oe_subtotal_footer_separator"
-                                           help="Montant toutes taxes comprises"/>
-                                </group>
-                                <group string="Informations Techniques" class="oe_group_card">
-                                    <field name="pdf_page_count" 
-                                           string="Nombre de Pages"
-                                           readonly="1"/>
-                                    <field name="pdf_hash_before_signature" 
-                                           string="Empreinte PDF"
-                                           readonly="1" 
-                                           password="True"
-                                           help="Hash du PDF avant signature (pour vérification d'intégrité)"/>
-                                    <field name="access_token" 
-                                           string="Jeton d'Accès"
-                                           readonly="1" 
-                                           password="True"
-                                           help="Jeton sécurisé pour l'accès au portail"/>
-                                </group>
+                        <!-- Onglet 5: Historique -->
+                        <page string="📜 Historique" name="history">
+                            <group string="Notifications &amp; Accès" class="oe_group_card">
+                                <field name="email_sent" widget="boolean" readonly="1"/>
+                                <field name="sms_sent" widget="boolean" readonly="1"/>
+                                <field name="last_reminder_date" readonly="1"/>
+                                <field name="sent_date" readonly="1"/>
+                                <field name="portal_url" widget="url" readonly="1" invisible="not portal_url"/>
+                                <field name="access_token" readonly="1" password="True"/>
                             </group>
-                        </page>
-
-                        <!-- Onglet: Avancé (Admin uniquement) -->
-                        <page string="⚙️ Avancé" name="technical"
-                              groups="group_construction_admin">
-                            <group>
+                            <group string="Avancé" class="oe_group_card" groups="group_construction_admin">
                                 <field name="active" string="Actif"/>
-                                <field name="custom_html_override" 
-                                       string="HTML Personnalisé"
-                                       widget="ace"
-                                       options="{'mode': 'html'}"/>
+                                <field name="custom_html_override" widget="ace" options="{'mode': 'html'}"/>
                             </group>
                         </page>
                     </notebook>

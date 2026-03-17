@@ -122,25 +122,40 @@ class LotSubcontractorAssignWizard(models.TransientModel):
             res['existing_lot_id'] = lot.id
             res['create_new_lot'] = False
             res['lot_category_id'] = lot.category_id.id
-            
+            # Pre-fill current subcontractor so the user sees who is assigned
+            if lot.subcontractor_id:
+                res['subcontractor_id'] = lot.subcontractor_id.id
+
         return res
 
-    @api.depends('subcontractor_id', 'chantier_id', 'lot_category_id')
+    @api.depends('subcontractor_id', 'chantier_id', 'lot_category_id', 'existing_lot_id')
     def _compute_warnings(self):
         """SAP-like: Compute warnings for user validation."""
         for wizard in self:
             warnings = []
-            
-            # Check if subcontractor is already assigned to chantier
-            if wizard.subcontractor_id and wizard.chantier_id:
+
+            # Check if we are replacing an existing subcontractor on the lot
+            if (not wizard.create_new_lot and wizard.existing_lot_id
+                    and wizard.existing_lot_id.subcontractor_id
+                    and wizard.subcontractor_id
+                    and wizard.subcontractor_id != wizard.existing_lot_id.subcontractor_id):
+                warnings.append(
+                    f"<li>⚠️ <b>Remplacement :</b> le sous-traitant actuel "
+                    f"<b>{wizard.existing_lot_id.subcontractor_id.name}</b> sera remplacé par "
+                    f"<b>{wizard.subcontractor_id.name}</b>. "
+                    "Les bons de commande et contrats existants ne seront pas modifiés.</li>"
+                )
+
+            # Check if subcontractor is already assigned to chantier (but different lot)
+            elif wizard.subcontractor_id and wizard.chantier_id:
                 if wizard.subcontractor_id in wizard.chantier_id.subcontractor_ids:
                     warnings.append(
                         f"<li>Le sous-traitant <b>{wizard.subcontractor_id.name}</b> "
                         "est déjà assigné au chantier.</li>"
                     )
             
-            # Check if subcontractor has SIREN
-            if wizard.subcontractor_id and not wizard.subcontractor_id.siren:
+            # Check if subcontractor has SIREN (field from construction_subcontractor module)
+            if wizard.subcontractor_id and not getattr(wizard.subcontractor_id, 'siren', None):
                 warnings.append(
                     "<li>⚠️ Le sous-traitant n'a pas de SIREN renseigné "
                     "(requis pour conformité légale).</li>"
@@ -181,6 +196,8 @@ class LotSubcontractorAssignWizard(models.TransientModel):
             self.lot_price = self.existing_lot_id.price
             self.date_start_planned = self.existing_lot_id.date_start_planned
             self.date_end_planned = self.existing_lot_id.date_end_planned
+            # Pre-fill current subcontractor so the user can see and modify it
+            self.subcontractor_id = self.existing_lot_id.subcontractor_id
 
     def action_assign(self):
         """Assign subcontractor to selected/created lot."""

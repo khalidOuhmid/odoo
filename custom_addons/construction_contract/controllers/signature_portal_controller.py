@@ -61,6 +61,26 @@ class SignaturePortalController(http.Controller):
             contract._portal_ensure_token()
             return request.redirect(f'/my/contract/{contract.id}/sign?access_token={contract.access_token}')
 
+    @http.route('/sign/verify/<string:token>', type='http', auth='public', website=True)
+    def signature_verify(self, token, **kwargs):
+        """
+        Verify the authenticity of a signed document via its signature token (F-05).
+        """
+        signature = request.env['construction.contract.signature'].sudo().search([
+            ('access_token', '=', token)
+        ], limit=1)
+
+        if not signature:
+            return request.render('construction_contract.token_expired', {
+                'error_title': _("Signature introuvable"),
+                'error_message': _("Ce jeton de vérification de signature n'existe pas ou est invalide."),
+            })
+
+        return request.render('construction_contract.signature_verification_page', {
+            'signature': signature,
+            'contract': signature.contract_id,
+        })
+
     # ============================================================
     # MAIN SIGNATURE PORTAL
     # ============================================================

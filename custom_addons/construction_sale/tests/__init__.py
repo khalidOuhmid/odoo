@@ -9,6 +9,9 @@ from . import test_security
 # Shared fixtures
 from . import common
 
+# Extended tests
+from . import test_product_template
+
 # New test suites
 from .unit import test_sale_order
 from .unit import test_sale_order_line

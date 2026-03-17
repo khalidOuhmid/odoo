@@ -22,6 +22,25 @@ class PurchaseOrder(models.Model):
         copy=False
     )
 
+    @api.model
+    def create(self, vals):
+        po = super().create(vals)
+        po._link_to_contracts()
+        return po
+
+    def _link_to_contracts(self):
+        """Auto-link this PO to matching contracts based on lot_ids + partner."""
+        for po in self:
+            if not (hasattr(po, 'lot_ids') and po.lot_ids and po.partner_id):
+                continue
+            contracts = self.env['construction.contract'].search([
+                ('lot_ids', 'in', po.lot_ids.ids),
+                ('subcontractor_id', '=', po.partner_id.id),
+            ])
+            for contract in contracts:
+                if po not in contract.purchase_order_ids:
+                    contract.purchase_order_ids = [(4, po.id)]
+
     def action_generate_pdf(self):
         """
         Generate PDF from the HTML content using the PDF Service.
@@ -58,9 +77,25 @@ class PurchaseOrder(models.Model):
     def write(self, vals):
         """
         Override write to trigger lot financial recomputation when PO state changes.
-        
-        SAP-Level Pipeline: Ensure cost_total and margin update on PO confirmation.
+        Also blocks modifications to POs that are linked to signed contracts (F-03).
         """
+        # Block critical modifications if PO belongs to a signed contract
+        blocked_fields = {'order_line', 'amount_total', 'amount_untaxed', 'state', 'partner_id', 'price_unit', 'product_qty'}
+        if any(f in vals for f in blocked_fields) and not self.env.context.get('ignore_signed_contract_lock'):
+            for po in self:
+                if hasattr(po, 'lot_ids') and po.lot_ids:
+                    signed_contracts = self.env['construction.contract'].search([
+                        ('state', '=', 'signed'),
+                        ('lot_ids', 'in', po.lot_ids.ids),
+                        ('subcontractor_id', '=', po.partner_id.id)
+                    ])
+                    if signed_contracts:
+                        raise models.UserError(
+                            _("Validation Financière Stricte (F-03): Modification impossible. "
+                              "Le bon de commande '%s' est rattaché au contrat signé '%s'.") % 
+                            (po.name, ', '.join(signed_contracts.mapped('name')))
+                        )
+
         res = super().write(vals)
         
         # Trigger lot financial recompute if state changed to confirmed
@@ -78,3 +113,20 @@ class PurchaseOrder(models.Model):
                 lots_to_update._compute_lot_financials()
         
         return res
+
+    def unlink(self):
+        """Prevent deletion of POs linked to signed contracts (F-03)"""
+        for po in self:
+            if hasattr(po, 'lot_ids') and po.lot_ids:
+                signed_contracts = self.env['construction.contract'].search([
+                    ('state', '=', 'signed'),
+                    ('lot_ids', 'in', po.lot_ids.ids),
+                    ('subcontractor_id', '=', po.partner_id.id)
+                ])
+                if signed_contracts:
+                    raise models.UserError(
+                        _("Validation Financière Stricte (F-03): Suppression impossible. "
+                          "Le bon de commande '%s' est rattaché au contrat signé '%s'.") % 
+                        (po.name, ', '.join(signed_contracts.mapped('name')))
+                    )
+        return super().unlink()

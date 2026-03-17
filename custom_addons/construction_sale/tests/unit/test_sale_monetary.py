@@ -24,9 +24,12 @@ class TestSaleMonetary(TransactionCase):
             'list_price': 150.00,
             'type': 'service'
         })
+        cls.lot_category = cls.env['construction.lot.category'].create({
+            'name': 'Gros Oeuvre', 'code': 'GO_SALE',
+        })
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Gros Oeuvre',
-            'chantier_id': cls.chantier_a.id
+            'category_id': cls.lot_category.id,
+            'chantier_id': cls.chantier_a.id,
         })
 
     def test_chantier_partner_consistency(self):

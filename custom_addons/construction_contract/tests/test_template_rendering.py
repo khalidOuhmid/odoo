@@ -7,6 +7,7 @@ Tests Jinja2 rendering, context preparation, and live preview
 from odoo.tests import common, tagged
 from odoo.exceptions import UserError, ValidationError
 from datetime import date, timedelta
+import base64
 
 
 @tagged('post_install', '-at_install', 'construction_contract', 'template_rendering')
@@ -18,36 +19,43 @@ class TestTemplateRendering(common.TransactionCase):
         super().setUpClass()
         
         # Create test data
+        cls.client = cls.env['res.partner'].create({'name': 'Client Template Test'})
         cls.chantier = cls.env['construction.chantier'].create({
             'name': 'Test Site',
-            'reference': 'SITE-001',
+            'client': cls.client.id,
             'address': '123 Test Street',
             'city': 'Paris',
             'zip_code': '75001',
         })
         
+        _mock_doc = base64.b64encode(b'%PDF-1.4 mock').decode('ascii')
+        _expiry = date.today() + timedelta(days=180)
         cls.subcontractor = cls.env['res.partner'].create({
             'name': 'Test Subcontractor Inc.',
-            'contact_type': 'sous_traitant',
+            'is_subcontractor': True,
             'company_registry': '12345678901234',
             'email': 'test@sub.com',
             'phone': '+33123456789',
             'street': '456 Contractor Ave',
             'city': 'Lyon',
             'zip': '69001',
-            'document_URSSAF_status': 'valid',
-            'document_KBIS_status': 'valid',
-            'document_insurance_status': 'valid',
+            'doc_kbis': _mock_doc,
+            'doc_kbis_expiry': _expiry,
+            'doc_urssaf': _mock_doc,
+            'doc_urssaf_expiry': _expiry,
+            'doc_insurance_dec': _mock_doc,
+            'doc_insurance_dec_expiry': _expiry,
         })
         
+        cls.cat1 = cls.env['construction.lot.category'].create({'name': 'Electrical TR', 'code': 'ELEC_TR'})
+        cls.cat2 = cls.env['construction.lot.category'].create({'name': 'Plumbing TR', 'code': 'PLUMB_TR'})
         cls.lot1 = cls.env['construction.lot'].create({
-            'name': 'Electrical Work',
+            'category_id': cls.cat1.id,
             'chantier_id': cls.chantier.id,
             'description': 'Install electrical systems',
         })
-        
         cls.lot2 = cls.env['construction.lot'].create({
-            'name': 'Plumbing',
+            'category_id': cls.cat2.id,
             'chantier_id': cls.chantier.id,
             'description': 'Install plumbing systems',
         })

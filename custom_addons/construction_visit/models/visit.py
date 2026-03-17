@@ -232,6 +232,8 @@ END:VCALENDAR"""
     def action_complete(self):
         # Mark visit as completed
         for rec in self:
+            if rec.state != 'in_progress':
+                raise ValidationError(_("Seule une visite en cours peut être terminée."))
             rec.state = 'completed'
             rec.date_finished = fields.Datetime.now()
         
@@ -296,8 +298,8 @@ END:VCALENDAR"""
             'datas': base64.b64encode(ics_content.encode('utf-8')),
             'type': 'binary',
             'mimetype': 'text/calendar',
-            'res_model': 'construction.visit',
-            'res_id': self.id,
+            'res_model': 'construction.chantier',
+            'res_id': self.chantier_id.id,
         })
         
         sent_count = 0
@@ -316,6 +318,8 @@ END:VCALENDAR"""
                 email_values = {
                     'email_to': participant.email,
                     'email_from': self.env.user.email_formatted,
+                    'model': 'construction.chantier',
+                    'res_id': self.chantier_id.id,
                 }
                 
                 if ics_attachment:
@@ -354,8 +358,6 @@ END:VCALENDAR"""
             message_type='notification'
         )
         
-        # Post FULL body to Chantier Chatter
-        self._post_notification_to_chantier(last_mail_id)
         
         return {
             'type': 'ir.actions.client',
@@ -367,113 +369,66 @@ END:VCALENDAR"""
             }
         }
 
-    def _post_notification_to_chantier(self, mail_id):
-        """
-        Posts a summary of the visit notification to the associated Chantier's chatter.
-        
-        Args:
-            mail_id (int): The ID of the mail.mail record sent to participants.
-        """
-        if not self.chantier_id:
-            return
-        
-        if mail_id:
-            try:
-                mail = self.env['mail.mail'].browse(mail_id)
-                email_body = mail.body_html
-                subject = mail.subject or _("Notification de visite")
-                attachments = mail.attachment_ids
-                
-                if email_body:
-                    self.chantier_id.message_post(
-                        body=Markup(email_body),
-                        subject=subject,
-                        message_type='comment',
-                        subtype_xmlid='mail.mt_note',
-                        attachment_ids=[(6, 0, attachments.ids)]
-                    )
-                    return
-            except Exception as e:
-                _logger.warning("Error posting email body to chatter: %s", str(e))
-        
-        # Fallback
-        self._post_fallback_summary()
-
-    def _post_fallback_summary(self):
-        """
-        Posts a basic summary to the Chantier's chatter if full email body retrieval fails.
-        """
-        participant_names = ', '.join(self.participant_ids.mapped('name')[:5])
-        self.chantier_id.message_post(
-            body=_(
-                "<b>Visite planifiee</b>: %s<br/>"
-                "<b>Date</b>: %s<br/>"
-                "<b>Participants notifies</b>: %s"
-            ) % (self.name, self.date.strftime('%d/%m/%Y a %H:%M'), participant_names),
-            message_type='notification',
-            subtype_xmlid='mail.mt_note'
-        )
-
     # ============= Report Generation ============= #
     def action_generate_report(self):
-        """
-        Generates a PDF report for the visit and attaches it to the current record.
-        
-        Raises:
-            UserError: If the visit is not in the 'completed' state.
-            
-        Returns:
-            dict: Client action returning a success notification.
-        """
+        """Generate a PDF report and attach it to both the visit and chantier chatters."""
         self.ensure_one()
-        
+
         if self.state != 'completed':
             raise UserError(_("La visite doit etre terminee pour generer le rapport."))
-        
-        # Use the ir.actions.report model to render, passing the XML ID string
+
         try:
-            # Render PDF
             pdf_content, _content_type = self.env['ir.actions.report']._render_qweb_pdf(
-                'construction_visit.action_report_visit', 
+                'construction_visit.action_report_visit',
                 [self.id]
             )
-            
-            # Render HTML
             html_content, _html_content_type = self.env['ir.actions.report']._render_qweb_html(
-                'construction_visit.action_report_visit', 
+                'construction_visit.action_report_visit',
                 [self.id]
             )
-            
         except Exception as e:
-            _logger.error("Report generation failed: %s", str(e))
+            _logger.error('Report generation failed: %s', e)
             raise UserError(_("Erreur lors de la generation du rapport: %s") % str(e))
-        
-        # Create attachment
+
         filename = f"Visite_{self.chantier_id.reference or 'REF'}_{self.date.strftime('%Y%m%d')}.pdf"
         attachment = self.env['ir.attachment'].create({
             'name': filename,
             'datas': base64.b64encode(pdf_content),
-            'res_model': 'construction.visit',
-            'res_id': self.id,
+            'res_model': 'construction.chantier',
+            'res_id': self.chantier_id.id,
             'type': 'binary',
             'mimetype': 'application/pdf',
         })
-        
+
         self.write({
             'report_generated': True,
             'report_pdf': base64.b64encode(pdf_content),
             'report_html': html_content,
         })
-        
-        # Post to chatter
+
         self.message_post(
             body=_("Rapport genere: %s") % filename,
             message_type='notification',
             attachment_ids=[attachment.id]
         )
-        
-        _logger.info("Report generated for visit %s", self.name)
-        
+
+        if self.chantier_id:
+            self.chantier_id.message_post(
+                body=_(
+                    "📋 <b>Rapport de visite</b> — %s<br/>"
+                    "Type: %s | Date: %s"
+                ) % (
+                    self.name,
+                    dict(self._fields['visit_type'].selection).get(self.visit_type, ''),
+                    self.date.strftime('%d/%m/%Y'),
+                ),
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+                attachment_ids=[attachment.id],
+            )
+
+        _logger.info('Report generated for visit %s', self.name)
+
         return {
             'type': 'ir.actions.client',
             'tag': 'display_notification',
@@ -483,6 +438,30 @@ END:VCALENDAR"""
                 'type': 'success',
                 'sticky': False,
             }
+        }
+
+    def action_download_report_pdf(self):
+        """Open the generated PDF report in a new tab for download/preview."""
+        self.ensure_one()
+        if not self.report_generated:
+            raise UserError(_("Générez d'abord le rapport."))
+        attachment = self.env['ir.attachment'].search([
+            ('res_model', '=', 'construction.visit'),
+            ('res_id', '=', self.id),
+            ('mimetype', '=', 'application/pdf'),
+        ], limit=1, order='id desc')
+        if not attachment:
+            # Fallback: use the binary field directly
+            filename = f"Visite_{self.chantier_id.reference or 'REF'}_{self.date.strftime('%Y%m%d')}.pdf"
+            return {
+                'type': 'ir.actions.act_url',
+                'url': f'/web/content/construction.visit/{self.id}/report_pdf/{filename}?download=true',
+                'target': 'new',
+            }
+        return {
+            'type': 'ir.actions.act_url',
+            'url': f'/web/content/{attachment.id}?download=true',
+            'target': 'new',
         }
 
     def action_send_report(self):
@@ -503,10 +482,11 @@ END:VCALENDAR"""
         if not self.participant_ids:
             raise UserError(_("Aucun participant à qui envoyer le rapport."))
         
-        # Find the report attachment
+        # Find the report attachment on Chantier
         attachment = self.env['ir.attachment'].search([
-            ('res_model', '=', 'construction.visit'),
-            ('res_id', '=', self.id),
+            ('res_model', '=', 'construction.chantier'),
+            ('res_id', '=', self.chantier_id.id),
+            ('name', 'ilike', f"Visite_%_{self.date.strftime('%Y%m%d')}.pdf"),
             ('mimetype', '=', 'application/pdf')
         ], limit=1, order='create_date desc')
         
@@ -526,12 +506,16 @@ END:VCALENDAR"""
                     'body_html': _("<p>Veuillez trouver ci-joint le compte-rendu de visite.</p>"),
                     'email_to': participant.email,
                     'attachment_ids': [(4, attachment.id)],
+                    'model': 'construction.chantier',
+                    'res_id': self.chantier_id.id,
                 }).send()
         else:
             for participant in self.participant_ids.filtered(lambda p: p.email):
                 template.send_mail(self.id, force_send=True, email_values={
                     'email_to': participant.email,
-                    'attachment_ids': [(4, attachment.id)]
+                    'attachment_ids': [(4, attachment.id)],
+                    'model': 'construction.chantier',
+                    'res_id': self.chantier_id.id,
                 })
         
         self.report_sent = True

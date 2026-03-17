@@ -27,6 +27,13 @@ class ContractCreationWizard(models.TransientModel):
     _name = 'contract.creation.wizard'
     _description = 'Contract Creation Wizard'
 
+    state = fields.Selection([
+        ('step1', '1. Sous-traitant'),
+        ('step2', '2. Lots'),
+        ('step3', '3. Documents'),
+        ('step4', '4. Récapitulatif')
+    ], string='Étape', default='step1')
+
     chantier_id = fields.Many2one(
         'construction.chantier',
         string='Construction Site',
@@ -152,6 +159,24 @@ class ContractCreationWizard(models.TransientModel):
         help="Generate PDF and send to subcontractor immediately"
     )
 
+    bypass_compliance_check = fields.Boolean(
+        string='Ignorer la vérification de conformité',
+        default=False,
+        help="Forcé à True après confirmation dans le wizard d'avertissement"
+    )
+
+    # ============================================================
+    # STEP 3: DOCUMENTS VALIDATION
+    # ============================================================
+
+    has_planning_general = fields.Boolean(compute='_compute_document_status')
+    missing_cctp_lots = fields.Char(compute='_compute_document_status')
+    missing_planning_lots = fields.Char(compute='_compute_document_status')
+    missing_po_lots = fields.Char(compute='_compute_document_status')
+    total_po_amount = fields.Monetary(compute='_compute_document_status', currency_field='currency_id')
+    currency_id = fields.Many2one('res.currency', default=lambda self: self.env.company.currency_id)
+    step3_valid = fields.Boolean(compute='_compute_document_status')
+
     # ============================================================
     # COMPUTED FIELDS
     # ============================================================
@@ -237,6 +262,57 @@ class ContractCreationWizard(models.TransientModel):
                 wizard.subcontractor_documents_valid = False
                 wizard.subcontractor_warning = ''
 
+    @api.depends('chantier_id', 'lot_ids', 'subcontractor_id', 'state')
+    def _compute_document_status(self):
+        """Check presence of required documents for Step 3."""
+        for wizard in self:
+            if wizard.state != 'step3':
+                wizard.has_planning_general = False
+                wizard.missing_cctp_lots = ''
+                wizard.missing_planning_lots = ''
+                wizard.missing_po_lots = ''
+                wizard.total_po_amount = 0.0
+                wizard.step3_valid = False
+                continue
+
+            # 1. Planning Général
+            wizard.has_planning_general = bool(wizard.chantier_id and getattr(wizard.chantier_id, 'planning_general_attachment_id', False))
+            
+            # 2. CCTP and Planning ST per Lot
+            missing_cctp = []
+            missing_planning = []
+            for lot in wizard.lot_ids:
+                if not getattr(lot, 'document_cctp', False):
+                    missing_cctp.append(lot.name)
+                if not getattr(lot, 'document_planning_sous_traitant', False):
+                    missing_planning.append(lot.name)
+            
+            wizard.missing_cctp_lots = ', '.join(missing_cctp) if missing_cctp else ''
+            wizard.missing_planning_lots = ', '.join(missing_planning) if missing_planning else ''
+            
+            # 3. Purchase Orders integration
+            missing_po = []
+            total_amount = 0.0
+            for lot in wizard.lot_ids:
+                pos = self.env['purchase.order'].search([
+                    ('lot_ids', 'in', lot.id),
+                    ('partner_id', '=', wizard.subcontractor_id.id),
+                    ('state', 'in', ['purchase', 'done'])
+                ])
+                if not pos:
+                    missing_po.append(lot.name)
+                else:
+                    total_amount += sum(pos.mapped('amount_total'))
+                    
+            wizard.missing_po_lots = ', '.join(missing_po) if missing_po else ''
+            wizard.total_po_amount = total_amount
+            
+            # Determine if Step 3 is perfectly valid
+            wizard.step3_valid = wizard.has_planning_general and \
+                                 not missing_cctp and \
+                                 not missing_planning and \
+                                 not missing_po
+
     # ============================================================
     # VALIDATION
     # ============================================================
@@ -273,20 +349,61 @@ class ContractCreationWizard(models.TransientModel):
     # ACTIONS
     # ============================================================
 
+    def action_next(self):
+        """Move to the next step in the wizard."""
+        self.ensure_one()
+        if self.state == 'step1':
+            if not self.subcontractor_id:
+                raise ValidationError(_("Veuillez sélectionner un sous-traitant."))
+            self.state = 'step2'
+        elif self.state == 'step2':
+            if not self.lot_ids:
+                raise ValidationError(_("Veuillez sélectionner au moins un lot."))
+            self.state = 'step3'
+        elif self.state == 'step3':
+            # F-02: Bloquer l'envoi si documents manquants (CCTP, Planning, BC)
+            if not self.step3_valid:
+                raise ValidationError(_("Veuillez vous assurer que tous les documents requis sont présents avant de continuer."))
+            self.state = 'step4'
+            
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'contract.creation.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
+    def action_previous(self):
+        """Move to the previous step in the wizard."""
+        self.ensure_one()
+        if self.state == 'step2':
+            self.state = 'step1'
+        elif self.state == 'step3':
+            self.state = 'step2'
+        elif self.state == 'step4':
+            self.state = 'step3'
+            
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'contract.creation.wizard',
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
     def action_create_contract(self):
         """
-        Create contract from wizard data
+        Create contract from wizard data (called at step 4)
 
         Returns:
             dict: Action to open created contract
         """
         self.ensure_one()
 
-        # Final validation
-        if not self.subcontractor_documents_valid:
-            raise ValidationError(_(
-                "Cannot create contract:\n%s"
-            ) % self.subcontractor_warning)
+        # Final validation — non-compliant docs open a warning wizard instead of blocking
+        if not self.subcontractor_documents_valid and not self.bypass_compliance_check:
+            return self._action_open_compliance_warning()
 
         # Check lots don't already have a contract
         lots_with_contract = self.lot_ids.filtered(lambda l: l.contract_id)
@@ -309,8 +426,10 @@ class ContractCreationWizard(models.TransientModel):
 
         # Create contract (without lot_ids - they are One2many inverse)
         contract = self.env['construction.contract'].create({
+            'bypass_compliance_check': self.bypass_compliance_check,
             'chantier_id': self.chantier_id.id,
             'subcontractor_id': self.subcontractor_id.id,
+            'partner_id': self.subcontractor_id.id,  # Required by DB constraint / portal.mixin
             'date': self.contract_date,
             'start_date': self.start_date,
             'end_date': self.end_date,
@@ -320,6 +439,18 @@ class ContractCreationWizard(models.TransientModel):
 
         # Assign contract_id to selected lots (One2many inverse)
         self.lot_ids.write({'contract_id': contract.id})
+        
+        # Link Purchase Orders to the contract
+        linked_pos = self.env['purchase.order'].search([
+            ('lot_ids', 'in', self.lot_ids.ids),
+            ('partner_id', '=', self.subcontractor_id.id),
+            ('state', 'in', ['purchase', 'done'])
+        ])
+        if linked_pos:
+            contract.write({'purchase_order_ids': [(6, 0, linked_pos.ids)]})
+            
+        # Trigger Document Sync (F-02)
+        contract._sync_contractual_documents()
 
         # Generate deliverables if requested
         if self.generate_deliverables:
@@ -360,3 +491,19 @@ class ContractCreationWizard(models.TransientModel):
                 _logger.warning(f"Could not create deliverable for {doc_type}: {e}")
 
         _logger.info(f"Generated deliverables for contract {contract.name}")
+
+    def _action_open_compliance_warning(self):
+        """Open the compliance warning wizard to let the user proceed anyway."""
+        self.ensure_one()
+        warning = self.env['contract.compliance.warning.wizard'].create({
+            'creation_wizard_id': self.id,
+            'warning_message': self.subcontractor_warning,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Avertissement — Documents non conformes'),
+            'res_model': 'contract.compliance.warning.wizard',
+            'res_id': warning.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }

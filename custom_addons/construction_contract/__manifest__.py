@@ -79,6 +79,7 @@
         'wizards/views/contract_send_wizard_views.xml',
         'wizards/views/lot_grouping_wizard_views.xml',
         'wizards/views/contract_validation_wizard_views.xml',
+        'wizards/views/compliance_warning_wizard_views.xml',
 
         # Reports
         'reports/contract_report.xml',
@@ -92,6 +93,10 @@
 
     # Frontend assets
     'assets': {
+        'web.assets_frontend': [
+            'construction_contract/static/src/components/portal_signature/portal_signature.js',
+            'construction_contract/static/src/components/portal_signature/portal_signature.xml',
+        ],
         'web.assets_backend': [
             'construction_contract/static/src/js/urssaf_code_selector.js',
             'construction_contract/static/src/xml/urssaf_code_selector.xml',

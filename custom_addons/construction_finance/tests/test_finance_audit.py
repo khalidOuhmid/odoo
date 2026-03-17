@@ -31,11 +31,13 @@ class TestFinanceAudit(TransactionCase):
         })
         
         # Setup Lot
+        self.lot_category = self.env['construction.lot.category'].create({
+            'name': 'Finance Test Category', 'code': 'FIN_TEST',
+        })
         self.lot = self.env['construction.lot'].create({
-            'name': 'Lot A',
-            'code': '01',
+            'category_id': self.lot_category.id,
             'chantier_id': self.chantier.id,
-            'price': 100000.0, # Not used directly in finance report, but needed for structure
+            'price': 100000.0,
         })
 
     def test_audit_1_data_integrity_mirror(self):

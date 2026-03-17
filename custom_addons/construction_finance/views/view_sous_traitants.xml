@@ -12,12 +12,14 @@
         <field name="arch" type="xml">
             <search string="Analyse Sous-Traitants">
                 <field name="partner_id" string="Sous-Traitant"/>
+                <field name="is_high_dependency"/>
+                <field name="nb_chantiers"/>
                 <filter string="⚠️ Dépendance élevée (&gt;40%)" name="high_dependency"
                         domain="[('is_high_dependency','=',True)]"/>
                 <filter string="Actifs sur 2+ chantiers" name="multi_chantier"
                         domain="[('nb_chantiers','&gt;=',2)]"/>
                 <group expand="1" string="Regrouper par">
-                    <filter string="Sous-Traitant" context="{'group_by':'partner_id'}"/>
+                    <filter string="Sous-Traitant" name="group_by_partner" context="{'group_by':'partner_id'}"/>
                 </group>
             </search>
         </field>
@@ -37,7 +39,7 @@
 
                 <!-- Badge dépendance -->
                 <field name="is_high_dependency" string="⚠️" widget="boolean"
-                       attrs="{'invisible': [('is_high_dependency','=',False)]}"/>
+                       invisible="not is_high_dependency"/>
 
                 <field name="nb_chantiers" string="Nb Chantiers"/>
                 <field name="nb_orders" string="Nb Commandes"/>

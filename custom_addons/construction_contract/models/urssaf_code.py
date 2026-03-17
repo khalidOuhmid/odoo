@@ -74,7 +74,7 @@ class URSSAFCode(models.Model):
     )
     
     _sql_constraints = [
-        ('code_unique', 'unique(code)', _('Ce code URSSAF existe déjà!'))
+        ('code_unique', 'unique(code)', 'Ce code URSSAF existe déjà!')
     ]
     
     @api.depends('code', 'name')

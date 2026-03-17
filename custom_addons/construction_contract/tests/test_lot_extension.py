@@ -41,8 +41,7 @@ class TestLotExtensionPurchaseOrders(TransactionCase, ContractTestMixin):
         """
         # Arrange
         new_lot = self.env['construction.lot'].create({
-            'name': 'Lot Sans BC',
-            'code': 'LSB_01',
+            'category_id': self.env['construction.lot.category'].create({'name': 'Sans BC Cat', 'code': 'SBC_CAT'}).id,
             'chantier_id': self.chantier.id,
             'execution_type': 'external',
         })
@@ -157,8 +156,7 @@ class TestLotExtensionPurchaseOrders(TransactionCase, ContractTestMixin):
         """
         # Arrange
         empty_lot = self.env['construction.lot'].create({
-            'name': 'Empty Lot',
-            'code': 'EMP_01',
+            'category_id': self.env['construction.lot.category'].create({'name': 'Empty Cat', 'code': 'EMP_CAT'}).id,
             'chantier_id': self.chantier.id,
             'execution_type': 'external',
         })
@@ -197,8 +195,7 @@ class TestLotExtensionPurchaseOrders(TransactionCase, ContractTestMixin):
         """
         # Arrange
         standalone_lot = self.env['construction.lot'].create({
-            'name': 'Standalone Lot',
-            'code': 'SL_01',
+            'category_id': self.env['construction.lot.category'].create({'name': 'Standalone Cat', 'code': 'SL_CAT'}).id,
             'chantier_id': self.chantier.id,
             'execution_type': 'external',
         })
@@ -231,8 +228,7 @@ class TestLotExtensionPOGeneration(TransactionCase, ContractTestMixin):
         """
         # Arrange
         internal_lot = self.env['construction.lot'].create({
-            'name': 'Lot Régie',
-            'code': 'REG_01',
+            'category_id': self.env['construction.lot.category'].create({'name': 'Régie Cat', 'code': 'REG_CAT'}).id,
             'chantier_id': self.chantier.id,
             'execution_type': 'internal',
         })
@@ -249,8 +245,7 @@ class TestLotExtensionPOGeneration(TransactionCase, ContractTestMixin):
         """
         # Arrange
         lot_no_st = self.env['construction.lot'].create({
-            'name': 'Lot Sans ST',
-            'code': 'NST_01',
+            'category_id': self.env['construction.lot.category'].create({'name': 'Sans ST Cat', 'code': 'NST_CAT'}).id,
             'chantier_id': self.chantier.id,
             'execution_type': 'external',
             'subcontractor_id': False,

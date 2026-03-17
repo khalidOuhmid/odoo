@@ -40,9 +40,11 @@ class TestPurchaseOrderConstruction(TransactionCase):
             'stage_id': cls.stage.id,
         })
         # --- Lot ---
+        cls.category_elec = cls.env['construction.lot.category'].create({
+            'name': 'Électricité PO', 'code': 'ELEC_PO',
+        })
         cls.lot_a = cls.env['construction.lot'].create({
-            'name': 'Lot Electricité PO',
-            'code': 'LOTE1',
+            'category_id': cls.category_elec.id,
             'chantier_id': cls.chantier.id,
             'price': 20000.0,
         })
@@ -67,9 +69,11 @@ class TestPurchaseOrderConstruction(TransactionCase):
             'client': self.client.id,
             'stage_id': self.stage.id,
         })
+        foreign_category = self.env['construction.lot.category'].create({
+            'name': 'Foreign Cat', 'code': 'FCAT_PO',
+        })
         foreign_lot = self.env['construction.lot'].create({
-            'name': 'Lot Etranger',
-            'code': 'LFOREI',
+            'category_id': foreign_category.id,
             'chantier_id': foreign_chantier.id,
             'price': 5000.0,
         })
@@ -102,7 +106,8 @@ class TestPurchaseOrderConstruction(TransactionCase):
         })
         # Also add a section (should NOT count)
         self.env['purchase.order.line'].create({
-            'order_id': po.id, 'display_type': 'line_section', 'name': 'Section Test'
+            'order_id': po.id, 'display_type': 'line_section', 'name': 'Section Test',
+            'product_qty': 0.0,
         })
         # Act
         po._compute_order_statistics()

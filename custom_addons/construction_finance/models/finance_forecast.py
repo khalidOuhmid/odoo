@@ -9,6 +9,8 @@ Réponse à : "Combien vais-je encaisser dans les 3 prochains mois ?"
 """
 from odoo import tools, models, fields, api
 from dateutil.relativedelta import relativedelta
+import logging
+_logger = logging.getLogger(__name__)
 
 
 class ConstructionFinanceForecast(models.Model):
@@ -26,6 +28,11 @@ class ConstructionFinanceForecast(models.Model):
     # ============= DIMENSIONS ============= #
     forecast_month = fields.Date('Mois', readonly=True)
     currency_id = fields.Many2one('res.currency', 'Devise', readonly=True)
+    carnet_health = fields.Selection([
+        ('green',  '✅ Bon — Pipeline solide'),
+        ('orange', '⚠️ Attention — Pipeline moyen'),
+        ('red',    '🔴 Critique — Pipeline insuffisant'),
+    ], string="Santé du carnet", readonly=True)
 
     # ============= MESURES ============= #
     forecast_revenue = fields.Monetary(
@@ -37,7 +44,7 @@ class ConstructionFinanceForecast(models.Model):
         help="Marge estimée après déduction de la marge configurée sur chaque échéance"
     )
     forecast_margin_pct = fields.Float(
-        'Marge Prévue (%)', readonly=True, group_operator='avg'
+        'Marge Prévue (%)', readonly=True, aggregator='avg'
     )
     active_chantiers = fields.Integer(
         'Chantiers Actifs', readonly=True,
@@ -50,72 +57,68 @@ class ConstructionFinanceForecast(models.Model):
 
     def init(self):
         tools.drop_view_if_exists(self.env.cr, self._table)
-        self.env.cr.execute("""
-            CREATE OR REPLACE VIEW %s AS (
+        query = """
+            CREATE OR REPLACE VIEW {table} AS (
+                WITH
+                -- Moyenne mensuelle facturée (3 derniers mois)
+                historical_avg AS (
+                    SELECT COALESCE(AVG(monthly), 0) as avg_monthly
+                    FROM (
+                        SELECT date_trunc('month', invoice_date) AS m,
+                               SUM(amount_untaxed_signed) AS monthly
+                        FROM account_move
+                        WHERE move_type = 'out_invoice'
+                          AND state = 'posted'
+                          AND invoice_date >= CURRENT_DATE - INTERVAL '3 months'
+                        GROUP BY m
+                    ) sub
+                ),
+                -- Pipeline total sur 3 mois
+                pipeline_total AS (
+                    SELECT SUM(amount_fixed) as total
+                    FROM construction_invoice_schedule
+                    WHERE state IN ('planned','ready')
+                      AND planned_date BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '3 months')
+                ),
+                -- Agrégation mensuelle
+                agg AS (
+                    SELECT
+                        date_trunc('month', s.planned_date)::date AS forecast_month,
+                        SUM(s.amount_fixed) AS forecast_revenue,
+                        SUM(s.amount_fixed * (1.0 - COALESCE(s.margin_percentage, 0) / 100.0)) AS forecast_margin,
+                        COUNT(DISTINCT s.chantier_id) AS active_chantiers,
+                        COUNT(s.id) AS schedules_count
+                    FROM construction_invoice_schedule s
+                    WHERE s.state IN ('planned','ready')
+                      AND s.planned_date BETWEEN CURRENT_DATE AND (CURRENT_DATE + INTERVAL '3 months')
+                    GROUP BY date_trunc('month', s.planned_date)
+                )
                 SELECT
-                    ROW_NUMBER() OVER (ORDER BY date_trunc('month', s.planned_date)) AS id,
-                    date_trunc('month', s.planned_date)::date AS forecast_month,
-                    -- Utilise la devise de la société courante (défaut company_id=1)
+                    ROW_NUMBER() OVER (ORDER BY a.forecast_month) AS id,
+                    a.forecast_month,
                     (SELECT id FROM res_currency WHERE name = 'EUR' LIMIT 1) AS currency_id,
-                    SUM(s.amount_fixed) AS forecast_revenue,
-                    -- Marge = montant * (1 - margin_pct/100)
-                    SUM(s.amount_fixed * (1.0 - COALESCE(s.margin_percentage, 0) / 100.0)) AS forecast_margin,
+                    a.forecast_revenue,
+                    a.forecast_margin,
                     CASE
-                        WHEN SUM(s.amount_fixed) > 0
-                        THEN ROUND(
-                            (SUM(s.amount_fixed * (1.0 - COALESCE(s.margin_percentage, 0) / 100.0))
-                             / SUM(s.amount_fixed) * 100)::numeric, 1)
+                        WHEN a.forecast_revenue > 0
+                        THEN ROUND((a.forecast_margin / a.forecast_revenue * 100)::numeric, 1)
                         ELSE 0
                     END AS forecast_margin_pct,
-                    COUNT(DISTINCT s.chantier_id) AS active_chantiers,
-                    COUNT(s.id) AS schedules_count
-                FROM construction_invoice_schedule s
-                WHERE s.state IN ('planned','ready')
-                  AND s.planned_date BETWEEN CURRENT_DATE
-                                         AND (CURRENT_DATE + INTERVAL '3 months')
-                GROUP BY date_trunc('month', s.planned_date)
+                    a.active_chantiers,
+                    a.schedules_count,
+                    -- Calcul de la santé
+                    CASE
+                        WHEN (SELECT avg_monthly FROM historical_avg) <= 0 THEN 'green'
+                        WHEN (SELECT total FROM pipeline_total) >= (SELECT avg_monthly FROM historical_avg) * 3 THEN 'green'
+                        WHEN (SELECT total FROM pipeline_total) >= (SELECT avg_monthly FROM historical_avg) THEN 'orange'
+                        ELSE 'red'
+                    END AS carnet_health
+                FROM agg a
             )
-        """ % (self._table,))
-
-    # ============= COMPUTED (Santé du carnet) ============= #
-    carnet_health = fields.Selection([
-        ('green',  '✅ Bon — Pipeline solide'),
-        ('orange', '⚠️ Attention — Pipeline moyen'),
-        ('red',    '🔴 Critique — Pipeline insuffisant'),
-    ], string="Santé du carnet", compute='_compute_carnet_health')
-
-    @api.depends('forecast_revenue', 'active_chantiers')
-    def _compute_carnet_health(self):
-        """
-        Règle feux tricolores :
-          🟢 > 3 mois de CA moyen  → Bon
-          🟠 entre 1 et 3 mois     → Attention
-          🔴 < 1 mois              → Critique
-        """
-        # CA moyen mensuel facturé (3 derniers mois)
-        self.env.cr.execute("""
-            SELECT COALESCE(AVG(monthly), 0)
-            FROM (
-                SELECT date_trunc('month', invoice_date) AS m,
-                       SUM(amount_untaxed_signed) AS monthly
-                FROM account_move
-                WHERE move_type = 'out_invoice'
-                  AND state = 'posted'
-                  AND invoice_date >= CURRENT_DATE - INTERVAL '3 months'
-                GROUP BY m
-            ) sub
-        """)
-        avg_monthly = self.env.cr.fetchone()[0] or 0
-
-        # Total du pipeline 3 mois
-        pipeline_total = sum(self.mapped('forecast_revenue'))
-
-        for rec in self:
-            if avg_monthly <= 0:
-                rec.carnet_health = 'green'  # Pas encore de données = neutre
-            elif pipeline_total >= avg_monthly * 3:
-                rec.carnet_health = 'green'
-            elif pipeline_total >= avg_monthly:
-                rec.carnet_health = 'orange'
-            else:
-                rec.carnet_health = 'red'
+        """.format(table=self._table)
+        try:
+            self.env.cr.execute(query)
+        except Exception as e:
+            _logger.error("Error in finance_forecast.init: %s", e)
+            _logger.error("Query was: %s", query)
+            raise

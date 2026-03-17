@@ -65,6 +65,10 @@ class Chantier(models.Model):
     # ============= Mail Alias Configuration ============= #
     _mail_post_access = 'read'
 
+    # ============= Archive / Active ============= #
+    active = fields.Boolean(string='Actif', default=True,
+                            help="Décocher pour archiver le chantier (Sans Suite, Abandonné)")
+
     # ============= Identification ============= #
     name = fields.Char(string='Nom du Chantier', required=True, tracking=True)
     reference = fields.Char(string='Référence', copy=False, readonly=True, default='/')
@@ -142,6 +146,14 @@ class Chantier(models.Model):
         default=0.0
     )
     
+    # ============= Budget ============= #
+    budget_previsionnel = fields.Monetary(
+        string='Budget Prévisionnel',
+        currency_field='currency_id',
+        tracking=True,
+        help="Budget prévisionnel du chantier (utilisé pour la validation hiérarchique Sans Suite)"
+    )
+
     # ============= Financial ============= #
     company_id = fields.Many2one(
         'res.company', 'Company', required=True,
@@ -295,6 +307,12 @@ class Chantier(models.Model):
     team_resources_html = fields.Html(
         compute='_compute_team_resources_html',
         string='Ressources du Chantier'
+    )
+
+    # ============= Documents Centralization (BUG-07) ============= #
+    documents_summary_html = fields.Html(
+        compute='_compute_documents_summary_html',
+        string='Documents du Chantier',
     )
     
     # NOTE: visit_ids and document_ids are added by construction_visit and 
@@ -565,8 +583,8 @@ class Chantier(models.Model):
             )
             record.project_subcontractor_ids = external_lots.mapped('subcontractor_id')
 
-    @api.depends('lots_ids', 'lots_ids.subcontractor_id', 'lots_ids.execution_type', 
-                 'lots_ids.purchase_order_id', 'lots_ids.contract_id', 'user_ids')
+    @api.depends('lots_ids', 'lots_ids.subcontractor_id', 'lots_ids.execution_type',
+                 'lots_ids.purchase_order_id', 'user_ids')
     def _compute_team_resources_html(self):
         """
         US-COR-010: Generate structured HTML table for Team tab.
@@ -606,7 +624,7 @@ class Chantier(models.Model):
                 st_lots_map[st_id]['lots'].append(lot)
                 if lot.purchase_order_id:
                     st_lots_map[st_id]['has_po'] = True
-                if lot.contract_id:
+                if hasattr(lot, 'contract_id') and lot.contract_id:
                     st_lots_map[st_id]['has_contract'] = True
             
             for st_id, data in st_lots_map.items():
@@ -685,6 +703,148 @@ class Chantier(models.Model):
                             {internal_rows}
                             {st_rows}
                         </tbody>
+                    </table>
+                </div>
+            """
+
+    @api.depends(
+        'lots_ids.document_cctp', 'lots_ids.document_planning_chantier',
+        'lots_ids.document_planning_sous_traitant', 'lots_ids.name',
+    )
+    def _compute_documents_summary_html(self):
+        """Aggregate all lot-level documents into a centralized summary."""
+        for record in self:
+            rows = ""
+            doc_count = 0
+            for lot in record.lots_ids:
+                docs = []
+                if lot.document_cctp:
+                    docs.append(('CCTP', getattr(lot, 'document_cctp_filename', None) or 'CCTP'))
+                if lot.document_planning_chantier:
+                    docs.append(('Planning Chantier', getattr(lot, 'document_planning_chantier_filename', None) or 'Planning'))
+                if lot.document_planning_sous_traitant:
+                    docs.append(('Planning ST', getattr(lot, 'document_planning_sous_traitant_filename', None) or 'Planning ST'))
+
+                if not docs:
+                    rows += (
+                        f'<tr class="text-muted">'
+                        f'<td>{lot.code or ""}</td>'
+                        f'<td>{lot.name}</td>'
+                        f'<td><span class="badge bg-light text-dark">Aucun document</span></td>'
+                        f'<td>-</td>'
+                        f'</tr>'
+                    )
+                    continue
+
+                first = True
+                for doc_type, doc_name in docs:
+                    doc_count += 1
+                    if first:
+                        rows += (
+                            f'<tr>'
+                            f'<td rowspan="{len(docs)}">{lot.code or ""}</td>'
+                            f'<td rowspan="{len(docs)}">{lot.name}</td>'
+                            f'<td><span class="badge bg-success me-1">✓</span> {doc_type}</td>'
+                            f'<td class="text-muted small">{doc_name}</td>'
+                            f'</tr>'
+                        )
+                        first = False
+                    else:
+                        rows += (
+                            f'<tr>'
+                            f'<td><span class="badge bg-success me-1">✓</span> {doc_type}</td>'
+                            f'<td class="text-muted small">{doc_name}</td>'
+                            f'</tr>'
+                        )
+
+            # Attachments on chantier (manual uploads, emails, generated reports)
+            attachments = self.env['ir.attachment'].search([
+                ('res_model', '=', 'construction.chantier'),
+                ('res_id', '=', record.id),
+            ])
+            # Attachments linked to chatter messages (emails received/sent)
+            msg_att_ids = set(self.env['mail.message'].search([
+                ('model', '=', 'construction.chantier'),
+                ('res_id', '=', record.id),
+                ('attachment_ids', '!=', False),
+            ]).mapped('attachment_ids').ids)
+
+            for att in attachments:
+                doc_count += 1
+                # Determine origin
+                if att.id in msg_att_ids:
+                    source_badge = '<span class="badge bg-secondary me-1">Email</span>'
+                elif 'Visite_' in (att.name or '') or att.mimetype == 'application/pdf':
+                    source_badge = '<span class="badge bg-warning text-dark me-1">Généré</span>'
+                else:
+                    source_badge = '<span class="badge bg-info me-1">Manuel</span>'
+                download_url = f'/web/content/{att.id}?download=true'
+                rows += (
+                    f'<tr>'
+                    f'<td>—</td>'
+                    f'<td>Chantier</td>'
+                    f'<td>{source_badge} {att.mimetype or "Fichier"}</td>'
+                    f'<td class="text-muted small">'
+                    f'{att.name}'
+                    f'&nbsp;<a href="{download_url}" target="_blank" title="Télécharger">'
+                    f'<i class="fa fa-download text-primary"/></a>'
+                    f'</td>'
+                    f'</tr>'
+                )
+
+            # Visit reports linked to this chantier
+            if 'construction.visit' in self.env:
+                visits = self.env['construction.visit'].search([
+                    ('chantier_id', '=', record.id),
+                    ('report_generated', '=', True),
+                ])
+                for visit in visits:
+                    visit_atts = self.env['ir.attachment'].search([
+                        ('res_model', '=', 'construction.visit'),
+                        ('res_id', '=', visit.id),
+                        ('mimetype', '=', 'application/pdf'),
+                    ], limit=1)
+                    if visit_atts:
+                        att = visit_atts[0]
+                        doc_count += 1
+                        download_url = f'/web/content/{att.id}?download=true'
+                        rows += (
+                            f'<tr>'
+                            f'<td>—</td>'
+                            f'<td>Visite — {visit.date.strftime("%d/%m/%Y") if visit.date else ""}</td>'
+                            f'<td><span class="badge bg-success me-1">CR Visite</span></td>'
+                            f'<td class="text-muted small">'
+                            f'{att.name}'
+                            f'&nbsp;<a href="{download_url}" target="_blank" title="Télécharger">'
+                            f'<i class="fa fa-download text-primary"/></a>'
+                            f'</td>'
+                            f'</tr>'
+                        )
+
+            if not rows:
+                record.documents_summary_html = (
+                    '<div class="alert alert-secondary text-center">'
+                    '<i class="fa fa-folder-open fa-2x mb-2"></i>'
+                    '<p class="mb-0">Aucun document sur ce chantier</p>'
+                    '</div>'
+                )
+                continue
+
+            record.documents_summary_html = f"""
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="badge bg-primary">{doc_count} document(s)</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover table-sm">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width:80px">Code</th>
+                                <th>Source</th>
+                                <th>Type</th>
+                                <th>Fichier</th>
+                            </tr>
+                        </thead>
+                        <tbody>{rows}</tbody>
                     </table>
                 </div>
             """
@@ -1093,19 +1253,58 @@ class Chantier(models.Model):
         return True, "OK"
 
     def check_dossier_finalization_stage(self):
-        """Validate FD stage requirements."""
+        """Validate FD stage prerequisites before allowing transition to T25.
+
+        Returns a tuple (can_proceed, message). If any prerequisite is
+        missing the chantier is blocked and the message lists every
+        failing condition with the affected lot names.
+        """
+        missing = []
+
         if not self.lots_ids:
-            return False, "Aucun lot défini"
-        
-        lots_to_check = self.lots_ids.filtered(lambda l: l.execution_type == 'external')
-        lots_without_subcontractor = lots_to_check.filtered(lambda l: not l.subcontractor_id)
-        if lots_without_subcontractor:
-            names = ", ".join(lots_without_subcontractor.mapped('name'))
-            return False, f"Lots sans sous-traitant: {names}"
-        
+            return False, "Aucun lot défini sur ce chantier"
+
+        external_lots = self.lots_ids.filtered(lambda l: l.execution_type == 'external')
+
+        lots_no_st = external_lots.filtered(lambda l: not l.subcontractor_id)
+        if lots_no_st:
+            names = ", ".join(lots_no_st.mapped('name'))
+            missing.append(f"Sous-traitant non assigné : {names}")
+
+        if 'construction.contract' in self.env:
+            for lot in external_lots.filtered(lambda l: l.subcontractor_id):
+                contract = self.env['construction.contract'].search([
+                    ('lot_ids', 'in', [lot.id]),
+                    ('state', '=', 'signed'),
+                ], limit=1)
+                if not contract:
+                    missing.append(
+                        f"Contrat ST non signé : {lot.name} ({lot.subcontractor_id.name})"
+                    )
+
+        for lot in external_lots:
+            if not lot._has_validated_po():
+                missing.append(f"Bon de commande manquant : {lot.name}")
+
+        if hasattr(self, 'invoice_schedule_ids'):
+            if not self.invoice_schedule_ids:
+                missing.append("Cycle de facturation non créé")
+        else:
+            _logger.warning(
+                '[CORE] invoice_schedule_ids not available — '
+                'is construction_invoice module installed?'
+            )
+
         if not self.date_start_contract or not self.date_end_contract:
-            return False, "Dates contractuelles incomplètes"
-        
+            missing.append("Dates contractuelles incomplètes (début ou fin)")
+
+        if hasattr(self, 'document_ids'):
+            for lot in external_lots:
+                if not lot.document_cctp:
+                    missing.append(f"CCTP manquant : {lot.name}")
+
+        if missing:
+            return False, ", ".join(missing)
         return True, "OK"
 
     def check_construction_percentage_stage(self):
@@ -1334,6 +1533,8 @@ class Chantier(models.Model):
     def action_create_visit(self):
         """Create a new visit for this chantier."""
         self.ensure_one()
+        if 'construction.visit' not in self.env:
+            raise UserError(_("Le module Visites (construction_visit) n'est pas installé."))
         return {
             'type': 'ir.actions.act_window',
             'name': _('Nouvelle Visite'),
@@ -1349,6 +1550,8 @@ class Chantier(models.Model):
     def action_view_all_visits(self):
         """View all visits for this chantier."""
         self.ensure_one()
+        if 'construction.visit' not in self.env:
+            raise UserError(_("Le module Visites (construction_visit) n'est pas installé."))
         return {
             'type': 'ir.actions.act_window',
             'name': _('Visites - %s') % self.name,
@@ -1360,6 +1563,8 @@ class Chantier(models.Model):
 
     def action_view_planning_visits(self):
         """View global planning of all visits."""
+        if 'construction.visit' not in self.env:
+            raise UserError(_("Le module Visites (construction_visit) n'est pas installé."))
         return {
             'type': 'ir.actions.act_window',
             'name': _('Planning Visites'),

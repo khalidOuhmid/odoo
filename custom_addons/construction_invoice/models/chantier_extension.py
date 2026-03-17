@@ -6,6 +6,7 @@ Adds invoice scheduling capabilities to chantiers.
 """
 
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 
 
 class Chantier(models.Model):
@@ -28,6 +29,11 @@ class Chantier(models.Model):
         'construction.billing.cycle',
         string="Cycle de Facturation",
         copy=False
+    )
+    billing_status = fields.Selection(
+        related='billing_cycle_id.billing_status',
+        string="Statut du Cycle",
+        readonly=True
     )
     
     # ============= BUSINESS PROVIDER ============= #

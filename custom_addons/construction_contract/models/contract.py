@@ -82,6 +82,13 @@ class ConstructionContract(models.Model):
         help="Uncheck to archive the contract"
     )
 
+    bypass_compliance_check = fields.Boolean(
+        string='Conformité ignorée',
+        default=False,
+        help="Si True, la vérification des documents du sous-traitant est ignorée "
+             "(forcé lors de la création via le wizard d'avertissement)."
+    )
+
     # ============================================================
     # RELATIONS TO OTHER MODULES
     # ============================================================
@@ -108,8 +115,54 @@ class ConstructionContract(models.Model):
         'construction.lot',
         'contract_id',  # Inverse field on construction.lot (defined in lot_extension.py)
         string='Lots',
-        help="Construction lots included in this contract (a lot belongs to ONE contract only)"
+        help="Construction lots included in this contract"
     )
+
+    is_multi_lot = fields.Boolean(
+        string='Multi-Lots',
+        compute='_compute_is_multi_lot',
+        store=True,
+        help="Indique si le contrat couvre plusieurs lots"
+    )
+
+    amendment_count = fields.Integer(
+        string='Avenants',
+        compute='_compute_amendment_count',
+        store=True,
+    )
+
+    contractual_document_ids = fields.One2many(
+        'contract.document',
+        'contract_id',
+        string='Documents Contractuels'
+    )
+
+    missing_documents_count = fields.Integer(
+        string='Documents Manquants',
+        compute='_compute_missing_documents'
+    )
+
+    documents_complete = fields.Boolean(
+        string='Documents Complets',
+        compute='_compute_missing_documents'
+    )
+
+    po_validation_state = fields.Selection([
+        ('valid', 'Valide'),
+        ('draft_po_detected', 'BC Brouillon Détecté'),
+        ('amount_mismatch', 'Incohérence Montant')
+    ], string='État Validation BC', compute='_compute_po_validation_state')
+
+    # F-05 Proof fields
+    blg_signatory_id = fields.Many2one('res.users', string='Signataire BLG')
+    blg_signature_image = fields.Binary(string='Signature Image BLG', attachment=True)
+    blg_signature_date = fields.Datetime(string='Date de Signature BLG')
+    signer_full_name = fields.Char(string='Nom du Signataire (ST)')
+    signer_ip = fields.Char(string='IP du Signataire')
+    signer_user_agent = fields.Char(string='Navigateur du Signataire')
+    signer_gps = fields.Char(string='Coordonnées GPS')
+    document_hash_sha256 = fields.Char(string='Empreinte SHA-256 du Document', readonly=True)
+    page_validation_log = fields.Text(string='Logs de Validation des Pages')
 
     # ============================================================
     # DATES
@@ -158,8 +211,23 @@ class ConstructionContract(models.Model):
     )
 
     # ============================================================
-    # FINANCIAL DATA
+    # FINANCIAL DATA & KPIS
     # ============================================================
+
+    pending_deliverable_count = fields.Integer(
+        string='Livrables en attente',
+        compute='_compute_pending_deliverables'
+    )
+
+    days_until_expiry = fields.Integer(
+        string='Jours avant expiration',
+        compute='_compute_days_until_expiry'
+    )
+
+    lot_count = fields.Integer(
+        string='Nombre de Lots',
+        compute='_compute_lot_count'
+    )
 
     currency_id = fields.Many2one(
         'res.currency',
@@ -206,19 +274,20 @@ class ConstructionContract(models.Model):
         help="Amount withheld as guarantee (retenue de garantie)"
     )
 
-    # Related purchase orders
+    # Related purchase orders (regular Many2many – writable and searchable)
     purchase_order_ids = fields.Many2many(
         'purchase.order',
-        compute='_compute_purchase_orders',
-        store=True,
+        'construction_contract_po_rel',
+        'contract_id',
+        'po_id',
         string='Related Purchase Orders',
         help="Purchase orders linked to selected lots and subcontractor"
     )
-    
+
     purchase_order_count = fields.Integer(
         string='Purchase Order Count',
-        compute='_compute_purchase_orders',
-        store=True
+        compute='_compute_purchase_order_count',
+        store=True,
     )
 
     # ============================================================
@@ -336,10 +405,10 @@ class ConstructionContract(models.Model):
         def safe(obj, field, default=''):
             return getattr(obj, field, default) or default
         
-        # Financial calculations
-        amount_ht = getattr(self, 'total_amount_ht', 0.0) or 0.0
-        tax_rate = 0.20
-        amount_ttc = amount_ht * (1 + tax_rate)
+        # Financial calculations directly from Purchase Orders
+        amount_ht = sum(self.purchase_order_ids.mapped('amount_untaxed'))
+        amount_tva = sum(self.purchase_order_ids.mapped('amount_tax'))
+        amount_ttc = sum(self.purchase_order_ids.mapped('amount_total'))
         
         # Build context with comprehensive defensive access
         context = {
@@ -372,15 +441,18 @@ class ConstructionContract(models.Model):
             'project_reference': self._escape_xml(safe(chantier, 'reference') or (chantier.name if chantier else '')),
 
             # === COMMANDE / CONTRAT ===
-            'bc_numero': self._escape_xml(self.name or ''),
-            'bc_date': self._format_date(self.date or fields.Date.today()),
+            'bc_numero': self._escape_xml(', '.join(self.purchase_order_ids.mapped('name')) if self.purchase_order_ids else self.name),
+            'bc_date': self._format_date(
+                next((po.date_approve for po in self.purchase_order_ids if po.date_approve), None) or 
+                next((po.date_order for po in self.purchase_order_ids if po.date_order), self.date or fields.Date.today())
+            ),
             'lieu_signature': self._escape_xml(safe(self, 'signature_location') or company.city or 'Bordeaux'),
             'date_signature': self._format_date(self.signature_date or fields.Date.today()),
             
             # === FINANCIER ===
             'montant_ht': self._format_currency(amount_ht),
             'montant_ttc': self._format_currency(amount_ttc),
-            'taux_tva': '20%',
+            'taux_tva': self._format_currency(amount_tva),
             'amount_total': self._format_currency(amount_ht),
 
             # === PÉNALITÉS & DÉLAIS ===
@@ -609,24 +681,68 @@ class ConstructionContract(models.Model):
     # COMPUTED FIELDS
     # ============================================================
 
-    @api.depends('lot_ids', 'subcontractor_id', 'retention_rate')
+    @api.depends('lot_ids')
+    def _compute_lot_count(self):
+        for contract in self:
+            contract.lot_count = len(contract.lot_ids)
+
+    @api.depends('deliverable_ids', 'deliverable_ids.document')
+    def _compute_pending_deliverables(self):
+        """Count deliverables that have no document uploaded yet (=pending)."""
+        for contract in self:
+            contract.pending_deliverable_count = len(contract.deliverable_ids.filtered(lambda d: not d.document and not d.document_url))
+
+    @api.depends('token_expiry_date', 'state')
+    def _compute_days_until_expiry(self):
+        for contract in self:
+            if contract.state in ('sent', 'in_progress') and contract.token_expiry_date:
+                delta = contract.token_expiry_date.date() - fields.Date.today()
+                contract.days_until_expiry = delta.days if delta.days >= 0 else 0
+            else:
+                contract.days_until_expiry = 0
+
+    @api.depends('lot_ids')
+    def _compute_is_multi_lot(self):
+        for contract in self:
+            contract.is_multi_lot = len(contract.lot_ids) > 1
+
+    @api.depends('lot_ids')  # Add amendment logic here if avenants are tracked
+    def _compute_amendment_count(self):
+        for contract in self:
+            contract.amendment_count = 0  # Placeholder for amendment logic
+
+    @api.depends('contractual_document_ids', 'contractual_document_ids.state')
+    def _compute_missing_documents(self):
+        for contract in self:
+            missing = sum(1 for d in contract.contractual_document_ids if d.state != 'present')
+            contract.missing_documents_count = missing
+            contract.documents_complete = (missing == 0) and bool(contract.contractual_document_ids)
+
+    @api.depends('purchase_order_ids', 'purchase_order_ids.state', 'total_amount_ttc')
+    def _compute_po_validation_state(self):
+        for contract in self:
+            if any(po.state in ['draft', 'sent'] for po in contract.purchase_order_ids):
+                contract.po_validation_state = 'draft_po_detected'
+            else:
+                contract.po_validation_state = 'valid'
+
+    @api.depends('lot_ids', 'subcontractor_id', 'retention_rate', 'purchase_order_ids', 'purchase_order_ids.amount_untaxed', 'purchase_order_ids.amount_tax', 'purchase_order_ids.amount_total', 'purchase_order_ids.state')
     def _compute_amounts(self):
         """
         Compute all financial amounts from related purchase orders
         Filters POs by selected lots and subcontractor
+        Only confirmed POs contribute to the contract amount.
         """
         for contract in self:
-            # Get all purchase orders for this subcontractor in selected lots
-            purchase_orders = self.env['purchase.order'].search([
-                ('lot_ids', 'in', contract.lot_ids.ids),
-                ('partner_id', '=', contract.subcontractor_id.id),
-                ('state', 'in', ['purchase', 'done']),  # Only confirmed POs
-            ])
-
-            # Sum amounts
-            amount_ht = sum(purchase_orders.mapped('amount_untaxed'))
-            amount_tva = sum(purchase_orders.mapped('amount_tax'))
-            amount_ttc = sum(purchase_orders.mapped('amount_total'))
+            if not contract.purchase_order_ids:
+                amount_ht = 0.0
+                amount_tva = 0.0
+                amount_ttc = 0.0
+            else:
+                confirmed_pos = contract.purchase_order_ids.filtered(lambda p: p.state in ['purchase', 'done'])
+                amount_ht = sum(confirmed_pos.mapped('amount_untaxed'))
+                amount_tva = sum(confirmed_pos.mapped('amount_tax'))
+                amount_ttc = sum(confirmed_pos.mapped('amount_total'))
 
             # Calculate retention
             retention = amount_ttc * (contract.retention_rate / 100.0)
@@ -637,20 +753,132 @@ class ConstructionContract(models.Model):
                 'total_amount_ttc': amount_ttc,
                 'retention_amount': retention,
             })
+            
+    def _sync_contractual_documents(self):
+        """
+        Synchronize contractual documents from corresponding Lots and Chantier.
+        Automatically creates or updates contract.document records.
+        """
+        ContractDoc = self.env['contract.document']
+        
+        for contract in self:
+            # 1. Clear existing auto-attached documents to avoid duplicates
+            contract.contractual_document_ids.filtered('is_auto_attached').unlink()
+            
+            docs_to_create = []
+            
+            # --- Planning Général du Chantier ---
+            chantier = contract.chantier_id
+            if chantier and hasattr(chantier, 'planning_general_attachment_id'):
+                docs_to_create.append({
+                    'contract_id': contract.id,
+                    'document_type': 'planning_general',
+                    'attachment_id': chantier.planning_general_attachment_id.id if chantier.planning_general_attachment_id else False,
+                    'is_auto_attached': True
+                })
+                
+            # --- Documents par Lot (CCTP et Planning ST) ---
+            for lot in contract.lot_ids:
+                # CCTP Lot (Native binary field 'document_cctp')
+                # Needs an attachment created if binary is populated but no formal attachment
+                cctp_attachment = False
+                if lot.document_cctp:
+                    # Look up existing attachment or create temporary one for linking
+                    cctp_attachment = self.env['ir.attachment'].search([
+                        ('res_model', '=', 'construction.lot'),
+                        ('res_field', '=', 'document_cctp'),
+                        ('res_id', '=', lot.id)
+                    ], limit=1)
+                    if not cctp_attachment:
+                        cctp_attachment = self.env['ir.attachment'].create({
+                            'name': lot.document_cctp_filename or f'CCTP_Lot_{lot.code}.pdf',
+                            'type': 'binary',
+                            'datas': lot.document_cctp,
+                            'res_model': 'construction.lot',
+                            'res_id': lot.id
+                        })
+                
+                docs_to_create.append({
+                    'contract_id': contract.id,
+                    'document_type': 'cctp',
+                    'lot_id': lot.id,
+                    'attachment_id': cctp_attachment.id if cctp_attachment else False,
+                    'is_auto_attached': True
+                })
+                
+                # Planning Sous-traitant Lot (Native binary field 'document_planning_sous_traitant')
+                planning_st_attachment = False
+                if lot.document_planning_sous_traitant:
+                    planning_st_attachment = self.env['ir.attachment'].search([
+                        ('res_model', '=', 'construction.lot'),
+                        ('res_field', '=', 'document_planning_sous_traitant'),
+                        ('res_id', '=', lot.id)
+                    ], limit=1)
+                    if not planning_st_attachment:
+                        planning_st_attachment = self.env['ir.attachment'].create({
+                            'name': lot.document_planning_sous_traitant_filename or f'Planning_ST_Lot_{lot.code}.pdf',
+                            'type': 'binary',
+                            'datas': lot.document_planning_sous_traitant,
+                            'res_model': 'construction.lot',
+                            'res_id': lot.id
+                        })
+                
+                docs_to_create.append({
+                    'contract_id': contract.id,
+                    'document_type': 'planning_lot',
+                    'lot_id': lot.id,
+                    'attachment_id': planning_st_attachment.id if planning_st_attachment else False,
+                    'is_auto_attached': True
+                })
+                
+            # --- Bon de Commande (Purchase Order) ---
+            for po in contract.purchase_order_ids:
+                po_attachment = self.env['ir.attachment'].search([
+                    ('res_model', '=', 'purchase.order'),
+                    ('res_id', '=', po.id),
+                    ('mimetype', '=', 'application/pdf')
+                ], limit=1)
+                
+                if not po_attachment and po.state in ['purchase', 'done']:
+                    # Force render the PO PDF
+                    pdf_content, _ = self.env['ir.actions.report']._render_qweb_pdf('purchase.report_purchasequotation', po.ids)
+                    if pdf_content:
+                        import base64
+                        po_attachment = self.env['ir.attachment'].create({
+                            'name': f"Bon_de_Commande_{po.name}.pdf",
+                            'type': 'binary',
+                            'datas': base64.b64encode(pdf_content),
+                            'res_model': 'purchase.order',
+                            'res_id': po.id,
+                            'mimetype': 'application/pdf'
+                        })
 
-    @api.depends('lot_ids', 'subcontractor_id')
-    def _compute_purchase_orders(self):
-        """Fetch related purchase orders"""
+                docs_to_create.append({
+                    'contract_id': contract.id,
+                    'document_type': 'bon_de_commande',
+                    'attachment_id': po_attachment.id if po_attachment else False,
+                    'is_auto_attached': True
+                })
+                
+            # Create documents
+            if docs_to_create:
+                ContractDoc.create(docs_to_create)
+
+    @api.depends('purchase_order_ids')
+    def _compute_purchase_order_count(self):
+        for contract in self:
+            contract.purchase_order_count = len(contract.purchase_order_ids)
+
+    def _auto_link_purchase_orders(self):
+        """Populate purchase_order_ids from lots + subcontractor (called at create/update)."""
         for contract in self:
             if contract.lot_ids and contract.subcontractor_id:
-                contract.purchase_order_ids = self.env['purchase.order'].search([
+                pos = self.env['purchase.order'].search([
                     ('lot_ids', 'in', contract.lot_ids.ids),
                     ('partner_id', '=', contract.subcontractor_id.id),
                 ])
-                contract.purchase_order_count = len(contract.purchase_order_ids)
-            else:
-                contract.purchase_order_ids = False
-                contract.purchase_order_count = 0
+                if pos:
+                    contract.purchase_order_ids = [(4, po.id) for po in pos]
 
     @api.depends('name')
     def _compute_pdf_filename(self):
@@ -764,6 +992,9 @@ class ConstructionContract(models.Model):
 
         contract = super(ConstructionContract, self).create(vals)
 
+        # Auto-link purchase orders from lots
+        contract._auto_link_purchase_orders()
+
         # Subscribe followers
         contract.message_subscribe(partner_ids=[contract.subcontractor_id.id])
 
@@ -846,10 +1077,15 @@ class ConstructionContract(models.Model):
                                               ', '.join(invalid_lots.mapped('name'))
                                           ))
 
-    @api.constrains('subcontractor_id')
+    @api.constrains('subcontractor_id', 'bypass_compliance_check')
     def _check_subcontractor_documents(self):
-        """Validate that subcontractor has all required documents (from blg_contacts_extension)"""
+        """Validate that subcontractor has all required documents (from blg_contacts_extension).
+
+        Skipped when bypass_compliance_check is True (user confirmed via warning wizard).
+        """
         for contract in self:
+            if contract.bypass_compliance_check:
+                continue
             partner = contract.subcontractor_id
             self._ensure_subcontractor_documents_compliant(partner)
             if not (getattr(partner, 'siren', False) or partner.company_registry):
@@ -1020,6 +1256,14 @@ class ConstructionContract(models.Model):
         """
         self.ensure_one()
         
+        # 0. Check PO Status
+        draft_pos = self.purchase_order_ids.filtered(lambda po: po.state in ['draft', 'sent', 'to approve', 'cancel'])
+        if draft_pos:
+            raise UserError(_("Impossible de générer le contrat. Les bons de commande suivants ne sont pas validés :\n%s") % '\n'.join(draft_pos.mapped('name')))
+            
+        if not self.purchase_order_ids:
+            raise UserError(_("Impossible de générer le contrat. Aucun bon de commande n'est lié à ce contrat."))
+
         # 1. Validation Pre-requis (CHAIN_1)
         self._check_required_documents()
         
@@ -1128,79 +1372,65 @@ class ConstructionContract(models.Model):
     def action_generate_pdf(self):
         """
         CHAIN_4: Génération PDF Final
-        Uses WeasyPrint to generate PDF from contract_template_html
-        Then merges with CCTP, Planning, and PO PDFs
+        Uses Native Odoo QWeb (wkhtmltopdf) to generate PDF from contract_template_html
+        It naturally appends the attached lot documents according to the QWeb template.
         """
-        import gc
-        
         self.ensure_one()
         if not self.contract_template_html:
             raise UserError(_("Veuillez d'abord générer le contrat."))
 
         try:
-            # 1. Inject Signatures (Final check before PDF)
-            html_content = self.contract_template_html
+            _logger.info(f"[PDF] Starting QWeb PDF generation for contract {self.name}")
             
-            # 2. Generate PDF using WeasyPrint
-            from weasyprint import HTML, CSS
-            import io
+            # 1. Generate PDF using native Odoo QWeb report
+            pdf_content, _ = self.env['ir.actions.report']._render_qweb_pdf('construction_contract.action_report_contract', self.ids)
             
-            # Base URL for local resources (images) if needed
-            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+            _logger.info(f"[PDF] Base contract generated: {len(pdf_content)/1024:.1f} KB")
             
-            _logger.info(f"[PDF] Starting generation for contract {self.name}")
-            
-            pdf_file = io.BytesIO()
-            HTML(string=html_content, base_url=base_url).write_pdf(
-                pdf_file,
-                optimize_size=('fonts',)
-            )
-            
-            pdf_bytes = pdf_file.getvalue()
-            _logger.info(f"[PDF] Base contract generated: {len(pdf_bytes)/1024:.1f} KB")
-            
-            # 3. MERGE: Fusion with CCTP, Planning, PO
-            pdf_generator = self.env['construction.contract.pdf.generator']
-            merged_pdf_bytes = pdf_generator.merge_contract_bundle(self, pdf_bytes)
-            
-            # 4. Store Attachment
+            # 2. Store Attachment
             attachment_name = f"Contrat_{self.name}_{self.subcontractor_id.name}.pdf".replace(' ', '_')
+            
+            # Remove old attachment if exists to avoid duplicates
+            old_attachment = self.env['ir.attachment'].search([
+                ('res_model', '=', 'construction.contract'),
+                ('res_id', '=', self.id),
+                ('name', '=', attachment_name)
+            ])
+            if old_attachment:
+                old_attachment.unlink()
+                
             attachment = self.env['ir.attachment'].create({
                 'name': attachment_name,
                 'type': 'binary',
-                'datas': base64.b64encode(merged_pdf_bytes),
+                'datas': base64.b64encode(pdf_content),
                 'res_model': 'construction.contract',
                 'res_id': self.id,
                 'mimetype': 'application/pdf'
             })
             
-            # 5. Compute Hash
-            pdf_hash = hashlib.sha256(merged_pdf_bytes).hexdigest()
+            # 3. Compute Hash
+            pdf_hash = hashlib.sha256(pdf_content).hexdigest()
             
             self.write({
-                'pdf_document': base64.b64encode(merged_pdf_bytes),
+                'pdf_document': base64.b64encode(pdf_content),
                 'pdf_hash_before_signature': pdf_hash,
                 'state': 'sent'  # Ready for signature
             })
             
-            # 6. Memory cleanup
-            gc.collect()
-            
-            _logger.info(f"[PDF] Complete for {self.name}: {len(merged_pdf_bytes)/1024:.1f} KB, hash={pdf_hash[:16]}...")
+            _logger.info(f"[PDF] Complete for {self.name}: hash={pdf_hash[:16]}...")
             
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
                 'params': {
                     'title': _("PDF Généré"),
-                    'message': _("Le PDF fusionné a été généré et attaché au contrat."),
+                    'message': _("Le PDF du contrat a été généré avec succès."),
                     'type': 'success',
                 }
             }
             
         except Exception as e:
-            _logger.error("WeasyPrint/Merge Error: %s", e, exc_info=True)
-            gc.collect()  # Cleanup on error too
+            _logger.error("QWeb PDF Error: %s", e, exc_info=True)
             raise UserError(_("Erreur lors de la génération PDF: %s") % str(e))
 
     def action_regenerate_pdf(self):
@@ -1232,6 +1462,16 @@ class ConstructionContract(models.Model):
 
         if not self.pdf_document:
             raise UserError(_("No PDF document to send. Generate PDF first."))
+
+        # F-03: Validation Financière Stricte
+        draft_pos = self.purchase_order_ids.filtered(lambda p: p.state in ('draft', 'sent', 'to approve'))
+        if draft_pos:
+            po_names = ', '.join(draft_pos.mapped('name'))
+            raise UserError(_(
+                "Validation Financière Stricte (F-03): Impossible d'envoyer le contrat "
+                "car les bons de commande suivants ne sont pas validés (état brouillon/envoyé/à approuver) : %s\n\n"
+                "Veuillez valider ces bons de commande avant de procéder à la signature."
+            ) % po_names)
 
         # Call notification service
         notification_service = self.env['construction.contract.notification']
@@ -1490,23 +1730,55 @@ class ConstructionContract(models.Model):
         #   {{ subcontractor_signature.image_data }} in the HTML template.
         #   Our _get_contract_data_context (which I need to check) populates this.
         
-        # 1. Inject Signature Image (FIX SIGNATURE VISUELLE)
+        # 1. Inject Signature Image & Legal Proof Block (F-05)
         if subcontractor_signature and subcontractor_signature.signature_data:
             # Get valid base64 image
             sig_image = subcontractor_signature.signature_data.decode('utf-8') if isinstance(subcontractor_signature.signature_data, bytes) else subcontractor_signature.signature_data
-            img_tag = f'<img src="data:image/png;base64,{sig_image}" alt="Signature" style="max-height: 150px; border-bottom: 1px solid #000;"/>'
+            
+            # F-05: Create a formal signature certificate block
+            sign_date = subcontractor_signature.signature_date.strftime('%d/%m/%Y %H:%M:%S') if subcontractor_signature.signature_date else fields.Datetime.now().strftime('%d/%m/%Y %H:%M:%S')
+            base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url', '')
+            verify_url = f"{base_url}/sign/verify/{subcontractor_signature.access_token}"
+            
+            legal_block = f"""
+            <div style="page-break-inside: avoid; border: 2px solid #2C3E50; border-radius: 8px; padding: 20px; margin-top: 40px; font-family: sans-serif; background-color: #f8f9fa;">
+                <h3 style="color: #2C3E50; border-bottom: 2px solid #2C3E50; padding-bottom: 10px; margin-top: 0;">
+                    Certificat de Signature Électronique
+                </h3>
+                <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                    <tr>
+                        <td style="width: 50%; vertical-align: top; padding-right: 15px;">
+                            <p style="margin: 0 0 10px 0;"><strong>Signataire :</strong> {subcontractor_signature.signer_name}</p>
+                            <p style="margin: 0 0 10px 0;"><strong>Email :</strong> {subcontractor_signature.signer_email or 'N/A'}</p>
+                            <p style="margin: 0 0 10px 0;"><strong>Date :</strong> {sign_date}</p>
+                            <p style="margin: 0 0 10px 0;"><strong>Adresse IP :</strong> {subcontractor_signature.ip_address}</p>
+                            <p style="margin: 0 0 10px 0; font-size: 11px;"><strong>Jeton de preuve :</strong> {subcontractor_signature.access_token}</p>
+                        </td>
+                        <td style="width: 50%; text-align: center; vertical-align: top; border-left: 1px solid #ddd; padding-left: 15px;">
+                            <p style="margin: 0 0 10px 0; font-weight: bold; color: #2C3E50;">Signature Visuelle</p>
+                            <img src="data:image/png;base64,{sig_image}" alt="Signature" style="max-height: 120px; border: 1px solid #ddd; border-radius: 4px; padding: 5px; background: white;"/>
+                        </td>
+                    </tr>
+                </table>
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #ddd; font-size: 11px; color: #666; text-align: center;">
+                    <p style="margin: 0;">
+                        Document signé électroniquement sur la plateforme <strong>BLG Groupe</strong>.<br/>
+                        Vérifiez l'authenticité de cette signature en visitant : 
+                        <a href="{verify_url}" style="color: #3498db; text-decoration: none;">{verify_url}</a>
+                    </p>
+                </div>
+            </div>
+            """
             
             # Inject into HTML
             if self.contract_template_html:
                 if '<!-- SIGNATURE_CLIENT -->' in self.contract_template_html:
-                    self.contract_template_html = self.contract_template_html.replace('<!-- SIGNATURE_CLIENT -->', img_tag)
+                    self.contract_template_html = self.contract_template_html.replace('<!-- SIGNATURE_CLIENT -->', legal_block)
                 elif 'id="signature-placeholder"' in self.contract_template_html:
-                     # Fallback to regex or simple replace if ID exists
                      import re
-                     self.contract_template_html = re.sub(r'<div[^>]*id="signature-placeholder"[^>]*>.*?</div>', f'<div id="signature-placeholder">{img_tag}</div>', self.contract_template_html, flags=re.DOTALL)
+                     self.contract_template_html = re.sub(r'<div[^>]*id="signature-placeholder"[^>]*>.*?</div>', f'<div id="signature-placeholder">{legal_block}</div>', self.contract_template_html, flags=re.DOTALL)
                 else:
-                    # Append strictly if missing
-                    self.contract_template_html += f'<div class="signature-injection-fallback" style="margin-top:50px;"><h4>Signature:</h4>{img_tag}</div>'
+                    self.contract_template_html += f'<div class="signature-injection-fallback" style="margin-top:50px;">{legal_block}</div>'
 
         # 2. Regenerate PDF
         self.with_context(contract_signature=subcontractor_signature).action_generate_pdf()

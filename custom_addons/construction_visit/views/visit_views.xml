@@ -167,7 +167,31 @@
                         
                         <!-- Tab 3: Report (visible after completion) -->
                         <page string="Compte Rendu" name="report" invisible="state not in ['completed', 'cancelled']">
-                            <field name="report" placeholder="Redigez le compte-rendu detaille..."/>
+                            <!-- PDF generated: download button + HTML preview -->
+                            <div invisible="not report_generated">
+                                <div class="d-flex align-items-center gap-2 mb-3">
+                                    <button name="action_download_report_pdf"
+                                            string="Télécharger le PDF"
+                                            type="object"
+                                            class="btn-primary"
+                                            icon="fa-download"/>
+                                    <span class="text-muted small">
+                                        <i class="fa fa-check-circle text-success me-1"/>
+                                        Rapport généré
+                                    </span>
+                                </div>
+                                <div class="border rounded p-3 bg-light mb-3">
+                                    <field name="report_html" widget="html" readonly="1" nolabel="1"
+                                           style="max-height: 600px; overflow-y: auto;"/>
+                                </div>
+                            </div>
+                            <!-- No PDF yet: editable text field -->
+                            <field name="report" placeholder="Rédigez le compte-rendu détaillé..."
+                                   invisible="report_generated"/>
+                            <div class="alert alert-info" invisible="report_generated or state != 'completed'">
+                                <i class="fa fa-info-circle me-2"/>
+                                Utilisez le bouton <strong>Générer Rapport</strong> pour créer le PDF officiel.
+                            </div>
                         </page>
                     </notebook>
                 </sheet>

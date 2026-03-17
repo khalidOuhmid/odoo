@@ -11,13 +11,16 @@
         <field name="model">construction.invoice.schedule</field>
         <field name="arch" type="xml">
             <search string="Facturation — Tour de Contrôle">
-                <field name="chantier_id" string="Chantier"/>
-                <field name="name" string="Description"/>
+                <field name="chantier_id"/>
+                <field name="name"/>
+                <field name="overdue_bucket"/>
+                <field name="state"/>
+                <field name="invoiceable_now"/>
 
                 <!-- Filtres rapides par statut -->
                 <filter string="🟢 Prêt à facturer" name="ready_to_invoice"
                         domain="[('invoiceable_now','=',True),('state','=','planned')]"/>
-                <filter string="🔴 En retard &gt; 90 jours" name="overdue_90"
+                <filter string="🔴 En retard > 90 jours" name="overdue_90"
                         domain="[('overdue_bucket','=','d90plus')]"/>
                 <filter string="🟠 En retard 60–90j" name="overdue_60"
                         domain="[('overdue_bucket','=','d60')]"/>
@@ -25,8 +28,7 @@
                         domain="[('overdue_bucket','=','d30')]"/>
                 <separator/>
                 <filter string="Pipeline 30 jours" name="pipeline_30"
-                        domain="[('planned_date','&lt;=', (context_today() + relativedelta(days=30)).strftime('%Y-%m-%d')),
-                                  ('state','in',['planned','ready'])]"/>
+                        domain="[('state','in',['planned','ready'])]"/>
                 <separator/>
                 <!-- Filtres état -->
                 <filter string="Brouillon / Planifié" name="draft_planned"
@@ -35,9 +37,9 @@
                 <filter string="Facturé" name="invoiced" domain="[('state','=','invoiced')]"/>
                 <separator/>
                 <group expand="1" string="Regrouper par">
-                    <filter string="Chantier" context="{'group_by':'chantier_id'}"/>
-                    <filter string="Ancienneté" context="{'group_by':'overdue_bucket'}"/>
-                    <filter string="État" context="{'group_by':'state'}"/>
+                    <filter string="Chantier" name="group_by_chantier" context="{'group_by':'chantier_id'}"/>
+                    <filter string="Ancienneté" name="group_by_bucket" context="{'group_by':'overdue_bucket'}"/>
+                    <filter string="État" name="group_by_state" context="{'group_by':'state'}"/>
                 </group>
             </search>
         </field>
@@ -81,10 +83,10 @@
                 <!-- Bouton action rapide au bout de chaque ligne -->
                 <button name="action_mark_ready" type="object"
                         string="▶ Activer" class="btn-sm btn-outline-warning"
-                        attrs="{'invisible': [('state','!=','planned'),('invoiceable_now','=',False)]}"/>
+                        invisible="state != 'planned' or not invoiceable_now"/>
                 <button name="action_create_invoice" type="object"
                         string="🧾 Facturer" class="btn-sm btn-success"
-                        attrs="{'invisible': [('state','!=','ready')]}"/>
+                        invisible="state != 'ready'"/>
 
                 <field name="currency_id" invisible="1"/>
             </list>

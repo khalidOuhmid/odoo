@@ -162,6 +162,18 @@ export class ContractEditor extends Component {
      * @param {any}    value      New value
      */
     onFieldChange(fieldName, value) {
+        // Handle number parsing (OWL v2 templates cannot access parseFloat natively)
+        const floatFields = [
+            'retention_rate', 'penalty_retard_jour', 'penalty_docs_delay',
+            'penalty_safety', 'penalty_cleaning', 'penalty_justificatifs',
+            'penalty_prototypes'
+        ];
+        if (floatFields.includes(fieldName)) {
+            value = parseFloat(value) || 0;
+        } else if (fieldName === 'gpa_duration') {
+            value = parseInt(value, 10) || 12;
+        }
+
         this._pendingWrites[fieldName] = value;
         this.state.isDirty = true;
 

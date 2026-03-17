@@ -28,11 +28,11 @@ class TestMarginCalculation(common.TransactionCase):
         cls.partner = cls.env['res.partner'].create({'name': 'Test Partner Margin'})
         cls.chantier = cls.env['construction.chantier'].create({
             'name': 'Margin Test Site',
-            'partner_id': cls.partner.id,
+            'client': cls.partner.id,
         })
+        cls.lot_cat = cls.env['construction.lot.category'].create({'name': 'Margin Cat', 'code': 'MGN_T'})
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Lot Margin Test',
-            'code': 'LMT01',
+            'category_id': cls.lot_cat.id,
             'chantier_id': cls.chantier.id,
         })
         cls.product = cls.env['product.product'].create({

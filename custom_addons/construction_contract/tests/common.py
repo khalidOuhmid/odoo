@@ -47,6 +47,7 @@ class ContractTestMixin:
 
         # 2. Subcontractor partner (with compliant documents for contract creation)
         _mock_doc = base64.b64encode(b'%PDF-1.4 mock document').decode('ascii')
+        _expiry = date.today() + timedelta(days=365)
         cls.subcontractor = cls.env['res.partner'].create({
             'name': 'SARL Sous-Traitant Test',
             'is_company': True,
@@ -57,16 +58,15 @@ class ContractTestMixin:
             'phone': '0556000000',
             'supplier_rank': 1,
             'company_registry': '12345678901234',
-            # Doc fields from construction_subcontractor (used by model constraint)
-            'doc_urssaf': _mock_doc,
-            'doc_kbis': _mock_doc,
-            'doc_insurance_dec': _mock_doc,
         })
-        # Force-set statuses AFTER creation to bypass compute override
+        # Write docs separately to trigger admin auto-validation (write override)
         cls.subcontractor.write({
-            'doc_urssaf_status': 'valid',
-            'doc_kbis_status': 'valid',
-            'doc_insurance_dec_status': 'valid',
+            'doc_urssaf': _mock_doc,
+            'doc_urssaf_expiry': _expiry,
+            'doc_kbis': _mock_doc,
+            'doc_kbis_expiry': _expiry,
+            'doc_insurance_dec': _mock_doc,
+            'doc_insurance_dec_expiry': _expiry,
         })
 
         # 3. Chantier
@@ -77,19 +77,27 @@ class ContractTestMixin:
             }).id,
         })
 
-        # 4. Lot
+        # 4. Lot categories (required since category_id is NOT NULL on construction.lot)
+        cls.category_go = cls.env['construction.lot.category'].create({
+            'name': 'Gros Œuvre QA',
+            'code': 'GO_QA',
+        })
+        cls.category_elec = cls.env['construction.lot.category'].create({
+            'name': 'Électricité QA',
+            'code': 'ELEC_QA',
+        })
+
+        # 5. Lot
         cls.lot = cls.env['construction.lot'].create({
-            'name': 'Lot 01 - Gros Œuvre',
-            'code': 'GO_QA_01',
+            'category_id': cls.category_go.id,
             'chantier_id': cls.chantier.id,
             'execution_type': 'external',
             'subcontractor_id': cls.subcontractor.id,
         })
 
-        # 5. Second lot for multi-lot tests
+        # 6. Second lot for multi-lot tests
         cls.lot2 = cls.env['construction.lot'].create({
-            'name': 'Lot 02 - Électricité',
-            'code': 'ELEC_QA_02',
+            'category_id': cls.category_elec.id,
             'chantier_id': cls.chantier.id,
             'execution_type': 'external',
             'subcontractor_id': cls.subcontractor.id,
