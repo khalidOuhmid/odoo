@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        BLG Groupe — Rapport Bon de Commande (purchase.order)
+        Hérite du template standard Odoo et ajoute les informations chantier/lot.
+        La mise en page bordeaux est injectée automatiquement via
+        construction_base.external_layout_standard_blg (report_layout_blg.xml).
+    -->
+    <template id="report_purchaseorder_document_blg" inherit_id="purchase.report_purchaseorder_document">
+
+        <!-- Ajout du chantier et des lots dans le bloc informations du document -->
+        <xpath expr="//div[@id='informations']" position="inside">
+            <t t-if="o.chantier_id">
+                <div class="col">
+                    <strong>Chantier</strong>
+                    <div t-field="o.chantier_id"/>
+                </div>
+            </t>
+            <t t-if="o.lot_ids">
+                <div class="col">
+                    <strong>Lots</strong>
+                    <div><t t-esc="', '.join(o.lot_ids.mapped('name'))"/></div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- Action rapport (disponible dans le menu Impression du bon de commande) -->
+    <record id="action_report_purchaseorder_blg" model="ir.actions.report">
+        <field name="name">Bon de Commande BLG</field>
+        <field name="model">purchase.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_purchase.report_purchaseorder_document_blg</field>
+        <field name="report_file">construction_purchase.report_purchaseorder_document_blg</field>
+        <field name="binding_model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_type">report</field>
+    </record>
+</odoo>

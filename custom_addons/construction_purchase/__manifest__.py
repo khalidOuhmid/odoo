@@ -32,10 +32,14 @@ Compatibilité : Odoo 18.0
     'data': [
         # Security
         'security/ir.model.access.csv',
-        
+
         # Wizards
         'wizard/purchase_wizard_views.xml',
-        
+        'wizard/purchase_create_wizard_views.xml',
+
+        # Reports
+        'reports/purchase_order_report.xml',
+
         # Views
         'views/purchase_order_views.xml',
         'views/chantier_views.xml',

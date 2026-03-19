@@ -1,0 +1,51 @@
+// =============================================================================
+// _blg_variables.scss — Source de vérité Charte Graphique BLG Groupe 2025
+// =============================================================================
+// Importer ce fichier dans tout nouveau composant SCSS du projet :
+//   @import 'construction_base/static/src/scss/blg_variables';
+// =============================================================================
+
+// --- Palette principale ---
+$blg-primary:           #92564C;   // Bordeaux-Terracotta (brand couleur)
+$blg-primary-dark:      #7a4840;   // Bordeaux foncé (hover, gradient)
+$blg-secondary:         #978A86;   // Gris-taupe (texte fort, icônes)
+$blg-beige:             #D4C5BC;   // Beige rosé (aplats, encarts)
+$blg-beige-light:       #EDE8E4;   // Beige très clair (fond de page)
+$blg-grey:              #AEADAB;   // Gris moyen (bordures, texte secondaire)
+$blg-white:             #FFFFFF;
+
+// --- Texte ---
+$blg-text-dark:         #2B2B2B;   // Texte principal (WCAG AA sur blanc)
+$blg-text-muted:        #978A86;   // Texte secondaire / labels
+
+// --- Statuts ---
+$blg-success:           #10B981;   // Vert (validé, signé)
+$blg-warning:           #F59E0B;   // Ambre (attention, expiration)
+$blg-danger:            #EF4444;   // Rouge (erreur, refus)
+$blg-info:              #3B82F6;   // Bleu (info neutre)
+
+// --- Tableaux PDF ---
+$blg-table-header-bg:   $blg-primary;
+$blg-table-header-text: $blg-white;
+$blg-table-row-alt:     rgba($blg-beige, 0.15);  // Ligne alternée subtile
+$blg-table-border:      #E5E3E2;
+
+// --- Typographie ---
+$blg-font-pdf:          'Times New Roman', Times, 'Liberation Serif', serif;
+$blg-font-ui:           'Inter', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+$blg-font-size-base:    11pt;
+$blg-line-height:       1.45;
+
+// --- Mise en page ---
+$blg-border-radius-sm:  4px;
+$blg-border-radius:     8px;
+$blg-border-radius-lg:  12px;
+$blg-accent-bar-height: 3px;      // Bande bordeaux en haut des documents
+
+// --- Ombres ---
+$blg-shadow-sm:         0 2px 8px rgba(0, 0, 0, 0.08);
+$blg-shadow-md:         0 4px 16px rgba(0, 0, 0, 0.12);
+$blg-shadow-brand:      0 4px 12px rgba($blg-primary, 0.25);
+
+// --- Transitions ---
+$blg-transition:        0.2s ease;

@@ -30,6 +30,7 @@
         'security/ir.model.access.csv',
 
         # Rapports (templates d'abord, puis actions)
+        'reports/report_layout_blg.xml',
         'reports/chantier_invoice_report.xml',
         'reports/reports.xml',
         'reports/planning_report.xml',

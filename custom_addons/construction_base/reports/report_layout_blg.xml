@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+        BLG Groupe — Override charte graphique sur le layout standard Odoo 18
+
+        Applique automatiquement la charte BLG sur TOUS les documents PDF générés
+        via web.external_layout_standard (devis, bons de commande, factures standards).
+
+        Palette : Bordeaux #92564C · Beige #D4C5BC · Gris #978A86
+    -->
+    <template id="external_layout_standard_blg" inherit_id="web.external_layout_standard">
+        <xpath expr="//div[contains(@t-attf-class,'header')]" position="before">
+            <!-- Styles BLG injectés une seule fois en tête de chaque document -->
+            <style type="text/css">
+                /* ============================================================
+                   BLG Groupe — Charte Graphique 2025
+                   ============================================================ */
+
+                /* Barre d'accentuation bordeaux */
+                .blg-accent-bar {
+                    height: 3px;
+                    background-color: #92564C;
+                    margin-bottom: 8px;
+                }
+
+                /* Titres h2 : bordeaux */
+                .o_report_layout_standard h2 {
+                    color: #92564C;
+                }
+
+                /* Tableaux : en-têtes bordeaux */
+                .o_table_standard thead th,
+                .o_report_layout_standard thead th {
+                    background-color: #92564C !important;
+                    color: #ffffff !important;
+                    font-weight: 600;
+                }
+
+                /* Tableaux : séparateur total */
+                .o_table_standard .o_total td,
+                .o_report_layout_standard .o_total td {
+                    border-top: 2px solid #92564C;
+                }
+
+                /* Tableaux : lignes paires légèrement teintées */
+                .o_table_standard tbody tr:nth-child(even) td {
+                    background-color: rgba(212, 197, 188, 0.12);
+                }
+
+                /* Liens bordeaux */
+                .o_report_layout_standard a {
+                    color: #92564C;
+                }
+            </style>
+
+            <!-- Bande bordeaux BLG en haut du document -->
+            <div class="blg-accent-bar"/>
+        </xpath>
+    </template>
+</odoo>

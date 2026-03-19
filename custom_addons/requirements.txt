@@ -1,20 +1,9 @@
 # Construction PLM - Python Dependencies
-# For Odoo.sh and local development
+# Odoo.sh auto-installs this file from the repo root.
+# Only packages NOT already bundled with Odoo 18.
 #
-# Usage:
-# - Odoo.sh: Place in custom_addons root, Odoo.sh auto-installs
-# - Local: pip install -r requirements.txt
+# Already included in Odoo 18: Jinja2, PyPDF2, Pillow, openpyxl, lxml, Werkzeug
 
-# Data processing
-pandas>=2.0.0
-openpyxl>=3.1.0
-
-# PDF generation (construction_contract)
+# PDF generation HTML→PDF (construction_contract)
+# Requires system libs pre-installed on Odoo.sh: libpango, libcairo, libgdk-pixbuf
 weasyprint>=60.0
-PyPDF2>=3.0.0
-
-# Templating
-Jinja2>=3.1.0
-
-# Image processing
-Pillow>=10.0.0

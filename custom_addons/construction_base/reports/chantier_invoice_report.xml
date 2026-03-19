@@ -1,108 +1,158 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <data>
-        <!-- Template QWeb: Facture chantier inspirée du contrat de sous-traitance -->
+        <!-- Template QWeb : Facture Chantier BLG Groupe -->
         <template id="chantier_invoice_template" name="Facture Chantier BLG">
             <t t-foreach="docs" t-as="o">
                 <t t-set="company" t-value="o.company_id or env.company"/>
                 <t t-set="client" t-value="o.partner_id"/>
                 <t t-set="formatted_date" t-value="o.invoice_date.strftime('%d/%m/%Y') if o.invoice_date else fields.Date.today().strftime('%d/%m/%Y')"/>
 
-                <div class="page" style="font-family: 'Segoe UI', Arial, sans-serif; font-size:12px; color:#2c3e50;">
+                <div class="page" style="font-family: 'Segoe UI', Arial, sans-serif; font-size:12px; color:#2B2B2B;">
+
+                    <!-- Bande bordeaux BLG -->
+                    <div style="height:3px; background-color:#92564C; margin-bottom:12px;"/>
+
                     <!-- En-tête -->
-                    <table style="width:100%; border-collapse:collapse; margin-bottom:12px; border-bottom:1px solid #333; padding-bottom:6px;">
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:12px; border-bottom:1px solid #AEADAB; padding-bottom:8px;">
                         <tr>
                             <td style="width:60%; vertical-align:top;">
-                                <h2 style="margin:0; color:#20B2AA;"><t t-esc="(o.invoice_origin or 'Facture') + ' - ' + formatted_date"/></h2>
-                                <p style="margin:4px 0 0 0;">Référence: <strong><t t-esc="o.name or 'N/A'"/></strong></p>
-                                <p style="margin:2px 0 0 0;">Date: <strong><t t-esc="formatted_date"/></strong></p>
-                                <p style="margin:2px 0 0 0;">Chantier: <strong><t t-esc="o.invoice_origin or 'N/A'"/></strong></p>
-                                <p style="margin:2px 0 0 0;">Étape: <strong><t t-esc="o.ref or ''"/></strong></p>
+                                <h2 style="margin:0; color:#92564C; font-size:16px;">
+                                    <t t-esc="(o.invoice_origin or 'Facture') + ' — ' + formatted_date"/>
+                                </h2>
+                                <p style="margin:4px 0 0 0;">Référence&nbsp;: <strong><t t-esc="o.name or 'N/A'"/></strong></p>
+                                <p style="margin:2px 0 0 0;">Date&nbsp;: <strong><t t-esc="formatted_date"/></strong></p>
+                                <p style="margin:2px 0 0 0;">Chantier&nbsp;: <strong><t t-esc="o.invoice_origin or 'N/A'"/></strong></p>
+                                <t t-if="o.ref">
+                                    <p style="margin:2px 0 0 0;">Étape&nbsp;: <strong><t t-esc="o.ref"/></strong></p>
+                                </t>
                             </td>
                             <td style="width:40%; vertical-align:top; text-align:right;">
                                 <t t-set="blg_logo" t-value="image_data_uri(company.logo) if company.logo else False"/>
                                 <t t-if="blg_logo">
                                     <img t-att-src="blg_logo" alt="BLG" style="height:50px; margin-bottom:6px;"/>
                                 </t>
-                                <p style="margin:0; font-weight:bold;"><t t-esc="company.name"/></p>
-                                <p style="margin:2px 0 0 0;"><t t-esc="company.street or ''"/></p>
-                                <p style="margin:2px 0 0 0;"><t t-esc="(company.zip or '') + ' ' + (company.city or '')"/></p>
-                                <p style="margin:2px 0 0 0;">SIREN: <t t-esc="company.company_registry or ''"/></p>
+                                <p style="margin:0; font-weight:bold; color:#92564C;"><t t-esc="company.name"/></p>
+                                <p style="margin:2px 0 0 0; color:#978A86;"><t t-esc="company.street or ''"/></p>
+                                <p style="margin:2px 0 0 0; color:#978A86;"><t t-esc="(company.zip or '') + ' ' + (company.city or '')"/></p>
+                                <t t-if="company.company_registry">
+                                    <p style="margin:2px 0 0 0; color:#978A86;">SIREN&nbsp;: <t t-esc="company.company_registry"/></p>
+                                </t>
                             </td>
                         </tr>
                     </table>
 
-                    <!-- Informations client -->
-                    <table style="width:100%; border-collapse:collapse; margin-bottom:18px;">
+                    <!-- Bloc client / informations -->
+                    <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
                         <tr>
-                            <td style="width:50%; vertical-align:top; border:1px solid #e9ecef; padding:8px;">
-                                <p style="margin:0 0 6px 0; color:#20B2AA; font-weight:600;">Facturé à</p>
+                            <td style="width:50%; vertical-align:top; border:1px solid #E5E3E2; padding:10px;">
+                                <p style="margin:0 0 6px 0; color:#92564C; font-weight:600; text-transform:uppercase; font-size:10px; letter-spacing:0.05em;">Facturé à</p>
                                 <p style="margin:0; font-weight:bold;"><t t-esc="client.name"/></p>
                                 <t t-if="client.street"><p style="margin:2px 0 0 0;"><t t-esc="client.street"/></p></t>
-                                <t t-if="client.zip or client.city"><p style="margin:2px 0 0 0;"><t t-esc="client.zip or ''"/> <t t-esc="client.city or ''"/></p></t>
-                                <t t-if="client.vat"><p style="margin:2px 0 0 0;">TVA: <t t-esc="client.vat"/></p></t>
+                                <t t-if="client.zip or client.city">
+                                    <p style="margin:2px 0 0 0;"><t t-esc="client.zip or ''"/>&#160;<t t-esc="client.city or ''"/></p>
+                                </t>
+                                <t t-if="client.vat">
+                                    <p style="margin:4px 0 0 0; color:#978A86; font-size:11px;">TVA&nbsp;: <t t-esc="client.vat"/></p>
+                                </t>
                             </td>
-                            <td style="width:50%; vertical-align:top; border:1px solid #e9ecef; border-left:none; padding:8px;">
-                                <p style="margin:0 0 6px 0; color:#20B2AA; font-weight:600;">Informations</p>
-                                <p style="margin:0;">Modele: <strong>Facture chantier</strong></p>
-                                <p style="margin:2px 0 0 0;">Devise: <t t-esc="o.currency_id.name"/></p>
+                            <td style="width:50%; vertical-align:top; border:1px solid #E5E3E2; border-left:none; padding:10px;">
+                                <p style="margin:0 0 6px 0; color:#92564C; font-weight:600; text-transform:uppercase; font-size:10px; letter-spacing:0.05em;">Informations</p>
+                                <p style="margin:0;">Type&nbsp;: <strong>Facture chantier</strong></p>
+                                <p style="margin:2px 0 0 0;">Devise&nbsp;: <t t-esc="o.currency_id.name"/></p>
+                                <t t-if="o.payment_reference">
+                                    <p style="margin:2px 0 0 0;">Réf. paiement&nbsp;: <t t-esc="o.payment_reference"/></p>
+                                </t>
                             </td>
                         </tr>
                     </table>
 
-                    <!-- Lignes -->
+                    <!-- Tableau des lignes -->
                     <table style="width:100%; border-collapse:collapse;">
                         <thead>
-                            <tr style="background: linear-gradient(135deg, #20B2AA 0%, #1a9999 100%); color:#fff;">
-                                <th style="padding:10px; text-align:left;">Désignation</th>
-                                <th style="padding:10px; text-align:right; width:80px;">Qté</th>
-                                <th style="padding:10px; text-align:right; width:120px;">PU</th>
-                                <th style="padding:10px; text-align:right; width:140px;">Sous-total</th>
+                            <tr style="background-color:#92564C; color:#ffffff;">
+                                <th style="padding:10px; text-align:left; font-weight:600;">Désignation</th>
+                                <th style="padding:10px; text-align:right; width:70px; font-weight:600;">Qté</th>
+                                <th style="padding:10px; text-align:right; width:110px; font-weight:600;">Prix unitaire</th>
+                                <th style="padding:10px; text-align:right; width:130px; font-weight:600;">Sous-total HT</th>
                             </tr>
                         </thead>
                         <tbody>
                             <t t-foreach="o.invoice_line_ids" t-as="l">
-                                <tr>
-                                    <td style="padding:8px; border-bottom:1px solid #e9ecef;"><t t-esc="l.name"/></td>
-                                    <td style="padding:8px; border-bottom:1px solid #e9ecef; text-align:right;"><t t-esc="('%.2f' % (l.quantity or 0))"/></td>
-                                    <td style="padding:8px; border-bottom:1px solid #e9ecef; text-align:right;"><t t-esc="('%.2f' % (l.price_unit or 0))"/></td>
-                                    <td style="padding:8px; border-bottom:1px solid #e9ecef; text-align:right;"><t t-esc="('%.2f' % (l.price_subtotal or 0))"/></td>
-                                </tr>
+                                <t t-if="l.display_type == 'line_section'">
+                                    <tr>
+                                        <td colspan="4" style="padding:8px 10px; background-color:rgba(212, 197, 188, 0.25); font-weight:600; color:#92564C; border-bottom:1px solid #E5E3E2;">
+                                            <t t-esc="l.name"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-elif="l.display_type == 'line_note'">
+                                    <tr>
+                                        <td colspan="4" style="padding:6px 10px; color:#978A86; font-style:italic; font-size:11px; border-bottom:1px solid #E5E3E2;">
+                                            <t t-esc="l.name"/>
+                                        </td>
+                                    </tr>
+                                </t>
+                                <t t-else="">
+                                    <tr>
+                                        <td style="padding:8px 10px; border-bottom:1px solid #E5E3E2;"><t t-esc="l.name"/></td>
+                                        <td style="padding:8px 10px; border-bottom:1px solid #E5E3E2; text-align:right;">
+                                            <t t-esc="'%.2f' % (l.quantity or 0)"/>
+                                        </td>
+                                        <td style="padding:8px 10px; border-bottom:1px solid #E5E3E2; text-align:right;">
+                                            <t t-esc="'%.2f' % (l.price_unit or 0)"/>&#160;€
+                                        </td>
+                                        <td style="padding:8px 10px; border-bottom:1px solid #E5E3E2; text-align:right;">
+                                            <t t-esc="'%.2f' % (l.price_subtotal or 0)"/>&#160;€
+                                        </td>
+                                    </tr>
+                                </t>
                             </t>
                         </tbody>
                     </table>
 
-                    <!-- Totaux -->
-                    <table style="width:100%; border-collapse:collapse; margin-top:12px;">
+                    <!-- Bloc totaux -->
+                    <table style="width:100%; border-collapse:collapse; margin-top:16px;">
                         <tr>
-                            <td style="width:60%;"></td>
-                            <td style="width:40%;">
+                            <td style="width:55%;"/>
+                            <td style="width:45%;">
                                 <table style="width:100%; border-collapse:collapse;">
                                     <tr>
-                                        <td style="padding:6px; text-align:right; border-bottom:1px solid #e9ecef;">Total HT</td>
-                                        <td style="padding:6px; text-align:right; border-bottom:1px solid #e9ecef;"><t t-esc="('%.2f' % (o.amount_untaxed or 0))"/></td>
+                                        <td style="padding:6px 10px; text-align:right; border-bottom:1px solid #E5E3E2; color:#978A86;">Total HT</td>
+                                        <td style="padding:6px 10px; text-align:right; border-bottom:1px solid #E5E3E2;">
+                                            <t t-esc="'%.2f' % (o.amount_untaxed or 0)"/>&#160;€
+                                        </td>
                                     </tr>
                                     <tr>
-                                        <td style="padding:6px; text-align:right; border-bottom:1px solid #e9ecef;">Taxes</td>
-                                        <td style="padding:6px; text-align:right; border-bottom:1px solid #e9ecef;"><t t-esc="('%.2f' % (o.amount_tax or 0))"/></td>
+                                        <td style="padding:6px 10px; text-align:right; border-bottom:1px solid #E5E3E2; color:#978A86;">TVA</td>
+                                        <td style="padding:6px 10px; text-align:right; border-bottom:1px solid #E5E3E2;">
+                                            <t t-esc="'%.2f' % (o.amount_tax or 0)"/>&#160;€
+                                        </td>
                                     </tr>
-                                    <tr>
-                                        <td style="padding:8px; text-align:right; font-weight:bold;">Total TTC</td>
-                                        <td style="padding:8px; text-align:right; font-weight:bold;"><t t-esc="('%.2f' % (o.amount_total or 0))"/></td>
+                                    <tr style="border-top:2px solid #92564C;">
+                                        <td style="padding:8px 10px; text-align:right; font-weight:700; color:#92564C;">Total TTC</td>
+                                        <td style="padding:8px 10px; text-align:right; font-weight:700; color:#92564C;">
+                                            <t t-esc="'%.2f' % (o.amount_total or 0)"/>&#160;€
+                                        </td>
                                     </tr>
                                 </table>
                             </td>
                         </tr>
                     </table>
 
+                    <!-- Notes de pied de page -->
+                    <t t-if="o.narration">
+                        <div style="margin-top:16px; padding:10px; background-color:rgba(212,197,188,0.15); border-left:3px solid #92564C;">
+                            <p style="margin:0; color:#978A86; font-size:11px;"><t t-out="o.narration"/></p>
+                        </div>
+                    </t>
+
                     <!-- Footer -->
-                    <div style="margin-top:18px; font-size:10px; color:#666; text-align:center;">
-                        <p style="margin:0;">Document généré par BLG GROUPE</p>
+                    <div style="margin-top:24px; padding-top:8px; border-top:1px solid #AEADAB; font-size:10px; color:#AEADAB; text-align:center;">
+                        <p style="margin:0;"><t t-esc="company.name"/> — Document généré par BLG GROUPE</p>
                     </div>
                 </div>
             </t>
         </template>
     </data>
 </odoo>
-
-
