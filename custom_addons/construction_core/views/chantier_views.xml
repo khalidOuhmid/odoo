@@ -21,13 +21,15 @@
                 <field name="city"/>
                 <field name="tag_ids"/>
                 <field name="progress"/>
+                <field name="progress_display"/>
+                <field name="is_ready_for_next_stage"/>
                 <field name="chapter_name"/>
                 <field name="state"/>
                 <field name="date_end_contract"/>
                 <progressbar field="state" colors='{"active": "success", "suspended": "warning", "completed": "muted", "abandoned": "danger"}'/>
                 <templates>
                     <t t-name="kanban-box">
-                        <div t-attf-class="oe_kanban_global_click oe_kanban_content o_construction_card oe_kanban_color_#{kanban_getcolor(record.color.raw_value)}">
+                        <div t-attf-class="oe_kanban_global_click oe_kanban_content o_construction_card oe_kanban_color_#{kanban_getcolor(record.color.raw_value)} #{record.state.raw_value === 'abandoned' ? 'o_construction_card_ss' : ''}">
                             <!-- Dropdown Menu -->
                             <div class="o_dropdown_kanban dropdown">
                                 <a class="dropdown-toggle o-no-caret btn" role="button" data-bs-toggle="dropdown" href="#" aria-label="Menu">
@@ -69,12 +71,17 @@
                                 <!-- Progress Bar -->
                                 <div class="construction_progress mt-2" t-if="record.progress.raw_value">
                                     <div class="progress" style="height: 6px; border-radius: 3px;">
-                                        <div class="progress-bar" 
-                                             role="progressbar" 
+                                        <div class="progress-bar"
+                                             role="progressbar"
                                              t-attf-style="width: #{record.progress.raw_value}%"
                                              t-att-class="record.progress.raw_value &lt; 25 ? 'bg-info' : record.progress.raw_value &lt; 50 ? 'bg-primary' : record.progress.raw_value &lt; 75 ? 'bg-warning' : 'bg-success'"/>
                                     </div>
-                                    <small class="text-muted"><t t-esc="record.progress.raw_value"/>%</small>
+                                    <small class="text-muted"><t t-esc="record.progress_display.value"/></small>
+                                </div>
+
+                                <!-- Transition Badge -->
+                                <div class="construction_transition_badge mt-1" t-if="record.is_ready_for_next_stage.raw_value">
+                                    <span class="badge construction_badge_transition">Transition possible</span>
                                 </div>
                                 
                                 <!-- Bottom Section -->
@@ -129,21 +136,16 @@
                     <div class="oe_button_box" name="button_box">
                         <button class="oe_stat_button" icon="fa-list-ol"
                                 name="action_view_lots" type="object">
-                            <field name="lots_ids" widget="statinfo" string="Lots"/>
+                            <field name="lots_count" widget="statinfo" string="Lots"/>
                         </button>
                         <button class="oe_stat_button" icon="fa-file-text-o"
                                 name="action_view_quotations" type="object"
                                 invisible="not show_quotes">
-                            <field name="quotation_ids" widget="statinfo" string="Devis"/>
+                            <field name="quotation_count" widget="statinfo" string="Devis"/>
                         </button>
-                        <button name="%(action_lot_subcontractor_assign_wizard)d" 
-                                type="action" 
-                                class="oe_stat_button" 
-                                icon="fa-user-plus"
-                                groups="construction_core.group_construction_user"
-                                invisible="not show_subcontractors">
-                            <span class="o_stat_text">Assigner</span>
-                            <span class="o_stat_text">Sous-traitant</span>
+                        <button class="oe_stat_button" icon="fa-folder-open"
+                                name="action_view_documents" type="object">
+                            <field name="document_count" widget="statinfo" string="Documents"/>
                         </button>
                     </div>
                     
@@ -275,8 +277,8 @@
                                            options="{'no_create': True}"/>
                                     <field name="date_start_planned" optional="hide"/>
                                     <field name="date_end_planned" optional="hide"/>
-                                    <field name="completion_percentage" widget="progressbar" 
-                                           options="{'editable': true, 'max_value': 100}"/>
+                                    <field name="is_finished" column_invisible="1"/>
+                                    <field name="completion_percentage" widget="lot_progress"/>
                                     <field name="price"/>
                                     <field name="margin_percent" string="Marge %" optional="hide"
                                            groups="construction_core.group_construction_admin,construction_core.group_construction_accountant"
@@ -331,8 +333,14 @@
                                     <i class="fa fa-users me-2"/>Ressources du Chantier
                                 </h4>
                                 <div class="btn-group">
-                                    <button name="action_check_contract_eligibility" 
-                                            type="object" 
+                                    <button name="%(action_lot_subcontractor_assign_wizard)d"
+                                            type="action"
+                                            string="Assigner Sous-traitant"
+                                            class="btn btn-outline-primary btn-sm"
+                                            icon="fa-user-plus"
+                                            groups="construction_core.group_construction_user"/>
+                                    <button name="action_check_contract_eligibility"
+                                            type="object"
                                             string="Vérifier Conformité"
                                             class="btn btn-outline-secondary btn-sm"
                                             invisible="not show_contract_generation"/>
@@ -376,14 +384,38 @@
 
 
 
-                        <!-- Tab 7: Documents (Always visible) - BUG-07 Centralized -->
+                        <!-- Tab 7: Documents (GED) — Toujours visible -->
                         <page string="Documents" name="documents">
                             <div class="d-flex justify-content-between align-items-center mb-3">
                                 <h4 class="mb-0">
                                     <i class="fa fa-folder-open me-2"/>Documents du Chantier
                                 </h4>
+                                <button name="%(construction_core.action_construction_document)d"
+                                        type="action"
+                                        string="Vue complète"
+                                        class="btn btn-outline-secondary btn-sm"
+                                        context="{'search_default_chantier_id': id}"/>
                             </div>
-                            <field name="documents_summary_html" readonly="1" nolabel="1" class="w-100"/>
+                            <field name="document_ids"
+                                   context="{'default_chantier_id': id}"
+                                   nolabel="1">
+                                <list string="Documents"
+                                      default_order="upload_date desc"
+                                      no_open="0">
+                                    <field name="name" string="Nom"/>
+                                    <field name="tag_ids" widget="many2many_tags"
+                                           options="{'color_field': 'color'}"/>
+                                    <field name="lot_id" string="Lot" optional="show"/>
+                                    <field name="file_size_human" string="Taille"/>
+                                    <field name="upload_date" string="Date d'upload"/>
+                                    <field name="uploaded_by_id" string="Uploadé par"
+                                           widget="many2one_avatar_user"/>
+                                    <button name="action_download" type="object"
+                                            icon="fa-download"
+                                            title="Télécharger"
+                                            class="text-primary"/>
+                                </list>
+                            </field>
                         </page>
 
                         <!-- Tab 8: Avancement (Always visible) - BUG-04 -->
@@ -401,8 +433,7 @@
                                     <field name="code" string="N°"/>
                                     <field name="name"/>
                                     <field name="execution_type" widget="badge"/>
-                                    <field name="completion_percentage" widget="progressbar"
-                                           options="{'editable': true, 'max_value': 100}"/>
+                                    <field name="completion_percentage" widget="lot_progress"/>
                                     <field name="price" widget="monetary" sum="Total"/>
                                     <field name="weighted_value" string="Valeur Réalisée" widget="monetary"/>
                                     <field name="is_finished" widget="boolean_toggle"/>

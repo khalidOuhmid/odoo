@@ -1,0 +1,98 @@
+// LotProgressWidget — BLG Construction
+// ======================================
+
+.o_lot_progress_widget {
+    min-width: 120px;
+
+    // Progress bar track
+    .o_lp_bar_wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .o_lp_bar_track {
+        background-color: #F5F0EB;
+        border-radius: 4px;
+        height: 14px;
+        overflow: hidden;
+        width: 100%;
+    }
+
+    .o_lp_bar_fill {
+        height: 100%;
+        border-radius: 4px;
+        transition: width 0.25s ease, background-color 0.2s ease;
+        min-width: 2px;
+    }
+
+    .o_lp_label {
+        line-height: 1;
+    }
+
+    // Quick-set buttons
+    .o_lp_controls {
+        margin-top: 4px;
+    }
+
+    .o_lp_quick_btn {
+        min-height: 44px;        // Touch target
+        min-width: 48px;
+        padding: 0 8px;
+        font-size: 0.78rem;
+        font-weight: 600;
+        border: 1px solid #dee2e6;
+        background-color: #fff;
+        color: #495057;
+        border-radius: 4px;
+        transition: background-color 0.15s, color 0.15s;
+
+        &:hover {
+            background-color: #F5F0EB;
+            border-color: #8B3A3A;
+            color: #8B3A3A;
+        }
+    }
+
+    .o_lp_quick_btn_active {
+        background-color: #8B3A3A;
+        border-color: #8B3A3A;
+        color: #fff;
+
+        &:hover {
+            background-color: #7a3232;
+            color: #fff;
+        }
+    }
+
+    // Numeric input
+    .o_lp_input {
+        width: 70px;
+        min-height: 44px;       // Touch target
+        text-align: center;
+        font-weight: 600;
+    }
+
+    // Over-billing warning
+    .o_lp_overbilling_warn {
+        font-size: 0.8rem;
+    }
+}
+
+// Compact rendering inside a list row (smaller track, no extra spacing)
+.o_list_renderer .o_lot_progress_widget {
+    .o_lp_bar_track {
+        height: 10px;
+    }
+
+    .o_lp_quick_btn {
+        min-height: 32px;
+        min-width: 38px;
+        font-size: 0.72rem;
+    }
+
+    .o_lp_input {
+        min-height: 32px;
+        width: 60px;
+    }
+}

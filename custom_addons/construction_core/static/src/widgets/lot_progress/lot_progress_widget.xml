@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="construction_core.LotProgressWidget">
+        <div class="o_lot_progress_widget">
+
+            <!-- === READONLY / FINISHED: bar only === -->
+            <t t-if="isReadonly">
+                <div class="o_lp_bar_wrap" t-att-title="displayLabel">
+                    <div class="o_lp_bar_track">
+                        <div class="o_lp_bar_fill"
+                             t-attf-style="width: #{barWidth}%;
+                                           background-color: #{barColor};"/>
+                    </div>
+                    <span class="o_lp_label small text-muted">
+                        <t t-esc="displayLabel"/>
+                    </span>
+                </div>
+            </t>
+
+            <!-- === EDIT MODE: bar + quick-set + input === -->
+            <t t-else="">
+
+                <!-- Progress bar -->
+                <div class="o_lp_bar_wrap mb-2">
+                    <div class="o_lp_bar_track">
+                        <div class="o_lp_bar_fill"
+                             t-attf-style="width: #{barWidth}%;
+                                           background-color: #{barColor};"/>
+                    </div>
+                    <span class="o_lp_label small fw-semibold">
+                        <t t-esc="displayLabel"/>
+                    </span>
+                </div>
+
+                <!-- Quick-set buttons + numeric input -->
+                <div class="o_lp_controls d-flex align-items-center gap-1 flex-wrap">
+                    <button t-foreach="QUICK_SET" t-as="pct" t-key="pct"
+                            t-attf-class="btn btn-sm o_lp_quick_btn #{currentValue === pct ? 'o_lp_quick_btn_active' : ''}"
+                            t-on-click="() => onQuickSet(pct)">
+                        <t t-esc="pct"/>%
+                    </button>
+
+                    <div class="o_lp_input_wrap d-flex align-items-center gap-1 ms-2">
+                        <input type="number"
+                               class="form-control form-control-sm o_lp_input"
+                               min="0" max="200" step="1"
+                               t-model="state.inputValue"
+                               t-on-change="onInputChange"
+                               t-on-blur="onInputBlur"
+                               t-on-keydown="onInputKeydown"/>
+                        <span class="text-muted small">%</span>
+                    </div>
+                </div>
+
+                <!-- Over-billing warning -->
+                <div t-if="currentValue > 100" class="o_lp_overbilling_warn small text-danger mt-1">
+                    <i class="fa fa-exclamation-triangle me-1"/>
+                    Avancement > 100 % — surfacturation détectée.
+                </div>
+
+            </t>
+
+        </div>
+    </t>
+
+</templates>

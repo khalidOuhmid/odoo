@@ -1,5 +1,10 @@
 from odoo import models, fields, api, _
 from odoo.tools import float_compare
+from odoo.exceptions import UserError
+
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 class BillingCycle(models.Model):
     _name = 'construction.billing.cycle'
@@ -80,3 +85,55 @@ class BillingCycle(models.Model):
         if vals.get('name', _('New')) == _('New'):
             vals['name'] = self.env['ir.sequence'].next_by_code('construction.billing.cycle') or _('New')
         return super(BillingCycle, self).create(vals)
+
+    def action_apply_template(self, template_id=None):
+        """Apply a billing cycle template, replacing draft steps.
+
+        Called from the BillingPlanWidget via RPC.
+        Non-draft steps (invoiced/paid) are preserved.
+        """
+        self.ensure_one()
+        if template_id:
+            template = self.env['construction.billing.cycle.template'].browse(template_id)
+        else:
+            template = self.env.ref(
+                'construction_invoice.billing_template_30_30_40',
+                raise_if_not_found=False,
+            )
+            if not template:
+                template = self.env['construction.billing.cycle.template'].search([], limit=1)
+
+        if not template or not template.exists():
+            raise UserError(_("Aucun modèle de cycle de facturation disponible."))
+
+        # Remove only draft steps to preserve invoiced/paid history
+        draft_steps = self.step_ids.filtered(lambda s: s.state == 'draft')
+        draft_steps.unlink()
+
+        for tmpl_step in template.step_templates.sorted('sequence'):
+            self.env['construction.billing.step'].create({
+                'cycle_id': self.id,
+                'name': tmpl_step.name,
+                'sequence': tmpl_step.sequence,
+                'percentage': tmpl_step.percentage,
+            })
+
+        _logger.wizard_action('BillingCycleTemplate', 'apply', record=self)
+        return True
+
+    def message_post(self, **kwargs):
+        """Duplique le message dans le thread du chantier parent."""
+        result = super().message_post(**kwargs)
+        if self.env.context.get('_posting_to_chantier'):
+            return result
+        chantier = getattr(self, 'chantier_id', False)
+        if chantier and chantier.exists():
+            prefix = f"[Facturation — {self.name}]"
+            original_body = kwargs.get('body', '')
+            chantier.with_context(_posting_to_chantier=True).message_post(
+                body=f"<b>{prefix}</b><br/>{original_body}",
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+                mail_notify_author=False,
+            )
+        return result

@@ -25,7 +25,7 @@
             <field name="price" position="after">
                 <field name="purchase_total" sum="Total Achats"/>
                 <field name="purchase_margin" sum="Marge"/>
-                <field name="purchase_margin_percent" optional="hide" widget="percentage"/>
+                <field name="purchase_margin_percent" optional="hide" string="Marge (%)"/>
             </field>
         </field>
     </record>

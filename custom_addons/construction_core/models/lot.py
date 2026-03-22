@@ -8,7 +8,9 @@ from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError, UserError
 import logging
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 
 class LotCategory(models.Model):
@@ -59,6 +61,7 @@ class Lot(models.Model):
         related='category_id.name',
         store=True,
         readonly=True,
+        translate=False,  # Prevent Odoo 18 from querying as jsonb (category.name is not translated)
     )
     code = fields.Char(
         string='Code',
@@ -170,6 +173,11 @@ class Lot(models.Model):
         tracking=True,
         help="Pourcentage d'avancement du lot (peut dépasser 100% = surfacturation)"
     )
+    completion_percentage_display = fields.Char(
+        string='Avancement (%)',
+        compute='_compute_completion_percentage_display',
+        store=False,
+    )
     is_finished = fields.Boolean(
         string='Terminé',
         compute='_compute_is_finished',
@@ -266,7 +274,25 @@ class Lot(models.Model):
         ('unique_category_per_chantier', 'unique(category_id, chantier_id)', 'Cette catégorie de lot existe déjà sur ce chantier.'),
     ]
 
+    @api.constrains('completion_percentage')
+    def _check_completion_percentage(self):
+        """Validate completion percentage is within acceptable bounds.
+
+        Values > 100% are intentionally allowed to detect over-billing situations
+        (tracked via the `is_over_billed` flag). Only negative values are blocked.
+        """
+        for lot in self:
+            if lot.completion_percentage < 0:
+                raise ValidationError(_(
+                    "L'avancement du lot '%s' ne peut pas être négatif (%s%%)."
+                ) % (lot.name or lot.code or str(lot.id), lot.completion_percentage))
+
     # ============= Computes ============= #
+    @api.depends('completion_percentage')
+    def _compute_completion_percentage_display(self):
+        for lot in self:
+            lot.completion_percentage_display = f"{lot.completion_percentage:.0f}%"
+
     @api.depends('completion_percentage')
     def _compute_is_finished(self):
         """Determine if the lot is finished or overbilled based on completion percentage."""

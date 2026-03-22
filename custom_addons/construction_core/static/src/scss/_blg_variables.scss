@@ -1,0 +1,31 @@
+// =============================================================================
+// BLG Groupe — Design System Variables
+// Source of truth: construction_visit report template
+// =============================================================================
+
+// Brand colors
+$blg-primary:        #92564C;  // Brown — headers, borders, accent
+$blg-primary-dark:   #6b3f37;  // Darkened primary for gradients/hover
+$blg-secondary:      #978A86;  // Secondary brown — body text
+$blg-accent:         #AEADAB;  // Tertiary — labels, muted text
+$blg-light:          #D4C5BC;  // Light accent border
+$blg-primary-alpha:  rgba(212, 197, 188, 0.15); // #D4C5BC @15% — section bg
+
+// Text
+$blg-text-dark:      #2B2B2B;  // Main body text
+$blg-text-muted:     #978A86;  // Secondary text
+$blg-text-light:     #AEADAB;  // Labels, captions
+
+// Backgrounds
+$blg-bg-light:       #F9F8F7;  // Cards, info sections
+$blg-bg-white:       #FFFFFF;  // Content areas
+$blg-bg-off:         #FAFAFA;  // Signature boxes, subtle bg
+
+// Borders
+$blg-border:         #E5E3E2;  // Standard border
+
+// Status / Semantic (neutral — not BLG branded, shared Odoo conventions)
+$blg-success:        #38a169;  // Progress fill, completion
+$blg-success-light:  #48bb78;  // Progress gradient start
+$blg-warning:        #ed8936;  // Forced actions, warnings
+$blg-warning-bg:     #ffecd2;  // Warning section background

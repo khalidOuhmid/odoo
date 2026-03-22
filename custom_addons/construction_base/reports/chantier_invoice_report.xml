@@ -20,11 +20,11 @@
                                 <h2 style="margin:0; color:#92564C; font-size:16px;">
                                     <t t-esc="(o.invoice_origin or 'Facture') + ' — ' + formatted_date"/>
                                 </h2>
-                                <p style="margin:4px 0 0 0;">Référence&nbsp;: <strong><t t-esc="o.name or 'N/A'"/></strong></p>
-                                <p style="margin:2px 0 0 0;">Date&nbsp;: <strong><t t-esc="formatted_date"/></strong></p>
-                                <p style="margin:2px 0 0 0;">Chantier&nbsp;: <strong><t t-esc="o.invoice_origin or 'N/A'"/></strong></p>
+                                <p style="margin:4px 0 0 0;">Référence&#160;: <strong><t t-esc="o.name or 'N/A'"/></strong></p>
+                                <p style="margin:2px 0 0 0;">Date&#160;: <strong><t t-esc="formatted_date"/></strong></p>
+                                <p style="margin:2px 0 0 0;">Chantier&#160;: <strong><t t-esc="o.invoice_origin or 'N/A'"/></strong></p>
                                 <t t-if="o.ref">
-                                    <p style="margin:2px 0 0 0;">Étape&nbsp;: <strong><t t-esc="o.ref"/></strong></p>
+                                    <p style="margin:2px 0 0 0;">Étape&#160;: <strong><t t-esc="o.ref"/></strong></p>
                                 </t>
                             </td>
                             <td style="width:40%; vertical-align:top; text-align:right;">
@@ -36,7 +36,7 @@
                                 <p style="margin:2px 0 0 0; color:#978A86;"><t t-esc="company.street or ''"/></p>
                                 <p style="margin:2px 0 0 0; color:#978A86;"><t t-esc="(company.zip or '') + ' ' + (company.city or '')"/></p>
                                 <t t-if="company.company_registry">
-                                    <p style="margin:2px 0 0 0; color:#978A86;">SIREN&nbsp;: <t t-esc="company.company_registry"/></p>
+                                    <p style="margin:2px 0 0 0; color:#978A86;">SIREN&#160;: <t t-esc="company.company_registry"/></p>
                                 </t>
                             </td>
                         </tr>
@@ -53,15 +53,15 @@
                                     <p style="margin:2px 0 0 0;"><t t-esc="client.zip or ''"/>&#160;<t t-esc="client.city or ''"/></p>
                                 </t>
                                 <t t-if="client.vat">
-                                    <p style="margin:4px 0 0 0; color:#978A86; font-size:11px;">TVA&nbsp;: <t t-esc="client.vat"/></p>
+                                    <p style="margin:4px 0 0 0; color:#978A86; font-size:11px;">TVA&#160;: <t t-esc="client.vat"/></p>
                                 </t>
                             </td>
                             <td style="width:50%; vertical-align:top; border:1px solid #E5E3E2; border-left:none; padding:10px;">
                                 <p style="margin:0 0 6px 0; color:#92564C; font-weight:600; text-transform:uppercase; font-size:10px; letter-spacing:0.05em;">Informations</p>
-                                <p style="margin:0;">Type&nbsp;: <strong>Facture chantier</strong></p>
-                                <p style="margin:2px 0 0 0;">Devise&nbsp;: <t t-esc="o.currency_id.name"/></p>
+                                <p style="margin:0;">Type&#160;: <strong>Facture chantier</strong></p>
+                                <p style="margin:2px 0 0 0;">Devise&#160;: <t t-esc="o.currency_id.name"/></p>
                                 <t t-if="o.payment_reference">
-                                    <p style="margin:2px 0 0 0;">Réf. paiement&nbsp;: <t t-esc="o.payment_reference"/></p>
+                                    <p style="margin:2px 0 0 0;">Réf. paiement&#160;: <t t-esc="o.payment_reference"/></p>
                                 </t>
                             </td>
                         </tr>

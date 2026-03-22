@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ======================================================== -->
+    <!-- DOCUMENT TAG                                             -->
+    <!-- ======================================================== -->
+
+    <record id="view_construction_document_tag_list" model="ir.ui.view">
+        <field name="name">construction.document.tag.list</field>
+        <field name="model">construction.document.tag</field>
+        <field name="arch" type="xml">
+            <list string="Tags de Document" editable="top">
+                <field name="name"/>
+                <field name="color" widget="color_picker"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_construction_document_tag" model="ir.actions.act_window">
+        <field name="name">Tags de Document</field>
+        <field name="res_model">construction.document.tag</field>
+        <field name="view_mode">list</field>
+    </record>
+
+    <!-- ======================================================== -->
+    <!-- DOCUMENT — VUE LISTE STANDALONE (avec recherche)        -->
+    <!-- ======================================================== -->
+
+    <record id="view_construction_document_list" model="ir.ui.view">
+        <field name="name">construction.document.list</field>
+        <field name="model">construction.document</field>
+        <field name="arch" type="xml">
+            <list string="Documents" default_order="upload_date desc">
+                <field name="name" string="Nom"/>
+                <field name="tag_ids" widget="many2many_tags"
+                       options="{'color_field': 'color'}"/>
+                <field name="lot_id" string="Lot"/>
+                <field name="mimetype" string="Type" optional="show"/>
+                <field name="file_size_human" string="Taille"/>
+                <field name="upload_date" string="Date d'upload"/>
+                <field name="uploaded_by_id" string="Uploadé par"
+                       widget="many2one_avatar_user"/>
+                <button name="action_download" type="object"
+                        icon="fa-download" title="Télécharger" class="text-primary"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_construction_document_form" model="ir.ui.view">
+        <field name="name">construction.document.form</field>
+        <field name="model">construction.document</field>
+        <field name="arch" type="xml">
+            <form string="Document">
+                <sheet>
+                    <group>
+                        <group string="Informations">
+                            <field name="name"/>
+                            <field name="chantier_id" options="{'no_create': True}"/>
+                            <field name="lot_id" options="{'no_create': True}"/>
+                            <field name="tag_ids" widget="many2many_tags"
+                                   options="{'color_field': 'color'}"/>
+                        </group>
+                        <group string="Fichier">
+                            <field name="attachment_id" options="{'no_create': True}"/>
+                            <field name="mimetype" readonly="1"/>
+                            <field name="file_size_human" readonly="1"/>
+                            <field name="upload_date" readonly="1"/>
+                            <field name="uploaded_by_id" readonly="1"/>
+                        </group>
+                    </group>
+                    <group string="Traçabilité source" invisible="not source_model">
+                        <field name="source_model" readonly="1"/>
+                        <field name="source_id" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_construction_document_search" model="ir.ui.view">
+        <field name="name">construction.document.search</field>
+        <field name="model">construction.document</field>
+        <field name="arch" type="xml">
+            <search string="Recherche de Documents">
+                <field name="name" string="Nom du document"/>
+                <field name="tag_ids" string="Tag"/>
+                <field name="lot_id" string="Lot"/>
+                <field name="uploaded_by_id" string="Uploadé par"/>
+                <filter string="PDFs" name="filter_pdf"
+                        domain="[('mimetype', '=', 'application/pdf')]"/>
+                <filter string="Images" name="filter_image"
+                        domain="[('mimetype', 'like', 'image/')]"/>
+                <filter string="Ce mois-ci" name="filter_recent"
+                        domain="[('upload_date', '&gt;=', (context_today()).strftime('%Y-%m-01'))]"/>
+                <group expand="0" string="Grouper par">
+                    <filter string="Tag" name="group_tag"
+                            context="{'group_by': 'tag_ids'}"/>
+                    <filter string="Lot" name="group_lot"
+                            context="{'group_by': 'lot_id'}"/>
+                    <filter string="Mois" name="group_month"
+                            context="{'group_by': 'upload_date:month'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action standalone pour ouvrir la liste des documents d'un chantier -->
+    <record id="action_construction_document" model="ir.actions.act_window">
+        <field name="name">Documents</field>
+        <field name="res_model">construction.document</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_construction_document_search"/>
+    </record>
+
+</odoo>

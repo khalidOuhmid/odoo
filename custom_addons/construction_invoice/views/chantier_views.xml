@@ -63,24 +63,8 @@
                         </group>
                     </group>
 
-                    <!-- BILLING STEPS LIST -->
-                     <field name="billing_step_ids" mode="list">
-                        <list string="Étapes de Facturation" editable="bottom" decoration-success="state=='paid'" decoration-info="state=='invoiced'">
-                            <field name="sequence" widget="handle"/>
-                            <field name="name"/>
-                            <field name="percentage"/>
-                            <field name="currency_id" column_invisible="1"/>
-                            <field name="amount" widget="monetary" sum="Total"/>
-                            <field name="state" widget="badge" 
-                                   decoration-success="state == 'paid'" 
-                                   decoration-info="state == 'invoiced'" 
-                                   decoration-warning="state == 'draft'"/>
-                            <button name="action_create_invoice" type="object" icon="fa-file-text-o" 
-                                    class="btn-primary" 
-                                    invisible="state != 'draft'"
-                                    title="Générer Facture"/>
-                        </list>
-                    </field>
+                    <!-- BILLING STEPS — custom widget -->
+                    <widget name="billing_plan"/>
 
                     <!-- PARTNERSHIPS SECTION -->
                     <div groups="construction_core.group_construction_manager">

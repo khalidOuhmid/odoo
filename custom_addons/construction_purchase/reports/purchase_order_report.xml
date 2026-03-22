@@ -1,38 +1,278 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <!--
-        BLG Groupe — Rapport Bon de Commande (purchase.order)
-        Hérite du template standard Odoo et ajoute les informations chantier/lot.
-        La mise en page bordeaux est injectée automatiquement via
-        construction_base.external_layout_standard_blg (report_layout_blg.xml).
+    ═══════════════════════════════════════════════════════
+    BLG GROUPE — Template PDF Bon de Commande
+    Couleurs : #8B3A3A titres / #F5F0EB fond table / #2C2C2C texte
+    Séparateurs de lots, pied de page Page X/Y + référence + date
+    ═══════════════════════════════════════════════════════
     -->
-    <template id="report_purchaseorder_document_blg" inherit_id="purchase.report_purchaseorder_document">
 
-        <!-- Ajout du chantier et des lots dans le bloc informations du document -->
-        <xpath expr="//div[@id='informations']" position="inside">
-            <t t-if="o.chantier_id">
-                <div class="col">
-                    <strong>Chantier</strong>
-                    <div t-field="o.chantier_id"/>
-                </div>
-            </t>
-            <t t-if="o.lot_ids">
-                <div class="col">
-                    <strong>Lots</strong>
-                    <div><t t-esc="', '.join(o.lot_ids.mapped('name'))"/></div>
-                </div>
-            </t>
-        </xpath>
+    <!-- ── STYLES INLINE BLG ───────────────────────────────── -->
+    <template id="report_purchaseorder_blg_styles">
+        <style>
+            :root {
+                --blg-primary: #8B3A3A;
+                --blg-bg-table: #F5F0EB;
+                --blg-text: #2C2C2C;
+                --blg-border: #D9CFC8;
+            }
+            body { color: var(--blg-text); font-family: 'DejaVu Sans', sans-serif; font-size: 9pt; }
+            .blg-header { border-bottom: 3px solid var(--blg-primary); padding-bottom: 10px; margin-bottom: 16px; }
+            .blg-title  { color: var(--blg-primary); font-size: 16pt; font-weight: bold; }
+            .blg-ref    { color: var(--blg-primary); font-size: 10pt; }
+            .blg-section { background: var(--blg-primary); color: #fff; padding: 4px 10px;
+                           font-weight: bold; font-size: 9.5pt; margin-top: 4px; }
+            table.blg-table { width: 100%; border-collapse: collapse; font-size: 8.5pt; }
+            table.blg-table thead tr th {
+                background: var(--blg-primary); color: #fff;
+                padding: 5px 8px; text-align: left;
+            }
+            table.blg-table thead tr th.text-right { text-align: right; }
+            table.blg-table tbody tr td {
+                background: var(--blg-bg-table); padding: 5px 8px;
+                border-bottom: 1px solid var(--blg-border); vertical-align: top;
+            }
+            table.blg-table tbody tr:nth-child(even) td { background: #EDE8E3; }
+            table.blg-table tfoot tr td {
+                padding: 5px 8px; font-weight: bold; border-top: 2px solid var(--blg-primary);
+            }
+            .blg-total-row td { background: var(--blg-bg-table); }
+            .blg-grand-total td { background: var(--blg-primary); color: #fff; font-size: 10pt; }
+            .blg-info-box { border: 1px solid var(--blg-border); padding: 8px 12px;
+                            border-radius: 4px; background: var(--blg-bg-table); }
+            .blg-label { font-size: 7.5pt; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+        </style>
     </template>
 
-    <!-- Action rapport (disponible dans le menu Impression du bon de commande) -->
+    <!-- ── DOCUMENT PRINCIPAL ──────────────────────────────── -->
+    <template id="report_purchaseorder_document_blg">
+        <t t-call="web.external_layout">
+            <t t-set="o" t-value="o.with_context(lang=lang)"/>
+
+            <!-- Styles BLG -->
+            <t t-call="construction_purchase.report_purchaseorder_blg_styles"/>
+
+            <div class="page">
+
+                <!-- En-tête document -->
+                <div class="blg-header row">
+                    <div class="col-7">
+                        <div class="blg-title">Bon de Commande</div>
+                        <div class="blg-ref mt-1"><t t-field="o.name"/></div>
+                        <t t-if="o.chantier_id">
+                            <div class="mt-1">
+                                <span class="blg-label">Chantier : </span>
+                                <strong><t t-field="o.chantier_id"/></strong>
+                            </div>
+                        </t>
+                        <t t-if="o.lot_ids">
+                            <div>
+                                <span class="blg-label">Lots : </span>
+                                <t t-esc="', '.join(o.lot_ids.mapped(lambda l: (l.code or '') + ' ' + l.name))"/>
+                            </div>
+                        </t>
+                    </div>
+                    <div class="col-5 text-end">
+                        <div class="blg-label">Date commande</div>
+                        <div><t t-field="o.date_order" t-options="{'widget': 'date'}"/></div>
+                        <t t-if="o.date_planned">
+                            <div class="mt-1 blg-label">Livraison prévue</div>
+                            <div><t t-field="o.date_planned" t-options="{'widget': 'date'}"/></div>
+                        </t>
+                    </div>
+                </div>
+
+                <!-- Infos fournisseur / livraison -->
+                <div class="row mb-3">
+                    <div class="col-5">
+                        <div class="blg-info-box">
+                            <div class="blg-label mb-1">Fournisseur</div>
+                            <div><t t-field="o.partner_id"
+                                    t-options="{'widget': 'contact', 'fields': ['name','street','city','zip','country_id']}"/>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-5 offset-2">
+                        <div class="blg-info-box">
+                            <div class="blg-label mb-1">Adresse de livraison</div>
+                            <t t-if="o.dest_address_id">
+                                <div><t t-field="o.dest_address_id"
+                                        t-options="{'widget': 'contact', 'fields': ['name','street','city','zip']}"/>
+                                </div>
+                            </t>
+                            <t t-elif="o.chantier_id">
+                                <div><strong><t t-field="o.chantier_id"/></strong></div>
+                                <t t-if="o.chantier_id.address">
+                                    <div><t t-field="o.chantier_id.address"/></div>
+                                </t>
+                            </t>
+                            <t t-else="">
+                                <div><t t-field="o.picking_type_id.warehouse_id.lot_stock_id.location_id"/></div>
+                            </t>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tableau des lignes, groupé par lot -->
+                <table class="blg-table">
+                    <thead>
+                        <tr>
+                            <th style="width:35%">Désignation</th>
+                            <th style="width:12%">Réf. Fournisseur</th>
+                            <th style="width:12%">Localisation</th>
+                            <th class="text-right" style="width:8%">Qté</th>
+                            <th style="width:8%">Unité</th>
+                            <th class="text-right" style="width:10%">P.U. HT</th>
+                            <th class="text-right" style="width:10%">Sous-total HT</th>
+                            <th class="text-right" style="width:5%">TVA</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Groupement par lot -->
+                        <t t-set="current_lot_id" t-value="False"/>
+                        <t t-foreach="o.order_line" t-as="line">
+                            <!-- Séparateur de lot -->
+                            <t t-if="line.lot_id and line.lot_id.id != current_lot_id">
+                                <t t-set="current_lot_id" t-value="line.lot_id.id"/>
+                                <tr>
+                                    <td colspan="8" class="p-0">
+                                        <div class="blg-section">
+                                            Lot <t t-esc="line.lot_id.code or ''"/> — <t t-esc="line.lot_id.name"/>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </t>
+                            <!-- Ligne section standard Odoo -->
+                            <t t-if="line.display_type == 'line_section'">
+                                <tr>
+                                    <td colspan="8" style="background: #E8E0D8; font-weight: 600; padding: 5px 8px;">
+                                        <t t-field="line.name"/>
+                                    </td>
+                                </tr>
+                            </t>
+                            <!-- Ligne note -->
+                            <t t-elif="line.display_type == 'line_note'">
+                                <tr>
+                                    <td colspan="8" style="font-style: italic; color: #666;">
+                                        <t t-field="line.name"/>
+                                    </td>
+                                </tr>
+                            </t>
+                            <!-- Ligne produit -->
+                            <t t-else="">
+                                <tr>
+                                    <td>
+                                        <strong><t t-field="line.name"/></strong>
+                                        <t t-if="line.construction_notes">
+                                            <div style="font-size:7.5pt;color:#666;margin-top:2px;">
+                                                <t t-field="line.construction_notes"/>
+                                            </div>
+                                        </t>
+                                    </td>
+                                    <td><t t-field="line.product_id.default_code"/></td>
+                                    <td>
+                                        <t t-if="line.room_location"><t t-field="line.room_location"/></t>
+                                        <t t-if="line.floor_level">
+                                            — <t t-field="line.floor_level"/>
+                                        </t>
+                                    </td>
+                                    <td class="text-right"><t t-field="line.product_qty"/></td>
+                                    <td><t t-field="line.product_uom"/></td>
+                                    <td class="text-right">
+                                        <t t-field="line.price_unit"
+                                           t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <t t-field="line.price_subtotal"
+                                           t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                                    </td>
+                                    <td class="text-right">
+                                        <t t-esc="', '.join(line.taxes_id.mapped('name'))"/>
+                                    </td>
+                                </tr>
+                            </t>
+                        </t>
+                    </tbody>
+                    <tfoot>
+                        <tr class="blg-total-row">
+                            <td colspan="6" class="text-end">Total HT</td>
+                            <td class="text-right">
+                                <t t-field="o.amount_untaxed"
+                                   t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr class="blg-total-row">
+                            <td colspan="6" class="text-end">TVA</td>
+                            <td class="text-right">
+                                <t t-field="o.amount_tax"
+                                   t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                            </td>
+                            <td></td>
+                        </tr>
+                        <tr class="blg-grand-total">
+                            <td colspan="6" class="text-end">Total TTC</td>
+                            <td class="text-right">
+                                <t t-field="o.amount_total"
+                                   t-options="{'widget': 'monetary', 'display_currency': o.currency_id}"/>
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+
+                <!-- Notes -->
+                <t t-if="o.notes">
+                    <div class="mt-3">
+                        <div class="blg-label mb-1">Notes</div>
+                        <div style="font-size: 8.5pt;"><t t-field="o.notes"/></div>
+                    </div>
+                </t>
+
+                <!-- Pied de page : Page X/Y · Référence · Date d'impression -->
+                <div class="footer" style="
+                        position: fixed; bottom: 0; left: 0; right: 0;
+                        border-top: 1px solid #8B3A3A;
+                        padding: 4px 20px;
+                        font-size: 7.5pt;
+                        color: #8B3A3A;
+                        display: flex;
+                        justify-content: space-between;">
+                    <span>BLG Groupe — <t t-field="o.company_id.name"/></span>
+                    <span>Réf. : <t t-field="o.name"/></span>
+                    <span>
+                        Imprimé le <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y')"/>
+                        &#160;·&#160;
+                        Page <span class="page"/> / <span class="topage"/>
+                    </span>
+                </div>
+
+            </div><!-- /page -->
+        </t>
+    </template>
+
+    <!-- ── RAPPORT STANDALONE (avec wrapper et pied de page) ── -->
+    <template id="report_purchaseorder_blg">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="construction_purchase.report_purchaseorder_document_blg"
+                   t-lang="o.partner_id.lang"/>
+            </t>
+        </t>
+    </template>
+
+    <!-- ── ACTION RAPPORT ───────────────────────────────────── -->
     <record id="action_report_purchaseorder_blg" model="ir.actions.report">
         <field name="name">Bon de Commande BLG</field>
         <field name="model">purchase.order</field>
         <field name="report_type">qweb-pdf</field>
-        <field name="report_name">construction_purchase.report_purchaseorder_document_blg</field>
-        <field name="report_file">construction_purchase.report_purchaseorder_document_blg</field>
+        <field name="report_name">construction_purchase.report_purchaseorder_blg</field>
+        <field name="report_file">construction_purchase.report_purchaseorder_blg</field>
         <field name="binding_model_id" ref="purchase.model_purchase_order"/>
         <field name="binding_type">report</field>
+        <!-- Pied de page Odoo standard : Page X / Y -->
+        <field name="paperformat_id" ref="base.paperformat_euro"/>
     </record>
+
 </odoo>

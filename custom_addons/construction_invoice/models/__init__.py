@@ -5,4 +5,5 @@ from . import invoice_schedule
 from . import chantier_extension
 from . import billing_cycle
 from . import billing_step
+from . import billing_cycle_template
 from . import account_move

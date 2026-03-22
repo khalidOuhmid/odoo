@@ -94,7 +94,7 @@
                                 <div class="o_finance_kpi_row">
                                     <span class="o_finance_kpi_label">Marge brute</span>
                                     <span t-attf-class="o_finance_kpi_value fw-bold #{record.margin_percent.raw_value &lt; 5 ? 'text-danger' : record.margin_percent.raw_value &lt; 15 ? 'text-warning' : 'text-success'}">
-                                        <field name="margin_percent" widget="percentage" digits="[6,1]"/>
+                                        <field name="margin_percent" digits="[6,1]"/>
                                     </span>
                                 </div>
                                 <!-- CA Facturé vs Prévu -->

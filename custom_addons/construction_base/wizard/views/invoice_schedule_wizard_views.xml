@@ -27,7 +27,7 @@
                         </group>
                         
                         <group string="Paramètres">
-                            <field name="margin_percentage" widget="percentage"/>
+                            <field name="margin_percentage"/>
                             <field name="estimated_total" widget="monetary"/>
                             <field name="currency_id" invisible="1"/>
                         </group>

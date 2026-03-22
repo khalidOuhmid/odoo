@@ -183,10 +183,12 @@
                             </div>
                             <group>
                                 <group>
-                                    <field name="completion_percentage" widget="percentage"/>
+                                    <field name="is_finished" invisible="1"/>
+                                    <field name="completion_percentage" widget="lot_progress"
+                                           nolabel="1"/>
                                 </group>
                                 <group>
-                                    <button name="action_mark_complete" 
+                                    <button name="action_mark_complete"
                                             string="Terminer (100%)"
                                             type="object"
                                             class="btn-success"

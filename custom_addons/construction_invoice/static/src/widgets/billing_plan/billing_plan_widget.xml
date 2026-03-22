@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="construction_invoice.BillingPlanWidget">
+        <div class="o_billing_plan_widget">
+
+            <!-- No cycle assigned yet -->
+            <t t-if="!cycleId">
+                <div class="text-muted fst-italic p-2">
+                    Aucun cycle de facturation défini. Cliquez sur "Définir Cycle" pour commencer.
+                </div>
+            </t>
+
+            <t t-else="">
+                <!-- Loading spinner -->
+                <div t-if="state.loading" class="d-flex align-items-center gap-2 py-2 text-muted">
+                    <i class="fa fa-spinner fa-spin"/>
+                    <span>Chargement…</span>
+                </div>
+
+                <t t-else="">
+
+                    <!-- Over-billing alert -->
+                    <div t-if="isOverBilled" class="alert alert-danger py-2 mb-2" role="alert">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        <strong>Total dépasse 100 %
+                            (<t t-esc="totalPercent.toFixed(1)"/>%)</strong>
+                        — Veuillez corriger les pourcentages avant de facturer.
+                    </div>
+
+                    <!-- Progress bar -->
+                    <div class="o_billing_progress mb-3 position-relative">
+                        <div class="o_billing_progress_track">
+                            <div class="o_billing_progress_fill"
+                                 t-attf-style="width: #{progressBarWidth}%;
+                                               background-color: #{isOverBilled ? '#C62828' : '#8B3A3A'};"/>
+                        </div>
+                        <div class="o_billing_progress_label d-flex justify-content-between small mt-1">
+                            <span>
+                                <strong t-attf-class="#{isOverBilled ? 'text-danger' : ''}">
+                                    <t t-esc="totalPercent.toFixed(1)"/>%
+                                </strong>
+                                du montant planifié
+                            </span>
+                            <span class="text-muted">
+                                Base : <t t-esc="formatAmount(totalAmount)"/>
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Steps table -->
+                    <table class="o_billing_steps_table w-100 mb-2" t-if="state.steps.length">
+                        <thead>
+                            <tr class="text-muted small border-bottom">
+                                <th style="width:36px">#</th>
+                                <th>Description</th>
+                                <th style="width:70px" class="text-end">%</th>
+                                <th style="width:130px" class="text-end">Montant HT</th>
+                                <th style="width:80px" class="text-center">État</th>
+                                <th style="width:110px" class="text-end">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="state.steps" t-as="step" t-key="step.id"
+                                t-attf-class="o_billing_step_row #{step.state === 'paid' ? 'o_step_paid' : step.state === 'invoiced' ? 'o_step_invoiced' : ''}">
+
+                                <!-- Sequence badge -->
+                                <td>
+                                    <span class="o_billing_seq_badge">
+                                        <t t-esc="step_index + 1"/>
+                                    </span>
+                                </td>
+
+                                <!-- Name -->
+                                <td>
+                                    <t t-if="state.editingId === step.id">
+                                        <input type="text"
+                                               class="form-control form-control-sm"
+                                               t-model="state.editName"
+                                               t-on-keydown="onKeydownEdit"
+                                               t-on-blur="saveEditing"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span t-attf-class="#{step.state === 'draft' ? 'o_editable_cell' : 'text-muted'}"
+                                              t-on-click="() => startEditing(step)">
+                                            <t t-esc="step.name"/>
+                                        </span>
+                                    </t>
+                                </td>
+
+                                <!-- Percentage -->
+                                <td class="text-end">
+                                    <t t-if="state.editingId === step.id">
+                                        <input type="number"
+                                               class="form-control form-control-sm text-end"
+                                               style="width:65px; display:inline-block"
+                                               t-model.number="state.editPercent"
+                                               min="0" max="200" step="0.01"
+                                               t-on-keydown="onKeydownEdit"/>
+                                    </t>
+                                    <t t-else="">
+                                        <span t-attf-class="#{step.state === 'draft' ? 'o_editable_cell' : ''}"
+                                              t-on-click="() => startEditing(step)">
+                                            <t t-esc="step.percentage.toFixed(1)"/>%
+                                        </span>
+                                    </t>
+                                </td>
+
+                                <!-- Amount -->
+                                <td class="text-end fw-semibold">
+                                    <t t-esc="formatAmount(step.amount)"/>
+                                </td>
+
+                                <!-- State badge -->
+                                <td class="text-center">
+                                    <span t-attf-class="badge #{stateBadgeClass(step.state)}">
+                                        <t t-esc="stateLabel(step.state)"/>
+                                    </span>
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="text-end">
+                                    <t t-if="state.editingId === step.id">
+                                        <button class="btn btn-sm btn-primary me-1"
+                                                title="Enregistrer"
+                                                t-on-click="saveEditing">
+                                            <i class="fa fa-check"/>
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary"
+                                                title="Annuler"
+                                                t-on-click="cancelEditing">
+                                            <i class="fa fa-times"/>
+                                        </button>
+                                    </t>
+                                    <t t-else="">
+                                        <button t-if="step.state === 'draft'"
+                                                class="btn btn-sm btn-success me-1"
+                                                title="Créer la facture"
+                                                t-on-click="() => onCreateInvoice(step)">
+                                            <i class="fa fa-file-text-o"/>
+                                        </button>
+                                        <button t-if="step.state === 'draft'"
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Supprimer cette étape"
+                                                t-on-click="() => onDeleteStep(step)">
+                                            <i class="fa fa-trash"/>
+                                        </button>
+                                        <a t-if="step.state !== 'draft' and step.invoice_id"
+                                           class="btn btn-sm btn-outline-secondary"
+                                           title="Voir la facture"
+                                           t-on-click="() => action.doAction({ type: 'ir.actions.act_window', res_model: 'account.move', res_id: step.invoice_id[0], view_mode: 'form', views: [[false, 'form']] })">
+                                            <i class="fa fa-external-link"/>
+                                        </a>
+                                    </t>
+                                </td>
+
+                            </tr>
+                        </tbody>
+                        <tfoot>
+                            <tr class="fw-bold border-top">
+                                <td colspan="2" class="text-muted small pt-1">Total</td>
+                                <td class="text-end">
+                                    <t t-esc="totalPercent.toFixed(1)"/>%
+                                </td>
+                                <td class="text-end">
+                                    <t t-esc="formatAmount(state.steps.reduce((s, r) => s + (r.amount || 0), 0))"/>
+                                </td>
+                                <td colspan="2"/>
+                            </tr>
+                        </tfoot>
+                    </table>
+
+                    <div t-if="!state.steps.length" class="text-muted fst-italic small py-2">
+                        Aucune étape définie. Ajoutez des étapes ou appliquez un modèle.
+                    </div>
+
+                    <!-- Footer toolbar -->
+                    <div class="d-flex gap-2 mt-2 flex-wrap">
+                        <button class="btn btn-sm btn-outline-primary"
+                                t-on-click="onAddStep">
+                            <i class="fa fa-plus me-1"/>
+                            Ajouter une étape
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary"
+                                t-on-click="onApplyTemplate">
+                            <i class="fa fa-magic me-1"/>
+                            Appliquer modèle 30/30/40
+                        </button>
+                    </div>
+
+                </t>
+            </t>
+        </div>
+    </t>
+
+</templates>

@@ -343,8 +343,7 @@
                             <field name="retention_rate" 
                                    string="Taux de Retenue de Garantie"
                                    readonly="state != 'draft'"
-                                   widget="percentage"
-                                   help="Pourcentage retenu en garantie"/>
+                                   help="Pourcentage retenu en garantie (0–20%)"/>
                             <field name="retention_amount" 
                                    string="Montant de la Retenue"
                                    widget="monetary"
@@ -453,10 +452,9 @@
                                        widget="monetary"
                                        class="oe_subtotal_footer_separator"
                                        style="font-size: 1.5em; font-weight: bold;"/>
-                                <field name="retention_rate" 
+                                <field name="retention_rate"
                                        string="Taux de Retenue"
-                                       readonly="state != 'draft'"
-                                       widget="percentage"/>
+                                       readonly="state != 'draft'"/>
                                 <field name="retention_amount" 
                                        string="Montant de la Retenue"
                                        widget="monetary"

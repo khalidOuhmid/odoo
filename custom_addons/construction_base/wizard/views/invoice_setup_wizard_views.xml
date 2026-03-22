@@ -34,7 +34,7 @@
                                 </p>
                             </group>
                             <group string="Marge">
-                                <field name="margin_percentage" widget="percentage"/>
+                                <field name="margin_percentage"/>
                                 <p class="text-muted">
                                     <small>Pourcentage de marge à déduire des montants du devis</small>
                                 </p>
