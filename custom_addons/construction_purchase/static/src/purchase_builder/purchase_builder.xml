@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+<t t-name="construction_purchase.PurchaseBuilder">
+<div class="pb">
+
+    <!-- CHARGEMENT -->
+    <div t-if="state.loading" class="pb__loading">
+        <i class="fa fa-spinner fa-spin fa-2x"/>
+        <span>Chargement en cours…</span>
+    </div>
+
+    <!-- PAS DE BdC -->
+    <div t-if="!state.loading and !state.orderId" class="pb__empty">
+        <i class="fa fa-warning fa-2x text-warning"/>
+        <p>Ouvrez le PurchaseBuilder depuis un bon de commande existant.</p>
+    </div>
+
+    <!-- LAYOUT PRINCIPAL -->
+    <t t-if="!state.loading and state.orderId">
+        <div class="pb__layout">
+
+            <!-- ============ SIDEBAR ============ -->
+            <aside class="pb__sidebar">
+
+                <!-- En-tête chantier -->
+                <div class="pb__sidebar-header">
+                    <div class="pb__chantier-avatar">
+                        <t t-esc="state.chantierName ? state.chantierName.substring(0,2).toUpperCase() : '?'"/>
+                    </div>
+                    <div>
+                        <div class="pb__label">Fournisseur</div>
+                        <strong t-esc="state.partnerName || '—'"/>
+                        <div class="pb__label mt-1">Chantier</div>
+                        <strong t-esc="state.chantierName || '—'"/>
+                    </div>
+                </div>
+
+                <!-- Recherche produit -->
+                <div class="pb__search">
+                    <i class="fa fa-search pb__search-icon"/>
+                    <input type="text"
+                           class="pb__search-input"
+                           placeholder="Rechercher un article…"
+                           t-att-value="state.searchTerm"
+                           t-on-input="onSearchInput"/>
+                </div>
+
+                <!-- Filtres lots -->
+                <div class="pb__lots">
+                    <div class="pb__section-title">Lots</div>
+                    <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
+                        <button t-attf-class="pb__lot-pill #{state.selectedLotId === lot.id ? 'pb__lot-pill--active' : ''}"
+                                t-on-click="() => this.onLotFilter(lot.id)">
+                            <span class="pb__lot-code" t-esc="lot.code"/>
+                            <span class="pb__lot-name" t-esc="lot.name"/>
+                            <span class="pb__lot-badge" t-esc="getLotLineCount(lot.id)"/>
+                        </button>
+                    </t>
+                    <div t-if="state.lots.length === 0" class="pb__empty-hint">Aucun lot défini.</div>
+                </div>
+
+                <!-- Catalogue produits -->
+                <div class="pb__catalog">
+                    <div class="pb__section-title">Articles</div>
+                    <t t-foreach="state.products" t-as="product" t-key="product.id">
+                        <button class="pb__product-item" t-on-click="() => this.onProductClick(product)">
+                            <span class="pb__product-name" t-esc="product.display_name || product.name"/>
+                            <span class="pb__product-ref" t-esc="product.uom_id ? product.uom_id[1] : ''"/>
+                        </button>
+                    </t>
+                    <div t-if="state.products.length === 0" class="pb__empty-hint">Aucun article trouvé.</div>
+                </div>
+            </aside>
+
+            <!-- ============ PANIER ============ -->
+            <main class="pb__main">
+
+                <!-- Toolbar -->
+                <div class="pb__toolbar">
+                    <h4 class="pb__title">Lignes du bon de commande</h4>
+                    <div class="pb__toolbar-actions">
+                        <button class="btn btn-primary"
+                                t-att-disabled="state.saving"
+                                t-on-click="onSave">
+                            <i t-attf-class="fa #{state.saving ? 'fa-spinner fa-spin' : 'fa-save'} me-1"/>
+                            Enregistrer sur le BdC
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Panier vide -->
+                <div t-if="state.cart.length === 0" class="pb__cart-empty">
+                    <i class="fa fa-inbox fa-3x text-muted"/>
+                    <p class="text-muted mt-2">Cliquez sur un article dans le catalogue pour l'ajouter.</p>
+                </div>
+
+                <!-- Groupes par lot -->
+                <t t-if="state.cart.length > 0">
+                    <t t-foreach="getGroupedCart()" t-as="group" t-key="group.id">
+                        <div class="pb__lot-group">
+                            <div class="pb__lot-group-header">
+                                <i class="fa fa-cubes me-1"/>
+                                <span t-esc="group.label"/>
+                                <span class="badge bg-secondary ms-2" t-esc="group.lines.length"/>
+                            </div>
+                            <table class="pb__table">
+                                <thead>
+                                    <tr>
+                                        <th>Article</th>
+                                        <th>Localisation</th>
+                                        <th>Niveau</th>
+                                        <th class="text-end">Qté</th>
+                                        <th class="text-end">P.U. HT</th>
+                                        <th>Notes</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-foreach="group.lines" t-as="line" t-key="line._uid">
+                                        <tr>
+                                            <td class="pb__col-name" t-esc="line.name"/>
+                                            <td class="pb__col-loc" t-esc="line.room_location || '—'"/>
+                                            <td class="pb__col-floor">
+                                                <t t-set="fl" t-value="floorLevels.find(f => f.value === line.floor_level)"/>
+                                                <span t-esc="fl ? fl.label : '—'"/>
+                                            </td>
+                                            <td class="text-end" t-esc="line.product_qty"/>
+                                            <td class="text-end" t-esc="line.price_unit.toFixed(2) + ' €'"/>
+                                            <td class="pb__col-notes" t-esc="line.construction_notes || ''"/>
+                                            <td class="pb__col-actions">
+                                                <button class="btn btn-sm btn-outline-secondary me-1"
+                                                        t-on-click="() => this.onEditLine(line)"
+                                                        title="Modifier">
+                                                    <i class="fa fa-pencil"/>
+                                                </button>
+                                                <button class="btn btn-sm btn-outline-danger"
+                                                        t-on-click="() => this.onRemoveLine(line._uid)"
+                                                        title="Supprimer">
+                                                    <i class="fa fa-trash"/>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                        </div>
+                    </t>
+                </t>
+
+                <!-- Totaux serveur (affichés après enregistrement) -->
+                <div t-if="state.totals" class="pb__totals">
+                    <div class="pb__totals-title">Récapitulatif (données serveur)</div>
+
+                    <!-- Sous-totaux par lot -->
+                    <t t-if="state.totals.lot_totals and state.totals.lot_totals.length > 1">
+                        <div class="pb__lot-subtotals">
+                            <t t-foreach="state.totals.lot_totals" t-as="lt" t-key="lt.id">
+                                <div class="pb__lot-subtotal-row">
+                                    <span t-esc="lt.name"/>
+                                    <span t-esc="lt.subtotal.toFixed(2) + ' ' + state.totals.currency_symbol"/>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+
+                    <div class="pb__totals-grid">
+                        <div class="pb__total-row">
+                            <span>Total HT</span>
+                            <strong t-esc="state.totals.amount_untaxed.toFixed(2) + ' ' + state.totals.currency_symbol"/>
+                        </div>
+                        <div class="pb__total-row">
+                            <span>TVA</span>
+                            <span t-esc="state.totals.amount_tax.toFixed(2) + ' ' + state.totals.currency_symbol"/>
+                        </div>
+                        <div class="pb__total-row pb__total-row--ttc">
+                            <strong>Total TTC</strong>
+                            <strong t-esc="state.totals.amount_total.toFixed(2) + ' ' + state.totals.currency_symbol"/>
+                        </div>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </t>
+
+    <!-- ============ WIZARD LIGNE ============ -->
+    <div t-if="state.showLineWizard" class="pb__overlay">
+        <div class="pb__wizard">
+            <div class="pb__wizard-header">
+                <h5 class="mb-0">
+                    <t t-if="state.wizardLine and state.wizardLine.id">Modifier la ligne</t>
+                    <t t-else="">Ajouter un article</t>
+                </h5>
+                <button class="btn-close" t-on-click="onCloseWizard"/>
+            </div>
+            <div class="pb__wizard-body" t-if="state.wizardLine">
+                <div class="row g-3">
+
+                    <div class="col-12">
+                        <label class="form-label">Désignation *</label>
+                        <input type="text" class="form-control"
+                               t-att-value="state.wizardLine.name"
+                               t-on-change="(ev) => this.onWizardField('name', ev)"/>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label">Lot *</label>
+                        <select class="form-select" t-on-change="onWizardLotChange">
+                            <option value="">— Choisir un lot —</option>
+                            <t t-foreach="state.lots" t-as="lot" t-key="lot.id">
+                                <option t-att-value="lot.id"
+                                        t-att-selected="state.wizardLine.lot_id === lot.id">
+                                    <t t-esc="lot.code"/> — <t t-esc="lot.name"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label">Niveau</label>
+                        <select class="form-select" t-on-change="onWizardFloorChange">
+                            <t t-foreach="floorLevels" t-as="fl" t-key="fl.value">
+                                <option t-att-value="fl.value"
+                                        t-att-selected="state.wizardLine.floor_level === fl.value">
+                                    <t t-esc="fl.label"/>
+                                </option>
+                            </t>
+                        </select>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label">Quantité</label>
+                        <input type="number" class="form-control"
+                               t-att-value="state.wizardLine.product_qty"
+                               min="0" step="0.01"
+                               t-on-change="(ev) => this.onWizardField('product_qty', ev)"/>
+                    </div>
+
+                    <div class="col-6">
+                        <label class="form-label">Prix unitaire HT (€)</label>
+                        <input type="number" class="form-control"
+                               t-att-value="state.wizardLine.price_unit"
+                               min="0" step="0.01"
+                               t-on-change="(ev) => this.onWizardField('price_unit', ev)"/>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Localisation</label>
+                        <input type="text" class="form-control"
+                               placeholder="Ex : Salon, Chambre 2…"
+                               t-att-value="state.wizardLine.room_location"
+                               t-on-change="(ev) => this.onWizardField('room_location', ev)"/>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label">Notes techniques</label>
+                        <textarea class="form-control" rows="2"
+                                  t-att-value="state.wizardLine.construction_notes"
+                                  t-on-change="(ev) => this.onWizardField('construction_notes', ev)"/>
+                    </div>
+
+                </div>
+            </div>
+            <div class="pb__wizard-footer">
+                <button class="btn btn-secondary" t-on-click="onCloseWizard">Annuler</button>
+                <button class="btn btn-primary" t-on-click="onConfirmWizard">
+                    <i class="fa fa-check me-1"/>Confirmer
+                </button>
+            </div>
+        </div>
+    </div>
+
+</div>
+</t>
+</templates>

@@ -201,7 +201,7 @@ class ContractSendWizard(models.TransientModel):
             mail_vals = {
                 'subject': _("Contrat de Sous-traitance - %s") % contract.name,
                 'body_html': self.message_preview.replace('\n', '<br/>'),
-                'email_from': self.env.company.email or 'noreply@blg-groupe.fr',
+                'email_from': self.env.company.email or self.env['ir.config_parameter'].sudo().get_param('construction_contract.default_from_email', ''),
                 'email_to': self.recipient_email,
                 'auto_delete': True,
             }

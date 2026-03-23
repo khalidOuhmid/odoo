@@ -236,11 +236,52 @@ export class ContractEditor extends Component {
             this._pendingWrites = {};
             this.state.isDirty = false;
             this.notification.add("Champs sauvegardés ✓", { type: "success" });
+            // Refresh sidebar with server-computed values (amounts, retention, etc.)
+            await this._refreshRenderedVariables();
         } catch (e) {
             const msg = e?.data?.message || e?.message || "Erreur de sauvegarde";
             this.notification.add(msg, { type: "danger" });
         } finally {
             this.state.savingSidebar = false;
+        }
+    }
+
+    /**
+     * Fetch server-rendered variable values and sync the sidebar state.
+     *
+     * Called after a sidebar save so computed fields (e.g. retention_amount,
+     * billing_schedule HTML) reflect the latest DB values without a full page reload.
+     */
+    async _refreshRenderedVariables() {
+        if (!this.resId) return;
+        try {
+            const vars = await this.orm.call(
+                this.resModel,
+                'get_rendered_variables',
+                [this.resId],
+            );
+            // Map injectable var paths back to sidebar state keys
+            if (vars['contract.total_amount_ht']) {
+                this.state.amount = vars['contract.total_amount_ht'];
+            }
+            if (vars['contract.retention_rate'] !== undefined) {
+                this.state.retentionRate = parseFloat(vars['contract.retention_rate']) || this.state.retentionRate;
+            }
+            // Update GrapeJS canvas: refresh .contract-var spans with updated values
+            if (this.editorRef.el) {
+                const canvas = this.editorRef.el.querySelector('iframe');
+                if (canvas && canvas.contentDocument) {
+                    const spans = canvas.contentDocument.querySelectorAll('.contract-var[data-variable]');
+                    spans.forEach(span => {
+                        const varPath = span.getAttribute('data-variable');
+                        if (vars[varPath] !== undefined) {
+                            span.textContent = vars[varPath];
+                        }
+                    });
+                }
+            }
+        } catch (_) {
+            // Non-blocking — sidebar state remains as-is
         }
     }
 

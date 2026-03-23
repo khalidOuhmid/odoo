@@ -6,16 +6,29 @@
     <!-- ========================================================== -->
 
     <template id="signature_portal_template" name="Contract Signature Portal">
-        <!-- Use frontend_layout for minimal/no Odoo header-footer -->
-        <t t-call="web.frontend_layout">
+        <!-- portal.frontend_layout supports no_header/no_footer in Odoo 18 -->
+        <t t-call="portal.frontend_layout">
             <t t-set="no_header" t-value="True"/>
             <t t-set="no_footer" t-value="True"/>
-            
-            <!-- CSS / JS handled natively by web.assets_frontend internally loaded by Odoo -->
-            
+            <t t-set="additional_title">Signature de Contrat</t>
+
             <!-- Load CSS via assets -->
             <t t-call-assets="construction_contract.assets_signature_portal"/>
-            <t t-set="additional_title">Signature de Contrat</t>
+
+            <!-- Belt-and-suspenders: hide any navbar Odoo might still inject -->
+            <t t-set="head">
+                <style>
+                    .o_main_navbar,
+                    header.o_navbar,
+                    nav.navbar.o_main_navbar,
+                    .o_navbar,
+                    #wrapwrap > header,
+                    #oe_main_menu_navbar {
+                        display: none !important;
+                    }
+                    body { padding-top: 0 !important; }
+                </style>
+            </t>
 
             <div class="signature-portal-wrapper"
                  t-att-data-contract-id="contract.id"

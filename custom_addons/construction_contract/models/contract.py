@@ -11,9 +11,10 @@ from datetime import timedelta
 import base64
 import hashlib
 import secrets
-import logging
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 COMPLIANT_DOCUMENT_STATUSES = {'valid', 'expiring'}
 REQUIRED_DOCUMENTS = [
@@ -35,6 +36,7 @@ from ..config.contract_constants import (
     AUTHENTICATION_METHODS,
     TOKEN_EXPIRY_DAYS,
     DEFAULT_RETENTION_RATE,
+    INJECTABLE_VARIABLES,
 )
 
 
@@ -529,13 +531,104 @@ class ConstructionContract(models.Model):
         return lots_data
 
     def _get_schedule_data_context(self):
-        """Build payment schedule data."""
-        # TODO: Link to real payment terms or milestones
-        # For now return standard placeholder structure
+        """Build payment schedule data from billing cycle if available, else default."""
+        return self._get_billing_schedule_data()
+
+    def _get_billing_schedule_data(self):
+        """Return billing steps as list of dicts for Jinja2 iteration.
+
+        Reads from ``chantier_id.billing_cycle_id`` (added by construction_invoice).
+        Falls back to a default 30/70 split when the module is not installed.
+        """
+        self.ensure_one()
+        chantier = self.chantier_id
+        cycle = getattr(chantier, 'billing_cycle_id', False) if chantier else False
+        if cycle and cycle.exists() and cycle.step_ids:
+            steps = []
+            for step in cycle.step_ids.sorted('sequence'):
+                steps.append({
+                    'name': step.name,
+                    'percent': f"{step.percentage:.0f}%",
+                    'amount': self._format_currency(step.amount),
+                })
+            return steps
+        # Default fallback
+        total = self.total_amount_ttc or 0.0
         return [
-            {'name': 'Acompte', 'percent': '30%', 'amount': self._format_currency(self.total_amount_ttc * 0.3)},
-            {'name': 'Solde', 'percent': '70%', 'amount': self._format_currency(self.total_amount_ttc * 0.7)},
+            {'name': 'Acompte (30%)', 'percent': '30%', 'amount': self._format_currency(total * 0.3)},
+            {'name': 'Avancement (30%)', 'percent': '30%', 'amount': self._format_currency(total * 0.3)},
+            {'name': 'Solde (40%)', 'percent': '40%', 'amount': self._format_currency(total * 0.4)},
         ]
+
+    def _get_billing_schedule_html(self):
+        """Return the billing schedule as an HTML table for injection into templates."""
+        self.ensure_one()
+        steps = self._get_billing_schedule_data()
+        rows = ''.join(
+            f'<tr><td>{s["name"]}</td><td style="text-align:center">{s["percent"]}</td>'
+            f'<td style="text-align:right">{s["amount"]}</td></tr>'
+            for s in steps
+        )
+        return (
+            '<table class="blg-billing-schedule" style="width:100%;border-collapse:collapse;font-size:11pt">'
+            '<thead><tr>'
+            '<th style="text-align:left;border-bottom:1px solid #8B3A3A;color:#8B3A3A">Échéance</th>'
+            '<th style="text-align:center;border-bottom:1px solid #8B3A3A;color:#8B3A3A">%</th>'
+            '<th style="text-align:right;border-bottom:1px solid #8B3A3A;color:#8B3A3A">Montant TTC</th>'
+            '</tr></thead>'
+            f'<tbody>{rows}</tbody>'
+            '</table>'
+        )
+
+    @api.model
+    def get_rendered_variables(self, contract_id):
+        """Return current rendered values for all INJECTABLE_VARIABLES.
+
+        Called by the Owl ContractEditor after a sidebar save to refresh the
+        live preview of injectable variable values.
+
+        Returns:
+            dict: {variable_path: rendered_value}  e.g. {"contract.total_amount_ht": "25\u202f000,00\u00a0€"}
+        """
+        contract = self.browse(contract_id)
+        contract.ensure_one()
+        chantier = contract.chantier_id
+        st = contract.subcontractor_id
+
+        def _v(obj, attr, default=''):
+            return str(getattr(obj, attr, None) or default)
+
+        return {
+            'contract.name':                   _v(contract, 'name'),
+            'contract.start_date':             _v(contract, 'start_date'),
+            'contract.end_date':               _v(contract, 'end_date'),
+            'contract.total_amount_ht':        contract._format_currency(contract.total_amount_ht or 0),
+            'contract.total_amount_tva':       contract._format_currency((contract.total_amount_ttc or 0) - (contract.total_amount_ht or 0)),
+            'contract.total_amount_ttc':       contract._format_currency(contract.total_amount_ttc or 0),
+            'contract.retention_rate':         f"{contract.retention_rate or 0:.1f}",
+            'contract.retention_amount':       contract._format_currency((contract.total_amount_ttc or 0) * (contract.retention_rate or 0) / 100),
+            'contract.master_name':            _v(contract, 'master_name'),
+            'contract.master_address':         _v(contract, 'master_address'),
+            'contract.signatory_contractor':   _v(contract, 'signatory_contractor'),
+            'contract.signatory_subcontractor': _v(contract, 'signatory_subcontractor'),
+            'contract.penalty_retard_jour':    str(contract.penalty_retard_jour or 0),
+            'contract.penalty_docs_delay':     str(contract.penalty_docs_delay or 0),
+            'contract.penalty_safety':         str(contract.penalty_safety or 0),
+            'contract.penalty_cleaning':       str(contract.penalty_cleaning or 0),
+            'chantier.name':                   _v(chantier, 'name') if chantier else '',
+            'chantier.reference':              _v(chantier, 'reference') if chantier else '',
+            'chantier.address':                _v(chantier, 'address') if chantier else '',
+            'chantier.city':                   _v(chantier, 'city') if chantier else '',
+            'subcontractor.name':              _v(st, 'name') if st else '',
+            'subcontractor.siret':             _v(st, 'siret') if st else '',
+            'subcontractor.email':             _v(st, 'email') if st else '',
+            'billing_schedule':                contract._get_billing_schedule_html(),
+        }
+
+    @api.model
+    def get_injectable_variables_meta(self):
+        """Return INJECTABLE_VARIABLES metadata dict for the Owl variable picker."""
+        return INJECTABLE_VARIABLES
 
     # === MÉTHODES HELPERS === #
     def _format_currency(self, amount, no_symbol=False):
@@ -1416,9 +1509,12 @@ class ConstructionContract(models.Model):
                 'pdf_hash_before_signature': pdf_hash,
                 'state': 'sent'  # Ready for signature
             })
-            
+
+            # GED: enregistrer le PDF dans la GED du chantier
+            self._register_pdf_in_ged(attachment)
+
             _logger.info(f"[PDF] Complete for {self.name}: hash={pdf_hash[:16]}...")
-            
+
             return {
                 'type': 'ir.actions.client',
                 'tag': 'display_notification',
@@ -1428,10 +1524,33 @@ class ConstructionContract(models.Model):
                     'type': 'success',
                 }
             }
-            
+
         except Exception as e:
             _logger.error("QWeb PDF Error: %s", e, exc_info=True)
             raise UserError(_("Erreur lors de la génération PDF: %s") % str(e))
+
+    def _register_pdf_in_ged(self, attachment):
+        """
+        Crée un enregistrement construction.document dans la GED du chantier.
+        Idempotente : ne crée pas de doublon si l'attachment est déjà enregistré.
+        """
+        if not self.chantier_id or 'construction.document' not in self.env:
+            return
+        existing = self.env['construction.document'].search(
+            [('attachment_id', '=', attachment.id)], limit=1
+        )
+        if existing:
+            return
+        tag = self.env['construction.document']._get_or_create_tag('Contrat')
+        lot_id = self.lot_ids[0].id if self.lot_ids else False
+        self.env['construction.document'].create({
+            'chantier_id': self.chantier_id.id,
+            'attachment_id': attachment.id,
+            'tag_ids': [(4, tag.id)],
+            'lot_id': lot_id,
+            'source_model': 'construction.contract',
+            'source_id': self.id,
+        })
 
     def action_regenerate_pdf(self):
         """Regenerate PDF (e.g., after template changes)"""
@@ -1450,6 +1569,31 @@ class ConstructionContract(models.Model):
 
         return True
 
+    def _action_open_compliance_override(self):
+        """Ouvre le wizard de dérogation conformité depuis un contrat existant."""
+        self.ensure_one()
+        non_compliant = []
+        partner = self.subcontractor_id
+        for status_field, _content_field, label in REQUIRED_DOCUMENTS:
+            status_value = getattr(partner, status_field, False)
+            if status_value not in COMPLIANT_DOCUMENT_STATUSES:
+                non_compliant.append(str(label))
+        if not getattr(partner, 'siren', False) and not partner.company_registry:
+            non_compliant.append(_("SIRET manquant"))
+        override_wiz = self.env['construction.compliance.override.wizard'].create({
+            'contract_id': self.id,
+            'partner_id': partner.id,
+            'non_compliant_docs': '\n'.join(non_compliant),
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Dérogation — Documents non conformes'),
+            'res_model': 'construction.compliance.override.wizard',
+            'res_id': override_wiz.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
     def action_send_for_signature(self):
         """
         Send contract to subcontractor for signature
@@ -1462,6 +1606,29 @@ class ConstructionContract(models.Model):
 
         if not self.pdf_document:
             raise UserError(_("No PDF document to send. Generate PDF first."))
+
+        # Pré-check conformité documentaire (si bypass non encore accordé)
+        if not self.bypass_compliance_check:
+            partner = self.subcontractor_id
+            non_compliant = []
+            for status_field, _content_field, label in REQUIRED_DOCUMENTS:
+                status_value = getattr(partner, status_field, False)
+                if status_value not in COMPLIANT_DOCUMENT_STATUSES:
+                    non_compliant.append(str(label))
+            if not getattr(partner, 'siren', False) and not partner.company_registry:
+                non_compliant.append(str(_("SIRET manquant")))
+            if non_compliant:
+                user = self.env.user
+                is_authorized = (
+                    user.has_group('construction_core.group_construction_admin')
+                    or user.has_group('construction_contract.group_construction_pilote')
+                )
+                if is_authorized:
+                    return self._action_open_compliance_override()
+                raise ValidationError(_(
+                    "Le sous-traitant '%s' a des documents non conformes :\n%s\n\n"
+                    "Contactez un administrateur pour obtenir une dérogation."
+                ) % (partner.name, '\n'.join(f'• {d}' for d in non_compliant)))
 
         # F-03: Validation Financière Stricte
         draft_pos = self.purchase_order_ids.filtered(lambda p: p.state in ('draft', 'sent', 'to approve'))
@@ -2138,7 +2305,7 @@ class ConstructionContract(models.Model):
                             if real_ip:
                                 ip_address = str(real_ip)
             except Exception:
-                pass
+                _logger.debug("Unable to extract client IP from request headers")
         
         # Ensure we have a valid IP address
         if not ip_address or ip_address == '0.0.0.0':
@@ -2152,7 +2319,7 @@ class ConstructionContract(models.Model):
                     if user_agent and not isinstance(user_agent, str):
                         user_agent = str(user_agent)
             except Exception:
-                pass
+                _logger.debug("Unable to extract user agent from request headers")
         
         if not user_agent:
             user_agent = ''
@@ -2244,6 +2411,23 @@ class ConstructionContract(models.Model):
         _logger.info(f"Sent reminders for {len(pending_contracts)} pending contracts")
 
         return True
+
+    def message_post(self, **kwargs):
+        """Duplique le message dans le thread du chantier parent."""
+        result = super().message_post(**kwargs)
+        if self.env.context.get('_posting_to_chantier'):
+            return result
+        chantier = getattr(self, 'chantier_id', False)
+        if chantier and chantier.exists():
+            prefix = f"[Contrat — {self.name}]"
+            original_body = kwargs.get('body', '')
+            chantier.with_context(_posting_to_chantier=True).message_post(
+                body=f"<b>{prefix}</b><br/>{original_body}",
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+                mail_notify_author=False,
+            )
+        return result
 
     @api.model
     def cron_expire_tokens(self):

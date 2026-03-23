@@ -330,3 +330,127 @@ class TestMultiLotWizard(TransactionCase):
         self.assertEqual(len(wizard.lot_ids), 2)
         self.assertIn(self.lot1, wizard.lot_ids)
         self.assertIn(self.lot2, wizard.lot_ids)
+
+
+# ================================================================
+# ForceStageWizard — default_get
+# ================================================================
+
+@tagged('post_install', '-at_install')
+class TestForceStageWizardDefaultGet(TransactionCase):
+
+    def setUp(self):
+        super().setUp()
+        self.env = self.env(context=dict(self.env.context, tracking_disable=True))
+
+        chapter = self.env['construction.chapter'].create({
+            'name': 'DefaultGet Chapter', 'code': 'DGT_CH', 'sequence': 91,
+        })
+        self.stage = self.env['construction.stage'].create({
+            'name': 'DGT Stage 1', 'code': 'DGT_S1',
+            'chapter_id': chapter.id, 'sequence': 10,
+        })
+        partner = self.env['res.partner'].create({'name': 'DGT Client'})
+        self.chantier = self.env['construction.chantier'].create({
+            'name': 'Chantier DefaultGet Test',
+            'client': partner.id,
+            'stage_id': self.stage.id,
+        })
+
+    def test_default_get_loads_chantier_and_stage_from_context(self):
+        # ARRANGE — active_model/active_id context mimics opening from the chantier form
+        wizard_env = self.env['construction.force.stage.wizard'].with_context(
+            active_model='construction.chantier',
+            active_id=self.chantier.id,
+        )
+        # ACT
+        defaults = wizard_env.default_get(['chantier_id', 'current_stage_id', 'new_stage_id'])
+        # ASSERT — wizard pre-filled with current chantier and its stage
+        self.assertEqual(defaults.get('chantier_id'), self.chantier.id)
+        self.assertEqual(defaults.get('current_stage_id'), self.stage.id)
+
+    def test_default_get_without_active_context_returns_no_chantier(self):
+        # ARRANGE — no active_model in context
+        wizard_env = self.env['construction.force.stage.wizard']
+        # ACT
+        defaults = wizard_env.default_get(['chantier_id', 'current_stage_id'])
+        # ASSERT — chantier_id is absent or falsy
+        self.assertFalse(defaults.get('chantier_id'))
+
+
+# ================================================================
+# SansSuiteWizard — _send_client_notification
+# ================================================================
+
+@tagged('post_install', '-at_install')
+class TestSansSuiteClientNotification(TransactionCase):
+
+    def setUp(self):
+        super().setUp()
+        self.env = self.env(context=dict(self.env.context, tracking_disable=True))
+
+        chapter = self.env['construction.chapter'].create({
+            'name': 'SS Notif Chapter', 'code': 'SSN_CH', 'sequence': 92,
+        })
+        self.stage = self.env['construction.stage'].create({
+            'name': 'SSN Stage', 'code': 'SSN_ST', 'sequence': 10, 'chapter_id': chapter.id,
+        })
+        self.stage_ss = self.env['construction.stage'].create({
+            'name': 'Sans Suite', 'code': 'SS', 'sequence': 99, 'chapter_id': chapter.id,
+        })
+        self.client = self.env['res.partner'].create({
+            'name': 'Client Notification Test',
+            'is_company': True,
+            'email': 'client@test.com',
+        })
+        self.chantier = self.env['construction.chantier'].create({
+            'name': 'Chantier SS Notification',
+            'client': self.client.id,
+            'stage_id': self.stage.id,
+        })
+
+    def test_send_client_notification_posts_message_on_chantier(self):
+        # ARRANGE
+        wizard = self.env['construction.sans.suite.wizard'].create({
+            'chantier_id': self.chantier.id,
+            'reason': 'client_cancelled',
+            'client_email_template': 'Votre projet [CHANTIER] ne sera pas poursuivi.',
+        })
+        msg_count_before = len(self.chantier.message_ids)
+        # ACT — call directly
+        wizard._send_client_notification(self.chantier)
+        # ASSERT — a new message was posted on the chantier thread
+        self.assertGreater(len(self.chantier.message_ids), msg_count_before)
+
+    def test_send_client_notification_replaces_chantier_placeholder(self):
+        # ARRANGE
+        wizard = self.env['construction.sans.suite.wizard'].create({
+            'chantier_id': self.chantier.id,
+            'reason': 'other',
+            'client_email_template': 'Le projet [CHANTIER] est annulé.',
+        })
+        # ACT
+        wizard._send_client_notification(self.chantier)
+        # ASSERT — the last message body contains the actual chantier name
+        last_msg = self.chantier.message_ids[0]
+        self.assertIn(self.chantier.name, last_msg.body)
+
+    def test_action_confirm_with_notify_client_skips_when_no_partner_email(self):
+        # ARRANGE — client has no email, notify_client=True
+        client_no_email = self.env['res.partner'].create({
+            'name': 'No Email Client', 'is_company': True,
+        })
+        chantier_no_email = self.env['construction.chantier'].create({
+            'name': 'Chantier No Email',
+            'client': client_no_email.id,
+            'stage_id': self.stage.id,
+        })
+        wizard = self.env['construction.sans.suite.wizard'].create({
+            'chantier_id': chantier_no_email.id,
+            'reason': 'budget_insufficient',
+            'notify_client': True,
+        })
+        # ACT — should not raise even with notify_client=True and no partner email
+        result = wizard.action_confirm()
+        # ASSERT — action returned normally
+        self.assertEqual(result.get('type'), 'ir.actions.client')

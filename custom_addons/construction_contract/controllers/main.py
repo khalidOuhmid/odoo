@@ -4,16 +4,18 @@ from odoo.http import request
 from odoo.tools.safe_eval import safe_eval
 import jinja2
 import base64
-import logging
 import json
+from markupsafe import Markup
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 try:
     import weasyprint
 except ImportError:
     weasyprint = None
-    _logger.warning("WeasyPrint not available. PDF generation will fail.")
+    _logger.warning("WeasyPrint non disponible. La génération PDF échouera.")
 
 class ContractMainController(http.Controller):
 
@@ -36,12 +38,19 @@ class ContractMainController(http.Controller):
             env = jinja2.Environment(autoescape=True)
             template = env.from_string(html_content)
             
-            # Prepare signature
-            company_sig = ""
-            if request.env.company.external_report_layout_id: 
-                 # Placeholder logic, ideally use a specific field
-                 pass 
-            
+            # Build company signature HTML from company logo
+            company_sig = Markup('')
+            company_logo = request.env.company.logo
+            if company_logo:
+                logo_data = company_logo
+                if isinstance(logo_data, bytes):
+                    logo_data = logo_data.decode('utf-8')
+                company_sig = Markup(
+                    '<img src="data:image/png;base64,{}" '
+                    'style="max-height:80px;max-width:200px;" '
+                    'alt="Signature société"/>'.format(logo_data)
+                )
+
             # Prepare context variables
             # We pass 'o' (object), 'user', 'company'
             render_context = {
@@ -49,7 +58,7 @@ class ContractMainController(http.Controller):
                 'object': record,
                 'user': request.env.user,
                 'company': request.env.company,
-                'company_signature': "<!-- Signature Injection Here -->", # TODO link to real signature field
+                'company_signature': company_sig,
             }
             
             rendered_html = template.render(render_context)

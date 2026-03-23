@@ -211,6 +211,31 @@ Anti-recursion: guard via `context.get('_posting_to_chantier')`. Chantier messag
 
 Portal layouts (`signature_portal_templates.xml`, `contract_viewer_templates.xml`) use `portal.frontend_layout` with `no_header`/`no_footer` and an explicit CSS block to suppress any injected Odoo navbar.
 
+## GED (Document Management)
+
+`construction_core` provides a centralised document store via `construction.document` (metadata) + `construction.document.tag` (free-form labels).
+
+**Critical rule**: `construction.document` never stores binary data. It holds a required `attachment_id → ir.attachment`; the binary lives only in the attachment. Never copy `datas` into this model.
+
+Key fields: `chantier_id` (required), `attachment_id` (required, cascade), `tag_ids`, `lot_id`, `source_model`/`source_id` (traceability back to the originating record).
+
+Helper: `construction.document._get_or_create_tag(tag_name)` — used by other modules to auto-tag documents they generate (e.g. contract PDFs).
+
+Migration `construction_core/migrations/18.0.1.1/post-migrate.py` bulk-imports pre-existing `ir.attachment` records attached to chantiers into GED with tag "Import initial". Uses a `NOT EXISTS` sub-query for idempotency; never deletes attachments.
+
+## Compliance Override (Audit Trail)
+
+When contract creation is blocked by missing/expired subcontractor docs, admins and pilotes can grant a waiver via `construction.compliance.override.wizard`. The wizard:
+1. Shows non-compliant documents (read-only).
+2. Requires a justification of ≥ 20 characters.
+3. On confirm: sets `bypass_compliance_check = True` on the contract or creation wizard, creates an immutable `construction.compliance.override.log` record, and posts a chatter note on the chantier.
+
+`construction.compliance.override.log.unlink()` always raises `AccessError` — records are permanent for regulatory traceability. Only group `construction_core.group_construction_admin` or `construction_contract.group_construction_pilote` can confirm.
+
+## Purchase Builder (Owl SPA)
+
+`construction_purchase` now includes a second Owl SPA at `static/src/purchase_builder/` (JS + XML + SCSS) for building purchase orders visually, analogous to the sale quote builder in `construction_sale`.
+
 ## Migrations
 
 When removing Many2many tabs that have data, create a migration script under `module/migrations/VERSION/post-migrate.py`. Use `ON CONFLICT DO NOTHING` for idempotency. See `construction_visit/migrations/18.0.2.2.0/post-migrate.py` for the pattern (migrates `attachment_ids` → typed photo/video/doc fields by MIME type).

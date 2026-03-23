@@ -16,9 +16,10 @@ from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta, date
 import base64
 import uuid
-import logging
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 
 class Visit(models.Model):
@@ -191,12 +192,12 @@ END:VCALENDAR"""
             if self.date < minimum_date:
                 return {
                     'warning': {
-                        'title': _('Attention: Delai court'),
+                        'title': _('Attention : Délai court'),
                         'message': _(
-                            "La visite est planifiee dans moins de 24 heures. "
-                            "Il est recommande de planifier au moins 24h a l'avance "
+                            "La visite est planifiée dans moins de 24 heures. "
+                            "Il est recommandé de planifier au moins 24h à l'avance "
                             "pour permettre la notification des participants. "
-                            "Date minimum recommandee: %s"
+                            "Date minimum recommandée : %s"
                         ) % minimum_date.strftime('%d/%m/%Y %H:%M'),
                         'type': 'notification',
                     }
@@ -375,7 +376,7 @@ END:VCALENDAR"""
         self.ensure_one()
 
         if self.state != 'completed':
-            raise UserError(_("La visite doit etre terminee pour generer le rapport."))
+            raise UserError(_("La visite doit être terminée pour générer le rapport."))
 
         try:
             pdf_content, _content_type = self.env['ir.actions.report']._render_qweb_pdf(
@@ -388,7 +389,7 @@ END:VCALENDAR"""
             )
         except Exception as e:
             _logger.error('Report generation failed: %s', e)
-            raise UserError(_("Erreur lors de la generation du rapport: %s") % str(e))
+            raise UserError(_("Erreur lors de la génération du rapport : %s") % str(e))
 
         filename = f"Visite_{self.chantier_id.reference or 'REF'}_{self.date.strftime('%Y%m%d')}.pdf"
         attachment = self.env['ir.attachment'].create({
@@ -406,8 +407,11 @@ END:VCALENDAR"""
             'report_html': html_content,
         })
 
+        # GED: enregistrer le rapport dans la GED du chantier
+        self._register_report_in_ged(attachment)
+
         self.message_post(
-            body=_("Rapport genere: %s") % filename,
+            body=_("Rapport généré : %s") % filename,
             message_type='notification',
             attachment_ids=[attachment.id]
         )
@@ -433,12 +437,33 @@ END:VCALENDAR"""
             'type': 'ir.actions.client',
             'tag': 'display_notification',
             'params': {
-                'title': _('Rapport Genere'),
-                'message': _('Le rapport PDF a ete cree et joint a la visite'),
+                'title': _('Rapport généré'),
+                'message': _('Le rapport PDF a été créé et joint à la visite'),
                 'type': 'success',
                 'sticky': False,
             }
         }
+
+    def _register_report_in_ged(self, attachment):
+        """
+        Crée un enregistrement construction.document dans la GED du chantier.
+        Idempotente : ne crée pas de doublon si l'attachment est déjà enregistré.
+        """
+        if not self.chantier_id or 'construction.document' not in self.env:
+            return
+        existing = self.env['construction.document'].search(
+            [('attachment_id', '=', attachment.id)], limit=1
+        )
+        if existing:
+            return
+        tag = self.env['construction.document']._get_or_create_tag('Rapport de visite')
+        self.env['construction.document'].create({
+            'chantier_id': self.chantier_id.id,
+            'attachment_id': attachment.id,
+            'tag_ids': [(4, tag.id)],
+            'source_model': 'construction.visit',
+            'source_id': self.id,
+        })
 
     def action_download_report_pdf(self):
         """Open the generated PDF report in a new tab for download/preview."""
@@ -498,25 +523,29 @@ END:VCALENDAR"""
             raise_if_not_found=False
         )
         
-        if not template:
-            # Fallback: send simple email with attachment
-            for participant in self.participant_ids.filtered(lambda p: p.email):
-                self.env['mail.mail'].create({
-                    'subject': _("Compte-rendu de visite - %s") % self.chantier_id.name,
-                    'body_html': _("<p>Veuillez trouver ci-joint le compte-rendu de visite.</p>"),
-                    'email_to': participant.email,
-                    'attachment_ids': [(4, attachment.id)],
-                    'model': 'construction.chantier',
-                    'res_id': self.chantier_id.id,
-                }).send()
-        else:
-            for participant in self.participant_ids.filtered(lambda p: p.email):
-                template.send_mail(self.id, force_send=True, email_values={
-                    'email_to': participant.email,
-                    'attachment_ids': [(4, attachment.id)],
-                    'model': 'construction.chantier',
-                    'res_id': self.chantier_id.id,
-                })
+        try:
+            if not template:
+                # Fallback: send simple email with attachment
+                for participant in self.participant_ids.filtered(lambda p: p.email):
+                    self.env['mail.mail'].create({
+                        'subject': _("Compte-rendu de visite - %s") % self.chantier_id.name,
+                        'body_html': _("<p>Veuillez trouver ci-joint le compte-rendu de visite.</p>"),
+                        'email_to': participant.email,
+                        'attachment_ids': [(4, attachment.id)],
+                        'model': 'construction.chantier',
+                        'res_id': self.chantier_id.id,
+                    }).send()
+            else:
+                for participant in self.participant_ids.filtered(lambda p: p.email):
+                    template.send_mail(self.id, force_send=True, email_values={
+                        'email_to': participant.email,
+                        'attachment_ids': [(4, attachment.id)],
+                        'model': 'construction.chantier',
+                        'res_id': self.chantier_id.id,
+                    })
+        except Exception as e:
+            _logger.business_error(self, 'action_send_report', e)
+            raise UserError(_("Erreur lors de l'envoi du rapport : %s") % str(e))
         
         self.report_sent = True
         self.message_post(
@@ -610,3 +639,20 @@ END:VCALENDAR"""
             from urllib.parse import quote
             return f"https://waze.com/ul?q={quote(address)}"
         return ""
+
+    def message_post(self, **kwargs):
+        """Duplique le message dans le thread du chantier parent."""
+        result = super().message_post(**kwargs)
+        if self.env.context.get('_posting_to_chantier'):
+            return result
+        chantier = getattr(self, 'chantier_id', False)
+        if chantier and chantier.exists():
+            prefix = f"[Visite — {self.name}]"
+            original_body = kwargs.get('body', '')
+            chantier.with_context(_posting_to_chantier=True).message_post(
+                body=f"<b>{prefix}</b><br/>{original_body}",
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+                mail_notify_author=False,
+            )
+        return result

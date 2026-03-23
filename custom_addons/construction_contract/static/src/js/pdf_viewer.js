@@ -37,10 +37,9 @@
 
             // Initialize PDF.js worker from CDN (worker path is set in template)
             // If not set, set it to CDN
-            if (!pdfjsLib.GlobalWorkerOptions.workerSrc || 
+            if (!pdfjsLib.GlobalWorkerOptions.workerSrc ||
                 pdfjsLib.GlobalWorkerOptions.workerSrc.includes('construction_contract')) {
                 const workerPath = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-                console.log('Setting PDF.js worker to:', workerPath);
                 pdfjsLib.GlobalWorkerOptions.workerSrc = workerPath;
             }
 
@@ -56,41 +55,31 @@
                 this.canvas.style.height = 'auto';
                 this.canvas.style.border = '1px solid #ddd';
                 this.ctx = this.canvas.getContext('2d');
-                
+
                 // Clear container and add canvas
                 this.container.innerHTML = '';
                 this.container.appendChild(this.canvas);
 
                 // Load PDF
-                console.log('Loading PDF from:', this.pdfUrl);
-                console.log('Using PDF.js version:', pdfjsLib.version);
-                
                 const loadingTask = pdfjsLib.getDocument({
                     url: this.pdfUrl,
                 });
 
-                // Add progress listener
-                loadingTask.onProgress = (progress) => {
-                    console.log('Loading progress:', Math.round((progress.loaded / progress.total) * 100) + '%');
-                };
-
                 this.pdfDoc = await loadingTask.promise;
                 this.totalPages = this.pdfDoc.numPages;
-
-                console.log(`PDF loaded successfully: ${this.totalPages} pages`);
 
                 // Update UI
                 const totalPagesEl = document.getElementById('total-pages');
                 if (totalPagesEl) {
                     totalPagesEl.textContent = this.totalPages;
                 }
-                
+
                 // Render first page
                 this.renderPage(1);
 
                 // Emit event
-                window.dispatchEvent(new CustomEvent('pdf:loaded', { 
-                    detail: { totalPages: this.totalPages } 
+                window.dispatchEvent(new CustomEvent('pdf:loaded', {
+                    detail: { totalPages: this.totalPages }
                 }));
 
             } catch (error) {
@@ -118,14 +107,12 @@
             this.currentPage = pageNum;
 
             try {
-                console.log('Rendering page', pageNum);
-                
                 // Get page
                 const page = await this.pdfDoc.getPage(pageNum);
-                
+
                 // Calculate viewport
                 const viewport = page.getViewport({ scale: this.scale });
-                
+
                 // Set canvas dimensions
                 this.canvas.height = viewport.height;
                 this.canvas.width = viewport.width;
@@ -138,17 +125,15 @@
 
                 await page.render(renderContext).promise;
 
-                console.log('Page rendered:', pageNum);
-
                 // Update current page display
                 document.getElementById('current-page').textContent = pageNum;
 
                 // Emit page change event
-                window.dispatchEvent(new CustomEvent('pdf:pageChanged', { 
-                    detail: { 
+                window.dispatchEvent(new CustomEvent('pdf:pageChanged', {
+                    detail: {
                         currentPage: this.currentPage,
-                        totalPages: this.totalPages 
-                    } 
+                        totalPages: this.totalPages
+                    }
                 }));
 
             } catch (error) {
@@ -221,7 +206,6 @@
             if (this.scale < this.maxScale) {
                 this.scale += this.scaleStep;
                 this.renderPage(this.currentPage);
-                console.log('Zoomed in to:', this.scale);
             }
         }
 
@@ -229,14 +213,12 @@
             if (this.scale > this.minScale) {
                 this.scale -= this.scaleStep;
                 this.renderPage(this.currentPage);
-                console.log('Zoomed out to:', this.scale);
             }
         }
 
         zoomReset() {
             this.scale = this.defaultScale;
             this.renderPage(this.currentPage);
-            console.log('Zoom reset to:', this.scale);
         }
     }
 

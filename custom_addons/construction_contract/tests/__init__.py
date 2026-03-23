@@ -15,4 +15,5 @@ from . import test_contract_deliverable
 from . import test_contract_signature
 from . import test_wizards
 from . import test_contract_extended
+from . import test_compliance_override
 

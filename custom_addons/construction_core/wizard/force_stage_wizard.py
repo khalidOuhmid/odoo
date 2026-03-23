@@ -4,8 +4,15 @@ Force Stage Wizard - Reserved for Directors/Admins
 Allows forcing stage changes without validation constraints.
 """
 
+from markupsafe import Markup, escape
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
+import logging
+
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 class ForceStageWizard(models.TransientModel):
     _name = 'construction.force.stage.wizard'
@@ -35,9 +42,12 @@ class ForceStageWizard(models.TransientModel):
         if not self.env.user.has_group('construction_core.group_construction_admin'):
             raise UserError(_("Seuls les Directeurs et Administrateurs peuvent forcer un changement d'étape."))
 
-        # Log the forced change with proper HTML (using f-string to avoid % formatting issues)
-        from markupsafe import Markup, escape
-        
+        _logger.warning(
+            "[BLG][STAGE][FORCED] %s → %s | chantier_id=%s | user=%s",
+            self.current_stage_id.code, self.new_stage_id.code,
+            self.chantier_id.id, self.env.user.login,
+        )
+
         # Escape user input to prevent XSS
         from_stage = escape(self.current_stage_id.name or '')
         to_stage = escape(self.new_stage_id.name or '')

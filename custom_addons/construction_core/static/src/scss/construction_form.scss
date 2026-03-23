@@ -1,13 +1,14 @@
 /**
- * Construction Core - Form View Premium Styling
- * SCOPED TO CONSTRUCTION MODULE ONLY using data-model selectors
+ * Construction Core — Form View Styling
+ * Scoped to construction models only (data-res-model selectors).
+ * Colors: BLG Groupe design system via _blg_variables.scss
  */
 
+
 /* =========================================
-   CHANTIER FORM VIEW - SCOPED
+   CHANTIER FORM VIEW — SCOPED
    ========================================= */
 
-/* Only target construction.chantier forms */
 .o_form_view[data-res-model="construction.chantier"] {
     .o_form_sheet {
         border-radius: 16px;
@@ -16,13 +17,13 @@
     }
 }
 
-/* KPI Dashboard Header - Construction specific class */
+/* KPI Dashboard Header */
 .construction_kpi_header {
     display: grid;
     grid-template-columns: repeat(4, 1fr);
     gap: 16px;
     padding: 20px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, $blg-primary 0%, $blg-primary-dark 100%);
     margin: -16px -16px 24px -16px;
     border-radius: 16px 16px 0 0;
 }
@@ -43,7 +44,7 @@
     .kpi_value {
         font-size: 28px;
         font-weight: 700;
-        color: white;
+        color: $blg-bg-white;
         line-height: 1;
     }
 
@@ -56,17 +57,17 @@
     }
 }
 
-/* Action bar - Construction specific */
+/* Action bar */
 .construction_action_bar {
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
     padding: 12px;
-    background: #f7fafc;
+    background: $blg-bg-light;
     border-radius: 12px;
 }
 
-/* Timeline - Construction specific */
+/* Timeline */
 .construction_timeline {
     position: relative;
     padding-left: 30px;
@@ -78,7 +79,7 @@
         top: 0;
         bottom: 0;
         width: 2px;
-        background: #e2e8f0;
+        background: $blg-border;
     }
 
     .timeline_item {
@@ -92,15 +93,15 @@
             top: 4px;
             width: 12px;
             height: 12px;
-            background: #667eea;
+            background: $blg-primary;
             border-radius: 50%;
-            border: 2px solid white;
+            border: 2px solid $blg-bg-white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
     }
 }
 
-/* Only apply enhanced stat buttons to construction.chantier and construction.lot */
+/* Enhanced stat buttons — scoped to construction forms */
 .o_form_view[data-res-model="construction.chantier"],
 .o_form_view[data-res-model="construction.lot"] {
     .oe_stat_button {
@@ -109,7 +110,7 @@
 
         &:hover {
             transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+            box-shadow: 0 4px 12px rgba($blg-primary, 0.3);
         }
     }
 }

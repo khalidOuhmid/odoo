@@ -106,8 +106,27 @@ class ContractPDFGenerator(models.AbstractModel):
             
             _logger.debug(f"HTML content length for contract {contract.name}: {len(html_content)} chars")
 
-            # Step 2: Convert HTML to PDF using WeasyPrint
+            # Step 2a: Generate cover page PDF
+            cover_html = self._build_cover_page_html(contract)
+            cover_pdf = self._convert_html_to_pdf(cover_html)
+
+            # Step 2b: Convert contract body HTML to PDF
             pdf_content = self._convert_html_to_pdf(html_content)
+
+            # Step 2c: Prepend cover page
+            if PYPDF2_AVAILABLE and cover_pdf:
+                try:
+                    merger = PdfWriter()
+                    for page in PdfReader(io.BytesIO(cover_pdf)).pages:
+                        merger.add_page(page)
+                    for page in PdfReader(io.BytesIO(pdf_content)).pages:
+                        merger.add_page(page)
+                    buf = io.BytesIO()
+                    merger.write(buf)
+                    pdf_content = buf.getvalue()
+                    _logger.info("[PDF] Cover page prepended to contract body")
+                except Exception as e:
+                    _logger.warning("[PDF] Could not prepend cover page: %s", e)
 
             # Step 3: Validate signatures in PDF (if expected)
             expected_signatures = []
@@ -211,13 +230,179 @@ class ContractPDFGenerator(models.AbstractModel):
     # PRIVATE HELPER METHODS
     # ============================================================
 
-    def _convert_html_to_pdf(self, html_content):
+    # PDF @page CSS with BLG branding and proper Page X/Y pagination
+    _BLG_PDF_CSS = """
+        @page {
+            size: A4;
+            margin: 2.5cm 2cm 3cm 2cm;
+            @bottom-center {
+                content: "Page " counter(page) " / " counter(pages);
+                font-family: Arial, sans-serif;
+                font-size: 9pt;
+                color: #888;
+            }
+            @bottom-right {
+                content: "BLG Groupe — " string(doc-ref);
+                font-family: Arial, sans-serif;
+                font-size: 9pt;
+                color: #888;
+            }
+            @top-right {
+                content: string(doc-date);
+                font-family: Arial, sans-serif;
+                font-size: 8pt;
+                color: #aaa;
+            }
+        }
+        @page :first {
+            /* No header/footer on cover page */
+            @bottom-center { content: none; }
+            @bottom-right  { content: none; }
+            @top-right     { content: none; }
+        }
+        body {
+            font-family: Arial, 'DejaVu Sans', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: #2C2C2C;
+            string-set: doc-ref attr(data-ref), doc-date attr(data-date);
+        }
+        table { page-break-inside: avoid; width: 100%; }
+        h1, h2, h3 { page-break-after: avoid; color: #8B3A3A; }
+        p { orphans: 3; widows: 3; }
+        img { max-width: 100%; height: auto; }
+        .page-break { page-break-before: always; }
+        /* Billing schedule table */
+        .blg-billing-schedule th { background: #f5f0eb; }
+        .blg-billing-schedule td, .blg-billing-schedule th {
+            padding: 6px 10px;
+            border-bottom: 1px solid #ddd;
+        }
+    """
+
+    def _build_cover_page_html(self, contract):
+        """Return HTML for the BLG cover page (first page of the PDF bundle)."""
+        chantier = contract.chantier_id
+        st = contract.subcontractor_id
+        date_str = contract._format_date(contract.date) if hasattr(contract, 'date') and contract.date else ''
+        return f"""<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"/></head>
+<body>
+<div style="display:flex;flex-direction:column;height:27cm;justify-content:space-between;
+            font-family:Arial,sans-serif;padding:2cm;">
+    <!-- Header -->
+    <div style="border-bottom:4px solid #8B3A3A;padding-bottom:1.5cm;margin-bottom:1.5cm;">
+        <div style="font-size:28pt;font-weight:bold;color:#8B3A3A;letter-spacing:2px;">BLG GROUPE</div>
+        <div style="font-size:10pt;color:#666;margin-top:4px;">Contrat de sous-traitance</div>
+    </div>
+    <!-- Contract info -->
+    <div style="flex:1;">
+        <table style="width:100%;border-collapse:collapse;font-size:12pt;">
+            <tr><td style="width:40%;color:#888;padding:8px 0;">Référence</td>
+                <td style="font-weight:bold;">{contract.name or ''}</td></tr>
+            <tr><td style="color:#888;padding:8px 0;">Chantier</td>
+                <td>{chantier.name if chantier else '—'}</td></tr>
+            <tr><td style="color:#888;padding:8px 0;">Sous-traitant</td>
+                <td style="font-weight:bold;">{st.name if st else '—'}</td></tr>
+            <tr><td style="color:#888;padding:8px 0;">SIRET</td>
+                <td>{getattr(st, 'siret', '') or '—'}</td></tr>
+            <tr><td style="color:#888;padding:8px 0;">Montant HT</td>
+                <td style="font-weight:bold;color:#8B3A3A;">{contract._format_currency(contract.total_amount_ht or 0)}</td></tr>
+            <tr><td style="color:#888;padding:8px 0;">Date</td>
+                <td>{date_str or '—'}</td></tr>
+        </table>
+    </div>
+    <!-- Footer watermark -->
+    <div style="border-top:2px solid #e0d6cc;padding-top:1cm;text-align:center;color:#bbb;font-size:9pt;">
+        Document confidentiel — BLG Groupe — {chantier.city if chantier and hasattr(chantier, 'city') and chantier.city else ''}
+    </div>
+</div>
+</body></html>"""
+
+    def _get_annexes_pdf(self, contract):
+        """Return bytes of all annexes merged into a single PDF (without the main contract).
+
+        Annexes order:
+          1. CCTP / Cahier des charges
+          2. Planning chantier
+          3. Planning sous-traitant
+          4. Bons de commande (POs)
+
+        Returns:
+            bytes | None: merged annexes PDF, or None if no annexes found.
         """
-        Convert HTML to PDF using WeasyPrint
-        Improved image handling for data URLs
+        if not PYPDF2_AVAILABLE:
+            _logger.warning("[ANNEXES] PyPDF2 not available, skipping annexes")
+            return None
+
+        merger = PdfWriter()
+        added = 0
+
+        def _try_add(pdf_bytes, label):
+            nonlocal added
+            try:
+                reader = PdfReader(io.BytesIO(pdf_bytes))
+                for page in reader.pages:
+                    merger.add_page(page)
+                added += len(reader.pages)
+                _logger.info("[ANNEXES] Added %s: %d pages", label, len(reader.pages))
+            except Exception as e:
+                _logger.warning("[ANNEXES] Skipped %s: %s", label, e)
+
+        # 1. CCTP
+        cctp_docs = self.env['construction.document'].search([
+            ('chantier_id', '=', contract.chantier_id.id),
+            ('document_type', '=', 'specs'),
+        ], limit=1)
+        if cctp_docs and cctp_docs.file_data:
+            _try_add(base64.b64decode(cctp_docs.file_data), "CCTP")
+
+        # 2. Planning chantier
+        planning_docs = self.env['construction.document'].search([
+            ('chantier_id', '=', contract.chantier_id.id),
+            ('document_type', '=', 'schedule'),
+            ('partner_id', '=', False),
+        ], limit=1)
+        if planning_docs and planning_docs.file_data:
+            _try_add(base64.b64decode(planning_docs.file_data), "Planning Chantier")
+
+        # 3. Planning sous-traitant
+        st_planning = self.env['construction.document'].search([
+            ('chantier_id', '=', contract.chantier_id.id),
+            ('document_type', '=', 'schedule'),
+            ('partner_id', '=', contract.subcontractor_id.id),
+        ], limit=1)
+        if st_planning and st_planning.file_data:
+            _try_add(base64.b64decode(st_planning.file_data), "Planning ST")
+
+        # 4. BdC (POs)
+        report = self.env.ref('purchase.action_report_purchase_order', raise_if_not_found=False)
+        for po in contract.purchase_order_ids:
+            try:
+                if report:
+                    pdf_content, _ = self.env['ir.actions.report'].sudo()._render_qweb_pdf(
+                        report, [po.id]
+                    )
+                    _try_add(pdf_content, f"BdC {po.name}")
+            except Exception as e:
+                _logger.warning("[ANNEXES] Skipped BdC %s: %s", po.name, e)
+
+        if not added:
+            return None
+
+        output = io.BytesIO()
+        merger.write(output)
+        _logger.info("[ANNEXES] Total annexes: %d pages", added)
+        return output.getvalue()
+
+    def _convert_html_to_pdf(self, html_content, css_override=None):
+        """
+        Convert HTML to PDF using WeasyPrint.
 
         Args:
             html_content (str): HTML string to convert
+            css_override (str | None): Optional CSS string to override _BLG_PDF_CSS
 
         Returns:
             bytes: PDF content
@@ -225,143 +410,72 @@ class ContractPDFGenerator(models.AbstractModel):
         Raises:
             Exception: If conversion fails
         """
+        import re
+        import tempfile
+        import os
+
         try:
-            # WeasyPrint may have issues with data URLs, so we convert them to temp files
-            import re
-            import tempfile
-            import os
-            
-            # Find all data URLs in img src attributes
+            # Replace data: URLs with temp files for WeasyPrint compatibility
             data_url_pattern = r'src="(data:image/[^;]+;base64,[^"]+)"'
             temp_files = []
-            
+
             def replace_data_url(match):
-                """Replace data URL with temporary file path"""
                 data_url = match.group(1)
                 try:
-                    # Extract image data
                     header, encoded = data_url.split(',', 1)
-                    image_format = header.split('/')[1].split(';')[0]  # e.g., 'png'
+                    image_format = header.split('/')[1].split(';')[0]
                     image_data = base64.b64decode(encoded)
-                    
-                    # Validate image data
                     if len(image_data) < 100:
-                        _logger.warning(f"Image data too small ({len(image_data)} bytes), skipping")
                         return match.group(0)
-                    
-                    # Create temporary file
-                    temp_file = tempfile.NamedTemporaryFile(
-                        delete=False,
-                        suffix=f'.{image_format}',
-                        prefix='weasyprint_img_'
+                    tmp = tempfile.NamedTemporaryFile(
+                        delete=False, suffix=f'.{image_format}', prefix='weasyprint_img_'
                     )
-                    temp_file.write(image_data)
-                    temp_file.close()
-                    temp_files.append(temp_file.name)
-                    
-                    # Return file:// URL for WeasyPrint
-                    file_url = f'file://{temp_file.name}'
-                    _logger.debug(
-                        f"Converted data URL to temp file: {file_url} "
-                        f"({len(image_data)} bytes, {image_format})"
-                    )
-                    return f'src="{file_url}"'
+                    tmp.write(image_data)
+                    tmp.close()
+                    temp_files.append(tmp.name)
+                    return f'src="file://{tmp.name}"'
                 except Exception as e:
-                    _logger.warning(f"Failed to convert data URL to temp file: {e}, keeping original")
+                    _logger.warning("Failed to convert data URL: %s", e)
                     return match.group(0)
-            
-            # Replace data URLs with temp files
+
             html_with_files = re.sub(data_url_pattern, replace_data_url, html_content)
-            
-            # Log conversion statistics
-            data_url_count = len(re.findall(data_url_pattern, html_content))
-            _logger.info(f"Converting HTML to PDF: {data_url_count} data URLs found, {len(temp_files)} temp files created")
-            
+            _logger.info(
+                "Converting HTML to PDF: %d data URLs, %d temp files",
+                len(re.findall(data_url_pattern, html_content)), len(temp_files),
+            )
+
             try:
-                # Configure fonts for better rendering
                 font_config = FontConfiguration()
-                
-                # Create HTML object from string
                 html_obj = HTML(string=html_with_files, base_url=None)
-                
-                # Optional: Add custom CSS for PDF-specific styling
-                pdf_css = CSS(string='''
-                    @page {
-                        size: A4;
-                        margin: 2cm;
-                    }
-                    
-                    body {
-                        font-family: 'DejaVu Sans', Arial, sans-serif;
-                        font-size: 11pt;
-                        line-height: 1.6;
-                        color: #333;
-                    }
-                    
-                    table {
-                        page-break-inside: avoid;
-                    }
-                    
-                    h1, h2, h3 {
-                        page-break-after: avoid;
-                    }
-                    
-                    /* Prevent widows and orphans */
-                    p {
-                        orphans: 3;
-                        widows: 3;
-                    }
-                    
-                    /* Ensure images are visible */
-                    img {
-                        max-width: 100%;
-                        height: auto;
-                    }
-                ''', font_config=font_config)
-                
-                # Generate PDF
+                pdf_css = CSS(
+                    string=css_override if css_override is not None else self._BLG_PDF_CSS,
+                    font_config=font_config,
+                )
                 pdf_bytes = html_obj.write_pdf(
                     stylesheets=[pdf_css],
-                    font_config=font_config
+                    font_config=font_config,
                 )
-                
-                _logger.info(f"✓ WeasyPrint generated PDF: {len(pdf_bytes)} bytes")
-                
+                _logger.info("✓ WeasyPrint generated PDF: %d bytes", len(pdf_bytes))
                 return pdf_bytes
             finally:
-                # Clean up temporary files
-                for temp_file in temp_files:
+                for tmp_path in temp_files:
                     try:
-                        if os.path.exists(temp_file):
-                            os.unlink(temp_file)
-                            _logger.debug(f"Cleaned up temp file: {temp_file}")
-                    except Exception as e:
-                        _logger.warning(f"Failed to delete temp file {temp_file}: {e}")
+                        if os.path.exists(tmp_path):
+                            os.unlink(tmp_path)
+                    except Exception:
+                        pass
 
         except Exception as e:
-            _logger.error(f"✗ WeasyPrint conversion failed: {e}", exc_info=True)
-            
-            # Provide detailed error message based on error type
+            _logger.error("✗ WeasyPrint conversion failed: %s", e, exc_info=True)
             error_str = str(e).lower()
             if 'font' in error_str:
-                raise Exception(_(
-                    "Erreur de police de caractères lors de la conversion PDF. "
-                    "Vérifiez que les polices nécessaires sont installées."
-                ))
+                raise Exception(_("Erreur de police lors de la conversion PDF : %s") % str(e))
             elif 'image' in error_str or 'file' in error_str:
-                raise Exception(_(
-                    "Erreur de chargement d'image lors de la conversion PDF. "
-                    "Vérifiez que toutes les images sont accessibles et valides."
-                ))
+                raise Exception(_("Erreur de chargement d'image lors de la conversion PDF : %s") % str(e))
             elif 'css' in error_str or 'style' in error_str:
-                raise Exception(_(
-                    "Erreur de style CSS lors de la conversion PDF. "
-                    "Vérifiez la syntaxe CSS du modèle."
-                ))
+                raise Exception(_("Erreur de style CSS lors de la conversion PDF : %s") % str(e))
             else:
-                raise Exception(_(
-                    "Échec de la conversion HTML vers PDF : %s"
-                ) % str(e))
+                raise Exception(_("Échec de la conversion HTML vers PDF : %s") % str(e))
 
     def _optimize_pdf(self, pdf_content):
         """
@@ -609,158 +723,44 @@ class ContractPDFGenerator(models.AbstractModel):
 
     @api.model
     def merge_contract_bundle(self, contract, contract_pdf_bytes):
-        """
-        Merge Contract PDF with annexes in strict order:
-        1. Contract (HTML-generated)
-        2. CCTP (Specs)
-        3. Planning Chantier
-        4. Planning Sous-traitant
-        5. Bon de Commande (PO)
+        """Merge contract PDF with annexes.
 
-        Args:
-            contract: construction.contract record
-            contract_pdf_bytes: bytes of the base contract PDF
-
-        Returns:
-            bytes: Merged PDF content
-
-        Raises:
-            UserError: Only if ALL merging fails
+        Delegates annexe collection to ``_get_annexes_pdf`` and prepends the
+        contract body. Returns ``contract_pdf_bytes`` unchanged if no annexes
+        are found or if PyPDF2 is unavailable.
         """
         import gc
-        
+
         if not PYPDF2_AVAILABLE:
-            _logger.warning("PyPDF2 not available, skipping PDF merge")
+            _logger.warning("[MERGE] PyPDF2 not available, skipping PDF merge")
             return contract_pdf_bytes
 
-        _logger.info(f"[MERGE] Starting PDF bundle merge for contract {contract.name}")
-        
-        merger = PdfWriter()
-        skipped_files = []
-        merged_count = 0
+        _logger.info("[MERGE] Starting PDF bundle merge for contract %s", contract.name)
+
+        annexes_pdf = self._get_annexes_pdf(contract)
+        if not annexes_pdf:
+            _logger.info("[MERGE] No annexes found for %s", contract.name)
+            return contract_pdf_bytes
 
         try:
-            # 1. Add base contract PDF
-            try:
-                contract_reader = PdfReader(io.BytesIO(contract_pdf_bytes))
-                for page in contract_reader.pages:
-                    merger.add_page(page)
-                merged_count += 1
-                _logger.info(f"[MERGE] Added contract: {len(contract_reader.pages)} pages")
-            except Exception as e:
-                _logger.error(f"[MERGE] CRITICAL: Base contract PDF is corrupted: {e}")
-                raise UserError(_("Le PDF du contrat de base est corrompu : %s") % str(e))
-
-            # 2. CCTP (Specs) - from chantier documents
-            cctp_docs = self.env['construction.document'].search([
-                ('chantier_id', '=', contract.chantier_id.id),
-                ('document_type', '=', 'specs')
-            ], limit=1)
-            
-            if cctp_docs and cctp_docs.file_data:
-                try:
-                    cctp_bytes = base64.b64decode(cctp_docs.file_data)
-                    cctp_reader = PdfReader(io.BytesIO(cctp_bytes))
-                    for page in cctp_reader.pages:
-                        merger.add_page(page)
-                    merged_count += 1
-                    _logger.info(f"[MERGE] Added CCTP: {len(cctp_reader.pages)} pages")
-                except Exception as e:
-                    skipped_files.append(f"CCTP: {e}")
-                    _logger.warning(f"[MERGE] Skipped CCTP (corrupted): {e}")
-            else:
-                _logger.info("[MERGE] No CCTP found, skipping")
-
-            # 3. Planning Chantier - from chantier documents (schedule without partner)
-            planning_docs = self.env['construction.document'].search([
-                ('chantier_id', '=', contract.chantier_id.id),
-                ('document_type', '=', 'schedule'),
-                ('partner_id', '=', False)
-            ], limit=1)
-            
-            if planning_docs and planning_docs.file_data:
-                try:
-                    planning_bytes = base64.b64decode(planning_docs.file_data)
-                    planning_reader = PdfReader(io.BytesIO(planning_bytes))
-                    for page in planning_reader.pages:
-                        merger.add_page(page)
-                    merged_count += 1
-                    _logger.info(f"[MERGE] Added Planning Chantier: {len(planning_reader.pages)} pages")
-                except Exception as e:
-                    skipped_files.append(f"Planning Chantier: {e}")
-                    _logger.warning(f"[MERGE] Skipped Planning Chantier (corrupted): {e}")
-            else:
-                _logger.info("[MERGE] No Planning Chantier found, skipping")
-
-            # 4. Planning Sous-traitant - schedule linked to subcontractor
-            st_planning_docs = self.env['construction.document'].search([
-                ('chantier_id', '=', contract.chantier_id.id),
-                ('document_type', '=', 'schedule'),
-                ('partner_id', '=', contract.subcontractor_id.id)
-            ], limit=1)
-            
-            if st_planning_docs and st_planning_docs.file_data:
-                try:
-                    st_bytes = base64.b64decode(st_planning_docs.file_data)
-                    st_reader = PdfReader(io.BytesIO(st_bytes))
-                    for page in st_reader.pages:
-                        merger.add_page(page)
-                    merged_count += 1
-                    _logger.info(f"[MERGE] Added Planning ST: {len(st_reader.pages)} pages")
-                except Exception as e:
-                    skipped_files.append(f"Planning ST: {e}")
-                    _logger.warning(f"[MERGE] Skipped Planning ST (corrupted): {e}")
-            else:
-                _logger.info("[MERGE] No Planning ST found, skipping")
-
-            # 5. Bon de Commande (PO) - Generate PDF from Odoo report
-            for po in contract.purchase_order_ids:
-                try:
-                    # Use Odoo's report engine to generate PO PDF
-                    report = self.env.ref('purchase.action_report_purchase_order', raise_if_not_found=False)
-                    if report:
-                        pdf_content, content_type = self.env['ir.actions.report'].sudo()._render_qweb_pdf(
-                            report, [po.id]
-                        )
-                        po_reader = PdfReader(io.BytesIO(pdf_content))
-                        for page in po_reader.pages:
-                            merger.add_page(page)
-                        merged_count += 1
-                        _logger.info(f"[MERGE] Added PO {po.name}: {len(po_reader.pages)} pages")
-                except Exception as e:
-                    skipped_files.append(f"PO {po.name}: {e}")
-                    _logger.warning(f"[MERGE] Skipped PO {po.name} (error): {e}")
-
-            # Write merged PDF
+            merger = PdfWriter()
+            for page in PdfReader(io.BytesIO(contract_pdf_bytes)).pages:
+                merger.add_page(page)
+            for page in PdfReader(io.BytesIO(annexes_pdf)).pages:
+                merger.add_page(page)
             output = io.BytesIO()
             merger.write(output)
             merged_pdf = output.getvalue()
-            
-            # Log summary
             _logger.info(
-                f"[MERGE] Complete for {contract.name}: "
-                f"{merged_count} documents merged, "
-                f"{len(skipped_files)} skipped, "
-                f"final size: {len(merged_pdf)/1024:.1f} KB"
+                "[MERGE] Complete for %s: final size %.1f KB",
+                contract.name, len(merged_pdf) / 1024,
             )
-            
-            if skipped_files:
-                contract.message_post(
-                    body=_("⚠️ PDF Fusion: Certains documents ont été ignorés (corrompus):<br/>%s") % 
-                         "<br/>".join(skipped_files),
-                    message_type='notification'
-                )
-
             return merged_pdf
-
         except UserError:
             raise
         except Exception as e:
-            _logger.error(f"[MERGE] Critical failure for {contract.name}: {e}", exc_info=True)
-            # Return original if merge fails completely
+            _logger.error("[MERGE] Critical failure for %s: %s", contract.name, e, exc_info=True)
             return contract_pdf_bytes
         finally:
-            # Explicit cleanup for memory management
-            merger = None
             gc.collect()
 

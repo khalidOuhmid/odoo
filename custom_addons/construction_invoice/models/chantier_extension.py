@@ -110,7 +110,7 @@ class Chantier(models.Model):
             'res_model': 'construction.invoice.schedule',
             'view_mode': 'list,form',
             'domain': [('chantier_id', '=', self.id)],
-            'context': {'default_chantier_id': self.id},
+            'context': {},
         }
     
     def action_generate_invoice_schedule(self):

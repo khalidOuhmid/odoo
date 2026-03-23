@@ -22,7 +22,7 @@ class Chantier(models.Model):
             'res_model': 'construction.visit',
             'view_mode': 'list,form,calendar',
             'domain': [('chantier_id', '=', self.id)],
-            'context': {'default_chantier_id': self.id}
+            'context': {},
         }
 
     def action_plan_visit(self):

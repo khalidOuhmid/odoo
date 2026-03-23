@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+    BLG Groupe — Ajout contexte Chantier/Lot sur facture et devis
+    Ces templates injectent la référence chantier dans les documents existants.
+    Ils s'activent uniquement quand chantier_id est défini sur le document.
+    -->
+
+    <!-- ── FACTURE (account.move) ───────────────────────────── -->
+    <template id="report_invoice_blg_chantier" inherit_id="account.report_invoice_document">
+        <xpath expr="//div[@id='informations'] | //div[hasclass('row','mb-4')]" position="before">
+            <t t-if="o.chantier_id">
+                <div class="row mb-2"
+                     style="border-left: 3px solid #8B3A3A; padding-left: 10px; margin-left: 0;">
+                    <div class="col">
+                        <span style="font-size:7.5pt;color:#8B3A3A;text-transform:uppercase;
+                                     letter-spacing:0.05em;">Chantier</span><br/>
+                        <strong><t t-field="o.chantier_id"/></strong>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+    <!-- ── DEVIS / BON DE COMMANDE CLIENT (sale.order) ─────── -->
+    <template id="report_saleorder_blg_chantier" inherit_id="sale.report_saleorder_document">
+        <xpath expr="//div[@id='informations'] | //div[hasclass('row','mb-4')]" position="before">
+            <t t-if="o.chantier_id">
+                <div class="row mb-2"
+                     style="border-left: 3px solid #8B3A3A; padding-left: 10px; margin-left: 0;">
+                    <div class="col">
+                        <span style="font-size:7.5pt;color:#8B3A3A;text-transform:uppercase;
+                                     letter-spacing:0.05em;">Chantier</span><br/>
+                        <strong><t t-field="o.chantier_id"/></strong>
+                    </div>
+                    <t t-if="o.lot_id">
+                        <div class="col">
+                            <span style="font-size:7.5pt;color:#8B3A3A;text-transform:uppercase;
+                                         letter-spacing:0.05em;">Lot</span><br/>
+                            <strong><t t-field="o.lot_id"/></strong>
+                        </div>
+                    </t>
+                </div>
+            </t>
+        </xpath>
+    </template>
+
+</odoo>

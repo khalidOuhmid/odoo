@@ -5,6 +5,8 @@ Refactored: Uses lot category selection + document uploads
 FAANG-level: Clean code, type hints, XSS protection
 """
 
+from markupsafe import Markup, escape
+
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import logging
@@ -234,7 +236,6 @@ class LotSubcontractorAssignWizard(models.TransientModel):
         self._attach_documents(lot)
         
         # Log assignment for audit trail
-        from markupsafe import Markup, escape
         assignment_message = Markup(
             f"<b>Sous-traitant assigné:</b> {escape(self.subcontractor_id.name)}<br/>"
             f"<b>Date:</b> {self.assignment_date}<br/>"

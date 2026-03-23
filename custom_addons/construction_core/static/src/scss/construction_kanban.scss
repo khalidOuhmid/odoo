@@ -1,14 +1,14 @@
 /**
- * Construction Core - Kanban Premium Styling
- * SAP/Salesforce inspired UX - SCOPED TO CONSTRUCTION MODULE ONLY
+ * Construction Core — Kanban Board Styling
+ * Scoped to .o_construction_kanban and .o_construction_card
+ * Colors: BLG Groupe design system via _blg_variables.scss
  */
 
+
 /* =========================================
-   KANBAN BOARD - CONSTRUCTION CHANTIERS
-   Scoped with .o_construction_kanban class
+   KANBAN BOARD — CONSTRUCTION CHANTIERS
    ========================================= */
 
-/* Kanban Cards - Premium Style - SCOPED */
 .o_construction_kanban .o_kanban_record,
 .o_construction_card {
     border-radius: 12px !important;
@@ -24,7 +24,7 @@
     }
 }
 
-/* Chapter Badge - Construction specific */
+/* Chapter Badge */
 .construction_chapter_badge {
     display: inline-flex;
     align-items: center;
@@ -35,25 +35,26 @@
     text-transform: uppercase;
     letter-spacing: 0.3px;
     margin-bottom: 8px;
-    background: #ebf8ff;
-    color: #2b6cb0;
+    background: $blg-primary-alpha;
+    color: $blg-primary;
+    border: 1px solid $blg-light;
 }
 
-/* Client Info - Construction specific */
+/* Client Info */
 .construction_client_info {
     display: flex;
     align-items: center;
     gap: 8px;
     margin-top: 8px;
     padding-top: 8px;
-    border-top: 1px solid #e2e8f0;
+    border-top: 1px solid $blg-border;
 
     .client_avatar {
         width: 28px;
         height: 28px;
         border-radius: 50%;
-        background: #667eea;
-        color: white;
+        background: $blg-primary;
+        color: $blg-bg-white;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -63,11 +64,41 @@
 
     .client_name {
         font-size: 13px;
-        color: #4a5568;
+        color: $blg-text-dark;
     }
 }
 
-/* Progress in card - Construction specific */
+/* Progress in card */
 .construction_progress {
     margin-top: 8px;
+}
+
+/* Transition possible badge */
+.construction_transition_badge {
+    display: inline-block;
+    margin-top: 4px;
+}
+
+.construction_badge_transition {
+    background-color: #2E7D32 !important;
+    color: #ffffff !important;
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 12px;
+    letter-spacing: 0.2px;
+}
+
+/* Cards for SS (Sans Suite) stage — greyed out, reduced opacity */
+.o_construction_kanban .o_kanban_record[data-stage-code="SS"],
+.o_construction_card.o_construction_card_ss {
+    background-color: #f0f0f0 !important;
+    opacity: 0.55;
+    filter: grayscale(40%);
+
+    &:hover {
+        opacity: 0.75;
+        transform: none;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+    }
 }

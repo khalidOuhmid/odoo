@@ -4,11 +4,14 @@ Extension du modèle purchase.order pour la gestion d'achats construction.
 Philosophie SAP/Salesforce - Enterprise-grade.
 """
 
+from datetime import date
+
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
-import logging
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 
 class PurchaseOrderConstruction(models.Model):
@@ -66,6 +69,13 @@ class PurchaseOrderConstruction(models.Model):
         string='Marge (%)',
         compute='_compute_margin',
         help="Pourcentage de marge"
+    )
+
+    blg_name_generated = fields.Boolean(
+        string='Référence BLG générée',
+        copy=False,
+        default=False,
+        help="True une fois que la référence BLG a été appliquée à la première confirmation."
     )
 
     # =================== CONTRAINTES ===================
@@ -151,6 +161,69 @@ class PurchaseOrderConstruction(models.Model):
             if subcontractor_lots:
                 self.lot_ids = subcontractor_lots
 
+    # =================== CONFIRMATION / NOMMAGE ===================
+
+    def button_confirm(self):
+        """Surcharge : génère la référence BLG à la première confirmation."""
+        res = super().button_confirm()
+        for record in self:
+            if record.chantier_id and not record.blg_name_generated:
+                blg_name = record._generate_blg_name()
+                if blg_name:
+                    record.write({'name': blg_name, 'blg_name_generated': True})
+                    _logger.wizard_action('purchase_order', 'blg_name_generated', record)
+        return res
+
+    def _generate_blg_name(self):
+        """Calcule le nom BLG au format [REF_CHANTIER]-[LOTS]-[INITIALES_ST]-[YYYYMMDD]."""
+        self.ensure_one()
+        chantier = self.chantier_id
+        if not chantier:
+            return False
+
+        # Partie 1 : référence chantier (séquence si disponible, sinon nom)
+        ref_chantier = (chantier.reference or chantier.name or 'CHANTIER').upper()
+        # Normaliser : pas d'espaces ni de slashs dans la ref
+        ref_chantier = ref_chantier.replace('/', '').replace(' ', '_').strip('_')
+
+        # Partie 2 : codes lots (ex: ELEC+PLOM)
+        if self.lot_ids:
+            lot_codes = '+'.join(
+                (lot.code or lot.name[:4]).upper()
+                for lot in self.lot_ids.sorted('sequence')
+            )
+        else:
+            lot_codes = 'SANS-LOT'
+
+        # Partie 3 : initiales du sous-traitant (Prénom NOM → PN)
+        initiales = self._compute_partner_initials(self.partner_id)
+
+        # Partie 4 : date de confirmation
+        today = date.today().strftime('%Y%m%d')
+
+        return f"{ref_chantier}-{lot_codes}-{initiales}-{today}"
+
+    @staticmethod
+    def _compute_partner_initials(partner):
+        """Retourne les initiales Prénom+Nom d'un partenaire (ex: 'BF' pour 'Baptiste Fontaine')."""
+        if not partner:
+            return 'XX'
+        # Essayer d'abord prénom/nom séparés
+        parts = []
+        if partner.firstname:
+            parts.append(partner.firstname[0])
+        if partner.lastname:
+            parts.append(partner.lastname[0])
+        if parts:
+            return ''.join(parts).upper()
+        # Fallback : mots du name
+        words = (partner.name or '').split()
+        if len(words) >= 2:
+            return (words[0][0] + words[-1][0]).upper()
+        if words:
+            return words[0][:2].upper()
+        return 'XX'
+
     # =================== ACTIONS PRINCIPALES ===================
 
     def action_add_product_wizard(self):
@@ -235,6 +308,19 @@ class PurchaseOrderConstruction(models.Model):
             'context': {'default_chantier_id': self.chantier_id.id if self.chantier_id else False},
         }
 
+    def action_open_purchase_builder(self):
+        """Ouvre le PurchaseBuilder Owl pour ce bon de commande."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'construction_purchase.purchase_builder',
+            'name': _('Purchase Builder — %s') % self.name,
+            'context': {
+                'active_id': self.id,
+                'default_order_id': self.id,
+            },
+        }
+
     def action_view_chantier(self):
         """Smart button: Voir le chantier."""
         self.ensure_one()
@@ -281,6 +367,105 @@ class PurchaseOrderConstruction(models.Model):
             return max(self.order_line.mapped('sequence')) + 10
         return 10
 
+    # =================== PURCHASE BUILDER (API) ===================
+
+    @api.model
+    def search_products_for_builder(self, term='', lot_category_id=None, limit=100):
+        """Catalogue produits pour le PurchaseBuilder Owl."""
+        domain = [
+            ('purchase_ok', '=', True),
+            ('active', '=', True),
+        ]
+        if term:
+            domain.append(('name', 'ilike', term))
+        if lot_category_id:
+            domain.append(('lot_category_ids', 'in', [lot_category_id]))
+        products = self.env['product.template'].search(domain, limit=limit)
+        return products.read(['id', 'name', 'display_name', 'uom_id', 'standard_price', 'list_price'])
+
+    @api.model
+    def get_builder_totals(self, order_id):
+        """Retourne les totaux serveur du bon de commande pour le PurchaseBuilder."""
+        order = self.browse(order_id)
+        if not order.exists():
+            return {}
+        lot_totals = {}
+        for line in order.order_line.filtered(lambda l: not l.display_type):
+            lot_key = line.lot_id.id if line.lot_id else 0
+            lot_name = line.lot_id.name if line.lot_id else _('Sans lot')
+            if lot_key not in lot_totals:
+                lot_totals[lot_key] = {'id': lot_key, 'name': lot_name, 'subtotal': 0.0}
+            lot_totals[lot_key]['subtotal'] += line.price_subtotal
+        return {
+            'amount_untaxed': order.amount_untaxed,
+            'amount_tax': order.amount_tax,
+            'amount_total': order.amount_total,
+            'currency_symbol': order.currency_id.symbol or '€',
+            'lot_totals': list(lot_totals.values()),
+        }
+
+    @api.model
+    def save_builder_lines(self, order_id, lines):
+        """Sauvegarde les lignes depuis le PurchaseBuilder, retourne les totaux.
+
+        `lines` est une liste de dicts:
+          { id (optionnel), product_id, name, product_qty, price_unit,
+            lot_id, room_location, floor_level, construction_notes }
+        Les lignes absentes du payload et sans display_type sont supprimées.
+        """
+        self = self.browse(order_id)
+        self.ensure_one()
+        incoming_ids = {l['id'] for l in lines if l.get('id')}
+
+        # Supprimer les lignes produit non présentes dans le payload
+        lines_to_delete = self.order_line.filtered(
+            lambda l: not l.display_type and l.id not in incoming_ids
+        )
+        lines_to_delete.unlink()
+
+        for line_data in lines:
+            vals = {
+                'product_id': line_data.get('product_id'),
+                'name': line_data.get('name', ''),
+                'product_qty': line_data.get('product_qty', 1.0),
+                'price_unit': line_data.get('price_unit', 0.0),
+                'lot_id': line_data.get('lot_id') or False,
+                'room_location': line_data.get('room_location', ''),
+                'floor_level': line_data.get('floor_level') or False,
+                'construction_notes': line_data.get('construction_notes', ''),
+            }
+            if line_data.get('id'):
+                existing = self.order_line.filtered(lambda l: l.id == line_data['id'])
+                if existing:
+                    existing.write(vals)
+            else:
+                vals['order_id'] = self.id
+                if vals['product_id']:
+                    product = self.env['product.product'].browse(vals['product_id'])
+                    if not vals['price_unit']:
+                        vals['price_unit'] = product.standard_price
+                    vals['product_uom'] = product.uom_po_id.id or product.uom_id.id
+                self.env['purchase.order.line'].create(vals)
+
+        return self.get_builder_totals(self.id)
+
+    def message_post(self, **kwargs):
+        """Duplique le message dans le thread du chantier parent."""
+        result = super().message_post(**kwargs)
+        if self.env.context.get('_posting_to_chantier'):
+            return result
+        chantier = getattr(self, 'chantier_id', False)
+        if chantier and chantier.exists():
+            prefix = f"[BdC — {self.name}]"
+            original_body = kwargs.get('body', '')
+            chantier.with_context(_posting_to_chantier=True).message_post(
+                body=f"<b>{prefix}</b><br/>{original_body}",
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+                mail_notify_author=False,
+            )
+        return result
+
     def _update_chantier_on_validation(self):
         """Mettre à jour le chantier lors de la validation."""
         try:
@@ -301,7 +486,7 @@ class PurchaseOrderConstruction(models.Model):
                 message_type='notification'
             )
         except Exception as e:
-            _logger.error(f"Erreur mise à jour chantier: {e}")
+            _logger.business_error(self, '_update_chantier_on_validation', e)
 
 
 class PurchaseOrderGroupedCreation(models.TransientModel):

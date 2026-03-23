@@ -9,23 +9,33 @@ from odoo.exceptions import ValidationError
 import logging
 import re
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 
 class MailThread(models.AbstractModel):
     _inherit = 'mail.thread'
 
     @api.model
-    def message_process(self, model, message_dict, save_original=False, strip_attachments=False, thread_id=None):
+    def message_process(self, model, message, custom_values=None, save_original=False, strip_attachments=False, thread_id=None):
         """Override to intercept construction project creation emails."""
+        # Parse the raw email to extract headers for classification
+        try:
+            message_dict = self.message_parse(message, save_original=False)
+        except Exception:
+            message_dict = {}
         # Check if email is for construction project creation
         if self._is_construction_project_email(message_dict):
             try:
                 self._handle_construction_project_creation(message_dict)
             except Exception as e:
-                _logger.error(f"Error creating chantier from email: {str(e)}")
-        
-        return super().message_process(model, message_dict, save_original, strip_attachments, thread_id)
+                _logger.error("[BLG][MAIL][ERROR] Error creating chantier from email: %s", e)
+
+        return super().message_process(model, message, custom_values=custom_values,
+                                       save_original=save_original,
+                                       strip_attachments=strip_attachments,
+                                       thread_id=thread_id)
 
     def _is_construction_project_email(self, message_dict):
         """Check if email should trigger construction project creation."""
@@ -56,14 +66,14 @@ class MailThread(models.AbstractModel):
         project_data = self._extract_project_data_from_email(message_dict)
         
         if not project_data or not project_data.get('name'):
-            _logger.warning("Unable to extract project data from email")
+            _logger.warning("[BLG][MAIL][WARN] Unable to extract project data from email")
             return
         
         # Create chantier
         chantier = self._create_construction_project(project_data)
         
         if chantier:
-            _logger.info(f"Chantier created automatically: {chantier.name} (ID: {chantier.id})")
+            _logger.info("[BLG][MAIL][OK] Chantier created from email: %s (id=%s)", chantier.name, chantier.id)
             
             # Create activity for notification
             self._create_notification_activity(chantier, message_dict)
@@ -90,14 +100,11 @@ class MailThread(models.AbstractModel):
                 # Clean subject
                 project_data['name'] = subject.strip()
             
-            # Description from body
+            # Description from body — strip HTML with stdlib re (no third-party dep)
             body = message_dict.get('body_html') or message_dict.get('body', '')
             if body:
-                # Strip HTML tags for description
-                import html2text
-                h = html2text.HTML2Text()
-                h.ignore_links = True
-                project_data['description'] = h.handle(body).strip()if hasattr(html2text, 'HTML2Text') else body
+                plain = re.sub(r'<[^>]+>', ' ', body)
+                project_data['description'] = re.sub(r'\s+', ' ', plain).strip()
             
             # Extract client
             email_from = message_dict.get('from', '') or message_dict.get('email_from', '')
@@ -115,7 +122,7 @@ class MailThread(models.AbstractModel):
                     project_data['phone'] = phone
         
         except Exception as e:
-            _logger.error(f"Error extracting project data: {str(e)}")
+            _logger.error("[BLG][MAIL][ERROR] Error extracting project data: %s", e)
         
         return project_data
 
@@ -173,7 +180,7 @@ class MailThread(models.AbstractModel):
                     break
         
         except Exception as e:
-            _logger.error(f"Error extracting address: {str(e)}")
+            _logger.error("[BLG][MAIL][ERROR] Error extracting address: %s", e)
         
         return address_data
 
@@ -193,7 +200,7 @@ class MailThread(models.AbstractModel):
                     return match.group()
         
         except Exception as e:
-            _logger.error(f"Error extracting phone: {str(e)}")
+            _logger.error("[BLG][MAIL][ERROR] Error extracting phone: %s", e)
         
         return None
 
@@ -201,11 +208,11 @@ class MailThread(models.AbstractModel):
         """Create a new chantier with extracted data."""
         try:
             if not project_data.get('name'):
-                _logger.warning("Project name missing")
+                _logger.warning("[BLG][MAIL][WARN] Project name missing — chantier creation skipped")
                 return None
             
             if not project_data.get('client'):
-                _logger.warning("Client missing")
+                _logger.warning("[BLG][MAIL][WARN] Client missing — chantier creation skipped")
                 return None
             
             # Get "Appel d'offre" stage
@@ -235,7 +242,7 @@ class MailThread(models.AbstractModel):
             return chantier
         
         except Exception as e:
-            _logger.error(f"Error creating chantier: {str(e)}")
+            _logger.error("[BLG][MAIL][ERROR] Error creating chantier: %s", e)
             return None
 
     def _create_notification_activity(self, chantier, message_dict):
@@ -272,7 +279,7 @@ class MailThread(models.AbstractModel):
             })
         
         except Exception as e:
-            _logger.error(f"Error creating activity: {str(e)}")
+            _logger.error("[BLG][MAIL][ERROR] Error creating activity for chantier id=%s: %s", chantier.id, e)
 
     def _send_confirmation_email(self, chantier):
         """Send confirmation email to client."""
@@ -290,7 +297,7 @@ class MailThread(models.AbstractModel):
             template = self.env.ref('construction_core.email_template_construction_project_created', raise_if_not_found=False)
             if template and chantier.client.email:
                 template.send_mail(chantier.id, force_send=True)
-                _logger.info(f"Confirmation email sent for chantier {chantier.name}")
+                _logger.info("[BLG][MAIL][OK] Confirmation email sent for chantier %s (id=%s)", chantier.name, chantier.id)
         
         except Exception as e:
-            _logger.error(f"Error sending confirmation email: {str(e)}")
+            _logger.error("[BLG][MAIL][ERROR] Error sending confirmation email: %s", e)

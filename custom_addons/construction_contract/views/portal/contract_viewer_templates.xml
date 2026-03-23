@@ -6,7 +6,9 @@
     <!-- ========================================================== -->
 
     <template id="template_editor_page" name="Template Editor">
-        <t t-call="portal.layout">
+        <t t-call="portal.frontend_layout">
+            <t t-set="no_header" t-value="True"/>
+            <t t-set="no_footer" t-value="True"/>
             <t t-call-assets="construction_contract.assets_template_editor"/>
             <t t-set="head">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
@@ -18,14 +20,11 @@
                         height: 100%;
                         background-color: #f4f6f9;
                     }
-
-                    #grapesjs-editor {
-                        min-height: 80vh;
-                    }
-
-                    .o_portal_wrap {
-                        padding: 0 !important;
-                    }
+                    #grapesjs-editor { min-height: 80vh; }
+                    .o_portal_wrap { padding: 0 !important; }
+                    .o_main_navbar, header.o_navbar, #wrapwrap > header,
+                    #oe_main_menu_navbar { display: none !important; }
+                    body { padding-top: 0 !important; }
                 </style>
             </t>
 

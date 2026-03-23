@@ -104,5 +104,43 @@ PDF_MARGINS = {
 
 # Notification settings
 EMAIL_RETRY_ATTEMPTS = 3
+
+# Injectable variables: mapping of Jinja2 path → (label, odoo_field_or_method)
+# Used by the Owl contract editor sidebar to refresh live preview after field saves.
+# Key: dotted path as used in template (e.g. "contract.total_amount_ht")
+# Value: human-readable label shown in the variable picker
+INJECTABLE_VARIABLES = {
+    # ── Contract header ──
+    'contract.name':               "Référence contrat",
+    'contract.start_date':         "Date de début",
+    'contract.end_date':           "Date de fin",
+    # ── Financial ──
+    'contract.total_amount_ht':    "Montant HT",
+    'contract.total_amount_tva':   "TVA",
+    'contract.total_amount_ttc':   "Montant TTC",
+    'contract.retention_rate':     "Taux de retenue (%)",
+    'contract.retention_amount':   "Montant de la retenue",
+    # ── Parties ──
+    'contract.master_name':        "Nom maître d'œuvre",
+    'contract.master_address':     "Adresse maître d'œuvre",
+    'contract.signatory_contractor':    "Signataire BLG",
+    'contract.signatory_subcontractor': "Signataire sous-traitant",
+    # ── Penalties ──
+    'contract.penalty_retard_jour':     "Pénalité retard/jour (€)",
+    'contract.penalty_docs_delay':      "Pénalité documents (€)",
+    'contract.penalty_safety':          "Pénalité sécurité (€)",
+    'contract.penalty_cleaning':        "Pénalité nettoyage (€)",
+    # ── Chantier ──
+    'chantier.name':               "Nom du chantier",
+    'chantier.reference':          "Référence chantier",
+    'chantier.address':            "Adresse du chantier",
+    'chantier.city':               "Ville",
+    # ── Subcontractor ──
+    'subcontractor.name':          "Raison sociale ST",
+    'subcontractor.siret':         "SIRET",
+    'subcontractor.email':         "Email ST",
+    # ── Computed blocks ──
+    'billing_schedule':            "Tableau échéancier de facturation",
+}
 SMS_RETRY_ATTEMPTS = 2
 NOTIFICATION_DELAY_HOURS = 24           # Hours before sending reminder

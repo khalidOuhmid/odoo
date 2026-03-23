@@ -421,3 +421,63 @@ class TestConstructionChantier(TransactionCase):
         self.chantier._compute_stage_validation_info()
         # THEN info is not empty
         self.assertTrue(self.chantier.stage_validation_info)
+
+    # ========================= PREVIOUS STAGE TRANSITIONS =========================
+
+    def test_cannot_move_previous_in_arch_chapter(self):
+        # GIVEN chantier in the seed ARCH chapter (code='ARCH')
+        stage_arch = self.env['construction.stage'].search(
+            [('chapter_id.code', '=', 'ARCH')], order='sequence asc', limit=1
+        )
+        self.assertTrue(stage_arch, "Seed data must contain an ARCH chapter with at least one stage")
+        self.chantier.with_context(bypass_stage_validation=True).write({'stage_id': stage_arch.id})
+        # WHEN checking if previous stage move is allowed
+        can_move, msg = self.chantier._can_move_to_previous_stage()
+        # THEN blocked because ARCH is in BACKWARD_BLOCKED_CHAPTERS
+        self.assertFalse(can_move)
+
+    def test_cannot_move_previous_in_ret_chapter(self):
+        # GIVEN chantier in the seed RET chapter (code='RET')
+        stage_ret = self.env['construction.stage'].search(
+            [('chapter_id.code', '=', 'RET')], order='sequence asc', limit=1
+        )
+        self.assertTrue(stage_ret, "Seed data must contain a RET chapter with at least one stage")
+        self.chantier.with_context(bypass_stage_validation=True).write({'stage_id': stage_ret.id})
+        # WHEN checking
+        can_move, msg = self.chantier._can_move_to_previous_stage()
+        # THEN blocked because RET is in BACKWARD_BLOCKED_CHAPTERS
+        self.assertFalse(can_move)
+
+    def test_cannot_move_previous_when_trav_progress_over_50(self):
+        # GIVEN chantier in the seed TRAV chapter with progress > 50%
+        stage_trav = self.env['construction.stage'].search(
+            [('chapter_id.code', '=', 'TRAV')], order='sequence desc', limit=1
+        )
+        self.assertTrue(stage_trav, "Seed data must contain a TRAV chapter with stages")
+        cat = self.env['construction.lot.category'].create({'name': 'Trav Cat', 'code': 'TRAV_CAT'})
+        self.env['construction.lot'].create({
+            'category_id': cat.id, 'chantier_id': self.chantier.id,
+            'price': 1000.0, 'completion_percentage': 75.0,
+        })
+        self.chantier.with_context(bypass_stage_validation=True).write({'stage_id': stage_trav.id})
+        # WHEN checking
+        can_move, msg = self.chantier._can_move_to_previous_stage()
+        # THEN blocked because progress (75%) > 50% in TRAV chapter
+        self.assertFalse(can_move)
+
+    def test_can_move_previous_in_normal_chapter(self):
+        # GIVEN a standard chapter with two stages, chantier at stage2
+        self.chantier.with_context(bypass_stage_validation=True).write({'stage_id': self.stage_da.id})
+        can_move, msg = self.chantier._can_move_to_previous_stage()
+        # THEN allowed (no blocking chapter, no TRAV progress constraint)
+        self.assertTrue(can_move)
+
+    # ========================= ACTION UPLOAD DOCUMENT — FALLBACK =========================
+
+    def test_action_upload_document_fallback_when_no_wizard(self):
+        # GIVEN construction_document module is NOT installed
+        # (action_document_upload_wizard ref does not exist)
+        # WHEN calling action_upload_document
+        result = self.chantier.action_upload_document()
+        # THEN returns fallback to ir.attachment form (not a crash)
+        self.assertEqual(result.get('res_model'), 'ir.attachment')

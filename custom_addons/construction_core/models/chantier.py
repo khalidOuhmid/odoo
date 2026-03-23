@@ -10,7 +10,9 @@ from odoo.exceptions import ValidationError, UserError
 from datetime import timedelta
 import logging
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 
 # ============= STATE MACHINE CONFIGURATION ============= #
@@ -144,6 +146,18 @@ class Chantier(models.Model):
         compute='_compute_progress',
         store=True,
         default=0.0
+    )
+
+    progress_display = fields.Char(
+        string='Avancement',
+        compute='_compute_progress_display',
+        store=False,
+    )
+
+    is_ready_for_next_stage = fields.Boolean(
+        string='Prêt pour l\'étape suivante',
+        compute='_compute_is_ready_for_next_stage',
+        store=False,
     )
     
     # ============= Budget ============= #
@@ -309,14 +323,22 @@ class Chantier(models.Model):
         string='Ressources du Chantier'
     )
 
-    # ============= Documents Centralization (BUG-07) ============= #
+    # ============= Documents Centralization (GED) ============= #
     documents_summary_html = fields.Html(
         compute='_compute_documents_summary_html',
         string='Documents du Chantier',
     )
-    
-    # NOTE: visit_ids and document_ids are added by construction_visit and 
-    # construction_document modules respectively via _inherit
+    document_ids = fields.One2many(
+        'construction.document',
+        'chantier_id',
+        string='Documents GED',
+    )
+    document_count = fields.Integer(
+        string='Documents',
+        compute='_compute_document_count',
+    )
+
+    # NOTE: visit_ids is added by construction_visit via _inherit
 
     
     # ============= Constraints ============= #
@@ -382,6 +404,20 @@ class Chantier(models.Model):
             if old_progress < 95.0 and new_progress >= 95.0:
                 record._check_progress_95_trigger()
 
+    @api.depends('progress')
+    def _compute_progress_display(self):
+        for record in self:
+            record.progress_display = f"{record.progress:.0f}%"
+
+    def _compute_is_ready_for_next_stage(self):
+        for record in self:
+            try:
+                with record.env.cr.savepoint():
+                    can_proceed, _msg = record._can_move_to_next_stage()
+                record.is_ready_for_next_stage = can_proceed
+            except Exception:
+                record.is_ready_for_next_stage = False
+
     @api.depends('lots_ids.price', 'quotation_ids.state', 'quotation_ids.amount_total')
     def _compute_total_cost(self):
         """
@@ -401,6 +437,12 @@ class Chantier(models.Model):
         """Compute the number of associated quotations."""
         for record in self:
             record.quotation_count = len(record.quotation_ids)
+
+    @api.depends('document_ids')
+    def _compute_document_count(self):
+        """Compute the number of GED documents attached to this chantier."""
+        for record in self:
+            record.document_count = len(record.document_ids)
 
     @api.depends('lots_ids.subcontractor_id', 'lots_ids.execution_type')
     def _compute_subcontractor_count(self):
@@ -1126,8 +1168,10 @@ class Chantier(models.Model):
         Returns:
             Created chantier record
         """
-        # Default stage is the first reception stage
-        first_stage = self.env['construction.stage'].search(
+        # Default stage is the REC (Réception) stage
+        first_stage = self.env.ref(
+            'construction_core.stage_reception', raise_if_not_found=False
+        ) or self.env['construction.stage'].search(
             [], order='chapter_id, sequence', limit=1
         )
         
@@ -1235,7 +1279,9 @@ class Chantier(models.Model):
         # Check that all external lots have proper subcontractor assignment
         lots_missing_assignment = []
         for lot in self.lots_ids:
-            _logger.info(f"Lot {lot.name}: execution_type={lot.execution_type}, ST={lot.subcontractor_id.name if lot.subcontractor_id else 'None'}")
+            _logger.info("[BLG][COMPLIANCE][CHECK] Lot %s: execution_type=%s ST=%s",
+                         lot.name, lot.execution_type,
+                         lot.subcontractor_id.name if lot.subcontractor_id else 'None')
             if lot.execution_type == 'external' and not lot.subcontractor_id:
                 lots_missing_assignment.append(lot.name)
         
@@ -1504,8 +1550,20 @@ class Chantier(models.Model):
             }
         }
 
+    def action_view_documents(self):
+        """Smart button: View GED documents (navigation only)."""
+        self.ensure_one()
+        return {
+            'type': 'ir.actions.act_window',
+            'name': _('Documents — %s') % self.name,
+            'res_model': 'construction.document',
+            'view_mode': 'list,form',
+            'domain': [('chantier_id', '=', self.id)],
+            'context': {},
+        }
+
     def action_view_lots(self):
-        """Smart button: View lots."""
+        """Smart button: View lots (navigation only, no creation)."""
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
@@ -1513,11 +1571,11 @@ class Chantier(models.Model):
             'res_model': 'construction.lot',
             'view_mode': 'list,form',
             'domain': [('chantier_id', '=', self.id)],
-            'context': {'default_chantier_id': self.id},
+            'context': {},
         }
 
     def action_view_quotations(self):
-        """Smart button: View quotations."""
+        """Smart button: View quotations (navigation only, no creation)."""
         self.ensure_one()
         return {
             'type': 'ir.actions.act_window',
@@ -1525,7 +1583,7 @@ class Chantier(models.Model):
             'res_model': 'sale.order',
             'view_mode': 'list,form',
             'domain': [('chantier_id', '=', self.id)],
-            'context': {'default_chantier_id': self.id},
+            'context': {},
         }
 
     # ============= TAB ACTION METHODS ============= #

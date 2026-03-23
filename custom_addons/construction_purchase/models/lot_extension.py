@@ -3,6 +3,10 @@
 
 from odoo import api, fields, models, _
 
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
+
 
 class LotPurchaseExtension(models.Model):
     """Extension pour ajouter les fonctionnalités d'achat aux lots."""
@@ -119,7 +123,8 @@ class LotPurchaseExtension(models.Model):
             'chantier_id': self.chantier_id.id if self.chantier_id else False,
             'lot_ids': [(6, 0, [self.id])],
         })
-        
+        _logger.wizard_action('lot_extension', 'create_purchase_order', record=self)
+
         return {
             'type': 'ir.actions.act_window',
             'name': _('Commande Fournisseur'),

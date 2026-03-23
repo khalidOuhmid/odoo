@@ -13,6 +13,9 @@ from . import contract_document
 from . import contract_page_validation
 from . import urssaf_code
 
+# Log permanent conformité
+from . import compliance_log
+
 # Extensions to other modules
 from . import chantier_extension
 from . import res_partner_extension

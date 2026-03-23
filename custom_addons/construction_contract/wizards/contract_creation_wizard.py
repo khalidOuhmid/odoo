@@ -493,17 +493,18 @@ class ContractCreationWizard(models.TransientModel):
         _logger.info(f"Generated deliverables for contract {contract.name}")
 
     def _action_open_compliance_warning(self):
-        """Open the compliance warning wizard to let the user proceed anyway."""
+        """Ouvre le wizard de dérogation conformité (remplace l'ancien wizard minimal)."""
         self.ensure_one()
-        warning = self.env['contract.compliance.warning.wizard'].create({
+        override_wiz = self.env['construction.compliance.override.wizard'].create({
             'creation_wizard_id': self.id,
-            'warning_message': self.subcontractor_warning,
+            'partner_id': self.subcontractor_id.id if self.subcontractor_id else False,
+            'non_compliant_docs': self.subcontractor_warning or '',
         })
         return {
             'type': 'ir.actions.act_window',
-            'name': _('Avertissement — Documents non conformes'),
-            'res_model': 'contract.compliance.warning.wizard',
-            'res_id': warning.id,
+            'name': _('Dérogation — Documents non conformes'),
+            'res_model': 'construction.compliance.override.wizard',
+            'res_id': override_wiz.id,
             'view_mode': 'form',
             'target': 'new',
         }

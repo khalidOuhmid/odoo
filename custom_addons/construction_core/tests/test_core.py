@@ -6,6 +6,7 @@ Unit Tests for Construction Core Module
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
 from odoo.exceptions import UserError
+from psycopg2 import IntegrityError
 
 
 @tagged('post_install', '-at_install')
@@ -65,7 +66,7 @@ class TestConstructionCore(TransactionCase):
         })
 
         # Second lot with same category on same chantier — should fail (unique constraint)
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             with self.env.cr.savepoint():
                 self.lot_model.create({
                     'category_id': self.category.id,
@@ -83,11 +84,11 @@ class TestConstructionCore(TransactionCase):
 
         chantier = self.chantier_model.message_new(msg_dict)
 
-        self.assertTrue(chantier.id)
+        self.assertTrue(chantier.exists())
         self.assertEqual(chantier.name, 'Nouveau projet construction maison')
         self.assertIn('Description du projet', chantier.description)
-        self.assertTrue(chantier.stage_id)
-        self.assertTrue(chantier.client)
+        self.assertTrue(chantier.stage_id.exists())
+        self.assertTrue(chantier.client.exists())
 
     def test_message_new_with_existing_partner(self):
         """Test message_new finds existing partner by email."""
@@ -153,13 +154,7 @@ class TestForceStageWizard(TransactionCase):
             'reason': 'Test reason for forcing stage change',
         })
 
-        try:
-            wizard.action_force_stage()
-        except ValueError as e:
-            if 'unsupported format character' in str(e):
-                self.fail("MarkupSafe bug still present: " + str(e))
-            raise
-
+        wizard.action_force_stage()
         self.assertEqual(self.chantier.stage_id.id, self.stage2.id)
 
 

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Action client Owl — PurchaseBuilder -->
+    <record id="action_purchase_builder" model="ir.actions.client">
+        <field name="name">Purchase Builder</field>
+        <field name="tag">construction_purchase.purchase_builder</field>
+    </record>
+
+    <!-- Bouton "Purchase Builder" sur la fiche BdC (chantier requis) -->
+    <record id="view_purchase_order_builder_button" model="ir.ui.view">
+        <field name="name">purchase.order.builder.button</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//button[@name='button_confirm']" position="after">
+                <button string="Purchase Builder"
+                        type="object"
+                        name="action_open_purchase_builder"
+                        class="btn-secondary"
+                        icon="fa-th-list"
+                        invisible="not chantier_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

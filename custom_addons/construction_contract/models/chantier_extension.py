@@ -105,7 +105,6 @@ class ChantierExtension(models.Model):
         action.update({
             'domain': [('chantier_id', '=', self.id)],
             'context': {
-                'default_chantier_id': self.id,
                 'search_default_chantier_id': self.id,
             },
         })

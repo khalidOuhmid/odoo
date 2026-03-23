@@ -1,0 +1,363 @@
+// PurchaseBuilder — BLG Construction
+// Colors: #8B3A3A titres, #F5F0EB fond table, #2C2C2C texte
+
+$pb-title-color:    #8B3A3A;
+$pb-bg-table:       #F5F0EB;
+$pb-text:           #2C2C2C;
+$pb-border:         #D9CFC8;
+$pb-sidebar-bg:     #FAF7F4;
+$pb-sidebar-width:  280px;
+
+.pb {
+    height: 100%;
+    position: relative;
+    color: $pb-text;
+    font-size: 0.9rem;
+}
+
+// ── LAYOUT ─────────────────────────────────────────────────
+.pb__layout {
+    display: flex;
+    height: 100%;
+    min-height: 600px;
+    gap: 0;
+}
+
+// ── LOADING / EMPTY ─────────────────────────────────────────
+.pb__loading,
+.pb__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 60px;
+    color: #888;
+}
+
+// ── SIDEBAR ─────────────────────────────────────────────────
+.pb__sidebar {
+    width: $pb-sidebar-width;
+    min-width: $pb-sidebar-width;
+    background: $pb-sidebar-bg;
+    border-right: 1px solid $pb-border;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    padding: 16px 12px;
+    gap: 14px;
+}
+
+.pb__sidebar-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid $pb-border;
+}
+
+.pb__chantier-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: $pb-title-color;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.pb__label {
+    font-size: 0.72rem;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.pb__section-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: $pb-title-color;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 6px;
+}
+
+// Search
+.pb__search {
+    position: relative;
+}
+.pb__search-icon {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #aaa;
+}
+.pb__search-input {
+    width: 100%;
+    padding: 7px 10px 7px 32px;
+    border: 1px solid $pb-border;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: #fff;
+    &:focus {
+        outline: none;
+        border-color: $pb-title-color;
+    }
+}
+
+// Lot pills
+.pb__lots {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+.pb__lot-pill {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    border: 1px solid $pb-border;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.82rem;
+    transition: all 0.15s;
+
+    &:hover { border-color: $pb-title-color; background: #fdf8f5; }
+    &--active { background: $pb-title-color; border-color: $pb-title-color; color: #fff; }
+}
+.pb__lot-code {
+    font-weight: 700;
+    min-width: 30px;
+}
+.pb__lot-name {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pb__lot-badge {
+    background: rgba(0,0,0,0.12);
+    border-radius: 10px;
+    padding: 1px 7px;
+    font-size: 0.75rem;
+}
+
+// Catalogue
+.pb__catalog {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    overflow-y: auto;
+}
+.pb__product-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 7px 10px;
+    border: 1px solid $pb-border;
+    border-radius: 6px;
+    background: #fff;
+    cursor: pointer;
+    text-align: left;
+    font-size: 0.83rem;
+    gap: 8px;
+    transition: all 0.12s;
+
+    &:hover { border-color: $pb-title-color; background: #fdf8f5; }
+}
+.pb__product-name {
+    flex: 1;
+    font-weight: 500;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+.pb__product-ref {
+    font-size: 0.75rem;
+    color: #888;
+    white-space: nowrap;
+}
+
+.pb__empty-hint {
+    color: #aaa;
+    font-size: 0.82rem;
+    text-align: center;
+    padding: 8px 0;
+}
+
+// ── MAIN ─────────────────────────────────────────────────────
+.pb__main {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.pb__toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+.pb__title {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: $pb-title-color;
+    margin: 0;
+}
+
+.pb__cart-empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px;
+    color: #aaa;
+}
+
+// ── LOT GROUP ────────────────────────────────────────────────
+.pb__lot-group {
+    border: 1px solid $pb-border;
+    border-radius: 8px;
+    overflow: hidden;
+}
+.pb__lot-group-header {
+    background: $pb-title-color;
+    color: #fff;
+    padding: 8px 16px;
+    font-weight: 600;
+    font-size: 0.88rem;
+}
+
+// ── TABLE ────────────────────────────────────────────────────
+.pb__table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    background: $pb-bg-table;
+
+    thead tr th {
+        padding: 8px 12px;
+        font-weight: 600;
+        color: $pb-title-color;
+        border-bottom: 1px solid $pb-border;
+        background: darken($pb-bg-table, 4%);
+        white-space: nowrap;
+    }
+    tbody tr {
+        border-bottom: 1px solid $pb-border;
+        &:last-child { border-bottom: none; }
+        &:hover { background: #ede8e3; }
+    }
+    td {
+        padding: 8px 12px;
+        vertical-align: middle;
+        color: $pb-text;
+    }
+}
+
+.pb__col-name   { min-width: 180px; font-weight: 500; }
+.pb__col-loc    { min-width: 120px; }
+.pb__col-floor  { min-width: 120px; }
+.pb__col-notes  { min-width: 140px; font-size: 0.8rem; color: #666; }
+.pb__col-actions { white-space: nowrap; text-align: right; }
+
+// ── TOTAUX ───────────────────────────────────────────────────
+.pb__totals {
+    border: 1px solid $pb-border;
+    border-radius: 8px;
+    padding: 16px 20px;
+    background: $pb-bg-table;
+    align-self: flex-end;
+    min-width: 340px;
+}
+.pb__totals-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+.pb__lot-subtotals {
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid $pb-border;
+}
+.pb__lot-subtotal-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.83rem;
+    padding: 3px 0;
+    color: #555;
+}
+.pb__totals-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+.pb__total-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    &--ttc {
+        font-size: 1rem;
+        padding-top: 8px;
+        border-top: 2px solid $pb-title-color;
+        color: $pb-title-color;
+    }
+}
+
+// ── WIZARD OVERLAY ───────────────────────────────────────────
+.pb__overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+.pb__wizard {
+    background: #fff;
+    border-radius: 10px;
+    width: 560px;
+    max-width: 96vw;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.22);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+.pb__wizard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid $pb-border;
+    background: $pb-bg-table;
+    color: $pb-title-color;
+}
+.pb__wizard-body {
+    padding: 20px;
+    overflow-y: auto;
+    max-height: 60vh;
+}
+.pb__wizard-footer {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding: 14px 20px;
+    border-top: 1px solid $pb-border;
+    background: $pb-bg-table;
+}

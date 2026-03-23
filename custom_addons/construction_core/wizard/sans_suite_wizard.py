@@ -10,7 +10,9 @@ from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import logging
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 
 class SansSuiteWizard(models.TransientModel):

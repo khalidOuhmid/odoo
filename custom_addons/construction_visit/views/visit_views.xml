@@ -140,9 +140,6 @@
                         <page string="Description" name="description">
                             <field name="description" placeholder="Description détaillée de la visite..."/>
                         </page>
-                        <page string="Pièces Jointes" name="attachments">
-                            <field name="attachment_ids" widget="many2many_binary"/>
-                        </page>
                         <!-- Tab 1: Notes & Observations -->
                         <page string="Observations" name="observations">
                             <field name="notes" placeholder="Notez vos observations pendant la visite..."/>

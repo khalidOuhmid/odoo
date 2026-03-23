@@ -1,13 +1,15 @@
 /**
- * Construction Core - Lot Selection Premium Styling
- * SCOPED TO CONSTRUCTION MODULE ONLY
+ * Construction Core — Lot Views Styling
+ * Scoped to .construction_lot_* classes
+ * Colors: BLG Groupe design system via _blg_variables.scss
  */
 
+
 /* =========================================
-   LOT VIEWS - CONSTRUCTION MODULE SPECIFIC
+   LOT VIEWS — CONSTRUCTION MODULE
    ========================================= */
 
-/* Lot Code Badge - Only for construction lots */
+/* Lot Code Badge */
 .construction_lot_code {
     display: inline-flex;
     align-items: center;
@@ -15,15 +17,15 @@
     min-width: 40px;
     height: 28px;
     padding: 0 10px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+    background: linear-gradient(135deg, $blg-primary 0%, $blg-primary-dark 100%);
+    color: $blg-bg-white;
     font-weight: 700;
     font-size: 12px;
     border-radius: 6px;
     letter-spacing: 0.5px;
 }
 
-/* Category Badge - Construction specific */
+/* Category Badge */
 .construction_category_badge {
     display: inline-flex;
     align-items: center;
@@ -33,8 +35,9 @@
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.3px;
-    background: #f3f4f6;
-    color: #374151;
+    background: $blg-bg-light;
+    color: $blg-text-dark;
+    border: 1px solid $blg-border;
 }
 
 /* Lot progress indicator */
@@ -46,13 +49,13 @@
     .progress_bar {
         flex: 1;
         height: 6px;
-        background: #e2e8f0;
+        background: $blg-border;
         border-radius: 3px;
         overflow: hidden;
 
         .progress_fill {
             height: 100%;
-            background: linear-gradient(90deg, #48bb78, #38a169);
+            background: linear-gradient(90deg, $blg-success-light, $blg-success);
             transition: width 0.6s ease;
         }
     }
@@ -60,7 +63,7 @@
     .progress_text {
         font-size: 11px;
         font-weight: 600;
-        color: #4a5568;
+        color: $blg-text-muted;
         min-width: 40px;
     }
 }

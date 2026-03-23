@@ -51,7 +51,7 @@
                         this.showMessage('Veuillez valider cette page avant de continuer.', 'warning');
                         return;
                     }
-                    
+
                     if (window.pdfViewer) {
                         window.pdfViewer.nextPage();
                     }
@@ -77,20 +77,16 @@
                 xhr.open('POST', url, true);
                 xhr.setRequestHeader('Content-Type', 'application/json');
                 xhr.onload = function() {
-                    console.log('RPC response status:', xhr.status);
-                    console.log('RPC response text:', xhr.responseText.substring(0, 500));
-                    
                     if (xhr.status >= 200 && xhr.status < 300) {
                         try {
                             const response = JSON.parse(xhr.responseText);
-                            console.log('RPC parsed response:', response);
-                            
+
                             if (response.result) {
                                 resolve(response.result);
                             } else if (response.error) {
-                                const errorMsg = response.error.data?.message || 
-                                                response.error.message || 
-                                                response.error.data?.debug || 
+                                const errorMsg = response.error.data?.message ||
+                                                response.error.message ||
+                                                response.error.data?.debug ||
                                                 'Server error';
                                 console.error('RPC error response:', response.error);
                                 reject(new Error(errorMsg));
@@ -100,7 +96,6 @@
                             }
                         } catch (e) {
                             console.error('RPC JSON parse error:', e);
-                            console.error('Response text:', xhr.responseText);
                             reject(new Error('Invalid JSON response: ' + e.message + '. Response: ' + xhr.responseText.substring(0, 200)));
                         }
                     } else {
@@ -133,14 +128,13 @@
                     params: params,
                     id: Math.floor(Math.random() * 1000000000)
                 };
-                console.log('RPC sending to', url, ':', payload);
                 xhr.send(JSON.stringify(payload));
             });
         }
 
         async validateCurrentPage() {
             if (this.isValidating) return;
-            
+
             // Check if already validated
             if (this.isPageValidated(this.currentPage)) {
                 this.showMessage('Cette page est déjà validée.', 'info');
@@ -152,20 +146,11 @@
             this.validateBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Validation en cours...';
 
             try {
-                // Use Odoo JSON-RPC format for type='json' routes
-                console.log('Calling validation endpoint with:', {
-                    contract_id: parseInt(this.contractId, 10),
-                    access_token: this.accessToken,
-                    page_number: parseInt(this.currentPage, 10),
-                });
-
                 const data = await this._rpc('/contract/page/validate', {
                     contract_id: parseInt(this.contractId, 10),
                     access_token: this.accessToken,
                     page_number: parseInt(this.currentPage, 10),
                 });
-
-                console.log('Validation response:', data);
 
                 if (data.status === 'success') {
                     // Add to validated pages
@@ -192,11 +177,6 @@
 
             } catch (error) {
                 console.error('Validation error:', error);
-                console.error('Error details:', {
-                    message: error.message,
-                    stack: error.stack,
-                    name: error.name
-                });
                 this.showMessage('Erreur : ' + (error.message || 'Une erreur inconnue s\'est produite'), 'danger');
             } finally {
                 this.isValidating = false;
@@ -233,10 +213,10 @@
             if (this.nextBtn) {
                 const isCurrentValidated = this.isPageValidated(this.currentPage);
                 const isLastPage = (this.currentPage >= this.totalPages);
-                
+
                 // Next button enabled only if current page is validated and not last page
                 this.nextBtn.disabled = !isCurrentValidated || isLastPage;
-                
+
                 // Visual feedback
                 if (!isCurrentValidated) {
                     this.nextBtn.title = 'Validez d\'abord cette page';
@@ -279,7 +259,7 @@
                     <span>&times;</span>
                 </button>
             `;
-            
+
             document.body.appendChild(alert);
 
             // Auto-remove after 3 seconds
@@ -293,7 +273,6 @@
     document.addEventListener('DOMContentLoaded', function() {
         // Check if we're on the signature portal page
         if (typeof contractId !== 'undefined' && typeof accessToken !== 'undefined') {
-            console.log('Initializing PageValidator');
             window.pageValidator = new PageValidator(
                 contractId,
                 accessToken,

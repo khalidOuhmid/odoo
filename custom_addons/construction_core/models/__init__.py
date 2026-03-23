@@ -8,3 +8,4 @@ from . import chapter
 from . import sale_order
 from . import tag
 from . import mail_automation
+from . import document

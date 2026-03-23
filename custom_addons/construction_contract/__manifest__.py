@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 {
     'name': 'Construction Contract Management',
-    'version': '18.0.1.0.0',
+    'version': '18.0.1.1.0',
     'category': 'Construction',
     'summary': 'Complete subcontractor contract management with e-signature',
     'description': """
@@ -59,8 +59,6 @@
         'data/contract_variables.xml',
         'data/email_templates.xml',
         'data/sms_templates.xml',
-        'data/email_templates.xml',
-        'data/sms_templates.xml',
         'data/default_contract_template_data.xml',
         'data/urssaf_codes.xml',
 
@@ -80,6 +78,7 @@
         'wizards/views/lot_grouping_wizard_views.xml',
         'wizards/views/contract_validation_wizard_views.xml',
         'wizards/views/compliance_warning_wizard_views.xml',
+        'wizards/views/compliance_override_wizard_views.xml',
 
         # Reports
         'reports/contract_report.xml',
@@ -118,7 +117,6 @@
         ],
         'construction_contract.assets_contract_builder': [
             'construction_contract/static/src/js/contract_builder.js',
-            'construction_contract/static/src/js/contract_builder_debug.js',
             'construction_contract/static/src/scss/contract_builder.scss',
         ],
     },

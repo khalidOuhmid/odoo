@@ -2,6 +2,7 @@
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
 from odoo.exceptions import UserError, ValidationError
+from psycopg2 import IntegrityError
 import datetime
 
 
@@ -35,8 +36,8 @@ class TestConstructionLot(TransactionCase):
     def test_unique_lot_code(self):
         # GIVEN a lot with a category already assigned to a chantier
         # WHEN creating another lot with same category on same chantier
-        # THEN it should raise (SQL unique constraint on category_id+chantier_id)
-        with self.assertRaises(Exception):
+        # THEN SQL unique constraint raises IntegrityError
+        with self.assertRaises(IntegrityError):
             with self.env.cr.savepoint():
                 self.env['construction.lot'].create({
                     'category_id': self.category.id,
@@ -294,11 +295,11 @@ class TestConstructionLot(TransactionCase):
     # ========================= ACTION OPEN CONTRACT =========================
 
     def test_action_open_contract_no_contract(self):
-        # GIVEN a lot where contract_id resolves to False (construction.contract not installed)
+        # GIVEN construction.contract is installed and lot has no contract
+        if 'construction.contract' not in self.env:
+            self.skipTest("construction.contract not installed — contract_id field not available")
         # WHEN trying to open the contract — contract_id is False
         # THEN UserError is raised (no contract linked)
-        # Force contract_id to False by using a lot without any contract
-        self.lot.invalidate_recordset(['contract_id'])
         with self.assertRaises(UserError):
             self.lot.action_open_contract()
 
@@ -349,7 +350,7 @@ class TestConstructionLot(TransactionCase):
         self.env['construction.lot.category'].create({'name': 'Unique Cat', 'code': 'UNIQ_TEST'})
         # WHEN creating another with same code
         # THEN SQL constraint raises
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             with self.env.cr.savepoint():
                 self.env['construction.lot.category'].create({'name': 'Duplicate Cat', 'code': 'UNIQ_TEST'})
 

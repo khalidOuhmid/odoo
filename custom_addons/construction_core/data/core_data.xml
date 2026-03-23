@@ -227,7 +227,7 @@
         <record id="stage_attente_paiement" model="construction.stage">
             <field name="name">Attente de paiement</field>
             <field name="code">AP</field>
-            <field name="description">En attente du paiement final</field>
+            <field name="description">En attente du paiement </field>
             <field name="sequence">20</field>
             <field name="color">8</field>
             <field name="chapter_id" ref="chapter_levee_reserves"/>

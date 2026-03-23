@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
+from psycopg2 import IntegrityError
 
 
 @tagged('post_install', '-at_install')
@@ -119,7 +120,7 @@ class TestConstructionStage(TransactionCase):
         # GIVEN a stage with code STC_S1 already in chapter
         # WHEN creating another with same code in same chapter
         # THEN SQL constraint raises
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             with self.env.cr.savepoint():
                 self.env['construction.stage'].create({
                     'name': 'Duplicate Code Stage', 'code': 'STC_S1',
@@ -221,7 +222,7 @@ class TestConstructionChapter(TransactionCase):
         # GIVEN a chapter with code CTM_CH
         # WHEN creating another with same code
         # THEN SQL constraint raises
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             with self.env.cr.savepoint():
                 self.env['construction.chapter'].create({
                     'name': 'Duplicate Code Chapter',
@@ -232,7 +233,7 @@ class TestConstructionChapter(TransactionCase):
         # GIVEN a chapter with name 'Chapter Test Master'
         # WHEN creating another with same name
         # THEN SQL constraint raises
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             with self.env.cr.savepoint():
                 self.env['construction.chapter'].create({
                     'name': 'Chapter Test Master',

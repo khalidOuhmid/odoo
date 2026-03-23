@@ -3,6 +3,7 @@
 import publicWidget from "@web/legacy/js/public/public_widget";
 import { Component, useState, useRef, onMounted, App } from "@odoo/owl";
 import { rpc } from "@web/core/network/rpc";
+import { getTemplate } from "@web/core/templates";
 
 export class ContractSignatureViewer extends Component {
     setup() {
@@ -177,8 +178,8 @@ publicWidget.registry.ContractSignaturePortal = publicWidget.Widget.extend({
         props.contractHtml = htmlPayloadEl ? htmlPayloadEl.innerHTML : "";
 
         this.app = new App(ContractSignatureViewer, {
-            templates: odoo.publicTemplates || undefined, // For Odoo 16/17+ dynamic templating in portal
-            env: this.env || owl.Component.env || {},
+            templates: getTemplate,
+            env: this.env || {},
             props: props,
         });
 
