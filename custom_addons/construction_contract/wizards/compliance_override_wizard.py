@@ -158,7 +158,6 @@ class ComplianceOverrideWizard(models.TransientModel):
                     'date': self.override_date.strftime('%d/%m/%Y %H:%M') if self.override_date else '—',
                 },
                 message_type='comment',
-                mail_notify_author=False,
                 subtype_xmlid='mail.mt_note',
             )
 

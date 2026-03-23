@@ -9,9 +9,10 @@ from markupsafe import Markup, escape
 
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
-import logging
 
-_logger = logging.getLogger(__name__)
+from odoo.addons.construction_core.utils.logger import get_logger
+
+_logger = get_logger(__name__)
 
 
 class LotSubcontractorAssignWizard(models.TransientModel):
@@ -66,10 +67,10 @@ class LotSubcontractorAssignWizard(models.TransientModel):
     
     # ============= Subcontractor ============= #
     subcontractor_id = fields.Many2one(
-        'res.partner', 
-        string='Sous-traitant', 
-        required=True,
-        domain="[('supplier_rank', '>', 0)]"
+        'res.partner',
+        string='Sous-traitant',
+        domain="[('supplier_rank', '>', 0)]",
+        help="Laisser vide pour retirer l'assignation du sous-traitant"
     )
     
     # ============= Planning Dates ============= #
@@ -210,7 +211,8 @@ class LotSubcontractorAssignWizard(models.TransientModel):
         
         # Get or create lot
         if self.create_new_lot:
-            # Create new lot from category
+            if not self.subcontractor_id:
+                raise UserError(_("Un sous-traitant est requis pour créer un nouveau lot."))
             lot = self.env['construction.lot'].create({
                 'name': self.lot_category_id.name,
                 'code': self.lot_category_id.code,
@@ -222,22 +224,24 @@ class LotSubcontractorAssignWizard(models.TransientModel):
                 'date_end_planned': self.date_end_planned,
                 'execution_type': 'external',
             })
-            _logger.info("Created lot %s for chantier %s", lot.name, self.chantier_id.name)
+            _logger.wizard_action('lot_subcontractor_assign', 'create_lot', record=lot)
         else:
             lot = self.existing_lot_id
             lot.write({
-                'subcontractor_id': self.subcontractor_id.id,
+                'subcontractor_id': self.subcontractor_id.id if self.subcontractor_id else False,
                 'price': self.lot_price or lot.price,
                 'date_start_planned': self.date_start_planned or lot.date_start_planned,
                 'date_end_planned': self.date_end_planned or lot.date_end_planned,
             })
+            _logger.wizard_action('lot_subcontractor_assign', 'update_lot', record=lot)
         
         # Attach documents to lot
         self._attach_documents(lot)
         
         # Log assignment for audit trail
+        st_label = escape(self.subcontractor_id.name) if self.subcontractor_id else _("(retiré)")
         assignment_message = Markup(
-            f"<b>Sous-traitant assigné:</b> {escape(self.subcontractor_id.name)}<br/>"
+            f"<b>Sous-traitant:</b> {st_label}<br/>"
             f"<b>Date:</b> {self.assignment_date}<br/>"
             f"<b>Lot:</b> {escape(lot.name)}<br/>"
             f"<b>Assigné par:</b> {escape(self.env.user.name)}"
@@ -252,9 +256,9 @@ class LotSubcontractorAssignWizard(models.TransientModel):
         )
         
         # Add subcontractor to chantier if not already there
-        if self.subcontractor_id not in self.chantier_id.subcontractor_ids:
+        if self.subcontractor_id and self.subcontractor_id not in self.chantier_id.subcontractor_ids:
             self.chantier_id.subcontractor_ids = [(4, self.subcontractor_id.id)]
-        
+
         # Post message on chantier
         self.chantier_id.message_post(
             body=assignment_message,

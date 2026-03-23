@@ -134,6 +134,5 @@ class BillingCycle(models.Model):
                 body=f"<b>{prefix}</b><br/>{original_body}",
                 message_type='comment',
                 subtype_xmlid='mail.mt_note',
-                mail_notify_author=False,
             )
         return result

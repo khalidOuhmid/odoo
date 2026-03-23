@@ -179,7 +179,6 @@ publicWidget.registry.ContractSignaturePortal = publicWidget.Widget.extend({
 
         this.app = new App(ContractSignatureViewer, {
             templates: getTemplate,
-            env: this.env || {},
             props: props,
         });
 
