@@ -1,119 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
 
-    <!-- ========== CONTRACT TREE VIEW ========== -->
-    <record id="view_construction_contract_tree" model="ir.ui.view">
-        <field name="name">construction.contract.tree</field>
+    <!-- ========================================================== -->
+    <!-- Héritage de la vue liste construction_contract             -->
+    <!-- Ajout de la colonne lot_names après subcontractor_id       -->
+    <!-- ========================================================== -->
+    <record id="view_construction_contract_tree_sub" model="ir.ui.view">
+        <field name="name">construction.contract.tree.subcontractor</field>
         <field name="model">construction.contract</field>
+        <field name="inherit_id" ref="construction_contract.view_construction_contract_tree"/>
         <field name="arch" type="xml">
-            <list string="Contrats Sous-traitants" decoration-info="state == 'draft'" decoration-warning="state == 'sent'" decoration-success="state in ('signed', 'active')" decoration-muted="state in ('done', 'cancelled')">
-                <field name="name"/>
-                <field name="partner_id"/>
-                <field name="chantier_id"/>
-                <field name="lot_names"/>
-                <field name="amount_total" sum="Total"/>
-                <field name="date_start"/>
-                <field name="signature_date"/>
-                <field name="state" widget="badge"/>
-            </list>
+            <field name="subcontractor_id" position="after">
+                <field name="lot_names" string="Lots" optional="show"/>
+                <field name="amount_total" string="Montant lots" widget="monetary" optional="hide"/>
+            </field>
         </field>
     </record>
 
-    <!-- ========== CONTRACT FORM VIEW ========== -->
-    <record id="view_construction_contract_form" model="ir.ui.view">
-        <field name="name">construction.contract.form</field>
-        <field name="model">construction.contract</field>
-        <field name="arch" type="xml">
-            <form string="Contrat Sous-traitant">
-                <header>
-                    <button name="action_send_for_signature" string="Envoyer pour signature" type="object" class="btn-primary" invisible="state != 'draft'"/>
-                    <button name="action_mark_signed" string="Marquer signé" type="object" class="btn-success" invisible="state != 'sent'"/>
-                    <button name="action_activate" string="Activer" type="object" class="btn-success" invisible="state != 'signed'"/>
-                    <button name="action_complete" string="Terminer" type="object" invisible="state != 'active'"/>
-                    <button name="action_cancel" string="Annuler" type="object" invisible="state in ('active', 'done', 'cancelled')"/>
-                    <field name="state" widget="statusbar" statusbar_visible="draft,sent,signed,active,done"/>
-                </header>
-                <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_view_purchase_orders" type="object" class="oe_stat_button" icon="fa-shopping-cart">
-                            <field name="purchase_order_count" widget="statinfo" string="Commandes"/>
-                        </button>
-                    </div>
-                    <div class="oe_title">
-                        <h1>
-                            <field name="name" readonly="1"/>
-                        </h1>
-                    </div>
-                    <group>
-                        <group string="Parties">
-                            <field name="partner_id"/>
-                            <field name="company_id" groups="base.group_multi_company"/>
-                        </group>
-                        <group string="Chantier">
-                            <field name="chantier_id"/>
-                            <field name="lot_ids" widget="many2many_tags"/>
-                        </group>
-                    </group>
-                    <group>
-                        <group string="Dates">
-                            <field name="date_start"/>
-                            <field name="date_end"/>
-                            <field name="signature_date" readonly="1"/>
-                        </group>
-                        <group string="Montants">
-                            <field name="currency_id" invisible="1"/>
-                            <field name="amount_total"/>
-                            <field name="retention_percentage"/>
-                        </group>
-                    </group>
-                    <notebook>
-                        <page string="Conditions">
-                            <field name="notes" placeholder="Conditions particulières du contrat..."/>
-                        </page>
-                        <page string="Signature" invisible="state == 'draft'">
-                            <group>
-                                <field name="signature" widget="image"/>
-                                <field name="signed_by"/>
-                            </group>
-                        </page>
-                    </notebook>
-                </sheet>
-                <chatter/>
-            </form>
-        </field>
-    </record>
-
-    <!-- ========== CONTRACT SEARCH VIEW ========== -->
-    <record id="view_construction_contract_search" model="ir.ui.view">
-        <field name="name">construction.contract.search</field>
-        <field name="model">construction.contract</field>
-        <field name="arch" type="xml">
-            <search string="Contrats">
-                <field name="name"/>
-                <field name="partner_id"/>
-                <field name="chantier_id"/>
-                <separator/>
-                <filter string="Brouillon" name="draft" domain="[('state', '=', 'draft')]"/>
-                <filter string="En attente signature" name="sent" domain="[('state', '=', 'sent')]"/>
-                <filter string="Signés" name="signed" domain="[('state', '=', 'signed')]"/>
-                <filter string="Actifs" name="active" domain="[('state', '=', 'active')]"/>
-                <separator/>
-                <group expand="0" string="Grouper par">
-                    <filter string="Chantier" name="group_chantier" context="{'group_by': 'chantier_id'}"/>
-                    <filter string="Sous-traitant" name="group_partner" context="{'group_by': 'partner_id'}"/>
-                    <filter string="État" name="group_state" context="{'group_by': 'state'}"/>
-                </group>
-            </search>
-        </field>
-    </record>
-
-    <!-- ========== ACTION ========== -->
+    <!-- ========================================================== -->
+    <!-- Action (réutilise les vues de construction_contract)       -->
+    <!-- ========================================================== -->
     <record id="action_construction_contract" model="ir.actions.act_window">
         <field name="name">Contrats</field>
         <field name="res_model">construction.contract</field>
         <field name="view_mode">list,form</field>
-        <field name="search_view_id" ref="view_construction_contract_search"/>
-        <field name="context">{'search_default_active': 1}</field>
+        <field name="context">{'search_default_subcontractor': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Aucun contrat de sous-traitance trouvé.
+            </p>
+        </field>
     </record>
 
 </odoo>

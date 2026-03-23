@@ -28,6 +28,7 @@ Les actions sont liées aux étapes du chantier:
     'license': 'LGPL-3',
     'depends': [
         'construction_core',
+        'construction_contract',
         'contacts',
         'mail',
         'portal',
@@ -35,12 +36,12 @@ Les actions sont liées aux étapes du chantier:
     'data': [
         # Security
         'security/ir.model.access.csv',
-        
+
         # Data
         'data/mail_templates.xml',
         'data/email_templates_enterprise.xml',
         'data/cron_jobs.xml',
-        
+
         # Views
         'views/res_partner_views.xml',
         'views/construction_contract_views.xml',
@@ -48,8 +49,9 @@ Les actions sont liées aux étapes du chantier:
         'wizard/subcontractor_assignment_wizard_views.xml',
         'wizard/document_validation_wizard_views.xml',
         'views/lot_integration_views.xml',
-        
+
         # Portal
+        'views/portal/document_upload.xml',
         'views/portal_templates.xml',
     ],
     'assets': {
