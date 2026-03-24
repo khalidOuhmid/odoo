@@ -3,15 +3,15 @@
     <record id="view_construction_chantier_form_invoice_wizard" model="ir.ui.view">
         <field name="name">construction.chantier.form.invoice.wizard</field>
         <field name="model">construction.chantier</field>
-        <field name="inherit_id" ref="construction_invoice.view_construction_chantier_form_invoice"/>
+        <field name="inherit_id" ref="construction_invoice.view_chantier_invoice_form"/>
         <field name="arch" type="xml">
-             <field name="invoice_schedule_ids" position="before">
-                 <button name="%(action_invoice_schedule_wizard)d"
-                        string="Générer Planning"
-                        type="action"
-                        class="btn-secondary mb-2"
-                        context="{'default_chantier_id': active_id}"/>
-             </field>
+            <widget name="billing_plan" position="before">
+                <button name="%(action_invoice_schedule_wizard)d"
+                       string="Générer Planning"
+                       type="action"
+                       class="btn-secondary mb-2"
+                       context="{'default_chantier_id': active_id}"/>
+            </widget>
         </field>
     </record>
 </odoo>

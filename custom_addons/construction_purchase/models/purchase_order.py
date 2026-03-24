@@ -208,11 +208,11 @@ class PurchaseOrderConstruction(models.Model):
         """Retourne les initiales Prénom+Nom d'un partenaire (ex: 'BF' pour 'Baptiste Fontaine')."""
         if not partner:
             return 'XX'
-        # Essayer d'abord prénom/nom séparés
+        # Essayer d'abord prénom/nom séparés (module OCA partner_firstname)
         parts = []
-        if partner.firstname:
+        if hasattr(partner, 'firstname') and partner.firstname:
             parts.append(partner.firstname[0])
-        if partner.lastname:
+        if hasattr(partner, 'lastname') and partner.lastname:
             parts.append(partner.lastname[0])
         if parts:
             return ''.join(parts).upper()

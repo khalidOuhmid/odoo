@@ -51,8 +51,12 @@ class Lot(models.Model):
     contract_status = fields.Selection([
         ('none', 'Non généré'),
         ('draft', 'Brouillon'),
+        ('generated', 'Généré'),
         ('sent', 'Envoyé'),
-        ('signed', 'Signé')
+        ('in_progress', 'En cours'),
+        ('signed', 'Signé'),
+        ('archived', 'Archivé'),
+        ('cancelled', 'Annulé'),
     ], string='État Contrat', compute='_compute_contract_status', store=False)
 
     contract_name = fields.Char(related='contract_id.name', string='Nom du Contrat', readonly=True)

@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="contract_regenerate_wizard_form" model="ir.ui.view">
+        <field name="name">contract.regenerate.wizard.form</field>
+        <field name="model">contract.regenerate.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Régénérer le contrat">
+                <div class="modal-header o_form_view" style="padding: 0 0 12px 0; border-bottom: 1px solid #dee2e6; margin-bottom: 16px;">
+                    <h4 class="o_form_view_title">
+                        <i class="fa fa-refresh me-2 text-warning"/>
+                        Régénération du contrat
+                    </h4>
+                </div>
+
+                <group>
+                    <field name="contract_id" invisible="1"/>
+                    <field name="contract_name" string="Contrat" readonly="1"/>
+                    <field name="contract_state" string="État actuel" readonly="1"
+                           widget="badge"
+                           decoration-warning="contract_state in ('sent', 'in_progress', 'refused')"
+                           decoration-info="contract_state == 'generated'"/>
+                    <field name="revision_count" string="Révisions existantes" readonly="1"/>
+                </group>
+
+                <div class="alert alert-warning" role="alert" style="margin: 12px 0;">
+                    <i class="fa fa-exclamation-triangle me-2"/>
+                    <strong>Attention :</strong> Le PDF actuel sera archivé et de nouveaux tokens
+                    de signature seront générés. Les validations de lecture existantes seront réinitialisées.
+                    <br/>
+                    <span invisible="contract_state not in ['sent', 'in_progress']">
+                        <strong>Le contrat était déjà envoyé au sous-traitant.</strong>
+                        Si vous cochez "Notifier", il recevra un email l'informant de la nouvelle version.
+                    </span>
+                </div>
+
+                <group string="Motif de régénération">
+                    <field name="reason"
+                           widget="text"
+                           placeholder="Ex : Correction du montant du lot 3 — URSSAF mis à jour — Ajout clause pénalités…"
+                           nolabel="1"
+                           style="min-height: 80px;"/>
+                </group>
+
+                <group>
+                    <field name="notify_subcontractor"
+                           invisible="contract_state not in ['sent', 'in_progress', 'refused']"/>
+                </group>
+
+                <footer>
+                    <button name="action_confirm"
+                            string="Régénérer le contrat"
+                            type="object"
+                            class="btn-primary"
+                            data-hotkey="q"/>
+                    <button string="Annuler"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+</odoo>

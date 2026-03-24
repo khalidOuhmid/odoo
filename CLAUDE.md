@@ -102,6 +102,7 @@ Other modules:
   T25/T50/T75/T100 are progress milestones (25%/50%/75%/100% completion). FD requires signed contract; ARCH/RET chapters block backward transitions.
 - **Situation / BillingCycle**: The progressive invoicing concept. `construction.billing.cycle` is the parent record (one per chantier), containing `construction.billing.step` children (each with a `percentage` and a generated `account.move`). Total steps must sum ≤ 100%. Default split: 30/30/40. Each step transitions `draft → invoiced → paid`.
 - **Contract lifecycle** (`construction.contract`): `draft → generated → sent → in_progress → signed → archived` (or `cancelled`). Authentication levels: email-only / email+SMS / email+SMS+ID.
+- **Contract revision history** (`construction.contract.revision`): each time a contract is regenerated, the previous PDF is archived as a new revision (versioned, SHA-256 hash, user + reason recorded). Regeneration must go through `contract.regenerate.wizard` — mandatory `reason` field (≥ 1 char) prevents accidental overwrites. Portal signatories can download past revisions.
 - **Compliance docs** on `res.partner`: KBIS (2-month validity), URSSAF, insurance décennale, RIB, CNI. Status per doc: `missing / uploaded / expiring / valid / expired`. Contract creation blocks if required docs are not `valid` or `expiring`.
 
 ### Stage Machine — Dev/Test Notes

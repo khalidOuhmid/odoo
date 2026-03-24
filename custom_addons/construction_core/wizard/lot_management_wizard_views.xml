@@ -42,13 +42,18 @@
                             <group>
                                 <!-- External Mode: Subcontractor Assignment -->
                                 <group string="Sous-Traitant" invisible="execution_type != 'external'">
-                                    <field name="subcontractor_id"
-                                           placeholder="Sélectionner un sous-traitant..."
-                                           options="{'no_create': True}"/>
-                                    <div class="text-muted small" style="padding-left:8px"
-                                         invisible="not is_subcontractor_already_assigned">
-                                        <i class="fa fa-pencil me-1"/>
-                                        Vous pouvez modifier ce sous-traitant directement.
+                                    <div class="o_row">
+                                        <field name="subcontractor_id"
+                                               placeholder="Sélectionner un sous-traitant..."
+                                               options="{'no_create': True}"
+                                               style="flex:1"/>
+                                        <button name="action_clear_subcontractor"
+                                                type="object"
+                                                string="Retirer"
+                                                icon="fa-times"
+                                                class="btn-sm btn-danger ms-2"
+                                                invisible="not subcontractor_id"
+                                                confirm="Retirer ce sous-traitant du lot ?"/>
                                     </div>
                                 </group>
                                 

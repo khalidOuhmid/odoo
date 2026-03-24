@@ -571,6 +571,18 @@ class LotManagementWizard(models.TransientModel):
         
         return {'type': 'ir.actions.act_window_close'}
     
+    def action_clear_subcontractor(self):
+        """Retire le sous-traitant du wizard (sans sauvegarder)."""
+        self.ensure_one()
+        self.subcontractor_id = False
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': self._name,
+            'res_id': self.id,
+            'view_mode': 'form',
+            'target': 'new',
+        }
+
     def action_generate_po(self):
         """Generate Purchase Order for external lot.
         

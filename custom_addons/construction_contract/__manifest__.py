@@ -93,8 +93,10 @@
     # Frontend assets
     'assets': {
         'web.assets_frontend': [
+            # Le template Owl est défini en inline (xml``) dans le JS lui-même.
+            # Le fichier XML externe n'est plus inclus dans le bundle pour éviter
+            # un conflit de nommage avec le registre backend (getTemplate).
             'construction_contract/static/src/components/portal_signature/portal_signature.js',
-            'construction_contract/static/src/components/portal_signature/portal_signature.xml',
         ],
         'web.assets_backend': [
             'construction_contract/static/src/js/urssaf_code_selector.js',

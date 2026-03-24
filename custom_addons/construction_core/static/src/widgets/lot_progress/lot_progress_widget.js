@@ -82,7 +82,7 @@ export class LotProgressWidget extends Component {
 
     // ── Quick-set buttons ─────────────────────────────────────────────────────
 
-    async onQuickSet(percent) {
+    onQuickSet = async (percent) => {
         if (this.isReadonly) return;
 
         if (percent === 100 && this.currentValue < 100) {
@@ -100,15 +100,15 @@ export class LotProgressWidget extends Component {
             this.state.inputValue = String(percent);
             await this._applyValue(percent);
         }
-    }
+    };
 
     // ── Numeric input ─────────────────────────────────────────────────────────
 
-    onInputChange(ev) {
+    onInputChange = (ev) => {
         this.state.inputValue = ev.target.value;
-    }
+    };
 
-    async onInputBlur(ev) {
+    onInputBlur = async (ev) => {
         const val = parseFloat(ev.target.value);
         if (!isNaN(val) && val !== this.currentValue) {
             if (val === 100 && this.currentValue < 100) {
@@ -131,16 +131,16 @@ export class LotProgressWidget extends Component {
             // Reset input display to actual value
             this.state.inputValue = String(this.currentValue);
         }
-    }
+    };
 
-    async onInputKeydown(ev) {
+    onInputKeydown = (ev) => {
         if (ev.key === "Enter") {
             ev.target.blur();
         } else if (ev.key === "Escape") {
             this.state.inputValue = String(this.currentValue);
             ev.target.blur();
         }
-    }
+    };
 }
 
 registry.category("fields").add("lot_progress", {
