@@ -121,7 +121,9 @@
                     <field name="show_lots_selection" invisible="1"/>
                     <field name="show_invoicing" invisible="1"/>
                     <field name="show_subcontractors" invisible="1"/>
-                    
+                    <field name="is_ready_for_next_stage" invisible="1"/>
+                    <field name="next_stage_name" invisible="1"/>
+
                     <!-- Alert for completed projects -->
                     <div class="alert alert-success" role="alert" 
                          invisible="state != 'completed'">
@@ -174,14 +176,15 @@
                                 class="btn btn-primary btn-sm"/>
                     </div>
 
-                    <!-- ==================== VALIDATION CONDITIONS PANEL (SAP/Salesforce Style) ==================== -->
-                    <group string="Conditions de Validation" name="validation_panel">
-                        <field name="validation_conditions_html" 
-                               readonly="1" 
-                               nolabel="1"
-                               class="w-100"/>
-                        <field name="stage_validation_info" invisible="1"/>
-                    </group>
+                    <!-- Guidage machine à états -->
+                    <div class="blg-stage-guidance blg-guidance-ready"
+                         invisible="not is_ready_for_next_stage or not next_stage_name">
+                        Ce chantier remplit toutes les conditions pour passer à l'étape suivante.
+                    </div>
+                    <div class="blg-stage-guidance blg-guidance-missing"
+                         invisible="is_ready_for_next_stage or not next_stage_name">
+                        <field name="next_stage_requirements" readonly="1" nolabel="1"/>
+                    </div>
 
                     <!-- Main Content -->
                     <notebook>

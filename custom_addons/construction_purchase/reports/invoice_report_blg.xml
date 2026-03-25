@@ -15,7 +15,7 @@
                     <div class="col">
                         <span style="font-size:7.5pt;color:#8B3A3A;text-transform:uppercase;
                                      letter-spacing:0.05em;">Chantier</span><br/>
-                        <strong><t t-field="o.chantier_id"/></strong>
+                        <strong><span t-field="o.chantier_id"/></strong>
                     </div>
                 </div>
             </t>
@@ -25,19 +25,19 @@
     <!-- ── DEVIS / BON DE COMMANDE CLIENT (sale.order) ─────── -->
     <template id="report_saleorder_blg_chantier" inherit_id="sale.report_saleorder_document">
         <xpath expr="//div[@id='informations'] | //div[hasclass('row','mb-4')]" position="before">
-            <t t-if="o.chantier_id">
+            <t t-if="doc.chantier_id">
                 <div class="row mb-2"
                      style="border-left: 3px solid #8B3A3A; padding-left: 10px; margin-left: 0;">
                     <div class="col">
                         <span style="font-size:7.5pt;color:#8B3A3A;text-transform:uppercase;
                                      letter-spacing:0.05em;">Chantier</span><br/>
-                        <strong><t t-field="o.chantier_id"/></strong>
+                        <strong><span t-out="doc.chantier_id.name"/></strong>
                     </div>
-                    <t t-if="o.lot_id">
+                    <t t-if="doc.lot_ids">
                         <div class="col">
                             <span style="font-size:7.5pt;color:#8B3A3A;text-transform:uppercase;
-                                         letter-spacing:0.05em;">Lot</span><br/>
-                            <strong><t t-field="o.lot_id"/></strong>
+                                         letter-spacing:0.05em;">Lot(s)</span><br/>
+                            <strong><span t-out="', '.join(doc.lot_ids.mapped('name'))"/></strong>
                         </div>
                     </t>
                 </div>

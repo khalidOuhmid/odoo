@@ -55,6 +55,7 @@ Enterprise Standards:
             'construction_core/static/src/scss/construction_kanban.scss',
             'construction_core/static/src/scss/construction_lot.scss',
             'construction_core/static/src/scss/construction_form.scss',
+            'construction_core/static/src/scss/chantier_guidance.scss',
             'construction_core/static/src/widgets/lot_progress/lot_progress_widget.js',
             'construction_core/static/src/widgets/lot_progress/lot_progress_widget.xml',
             'construction_core/static/src/widgets/lot_progress/lot_progress_widget.scss',

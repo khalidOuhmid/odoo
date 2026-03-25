@@ -407,10 +407,14 @@ class ConstructionContract(models.Model):
         def safe(obj, field, default=''):
             return getattr(obj, field, default) or default
         
-        # Financial calculations directly from Purchase Orders
-        amount_ht = sum(self.purchase_order_ids.mapped('amount_untaxed'))
-        amount_tva = sum(self.purchase_order_ids.mapped('amount_tax'))
-        amount_ttc = sum(self.purchase_order_ids.mapped('amount_total'))
+        # Utilise uniquement les POs confirmés pour le montant HT
+        confirmed_pos = self.purchase_order_ids.filtered(lambda p: p.state in ['purchase', 'done'])
+        amount_ht = sum(confirmed_pos.mapped('amount_untaxed')) if confirmed_pos else 0.0
+        # Fallback : si pas de PO confirmé, utilise total_amount_ht (computed) ou somme des prix lots
+        if not amount_ht:
+            amount_ht = self.total_amount_ht or sum(self.lot_ids.mapped('price'))
+        amount_tva = sum(confirmed_pos.mapped('amount_tax')) if confirmed_pos else 0.0
+        amount_ttc = sum(confirmed_pos.mapped('amount_total')) if confirmed_pos else amount_ht
         
         # Build context with comprehensive defensive access
         context = {
@@ -457,6 +461,11 @@ class ConstructionContract(models.Model):
             'taux_tva': self._format_currency(amount_tva),
             'amount_total': self._format_currency(amount_ht),
 
+            # === ÉCHÉANCIER (variables statiques du template) ===
+            # Utilise les pourcentages réels du billing cycle si disponible,
+            # sinon fallback 30 % / 70 %.
+            **self._get_payment_schedule_variables(amount_ht),
+
             # === PÉNALITÉS & DÉLAIS ===
             'penalite_retard_jour': self._format_currency(safe(self, 'penalty_retard_jour') or 0, no_symbol=True),
             'penalty_docs_delay': self._format_currency(safe(self, 'penalty_docs_delay') or 0, no_symbol=True),
@@ -486,49 +495,112 @@ class ConstructionContract(models.Model):
         return context
 
     def _get_lots_data_context(self):
-        """Build structured list of lots for Jinja2 iteration."""
+        """Build structured list of lots for Jinja2 iteration.
+
+        Amount per lot resolved in priority order:
+        1. lot.price > 0 (prix direct sur le lot, le plus fiable)
+        2. Sum of PO lines from contract's POs where lot_id = lot.id (direct FK)
+        3. PO via M2M lot_ids (purchase_order_lot_rel), proportionnel
+        4. lot.cost_total (computed)
+        5. Cherche un PO via chantier + lot (fallback large)
+        """
         lots_data = []
+        POLine = self.env.get('purchase.order.line')
+        po_ids = self.purchase_order_ids.ids
+        PO = self.env.get('purchase.order')
+        _po_has_lot_ids = PO is not None and 'lot_ids' in PO._fields
+
         for lot in self.lot_ids:
-            # Attempt to find amount from related PO lines or lot fields
-            amount = 0.0
-            # Rough logic: Sum PO lines linked to this lot for this subcontractor
-            # This matches logic in _compute_amounts roughly but per lot
-            for po in self.purchase_order_ids:
-                for line in po.order_line:
-                    # Check if line relates to this lot (by name or custom field)
-                    # For now, relying on lot fields if available or defaulting
-                    # Assuming lot has 'price' or we use global PO division?
-                    # Let's use the lot attributes if they exist or 0
-                    pass
-            
-            # Better approach: if lot has stored price or we calculated it
-            # For this hotfix, we use what we have access to easily.
-            # The user Prompt said: "Récupère les lignes de commande ... associées au contrat"
-            
-            # Simple retrieval from lot model if it stores cost/price
-            # If not, we try to sum linked PO lines found in action_generate_consolidated_po logic
-            # or simple attributes.
-            
-            description = lot.description or lot.name
-            
-            # Recalculate specific amount for this lot from POs attached to this contract
             lot_amount = 0.0
-            related_po_lines = self.env['purchase.order.line'].search([
-                ('order_id', 'in', self.purchase_order_ids.ids),
-                '|', 
-                ('name', 'ilike', lot.code or 'INVALID_CODE'),
-                ('product_id.name', 'ilike', lot.name)
-            ])
-            lot_amount = sum(related_po_lines.mapped('price_subtotal'))
-            
+            source = 'none'
+
+            # Priority 1: prix direct sur le lot
+            if lot.price and lot.price > 0:
+                lot_amount = lot.price
+                source = 'lot.price'
+
+            # Priority 2: sum PO lines linked to this lot via direct FK lot_id
+            if not lot_amount and POLine and po_ids and 'lot_id' in POLine._fields:
+                po_lines = POLine.search([
+                    ('order_id', 'in', po_ids),
+                    ('lot_id', '=', lot.id),
+                ])
+                if po_lines:
+                    lot_amount = sum(po_lines.mapped('price_subtotal'))
+                    source = 'po_lines_fk'
+
+            # Priority 3: fallback via M2M lot_ids on purchase.order
+            if not lot_amount and self.purchase_order_ids and _po_has_lot_ids:
+                linked_pos = self.purchase_order_ids.filtered(
+                    lambda po: po.state in ('purchase', 'done')
+                    and lot in po.lot_ids
+                )
+                for po in linked_pos:
+                    n_lots = len(po.lot_ids) or 1
+                    lot_amount += po.amount_untaxed / n_lots
+                if lot_amount:
+                    source = 'po_m2m'
+
+            # Priority 4: lot.cost_total (computed)
+            if not lot_amount:
+                lot_amount = getattr(lot, 'cost_total', 0.0) or 0.0
+                if lot_amount:
+                    source = 'cost_total'
+
+            # Priority 5: cherche un PO lié via chantier et lot (fallback large)
+            if not lot_amount and _po_has_lot_ids and self.chantier_id:
+                fallback_po = self.env['purchase.order'].search([
+                    ('chantier_id', '=', self.chantier_id.id),
+                    ('lot_ids', 'in', [lot.id]),
+                    ('state', 'in', ['purchase', 'done']),
+                ], limit=1)
+                if fallback_po and fallback_po.amount_untaxed > 0:
+                    n_lots = len(fallback_po.lot_ids) or 1
+                    lot_amount = fallback_po.amount_untaxed / n_lots
+                    source = 'chantier_po_fallback'
+
+            _logger.info(
+                "Lot %s (id=%s): montant résolu = %s depuis source = %s",
+                lot.name, lot.id, lot_amount, source,
+            )
+
+            description = lot.description or lot.name
             lots_data.append({
                 'name': self._escape_xml(lot.name),
                 'desc': self._escape_xml(description),
                 'code': self._escape_xml(lot.code or ''),
                 'amount': self._format_currency(lot_amount),
-                'amount_raw': lot_amount
+                'amount_raw': lot_amount,
             })
         return lots_data
+
+    def _get_payment_schedule_variables(self, amount_ht):
+        """Return les 3 variables d'échéancier statiques utilisées dans le template.
+
+        Si le chantier a un billing_cycle_id avec au moins 2 steps, utilise les
+        pourcentages des 2 premiers steps (triés par sequence).
+        Sinon fallback 30 % / 70 %.
+
+        Fallback montant : si amount_ht == 0, tente total_amount_ht puis lots.
+        """
+        # Fallback montant si 0
+        if not amount_ht:
+            amount_ht = self.total_amount_ht or sum(self.lot_ids.mapped('price')) or 0.0
+
+        pct_advance = 30.0
+        pct_final = 70.0
+        chantier = self.chantier_id
+        cycle = getattr(chantier, 'billing_cycle_id', False) if chantier else False
+        if cycle and cycle.exists() and cycle.step_ids and len(cycle.step_ids) >= 2:
+            steps = cycle.step_ids.sorted('sequence')
+            pct_advance = steps[0].percentage or 30.0
+            pct_final = steps[1].percentage or 70.0
+
+        return {
+            'advance_payment_30': self._format_currency(amount_ht * pct_advance / 100.0),
+            'final_payment_70': self._format_currency(amount_ht * pct_final / 100.0),
+            'amount_total_recap': self._format_currency(amount_ht),
+        }
 
     def _get_schedule_data_context(self):
         """Build payment schedule data from billing cycle if available, else default."""
@@ -537,27 +609,31 @@ class ConstructionContract(models.Model):
     def _get_billing_schedule_data(self):
         """Return billing steps as list of dicts for Jinja2 iteration.
 
-        Reads from ``chantier_id.billing_cycle_id`` (added by construction_invoice).
-        Falls back to a default 30/70 split when the module is not installed.
+        Amounts are computed from self.total_amount_ht (contract PO amount HT),
+        not from cycle.total_amount_confirmed (client SO amount).
+        Falls back to 30/30/40 split when no billing cycle exists.
         """
         self.ensure_one()
+        total_ht = self.total_amount_ht or sum(self.lot_ids.mapped('price')) or 0.0
         chantier = self.chantier_id
         cycle = getattr(chantier, 'billing_cycle_id', False) if chantier else False
+
         if cycle and cycle.exists() and cycle.step_ids:
             steps = []
             for step in cycle.step_ids.sorted('sequence'):
+                step_amount = round((step.percentage or 0.0) * total_ht / 100.0, 2)
                 steps.append({
                     'name': step.name,
                     'percent': f"{step.percentage:.0f}%",
-                    'amount': self._format_currency(step.amount),
+                    'amount': self._format_currency(step_amount),
                 })
             return steps
-        # Default fallback
-        total = self.total_amount_ttc or 0.0
+
+        # Default fallback: 30 / 30 / 40
         return [
-            {'name': 'Acompte (30%)', 'percent': '30%', 'amount': self._format_currency(total * 0.3)},
-            {'name': 'Avancement (30%)', 'percent': '30%', 'amount': self._format_currency(total * 0.3)},
-            {'name': 'Solde (40%)', 'percent': '40%', 'amount': self._format_currency(total * 0.4)},
+            {'name': 'Acompte (30%)', 'percent': '30%', 'amount': self._format_currency(total_ht * 0.3)},
+            {'name': 'Avancement (30%)', 'percent': '30%', 'amount': self._format_currency(total_ht * 0.3)},
+            {'name': 'Solde (40%)', 'percent': '40%', 'amount': self._format_currency(total_ht * 0.4)},
         ]
 
     def _get_billing_schedule_html(self):
@@ -574,7 +650,7 @@ class ConstructionContract(models.Model):
             '<thead><tr>'
             '<th style="text-align:left;border-bottom:1px solid #8B3A3A;color:#8B3A3A">Échéance</th>'
             '<th style="text-align:center;border-bottom:1px solid #8B3A3A;color:#8B3A3A">%</th>'
-            '<th style="text-align:right;border-bottom:1px solid #8B3A3A;color:#8B3A3A">Montant TTC</th>'
+            '<th style="text-align:right;border-bottom:1px solid #8B3A3A;color:#8B3A3A">Montant HT</th>'
             '</tr></thead>'
             f'<tbody>{rows}</tbody>'
             '</table>'
@@ -840,12 +916,10 @@ class ConstructionContract(models.Model):
             # Calculate retention
             retention = amount_ttc * (contract.retention_rate / 100.0)
 
-            contract.write({
-                'total_amount_ht': amount_ht,
-                'total_amount_tva': amount_tva,
-                'total_amount_ttc': amount_ttc,
-                'retention_amount': retention,
-            })
+            contract.total_amount_ht = amount_ht
+            contract.total_amount_tva = amount_tva
+            contract.total_amount_ttc = amount_ttc
+            contract.retention_amount = retention
             
     def _sync_contractual_documents(self):
         """
@@ -934,7 +1008,7 @@ class ConstructionContract(models.Model):
                 
                 if not po_attachment and po.state in ['purchase', 'done']:
                     # Force render the PO PDF
-                    pdf_content, _ = self.env['ir.actions.report']._render_qweb_pdf('purchase.report_purchasequotation', po.ids)
+                    pdf_content, _pdf_type = self.env['ir.actions.report']._render_qweb_pdf('purchase.report_purchasequotation', po.ids)
                     if pdf_content:
                         import base64
                         po_attachment = self.env['ir.attachment'].create({
@@ -1340,6 +1414,56 @@ class ConstructionContract(models.Model):
 
     # ============= ACTION: TEMPLATE GENERATION (CHAIN_2) ============= #
 
+    def _reset_signature_data(self):
+        """Réinitialise toutes les données de signature pour permettre une nouvelle signature.
+
+        Appelée uniquement depuis action_generate_contract_html quand le contrat
+        est déjà en état signé/envoyé/en cours.
+        """
+        self.ensure_one()
+        previous_state = self.state
+        self.write({
+            'state': 'generated',
+            'blg_signature_image': False,
+            'blg_signature_date': False,
+            'signer_full_name': False,
+            'signer_ip': False,
+            'signer_user_agent': False,
+            'document_hash_sha256': False,
+            'pdf_hash_before_signature': False,
+            'pdf_hash_after_signature': False,
+            'page_validation_log': False,
+            'signature_proof_json': False,
+            'access_token': self._generate_access_token(),
+        })
+        # Invalide les validations de pages existantes
+        self.page_validation_ids.unlink()
+        # Invalide la signature liée
+        if self.signature_id:
+            self.write({'signature_id': False})
+
+        today_str = fields.Date.today().strftime('%d/%m/%Y')
+        body = _(
+            "Contrat régénéré le %s. "
+            "La signature précédente a été invalidée. "
+            "Un nouveau lien de signature sera envoyé au sous-traitant."
+        ) % today_str
+        self.message_post(
+            body=body,
+            message_type='comment',
+            subtype_xmlid='mail.mt_note',
+        )
+        if self.chantier_id:
+            self.chantier_id.with_context(_posting_to_chantier=True).message_post(
+                body=_("[Contrat %s] Régénéré et réinitialisé pour nouvelle signature.") % self.name,
+                message_type='comment',
+                subtype_xmlid='mail.mt_note',
+            )
+        _logger.info(
+            "Contract %s reset for re-signature (was state=%s)",
+            self.name, previous_state,
+        )
+
     def action_generate_contract_html(self):
         """
         CHAIN_2: Génération Template HTML
@@ -1348,7 +1472,11 @@ class ConstructionContract(models.Model):
         3. Store in contract_template_html
         """
         self.ensure_one()
-        
+
+        # BUG D FIX: si le contrat était déjà signé/envoyé, réinitialiser pour nouvelle signature
+        if self.state in ('signed', 'sent', 'in_progress'):
+            self._reset_signature_data()
+
         # 0. Check PO Status
         draft_pos = self.purchase_order_ids.filtered(lambda po: po.state in ['draft', 'sent', 'to approve', 'cancel'])
         if draft_pos:
@@ -1359,9 +1487,12 @@ class ConstructionContract(models.Model):
 
         # 1. Validation Pre-requis (CHAIN_1)
         self._check_required_documents()
-        
+
         # 2. Render Template
         try:
+            # Refresh PO links before context building
+            self._auto_link_purchase_orders()
+
             # Use a sensible default if no template is set on the contract creation logic
             if self.template_id:
                  template_node = self.template_id
@@ -1379,12 +1510,46 @@ class ConstructionContract(models.Model):
             # 3. Inject Context
             import jinja2
             context = self._get_contract_data_context()
-            
+
+            # Warning if company data looks like Odoo defaults
+            company = self.env.company
+            if company.name in ('YourCompany', 'My Company', 'Your Company') or company.city in ('San Francisco',):
+                _logger.warning(
+                    "Contract %s generated with default company data (name=%s, city=%s). "
+                    "Configure company at Settings > Companies.",
+                    self.name, company.name, company.city
+                )
+
             # Jinja2 Environment
             env = jinja2.Environment(autoescape=True)
             jinja_template = env.from_string(raw_html)
             rendered_html = jinja_template.render(**context)
-            
+
+            # --- BUG A FIX: décode entités HTML puis substitue les chaînes littérales
+            # (le template GrapesJS contient du texte brut non-Jinja2)
+            import html as html_module
+            rendered_html = html_module.unescape(rendered_html)
+
+            chantier = self.chantier_id
+            client_name = (chantier.client.name if chantier and chantier.client else "le Maître d'Ouvrage")
+
+            _literal_replacements = {
+                'YOURCOMPANY': company.name or '',
+                'YourCompany': company.name or '',
+                'My Company': company.name or '',
+                'yourcompany': company.name or '',
+                '250 Executive Park Blvd, Suite 3400': company.street or '',
+                '94134 San Francisco': (company.zip or '') + ' ' + (company.city or ''),
+                'San Francisco': company.city or '',
+                "MAITRE D'OUVRAGE": client_name,
+                "MAÎTRE D'OUVRAGE": client_name,
+                "Maître d'Ouvrage": client_name,
+                'info@yourcompany.com': company.email or '',
+                '+1 555-555-5556': company.phone or '',
+            }
+            for _old, _new in sorted(_literal_replacements.items(), key=lambda x: len(x[0]), reverse=True):
+                rendered_html = rendered_html.replace(_old, str(_new))
+
             # 4. Store and Update State
             self.write({
                 'contract_template_html': rendered_html,
@@ -1476,7 +1641,7 @@ class ConstructionContract(models.Model):
             _logger.info(f"[PDF] Starting QWeb PDF generation for contract {self.name}")
             
             # 1. Generate PDF using native Odoo QWeb report
-            pdf_content, _ = self.env['ir.actions.report']._render_qweb_pdf('construction_contract.action_report_contract', self.ids)
+            pdf_content, _pdf_type = self.env['ir.actions.report']._render_qweb_pdf('construction_contract.action_report_contract', self.ids)
             
             _logger.info(f"[PDF] Base contract generated: {len(pdf_content)/1024:.1f} KB")
             
@@ -1504,16 +1669,18 @@ class ConstructionContract(models.Model):
             # 3. Compute Hash
             pdf_hash = hashlib.sha256(pdf_content).hexdigest()
             
-            self.write({
+            write_vals = {
                 'pdf_document': base64.b64encode(pdf_content),
                 'pdf_hash_before_signature': pdf_hash,
-                'state': 'sent'  # Ready for signature
-            })
+            }
+            if self.state in ('draft', 'generated'):
+                write_vals['state'] = 'sent'
+            self.write(write_vals)
 
             # GED: enregistrer le PDF dans la GED du chantier
             self._register_pdf_in_ged(attachment)
 
-            _logger.info(f"[PDF] Complete for {self.name}: hash={pdf_hash[:16]}...")
+            _logger.info("[PDF] Complete for %s: hash=%s...", self.name, pdf_hash[:16])
 
             return {
                 'type': 'ir.actions.client',
@@ -1879,13 +2046,13 @@ class ConstructionContract(models.Model):
             raise UserError(_("Contract must be in 'Sent' or 'In Progress' state to be signed."))
 
         # Regenerate PDF with BOTH signatures (company + subcontractor) included in HTML template
-        _logger.info(f"Regenerating PDF with both signatures for contract {self.name}")
+        _logger.info("Regenerating PDF with both signatures for contract %s", self.name)
         
         # Get subcontractor signature from context (passed during signature save) or from contract
         subcontractor_signature = self.env.context.get('contract_signature') or self.signature_id
         
         if not subcontractor_signature:
-            _logger.error(f"No subcontractor signature found for contract {self.name} - cannot regenerate PDF")
+            _logger.error("No subcontractor signature found for contract %s - cannot regenerate PDF", self.name)
             raise UserError(_("Subcontractor signature not found. Cannot regenerate PDF."))
         
         # Calculate hash after signature for integrity
@@ -1897,6 +2064,13 @@ class ConstructionContract(models.Model):
         #   {{ subcontractor_signature.image_data }} in the HTML template.
         #   Our _get_contract_data_context (which I need to check) populates this.
         
+        # 1. Guard: signature image is mandatory before reaching signed state
+        if not subcontractor_signature.signature_data:
+            raise UserError(_(
+                "La signature du sous-traitant ne contient pas de données d'image. "
+                "Impossible de finaliser le contrat."
+            ))
+
         # 1. Inject Signature Image & Legal Proof Block (F-05)
         if subcontractor_signature and subcontractor_signature.signature_data:
             # Get valid base64 image
@@ -1947,12 +2121,17 @@ class ConstructionContract(models.Model):
                 else:
                     self.contract_template_html += f'<div class="signature-injection-fallback" style="margin-top:50px;">{legal_block}</div>'
 
-        # 2. Regenerate PDF
+        # 2. Regenerate PDF — preserve pre-signature hash (legal integrity)
+        # action_generate_pdf unconditionally rewrites pdf_hash_before_signature;
+        # we must restore the original value after the call.
+        hash_before = self.pdf_hash_before_signature
         self.with_context(contract_signature=subcontractor_signature).action_generate_pdf()
-        
+        if hash_before:
+            self.write({'pdf_hash_before_signature': hash_before})
+
         # Verify PDF was regenerated
         if not self.pdf_document:
-            _logger.error(f"PDF regeneration failed for contract {self.name} - no PDF document after generation")
+            _logger.error("PDF regeneration failed for contract %s - no PDF document after generation", self.name)
             raise UserError(_("PDF regeneration failed. Please try again."))
         
         # 2. Calculate hash
@@ -1963,7 +2142,7 @@ class ConstructionContract(models.Model):
         self.write({
             'pdf_hash_after_signature': pdf_hash_after
         })
-        _logger.info(f"PDF regenerated successfully with both signatures for contract {self.name}, hash: {pdf_hash_after[:16]}..., size: {len(pdf_content)/1024:.1f} KB")
+        _logger.info("PDF regenerated successfully for contract %s, hash: %s..., size: %.1f KB", self.name, pdf_hash_after[:16], len(pdf_content) / 1024)
 
         # 3. Generate certificate of completion
         self._generate_certificate_of_completion()
@@ -2101,64 +2280,6 @@ class ConstructionContract(models.Model):
     # PRIVATE METHODS (Certificate, Signature, etc.)
     # ============================================================
 
-    def _generate_certificate_of_completion(self):
-        """
-        Generate certificate of completion with all signature details
-        This serves as legal proof of the signing process
-        """
-        self.ensure_one()
-
-        # Prepare certificate data
-        certificate_data = {
-            'contract': self,
-            'signature': self.signature_id,
-            'page_validations': self.page_validation_ids.sorted('page_number'),
-            'generated_date': fields.Datetime.now(),
-            'company': self.env.company,  # Add company to context for template
-        }
-
-        # Generate PDF certificate using QWeb
-        # Get the report by report_name (not XML ID) to avoid account module issues
-        report = self.env['ir.actions.report'].sudo().search([
-            ('report_name', '=', 'construction_contract.report_certificate_document'),
-            ('model', '=', 'construction.contract')
-        ], limit=1)
-        
-        if not report:
-            _logger.error(f"Certificate report not found for contract {self.name}")
-            raise UserError(_("Certificate report not found. Please contact administrator."))
-        
-        # Render PDF directly by bypassing account module's _pre_render_qweb_pdf
-        # The issue is that account module intercepts _render_qweb_pdf and tries to use report_ref
-        # which gets confused when report_ref is a list instead of a string XML ID
-        try:
-            # Render HTML first using QWeb template
-            template = self.env.ref('construction_contract.report_certificate_document', raise_if_not_found=False)
-            if not template:
-                raise UserError(_("Certificate template not found."))
-            
-            # Prepare template context
-            docs = self
-            context = dict(certificate_data)
-            context['docs'] = docs
-            context['o'] = docs
-            
-            # Render HTML
-            html = self.env['ir.qweb']._render(template.id, context)
-            
-            # Convert HTML to PDF using WeasyPrint (same as contract PDF generation)
-            pdf_service = self.env['construction.contract.pdf.generator']
-            pdf_content = pdf_service._convert_html_to_pdf(html)
-            
-            # Store certificate
-            self.certificate_of_completion = base64.b64encode(pdf_content)
-                
-        except Exception as e:
-            _logger.error(f"Error rendering certificate PDF for contract {self.name}: {e}", exc_info=True)
-            raise UserError(_("Error generating certificate: %s") % str(e))
-
-        _logger.info(f"Certificate of completion generated for contract {self.name}")
-
     def _get_rendered_html_for_pdf(self):
         """
         Get rendered HTML for PDF generation
@@ -2218,7 +2339,7 @@ class ConstructionContract(models.Model):
 
         # Verify token
         if self._is_token_expired(access_token):
-            raise ValidationError(_("Access token is invalid or expired."))
+            raise ValidationError(_("Le lien d'accès est invalide ou a expiré. Veuillez demander un nouveau lien."))
 
         # Check if page already validated
         existing = self.page_validation_ids.filtered(
@@ -2264,14 +2385,14 @@ class ConstructionContract(models.Model):
 
         # Verify token
         if self._is_token_expired(access_token):
-            raise ValidationError(_("Access token is invalid or expired."))
+            raise ValidationError(_("Le lien d'accès est invalide ou a expiré. Veuillez demander un nouveau lien."))
 
         # Verify all pages validated
         validation_status = self._get_page_validation_status(access_token)
         if not validation_status['can_sign']:
             raise ValidationError(_(
-                "All pages must be validated before signing. "
-                "Remaining: %d pages."
+                "Toutes les pages doivent être validées avant de signer. "
+                "Pages restantes : %d."
             ) % validation_status['remaining_pages'])
 
         # Get request information if not provided
@@ -2360,26 +2481,21 @@ class ConstructionContract(models.Model):
         """
         self.ensure_one()
         try:
-            # Render QWeb PDF
-            report = self.env.ref('construction_contract.action_report_certificate')
-            # Pass additional data if needed in data dictionary, but doc is passed as docids
-            pdf_content, _ = report._render_qweb_pdf(self.ids, data={'generated_date': fields.Datetime.now(), 'company': self.env.company})
-            
+            # Render QWeb PDF — en Odoo 18, _render_qweb_pdf sur le modèle attend
+            # (report_ref: str, docids: list) et non l'inverse.
+            pdf_content, _pdf_type = self.env['ir.actions.report']._render_qweb_pdf(
+                'construction_contract.action_report_certificate', self.ids
+            )
+
             # Store PDF in Binary field
             self.write({
                 'certificate_of_completion': base64.b64encode(pdf_content),
-                'certificate_filename': f"Certificat_Signature_{self.name.replace('/', '_')}.pdf",
             })
-            
-            _logger.info(f"Certificate of completion generated for contract {self.name}")
-            
+
+            _logger.info("Certificate of completion generated for contract %s", self.name)
+
         except Exception as e:
-            _logger.error(f"Failed to generate certificate for contract {self.name}: {e}")
-            # Non-blocking error, but should be logged.
-            # We don't raise UserError here to avoid blocking the main signature flow if just the certificate fails,
-            # but maybe we should? The prompt implies legal value. 
-            # Let's log and maybe raise if critical, but for now log error is safer for user UX.
-            # Actually, `action_mark_signed` doesn't catch this, so it will bubble up if we raise.
+            _logger.error("Failed to generate certificate for contract %s: %s", self.name, e, exc_info=True)
             raise UserError(_("Impossible de générer le certificat de complétion: %s") % str(e))
 
     # ============================================================

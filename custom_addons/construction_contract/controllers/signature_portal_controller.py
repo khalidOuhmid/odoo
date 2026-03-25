@@ -9,9 +9,9 @@ from odoo.http import request
 from odoo.exceptions import ValidationError, AccessError
 from werkzeug.exceptions import NotFound, Forbidden
 import json
-import logging
+from odoo.addons.construction_core.utils.logger import get_logger
 
-_logger = logging.getLogger(__name__)
+_logger = get_logger(__name__)
 
 
 class SignaturePortalController(http.Controller):
@@ -190,15 +190,15 @@ class SignaturePortalController(http.Controller):
                 page_number = kwargs.get('current_page', 1)
             page_number = int(page_number)
 
-            _logger.info(f"Validating page {page_number} for contract {contract_id}")
-            
+            _logger.info("Validating page %s for contract %s", page_number, contract_id)
+
             result = contract.portal_validate_page(
                 page_number=page_number,
                 access_token=access_token,
                 time_spent=time_spent
             )
 
-            _logger.info(f"Page {page_number} validated successfully for contract {contract_id}")
+            _logger.info("Page %s validated successfully for contract %s", page_number, contract_id)
 
             return {
                 'status': 'success',
@@ -206,16 +206,16 @@ class SignaturePortalController(http.Controller):
             }
 
         except (ValidationError, AccessError) as e:
-            _logger.warning(f"Validation/Access error validating page {page_number} for contract {contract_id}: {e}")
+            _logger.warning("Validation/Access error validating page %s for contract %s: %s", page_number, contract_id, e)
             return {
                 'status': 'error',
                 'message': str(e),
             }
         except Exception as e:
-            _logger.error(f"Error validating page {page_number} for contract {contract_id}: {e}", exc_info=True)
+            _logger.error("Error validating page %s for contract %s: %s", page_number, contract_id, e, exc_info=True)
             return {
                 'status': 'error',
-                'message': _("An error occurred while validating the page: %s") % str(e),
+                'message': _("Une erreur est survenue lors de la validation de la page : %s") % str(e),
             }
 
     # ============================================================
@@ -269,19 +269,19 @@ class SignaturePortalController(http.Controller):
                 }
 
             # Clean signature data (remove data:image/png;base64, prefix if present)
-            _logger.info(f"Raw signature_data type: {type(signature_data)}, value preview: {str(signature_data)[:100] if signature_data else 'None'}")
+            _logger.info("Raw signature_data type: %s, value preview: %s", type(signature_data), str(signature_data)[:100] if signature_data else 'None')
             
             if signature_data:
                 if isinstance(signature_data, (list, tuple)):
                     # If it's a list, take the first element
                     signature_data = signature_data[0] if signature_data else ''
-                    _logger.warning(f"signature_data was a list/tuple with {len(signature_data) if hasattr(signature_data, '__len__') else 'unknown'} elements, using first element")
+                    _logger.warning("signature_data was a list/tuple with %s elements, using first element", len(signature_data) if hasattr(signature_data, '__len__') else 'unknown')
                 
                 # Ensure it's a string now
                 if not isinstance(signature_data, str):
                     original_type = type(signature_data)
                     signature_data = str(signature_data)
-                    _logger.warning(f"signature_data was {original_type}, converted to string")
+                    _logger.warning("signature_data was %s, converted to string", original_type)
                 
                 # Now it should be a string, process it
                 if isinstance(signature_data, str):
@@ -292,9 +292,9 @@ class SignaturePortalController(http.Controller):
                             if len(parts) > 1:
                                 signature_data = parts[1]
                             else:
-                                _logger.warning(f"signature_data has 'data:' prefix but no comma found")
+                                _logger.warning("signature_data has 'data:' prefix but no comma found")
                 
-            _logger.info(f"Cleaned signature_data type: {type(signature_data)}, length: {len(signature_data) if signature_data else 0}")
+            _logger.info("Cleaned signature_data type: %s, length: %s", type(signature_data), len(signature_data) if signature_data else 0)
             
             # Get request information for traceability
             ip_address = '0.0.0.0'
@@ -344,9 +344,9 @@ class SignaturePortalController(http.Controller):
                         user_agent = str(user_agent) if user_agent else ''
                         
             except Exception as e:
-                _logger.warning(f"Could not get request info for signature: {e}", exc_info=True)
+                _logger.warning("Could not get request info for signature: %s", e, exc_info=True)
             
-            _logger.info(f"Saving signature for contract {contract_id}, IP: {ip_address}, data length: {len(signature_data) if signature_data else 0}")
+            _logger.info("Saving signature for contract %s, IP: %s, data length: %s", contract_id, ip_address, len(signature_data) if signature_data else 0)
             
             result = contract.portal_save_signature(
                 signature_data=signature_data,
@@ -358,7 +358,7 @@ class SignaturePortalController(http.Controller):
             base_url = request.env['ir.config_parameter'].sudo().get_param('web.base.url')
             redirect_url = f"{base_url}/my/contract/{contract_id}/sign?access_token={access_token}"
 
-            _logger.info(f"Signature saved successfully for contract {contract_id}, redirecting to {redirect_url}")
+            _logger.info("Signature saved successfully for contract %s, redirecting to %s", contract_id, redirect_url)
 
             return {
                 'status': 'success',
@@ -367,16 +367,20 @@ class SignaturePortalController(http.Controller):
             }
 
         except (ValidationError, AccessError) as e:
-            _logger.warning(f"Validation/Access error saving signature for contract {contract_id}: {e}")
+            _logger.warning("Validation/Access error saving signature for contract %s: %s", contract_id, e)
             return {
                 'status': 'error',
                 'message': str(e),
             }
         except Exception as e:
-            _logger.error(f"Error saving signature for contract {contract_id}: {e}", exc_info=True)
+            import traceback as _tb
+            _logger.error(
+                "Error saving signature for contract %s: %s\n%s",
+                contract_id, str(e), _tb.format_exc()
+            )
             return {
                 'status': 'error',
-                'message': _("An error occurred while saving the signature: %s") % str(e),
+                'message': _("Une erreur est survenue lors de la sauvegarde de la signature : %s") % str(e),
             }
 
     # ============================================================
@@ -399,7 +403,7 @@ class SignaturePortalController(http.Controller):
             contract = self._validate_access(contract_id, access_token)
 
             if not contract.pdf_document:
-                _logger.error(f"PDF document not found for contract {contract_id}")
+                _logger.error("PDF document not found for contract %s", contract_id)
                 raise NotFound(_("PDF document not found."))
 
             # Decode base64 PDF content
@@ -407,12 +411,12 @@ class SignaturePortalController(http.Controller):
             try:
                 pdf_content = base64.b64decode(contract.pdf_document)
             except Exception as e:
-                _logger.error(f"Failed to decode PDF for contract {contract_id}: {e}")
+                _logger.error("Failed to decode PDF for contract %s: %s", contract_id, e)
                 raise NotFound(_("PDF document is corrupted."))
-            
+
             filename = contract.pdf_filename or 'contract.pdf'
-            
-            _logger.info(f"Serving PDF for contract {contract_id}: {len(pdf_content)} bytes")
+
+            _logger.info("Serving PDF for contract %s: %s bytes", contract_id, len(pdf_content))
 
             return request.make_response(
                 pdf_content,
@@ -603,8 +607,8 @@ class SignaturePortalController(http.Controller):
             }
             
             _logger.info(
-                f"[AUDIT] Showing success page for contract {contract.name}, "
-                f"signature IP: {signature.ip_address if signature else 'N/A'}"
+                "[AUDIT] Showing success page for contract %s, signature IP: %s",
+                contract.name, signature.ip_address if signature else 'N/A'
             )
             
             return request.render('construction_contract.signature_success_template', values)

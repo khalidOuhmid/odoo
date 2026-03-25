@@ -103,7 +103,7 @@ Other modules:
 - **Situation / BillingCycle**: The progressive invoicing concept. `construction.billing.cycle` is the parent record (one per chantier), containing `construction.billing.step` children (each with a `percentage` and a generated `account.move`). Total steps must sum ≤ 100%. Default split: 30/30/40. Each step transitions `draft → invoiced → paid`.
 - **Contract lifecycle** (`construction.contract`): `draft → generated → sent → in_progress → signed → archived` (or `cancelled`). Authentication levels: email-only / email+SMS / email+SMS+ID.
 - **Contract revision history** (`construction.contract.revision`): each time a contract is regenerated, the previous PDF is archived as a new revision (versioned, SHA-256 hash, user + reason recorded). Regeneration must go through `contract.regenerate.wizard` — mandatory `reason` field (≥ 1 char) prevents accidental overwrites. Portal signatories can download past revisions.
-- **Compliance docs** on `res.partner`: KBIS (2-month validity), URSSAF, insurance décennale, RIB, CNI. Status per doc: `missing / uploaded / expiring / valid / expired`. Contract creation blocks if required docs are not `valid` or `expiring`.
+- **Compliance docs** on `res.partner`: KBIS (2-month validity), URSSAF, insurance décennale, RIB, CNI. Status per doc: `missing / uploaded / expiring / valid / expired`. Contract creation blocks if required docs are not `valid` or `expiring`. When a document is replaced or deleted, `subcontractor.document.archive` preserves the old version for audit (unlink is permanently blocked on this model).
 
 ### Stage Machine — Dev/Test Notes
 
@@ -148,10 +148,18 @@ module_name/
 └── config/           # Python constants (e.g. contract_constants.py)
 ```
 
-Note: the folder is named `wizard/` (not `wizards/`) in `construction_core`.
+Note: the folder is named `wizard/` (not `wizards/`) in `construction_core`. All other modules use `wizards/`.
 
-```
-```
+`construction_contract` also has a `services/` folder with `models.AbstractModel` service classes callable via `self.env['service._name'].method()`:
+- `construction.contract.validation.service` — subcontractor eligibility checks
+- `construction.contract.template.renderer.service` — Jinja2 rendering
+- `construction.contract.notification.service` — email/SMS dispatch
+- `construction.contract.signature.loader.service` — signature loading
+- `construction.contract.pdf.merger.service` — PDF bundle assembly
+
+`construction.chantier` is split across two files in `construction_core/models/`: `chantier.py` (state machine, core fields) and `chantier_dashboard.py` (`_inherit` extension adding dashboard computed fields like `deadline_status`, `total_cost`, contextual action visibility booleans).
+
+`construction_finance` models (`construction.finance.forecast`, `construction.finance.analysis`) are `_auto = False` SQL view models — they override `init()` to create PostgreSQL views rather than tables. Do not call `create()`/`write()` on them.
 
 ## Testing Conventions
 
@@ -244,6 +252,28 @@ When removing Many2many tabs that have data, create a migration script under `mo
 ## Python Dependencies
 
 Non-standard dependencies required: `weasyprint`, `PyPDF2`, `pandas`, `openpyxl`, `Pillow`, `Jinja2`. These are installed in the Docker image. For local dev, install via `pip install -r requirements.txt` (file is in `custom_addons/`).
+
+## Security Groups
+
+Four groups, two modules. The hierarchy is flat in `construction_core` but `construction_contract` redefines admin to thread through pilote:
+
+| XML ID | Module | Display Name | Implies |
+|--------|--------|--------------|---------|
+| `construction_core.group_construction_user` | core | Construction / Utilisateur | `base.group_user` |
+| `construction_core.group_construction_accountant` | core | Construction / Comptabilité | `base.group_user` (lateral, read-only finance) |
+| `construction_contract.group_construction_pilote` | contract | Site Manager (Pilote) | `group_construction_user` |
+| `construction_contract.group_construction_admin` | contract | Construction Administrator | `group_construction_pilote` |
+
+Note: `group_construction_admin` is **redefined** in `construction_contract` — the contract module's version implies `pilote` (which implies `user`). Always reference the contract module's admin for full-stack access checks. Use `construction_core.group_construction_admin` only when writing rules in `construction_core` itself.
+
+## Spec Docs
+
+`docs/` contains specification stubs that agents fill in over time:
+- `docs/state_machine_spec.md` — stage machine formal spec
+- `docs/subcontractor_compliance.md` — compliance doc rules
+- `docs/contract_signature_spec.md` — contract signature flows
+- `docs/email_to_chantier.md` — inbound email → chantier creation
+- `docs/perf_audit_computed_fields.md` — performance audit notes
 
 ## Branches
 

@@ -8,11 +8,6 @@
         <field name="inherit_id" ref="construction_core.view_construction_chantier_form"/>
         <field name="arch" type="xml">
 
-            <!-- Hide the validation cockpit (Transition bloquée) as requested -->
-            <xpath expr="//group[@name='validation_panel']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-
             <!-- Add clean smart button for Contracts -->
             <xpath expr="//div[@name='button_box']" position="inside">
                 <button name="action_view_contracts" type="object"

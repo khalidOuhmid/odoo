@@ -1,0 +1,511 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!--
+    BLG Groupe — Template de devis standalone (sale.order)
+    Template autonome, sans inherit_id ni web.external_layout.
+    Structure : En-tête / Infos / Tableau lignes / Totaux / Notes
+    -->
+
+    <template id="report_sale_order_blg_document">
+        <t t-foreach="docs" t-as="doc">
+            <t t-call="web.html_container">
+
+                <t t-set="is_proforma" t-value="env.context.get('proforma', False)"/>
+                <t t-set="blg_cur" t-value="doc.report_currency_id or doc.currency_id"/>
+
+                <div class="blg-page">
+
+                    <!-- ═══════════════════════════════════════════════════════
+                         CSS GLOBAL + WEASYPRINT @page
+                    ═══════════════════════════════════════════════════════ -->
+                    <style>
+                        * { box-sizing: border-box; }
+                        body, td, th, span, div, p {
+                            font-family: 'Helvetica Neue', Arial, sans-serif;
+                        }
+                        .blg-page {
+                            font-size: 9pt;
+                            color: #2C2C2C;
+                            line-height: 1.4;
+                        }
+
+                        /* ── Tableau lignes ── */
+                        .blg-table {
+                            width: 100%;
+                            border-collapse: collapse;
+                            margin-top: 12px;
+                        }
+                        .blg-table thead th {
+                            background: #8B3A3A;
+                            color: #fff;
+                            padding: 8px 6px;
+                            font-size: 8pt;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            border: none;
+                        }
+                        .blg-table tbody tr.r-odd td  { background: #fff; }
+                        .blg-table tbody tr.r-even td { background: #FAFAF8; }
+                        .blg-table tbody td {
+                            padding: 6px 6px;
+                            min-height: 22px;
+                            border-bottom: 1px solid #E8E0D8;
+                            vertical-align: top;
+                        }
+                        .blg-table tbody tr.r-section td {
+                            background: #EBE0DC;
+                            color: #8B3A3A;
+                            font-weight: 700;
+                            font-size: 9pt;
+                            padding: 6px 8px;
+                            border-top: none;
+                            border-bottom: none;
+                        }
+                        .blg-table tbody tr.r-note td {
+                            color: #777;
+                            font-style: italic;
+                            font-size: 8pt;
+                            background: #fff;
+                        }
+                        .blg-table tbody tr.r-subtotal td {
+                            background: #F5F0EB;
+                            border-top: none;
+                            border-bottom: none;
+                            padding: 5px 6px;
+                        }
+
+                        /* ── Totaux ── */
+                        .blg-totals {
+                            width: 35%;
+                            margin-left: 65%;
+                            background: #F5F0EB;
+                            border-left: 4px solid #8B3A3A;
+                            padding: 12px;
+                            margin-top: 16px;
+                        }
+                        .blg-totals table {
+                            width: 100%;
+                            border-collapse: collapse;
+                        }
+                        .blg-totals td {
+                            padding: 4px 0;
+                            font-size: 9pt;
+                        }
+                        .blg-totals .ttc {
+                            font-size: 12pt;
+                            font-weight: 700;
+                            color: #8B3A3A;
+                            border-top: 1px solid #8B3A3A;
+                            padding-top: 6px;
+                        }
+
+                        /* ── Notes ── */
+                        .blg-notes {
+                            margin-top: 20px;
+                            font-size: 8pt;
+                            color: #555555;
+                        }
+
+                        /* ── Label petite majuscule bordeaux ── */
+                        .blg-label {
+                            font-size: 7pt;
+                            text-transform: uppercase;
+                            letter-spacing: 0.5px;
+                            color: #8B3A3A;
+                            font-weight: 600;
+                            margin-bottom: 3px;
+                        }
+
+                        /* ── WeasyPrint @page ── */
+                        @page {
+                            margin-top: 18mm;
+                            margin-bottom: 22mm;
+                            margin-left: 16mm;
+                            margin-right: 16mm;
+                            @bottom-left {
+                                content: string(company-name) " | " string(doc-reference);
+                                font-size: 7pt;
+                                color: #888888;
+                                border-top: 1px solid #E0D8D0;
+                                padding-top: 4pt;
+                                font-family: Arial, sans-serif;
+                            }
+                            @bottom-right {
+                                content: "Page " counter(page) " / " counter(pages);
+                                font-size: 7pt;
+                                color: #888888;
+                                border-top: 1px solid #E0D8D0;
+                                padding-top: 4pt;
+                                font-family: Arial, sans-serif;
+                            }
+                        }
+                        @page :first { margin-top: 0; }
+                    </style>
+
+                    <!-- Div invisible pour string-set WeasyPrint (pied de page) -->
+                    <div style="height:0;overflow:hidden;string-set:company-name attr(data-company) doc-reference attr(data-ref);"
+                         t-att-data-company="doc.company_id.name"
+                         t-att-data-ref="doc.name"/>
+
+                    <!-- ═══════════════════════════════════════════════════════
+                         ZONE 1 — EN-TÊTE (logo gauche + bloc titre droite)
+                    ═══════════════════════════════════════════════════════ -->
+                    <div style="display:table;width:100%;margin-bottom:14px;">
+                        <div style="display:table-row;">
+
+                            <!-- Colonne gauche : logo + coordonnées société -->
+                            <div style="display:table-cell;width:55%;vertical-align:top;padding-right:20px;">
+                                <img t-if="doc.company_id.logo"
+                                     t-att-src="'data:image/png;base64,' + doc.company_id.logo.decode('ascii')"
+                                     style="max-height:70px;max-width:180px;display:block;margin-bottom:6px;"/>
+                                <div style="font-size:8pt;color:#555555;line-height:1.6;">
+                                    <strong style="font-size:9pt;" t-out="doc.company_id.name"/>
+                                    <t t-if="doc.company_id.street">
+                                        <br/>
+                                        <span t-out="doc.company_id.street"/>
+                                    </t>
+                                    <t t-if="doc.company_id.zip or doc.company_id.city">
+                                        <br/>
+                                        <span t-if="doc.company_id.zip" t-out="doc.company_id.zip"/>
+                                        <span t-if="doc.company_id.city" t-out="' ' + doc.company_id.city"/>
+                                    </t>
+                                    <t t-if="doc.company_id.phone">
+                                        <br/>
+                                        <span style="color:#666;">Tél : </span>
+                                        <span t-out="doc.company_id.phone"/>
+                                    </t>
+                                    <t t-if="doc.company_id.email">
+                                        <br/>
+                                        <span style="color:#666;">Email : </span>
+                                        <span t-out="doc.company_id.email"/>
+                                    </t>
+                                    <t t-if="doc.company_id.vat">
+                                        <br/>
+                                        <span style="color:#666;">SIRET : </span>
+                                        <span t-out="doc.company_id.vat"/>
+                                    </t>
+                                </div>
+                            </div>
+
+                            <!-- Colonne droite : type document + référence -->
+                            <div style="display:table-cell;width:45%;vertical-align:middle;
+                                        background:#8B3A3A;color:#fff;text-align:center;
+                                        padding:16px 20px;">
+                                <div style="font-size:8pt;text-transform:uppercase;
+                                            letter-spacing:1px;margin-bottom:6px;opacity:0.85;">
+                                    <t t-if="is_proforma">PRO FORMA</t>
+                                    <t t-elif="doc.state in ['draft', 'sent']">DEVIS</t>
+                                    <t t-else="">BON DE COMMANDE</t>
+                                </div>
+                                <div style="font-size:16pt;font-weight:700;
+                                            letter-spacing:0.5px;margin-bottom:4px;"
+                                     t-out="doc.name"/>
+                                <div style="font-size:9pt;opacity:0.8;">
+                                    <span t-field="doc.date_order" t-options='{"widget": "date"}'/>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- Séparateur bordeaux -->
+                    <div style="border-bottom:2px solid #8B3A3A;margin-bottom:12px;"/>
+
+                    <!-- ═══════════════════════════════════════════════════════
+                         ZONE 2 — INFOS CLIENT / CHANTIER / INFORMATIONS
+                    ═══════════════════════════════════════════════════════ -->
+                    <div style="display:table;width:100%;background:#F5F0EB;
+                                padding:12px;border-bottom:2px solid #8B3A3A;
+                                margin-bottom:16px;">
+                        <div style="display:table-row;">
+
+                            <!-- Col 1 : Client -->
+                            <div style="display:table-cell;width:33%;vertical-align:top;
+                                        padding-right:12px;">
+                                <div class="blg-label">Client</div>
+                                <div style="font-weight:700;font-size:9pt;"
+                                     t-out="doc.partner_id.name"/>
+                                <div style="font-size:8pt;color:#555;line-height:1.5;">
+                                    <t t-if="doc.partner_id.street">
+                                        <span t-out="doc.partner_id.street"/><br/>
+                                    </t>
+                                    <t t-if="doc.partner_id.zip or doc.partner_id.city">
+                                        <span t-if="doc.partner_id.zip"
+                                              t-out="doc.partner_id.zip"/>
+                                        <span t-if="doc.partner_id.city"
+                                              t-out="' ' + doc.partner_id.city"/>
+                                        <br/>
+                                    </t>
+                                    <t t-if="doc.partner_id.email">
+                                        <span t-out="doc.partner_id.email"/>
+                                    </t>
+                                </div>
+                            </div>
+
+                            <!-- Col 2 : Chantier -->
+                            <div style="display:table-cell;width:33%;vertical-align:top;
+                                        padding-right:12px;">
+                                <div class="blg-label">Chantier</div>
+                                <t t-if="doc.chantier_id">
+                                    <div style="font-weight:700;font-size:9pt;"
+                                         t-out="doc.chantier_id.name"/>
+                                    <div style="font-size:8pt;color:#555;line-height:1.5;">
+                                        <t t-if="doc.chantier_id.address">
+                                            <span t-out="doc.chantier_id.address"/><br/>
+                                        </t>
+                                        <t t-if="doc.chantier_id.date_start_contract">
+                                            <span style="color:#666;">Début : </span>
+                                            <span t-field="doc.chantier_id.date_start_contract"
+                                                  t-options='{"widget": "date"}'/><br/>
+                                        </t>
+                                        <t t-if="doc.chantier_id.date_end_contract">
+                                            <span style="color:#666;">Fin : </span>
+                                            <span t-field="doc.chantier_id.date_end_contract"
+                                                  t-options='{"widget": "date"}'/>
+                                        </t>
+                                    </div>
+                                </t>
+                                <t t-else="">
+                                    <div style="color:#888;font-style:italic;font-size:8pt;">
+                                        Sans chantier associé
+                                    </div>
+                                </t>
+                            </div>
+
+                            <!-- Col 3 : Informations -->
+                            <div style="display:table-cell;width:34%;vertical-align:top;">
+                                <div class="blg-label">Informations</div>
+                                <div style="font-size:8pt;color:#555;line-height:1.8;">
+                                    <t t-if="doc.date_order">
+                                        <span style="color:#8B3A3A;font-weight:600;">
+                                            <t t-if="is_proforma">Date d'émission</t>
+                                            <t t-elif="doc.state in ['draft', 'sent']">Date du devis</t>
+                                            <t t-else="">Date de commande</t>
+                                        </span> :
+                                        <span t-field="doc.date_order"
+                                              t-options='{"widget": "date"}'/><br/>
+                                    </t>
+                                    <t t-if="doc.validity_date and doc.state in ['draft', 'sent']">
+                                        <span style="color:#8B3A3A;font-weight:600;">
+                                            Valable jusqu'au
+                                        </span> :
+                                        <span t-field="doc.validity_date"
+                                              t-options='{"widget": "date"}'/><br/>
+                                    </t>
+                                    <t t-if="doc.user_id and doc.user_id.name">
+                                        <span style="color:#8B3A3A;font-weight:600;">
+                                            Commercial
+                                        </span> :
+                                        <span t-out="doc.user_id.name"/><br/>
+                                    </t>
+                                    <t t-if="doc.client_order_ref">
+                                        <span style="color:#8B3A3A;font-weight:600;">
+                                            Votre réf
+                                        </span> :
+                                        <span t-field="doc.client_order_ref"/>
+                                    </t>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════════════
+                         ZONE 3 — TABLEAU DES LIGNES
+                    ═══════════════════════════════════════════════════════ -->
+                    <t t-set="lines_to_report" t-value="doc._get_order_lines_to_report()"/>
+                    <t t-set="display_discount" t-value="any(l.discount for l in lines_to_report)"/>
+                    <t t-set="current_section" t-value="None"/>
+                    <t t-set="current_subtotal" t-value="0"/>
+                    <t t-set="row_idx" t-value="0"/>
+
+                    <table class="blg-table">
+                        <thead>
+                            <tr>
+                                <th style="text-align:left;width:40%;">Description</th>
+                                <th style="text-align:right;width:8%;">Qté</th>
+                                <th style="text-align:right;width:8%;">Unité</th>
+                                <th style="text-align:right;width:14%;">Prix U. HT</th>
+                                <th t-if="display_discount" style="text-align:right;width:8%;">Rem. %</th>
+                                <th style="text-align:right;width:10%;">Taxes</th>
+                                <th style="text-align:right;width:14%;">Total HT</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            <t t-foreach="lines_to_report" t-as="line">
+                                <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal"/>
+
+                                <!-- Ligne produit normale -->
+                                <t t-if="not line.display_type and line.product_type != 'combo'">
+                                    <t t-set="row_idx" t-value="row_idx + 1"/>
+                                    <tr t-attf-class="#{('r-odd' if row_idx % 2 != 0 else 'r-even')}">
+                                        <td style="text-align:left;">
+                                            <span t-out="line.name"/>
+                                        </td>
+                                        <td style="text-align:right;">
+                                            <span t-field="line.product_uom_qty"/>
+                                        </td>
+                                        <td style="text-align:right;">
+                                            <span t-out="line.product_uom.name if line.product_uom else ''"/>
+                                        </td>
+                                        <td style="text-align:right;">
+                                            <span t-field="line.price_unit"/>
+                                        </td>
+                                        <td t-if="display_discount" style="text-align:right;">
+                                            <span t-field="line.discount"/>
+                                        </td>
+                                        <t t-set="line_taxes" t-value="', '.join([(t.invoice_label or t.name) for t in line.tax_id])"/>
+                                        <td style="text-align:right;font-size:8pt;color:#666;">
+                                            <span t-out="line_taxes"/>
+                                        </td>
+                                        <td t-if="not line.is_downpayment"
+                                            style="text-align:right;font-weight:600;">
+                                            <span t-field="line.price_subtotal"/>
+                                        </td>
+                                        <td t-else="" style="text-align:right;">—</td>
+                                    </tr>
+                                </t>
+
+                                <!-- Section / séparateur de lot -->
+                                <t t-elif="line.display_type == 'line_section' or line.product_type == 'combo'">
+                                    <!-- Sous-total de la section précédente si applicable -->
+                                    <t t-if="current_section">
+                                        <tr class="r-subtotal">
+                                            <td t-attf-colspan="#{6 if display_discount else 5}"
+                                                style="text-align:left;font-style:italic;
+                                                       font-size:8pt;color:#555;">
+                                                Sous-total <t t-out="current_section.name"/>
+                                            </td>
+                                            <td style="text-align:right;font-weight:700;
+                                                       color:#8B3A3A;">
+                                                <span t-out="current_subtotal"
+                                                      t-options='{"widget": "monetary", "display_currency": blg_cur}'/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <tr class="r-section">
+                                        <td t-attf-colspan="#{7 if display_discount else 6}"
+                                            style="text-align:left;">
+                                            <span t-out="line.name"/>
+                                        </td>
+                                    </tr>
+                                    <t t-set="current_section" t-value="line"/>
+                                    <t t-set="current_subtotal" t-value="0"/>
+                                    <t t-set="row_idx" t-value="0"/>
+                                </t>
+
+                                <!-- Note -->
+                                <t t-elif="line.display_type == 'line_note'">
+                                    <tr class="r-note">
+                                        <td t-attf-colspan="#{7 if display_discount else 6}">
+                                            <span t-out="line.name"/>
+                                        </td>
+                                    </tr>
+                                </t>
+
+                                <!-- Sous-total de la dernière section en fin de boucle -->
+                                <t t-if="current_section and line_last and not line.is_downpayment">
+                                    <tr class="r-subtotal">
+                                        <td t-attf-colspan="#{6 if display_discount else 5}"
+                                            style="text-align:left;font-style:italic;
+                                                   font-size:8pt;color:#555;">
+                                            Sous-total <t t-out="current_section.name"/>
+                                        </td>
+                                        <td style="text-align:right;font-weight:700;
+                                                   color:#8B3A3A;">
+                                            <span t-out="current_subtotal"
+                                                  t-options='{"widget": "monetary", "display_currency": blg_cur}'/>
+                                        </td>
+                                    </tr>
+                                    <t t-set="current_section" t-value="None"/>
+                                </t>
+
+                            </t>
+
+                        </tbody>
+                    </table>
+
+                    <!-- ═══════════════════════════════════════════════════════
+                         ZONE 4 — TOTAUX
+                    ═══════════════════════════════════════════════════════ -->
+                    <div class="blg-totals">
+                        <table>
+                            <tbody>
+
+                                <!-- Montant HT -->
+                                <tr>
+                                    <td>Montant HT</td>
+                                    <td style="text-align:right;">
+                                        <span t-out="doc.tax_totals.get('amount_untaxed', 0)"
+                                              t-options='{"widget": "monetary", "display_currency": blg_cur}'/>
+                                    </td>
+                                </tr>
+
+                                <!-- Lignes TVA par groupe -->
+                                <t t-foreach="doc.tax_totals.get('subtotals', [])" t-as="subtotal">
+                                    <t t-foreach="doc.tax_totals.get('groups_by_subtotal', {}).get(subtotal.get('name', ''), [])" t-as="tg">
+                                        <tr>
+                                            <td style="color:#555;font-size:8pt;">
+                                                <span t-out="tg.get('tax_group_name', '')"/>
+                                            </td>
+                                            <td style="text-align:right;color:#555;font-size:8pt;">
+                                                <span t-out="tg.get('tax_group_amount', 0)"
+                                                      t-options='{"widget": "monetary", "display_currency": blg_cur}'/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </t>
+
+                                <!-- Total TTC -->
+                                <tr class="ttc">
+                                    <td>TOTAL TTC</td>
+                                    <td style="text-align:right;">
+                                        <span t-out="doc.tax_totals.get('amount_total', 0)"
+                                              t-options='{"widget": "monetary", "display_currency": blg_cur}'/>
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- ═══════════════════════════════════════════════════════
+                         ZONE 5 — NOTES ET CONDITIONS
+                    ═══════════════════════════════════════════════════════ -->
+                    <div class="blg-notes">
+                        <t t-if="doc.note and not is_html_empty(doc.note)">
+                            <div style="margin-bottom:8px;">
+                                <div class="blg-label">Conditions et remarques</div>
+                                <span t-field="doc.note"/>
+                            </div>
+                        </t>
+                        <t t-if="doc.payment_term_id and not is_html_empty(doc.payment_term_id.note)">
+                            <div style="border-left:3px solid #8B3A3A;padding-left:8px;">
+                                <div class="blg-label">Conditions de paiement</div>
+                                <span t-field="doc.payment_term_id.note"/>
+                            </div>
+                        </t>
+                    </div>
+
+                </div>
+
+            </t>
+        </t>
+    </template>
+
+    <!-- ═══════════════════════════════════════════════════════════════════
+         ACTION DE RAPPORT
+    ═══════════════════════════════════════════════════════════════════ -->
+    <record id="action_report_sale_order_blg" model="ir.actions.report">
+        <field name="name">Devis BLG</field>
+        <field name="model">sale.order</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">construction_sale.report_sale_order_blg_document</field>
+        <field name="report_file">construction_sale.report_sale_order_blg_document</field>
+        <field name="print_report_name">(object.name or 'Devis').replace('/', '_')</field>
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_type">report</field>
+    </record>
+
+</odoo>

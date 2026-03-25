@@ -10,3 +10,4 @@ from . import test_mail_automation
 from . import test_email_to_chantier
 from . import test_document_ged
 from . import test_stage_validators
+from . import test_stage_guidance

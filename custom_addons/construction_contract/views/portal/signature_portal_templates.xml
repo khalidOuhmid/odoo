@@ -151,9 +151,10 @@
                             </t>
 
                             <!-- OWL App Mount Point -->
-                            <div class="o_portal_contract_signature_app" 
-                                 t-att-data-contract-id="contract.id" 
-                                 t-att-data-access-token="access_token">
+                            <div class="o_portal_contract_signature_app"
+                                 t-att-data-contract-id="contract.id"
+                                 t-att-data-access-token="access_token"
+                                 t-att-data-page-count="contract.pdf_page_count">
                                 <div class="text-center p-5 text-muted">
                                     <i class="fa fa-spinner fa-spin fa-3x mb-3"/>
                                     <h4>Chargement de l'interface de signature...</h4>

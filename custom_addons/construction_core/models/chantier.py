@@ -316,7 +316,18 @@ class Chantier(models.Model):
         compute='_compute_validation_conditions_html',
         string='Conditions de Validation'
     )
-    
+    next_stage_name = fields.Char(
+        string='Prochaine Étape',
+        compute='_compute_next_stage_name',
+        store=False,
+    )
+    next_stage_requirements = fields.Html(
+        string='Conditions manquantes',
+        compute='_compute_next_stage_requirements',
+        store=False,
+        sanitize=False,
+    )
+
     # ============= Team Resources Display (US-COR-010) ============= #
     team_resources_html = fields.Html(
         compute='_compute_team_resources_html',
@@ -409,6 +420,15 @@ class Chantier(models.Model):
         for record in self:
             record.progress_display = f"{record.progress:.0f}%"
 
+    @api.depends(
+        'stage_id',
+        'client', 'address', 'description', 'phone',
+        'lots_ids', 'quotation_ids.state',
+        'subcontractor_ids', 'date_start_contract', 'date_end_contract',
+        'date_start_internal', 'date_end_internal',
+        'date_start_estimated', 'date_end_estimated',
+        'progress',
+    )
     def _compute_is_ready_for_next_stage(self):
         for record in self:
             try:
@@ -1113,10 +1133,96 @@ class Chantier(models.Model):
             if not record.stage_id:
                 record.stage_validation_info = "Aucune étape définie"
                 continue
-            
+
             can_proceed, message = record._can_move_to_next_stage()
             status = "✅ Prêt" if can_proceed else "⛔ Bloqué"
             record.stage_validation_info = f"{status}\n{message}"
+
+    @api.depends('stage_id')
+    def _compute_next_stage_name(self):
+        """Retourne le nom de la prochaine étape dans la séquence. Vide si étape terminale."""
+        next_codes = {
+            STAGE_TRANSITIONS.get(r.stage_id.code, {}).get('next')
+            for r in self if r.stage_id
+        }
+        next_codes.discard(None)
+        if next_codes:
+            stages = self.env['construction.stage'].search([('code', 'in', list(next_codes))])
+            stage_by_code = {s.code: s.name for s in stages}
+        else:
+            stage_by_code = {}
+        for record in self:
+            next_code = (
+                STAGE_TRANSITIONS.get(record.stage_id.code, {}).get('next')
+                if record.stage_id else None
+            )
+            record.next_stage_name = stage_by_code.get(next_code, '') if next_code else ''
+
+    @api.depends(
+        'stage_id',
+        'client', 'address', 'description', 'phone',
+        'lots_ids', 'quotation_ids.state',
+        'subcontractor_ids', 'date_start_contract', 'date_end_contract',
+        'date_start_internal', 'date_end_internal',
+        'date_start_estimated', 'date_end_estimated',
+        'progress',
+    )
+    def _compute_next_stage_requirements(self):
+        """Retourne le HTML des conditions manquantes pour passer à l'étape suivante.
+
+        Retourne une chaîne vide si :
+        - l'étape est terminale (SS, DC),
+        - toutes les conditions sont remplies,
+        - il n'existe pas de validator pour cette étape.
+        Le HTML généré contient la liste des conditions manquantes.
+        """
+        from markupsafe import escape
+        # Pré-charger toutes les prochaines étapes en une seule requête
+        next_codes = {
+            STAGE_TRANSITIONS.get(r.stage_id.code, {}).get('next')
+            for r in self if r.stage_id
+        }
+        next_codes.discard(None)
+        if next_codes:
+            stages = self.env['construction.stage'].search([('code', 'in', list(next_codes))])
+            stage_by_code = {s.code: s.name for s in stages}
+        else:
+            stage_by_code = {}
+
+        for record in self:
+            if not record.stage_id:
+                record.next_stage_requirements = ''
+                continue
+            stage_code = record.stage_id.code
+            transition = STAGE_TRANSITIONS.get(stage_code, {})
+            next_code = transition.get('next')
+            if not next_code:
+                record.next_stage_requirements = ''
+                continue
+            validator_name = transition.get('validator')
+            if not validator_name:
+                record.next_stage_requirements = ''
+                continue
+            validator = getattr(record, validator_name, None)
+            if not validator or not callable(validator):
+                record.next_stage_requirements = ''
+                continue
+            try:
+                can_proceed, message = validator()
+            except Exception:
+                can_proceed, message = False, "Erreur lors de la vérification des conditions"
+            if can_proceed:
+                record.next_stage_requirements = ''
+                continue
+            next_name = escape(stage_by_code.get(next_code, next_code))
+            conditions = [c.strip() for c in message.split(', ') if c.strip()]
+            items = ''.join(f'<li>{escape(c)}</li>' for c in conditions)
+            record.next_stage_requirements = (
+                f'<strong class="blg-guidance-title">'
+                f'Conditions manquantes pour passer à {next_name}'
+                f'</strong>'
+                f'<ul class="blg-guidance-list">{items}</ul>'
+            )
 
     # ============= CRUD Methods ============= #
     @api.model_create_multi
@@ -1274,19 +1380,20 @@ class Chantier(models.Model):
         Internal lots (régie interne) don't require a subcontractor.
         """
         if not self.lots_ids:
-            return False, "Lots: 0"
-        
+            return False, "Aucun lot défini sur ce chantier"
+
         # Check that all external lots have proper subcontractor assignment
         lots_missing_assignment = []
         for lot in self.lots_ids:
-            _logger.info("[BLG][COMPLIANCE][CHECK] Lot %s: execution_type=%s ST=%s",
-                         lot.name, lot.execution_type,
-                         lot.subcontractor_id.name if lot.subcontractor_id else 'None')
+            _logger.debug("[BLG][COMPLIANCE][CHECK] Lot %s: execution_type=%s ST=%s",
+                          lot.name, lot.execution_type,
+                          lot.subcontractor_id.name if lot.subcontractor_id else 'None')
             if lot.execution_type == 'external' and not lot.subcontractor_id:
                 lots_missing_assignment.append(lot.name)
         
         if lots_missing_assignment:
-            return False, f"Sous-traitants: {len(lots_missing_assignment)} lot(s) non assigné(s)"
+            names = ", ".join(lots_missing_assignment)
+            return False, f"Sous-traitant non assigné sur {len(lots_missing_assignment)} lot(s) : {names}"
         
         if not self.date_start_contract:
             return False, "Date de début contractuelle manquante"

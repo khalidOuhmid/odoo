@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import publicWidget from "@web/legacy/js/public/public_widget";
-import { Component, useState, useRef, onMounted, App, xml } from "@odoo/owl";
+import { Component, useState, useRef, onMounted, App, xml, markup } from "@odoo/owl";
 import { rpc } from "@web/core/network/rpc";
 
 /**
@@ -140,6 +140,7 @@ export class ContractSignatureViewer extends Component {
         this.canvasRef = useRef("signatureCanvas");
         this.ctx = null;
         this.isDrawing = false;
+        this._pagesValidated = false;
 
         onMounted(() => {
             this._initCanvas();
@@ -159,7 +160,10 @@ export class ContractSignatureViewer extends Component {
         const scrollableHeight = el.scrollHeight - el.clientHeight;
         if (scrollableHeight <= 0) {
             this.state.scrollProgress = 100;
-            this.state.hasReachedEnd = true;
+            if (!this.state.hasReachedEnd) {
+                this.state.hasReachedEnd = true;
+                this._validateAllPagesRead();
+            }
             return;
         }
 
@@ -169,8 +173,29 @@ export class ContractSignatureViewer extends Component {
 
         // 10px tolerance
         if (currentScroll + el.clientHeight >= el.scrollHeight - 10) {
-            this.state.hasReachedEnd = true;
-            this.state.scrollProgress = 100;
+            if (!this.state.hasReachedEnd) {
+                this.state.hasReachedEnd = true;
+                this.state.scrollProgress = 100;
+                this._validateAllPagesRead();
+            }
+        }
+    }
+
+    async _validateAllPagesRead() {
+        if (this._pagesValidated) return;
+        this._pagesValidated = true;
+        const count = Math.max(1, this.props.pageCount || 0);
+        for (let page = 1; page <= count; page++) {
+            try {
+                await rpc('/contract/page/validate', {
+                    contract_id: this.props.contractId,
+                    access_token: this.props.accessToken,
+                    page_number: page,
+                    time_spent: 0,
+                });
+            } catch (e) {
+                console.warn('Page validation RPC failed for page', page, e);
+            }
         }
     }
 
@@ -297,10 +322,15 @@ publicWidget.registry.ContractSignaturePortal = publicWidget.Widget.extend({
         const props = {
             contractId: this.$el.data('contractId'),
             accessToken: this.$el.data('accessToken'),
+            pageCount: parseInt(this.$el.data('pageCount') || '0', 10) || 0,
         };
 
         const htmlPayloadEl = document.getElementById('contract-html-payload');
-        props.contractHtml = htmlPayloadEl ? htmlPayloadEl.innerHTML : "";
+        props.contractHtml = markup(htmlPayloadEl ? htmlPayloadEl.innerHTML : "");
+
+        // Effacer le spinner de chargement avant de monter l'app Owl
+        // (mount() ajoute au div sans supprimer le contenu existant)
+        this.el.innerHTML = '';
 
         // Template inline (xml``) — pas besoin de registre externe.
         this.app = new App(ContractSignatureViewer, { props });

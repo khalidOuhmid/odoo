@@ -23,6 +23,7 @@
         'views/chantier_views.xml',
         'views/sale_order_report.xml',
         'views/client_actions.xml',
+        'reports/sale_order_report_blg.xml',
     ],
     'assets': {
         'web.assets_backend': [

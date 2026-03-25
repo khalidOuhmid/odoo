@@ -73,6 +73,27 @@ class SaleOrder(models.Model):
             order.is_pdf_quote_builder_available = False
 
     # ============================================================
+    # DEVISE DU RAPPORT
+    # ============================================================
+
+    report_currency_id = fields.Many2one(
+        'res.currency',
+        string='Devise du rapport',
+        compute='_compute_report_currency_id',
+        store=False,
+    )
+
+    @api.depends('chantier_id', 'currency_id', 'company_id')
+    def _compute_report_currency_id(self):
+        for order in self:
+            # Priorité : devise chantier → devise société → devise commande
+            order.report_currency_id = (
+                order.chantier_id.currency_id
+                if order.chantier_id and order.chantier_id.currency_id
+                else order.company_id.currency_id or order.currency_id
+            )
+
+    # ============================================================
     # QUOTE REFERENCE AUTO-GENERATION (US-SAL-005)
     # Format: [CHANTIER_NAME]-DEV-[SEQUENCE]
     # ============================================================
@@ -351,7 +372,7 @@ class SaleOrder(models.Model):
             SaleOrderLine.create({
                 'order_id': self.id,
                 'display_type': 'line_section',
-                'name': f"=== {lot.code} - {lot.name} ===",
+                'name': f"{lot.code} — {lot.name}",
                 'sequence': sequence,
             })
             sequence += 1
@@ -366,7 +387,7 @@ class SaleOrder(models.Model):
             SaleOrderLine.create({
                 'order_id': self.id,
                 'display_type': 'line_section',
-                'name': "=== AUTRES ARTICLES ===",
+                'name': "Autres articles",
                 'sequence': sequence,
             })
             sequence += 1
