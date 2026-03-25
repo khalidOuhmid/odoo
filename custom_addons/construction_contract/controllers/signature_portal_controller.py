@@ -587,7 +587,7 @@ class SignaturePortalController(http.Controller):
             signature = contract.signature_id
             
             # Build audit summary
-            page_validations = contract.page_validation_ids.sorted('validated_at')
+            page_validations = contract.page_validation_ids.sorted('validated_date')
             
             values = {
                 'contract': contract,

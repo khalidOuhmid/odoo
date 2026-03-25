@@ -1010,7 +1010,6 @@ class ConstructionContract(models.Model):
                     # Force render the PO PDF
                     pdf_content, _pdf_type = self.env['ir.actions.report']._render_qweb_pdf('purchase.report_purchasequotation', po.ids)
                     if pdf_content:
-                        import base64
                         po_attachment = self.env['ir.attachment'].create({
                             'name': f"Bon_de_Commande_{po.name}.pdf",
                             'type': 'binary',
@@ -1092,7 +1091,7 @@ class ConstructionContract(models.Model):
                     contract.pdf_page_count = len(reader.pages)
 
                 except Exception as e:
-                    _logger.error(f"Error counting PDF pages for contract {contract.name}: {e}")
+                    _logger.error("Error counting PDF pages for contract %s: %s", contract.name, e)
                     contract.pdf_page_count = 0
             else:
                 contract.pdf_page_count = 0
@@ -1435,6 +1434,7 @@ class ConstructionContract(models.Model):
             'page_validation_log': False,
             'signature_proof_json': False,
             'access_token': self._generate_access_token(),
+            'signing_token': secrets.token_urlsafe(32),
         })
         # Invalide les validations de pages existantes
         self.page_validation_ids.unlink()
@@ -1473,6 +1473,12 @@ class ConstructionContract(models.Model):
         """
         self.ensure_one()
 
+        # LOG DIAGNOSTIC — début de génération
+        _logger.warning(
+            "=== BLG GEN START === contrat=%s state=%s",
+            self.name, self.state,
+        )
+
         # BUG D FIX: si le contrat était déjà signé/envoyé, réinitialiser pour nouvelle signature
         if self.state in ('signed', 'sent', 'in_progress'):
             self._reset_signature_data()
@@ -1481,7 +1487,7 @@ class ConstructionContract(models.Model):
         draft_pos = self.purchase_order_ids.filtered(lambda po: po.state in ['draft', 'sent', 'to approve', 'cancel'])
         if draft_pos:
             raise UserError(_("Impossible de générer le contrat. Les bons de commande suivants ne sont pas validés :\n%s") % '\n'.join(draft_pos.mapped('name')))
-            
+
         if not self.purchase_order_ids:
             raise UserError(_("Impossible de générer le contrat. Aucun bon de commande n'est lié à ce contrat."))
 
@@ -1506,7 +1512,17 @@ class ConstructionContract(models.Model):
 
             # Extract HTML content directly from grapesjs_html
             raw_html = template_node.grapesjs_html or ""
-            
+
+            # LOG DIAGNOSTIC — source HTML
+            _logger.warning(
+                "=== BLG GEN HTML_SRC === template=%s longueur=%s",
+                template_node.name, len(raw_html),
+            )
+            _logger.warning(
+                "=== BLG GEN HTML_RAW[:300] === %s",
+                raw_html[:300],
+            )
+
             # 3. Inject Context
             import jinja2
             context = self._get_contract_data_context()
@@ -1531,6 +1547,7 @@ class ConstructionContract(models.Model):
             rendered_html = html_module.unescape(rendered_html)
 
             chantier = self.chantier_id
+            subcontractor = self.subcontractor_id
             client_name = (chantier.client.name if chantier and chantier.client else "le Maître d'Ouvrage")
 
             _literal_replacements = {
@@ -1544,21 +1561,99 @@ class ConstructionContract(models.Model):
                 "MAITRE D'OUVRAGE": client_name,
                 "MAÎTRE D'OUVRAGE": client_name,
                 "Maître d'Ouvrage": client_name,
+                # Variantes encore encodées après unescape partiel (guillemets simples encodés en &#x27;)
+                "MAÎTRE D&#x27;OUVRAGE": client_name,
+                "MAITRE D&#x27;OUVRAGE": client_name,
                 'info@yourcompany.com': company.email or '',
                 '+1 555-555-5556': company.phone or '',
+                # SIRET placeholder si présent dans le template
+                'SIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIRET': (
+                    getattr(subcontractor, 'siret', None)
+                    or getattr(subcontractor, 'company_registry', None)
+                    or getattr(subcontractor, 'vat', None)
+                    or 'N/A'
+                ) if subcontractor else 'N/A',
             }
             for _old, _new in sorted(_literal_replacements.items(), key=lambda x: len(x[0]), reverse=True):
                 rendered_html = rendered_html.replace(_old, str(_new))
+
+            # --- CORRECTION 3 : remplace le tableau échéancier figé par le tableau dynamique
+            import re as _re
+            echeancier_html = self._get_billing_schedule_html()
+            # Cherche un tableau portant la classe blg-billing-schedule ou contenant "Échéancier"
+            # et remplace par le tableau calculé
+            rendered_html = _re.sub(
+                r'<table[^>]*class="[^"]*blg-billing-schedule[^"]*"[^>]*>.*?</table>',
+                echeancier_html,
+                rendered_html,
+                flags=_re.DOTALL | _re.IGNORECASE,
+            )
+
+            # --- CORRECTION 4 : injecte la signature BLG dans le bloc de signature contractant
+            # Source : company.logo (seul champ image disponible sur res.company dans ce contexte)
+            blg_signature_b64 = ''
+            # Cherche d'abord res.company.signature (champ natif Odoo), sinon logo
+            _sig_field_candidates = ['signature', 'logo']
+            for _field in _sig_field_candidates:
+                _val = getattr(company, _field, None)
+                if _val:
+                    blg_signature_b64 = _val.decode('utf-8') if isinstance(_val, bytes) else str(_val)
+                    _logger.warning("=== BLG GEN SIGNATURE_SRC === champ=%s longueur=%s", _field, len(blg_signature_b64))
+                    break
+
+            if blg_signature_b64:
+                # Injecte l'image JUSTE APRES l'ouverture du div.signature-box
+                # (indépendamment du contenu existant : whitespace, commentaire, vide)
+                sig_img = (
+                    '<img src="data:image/png;base64,'
+                    + blg_signature_b64
+                    + '" style="max-height:80px;max-width:180px;display:block;margin:4px 0" alt="Signature BLG"/>'
+                )
+                rendered_html = _re.sub(
+                    r'(<div[^>]*class="[^"]*signature-box[^"]*"[^>]*>)',
+                    r'\1' + sig_img,
+                    rendered_html,
+                    count=1,
+                    flags=_re.DOTALL,
+                )
+
+            # LOG DIAGNOSTIC — après substitutions
+            _logger.warning(
+                "=== BLG GEN HTML_PROCESSED[:300] === %s",
+                rendered_html[:300],
+            )
+            _logger.warning(
+                "=== BLG GEN YOURCOMPANY_REMAINING === %s",
+                'YOURCOMPANY' in rendered_html or 'YourCompany' in rendered_html,
+            )
+            _logger.warning(
+                "=== BLG GEN ENTITIES_REMAINING === %s",
+                '&#x27;' in rendered_html or '&amp;' in rendered_html,
+            )
+            _logger.warning(
+                "=== BLG GEN SIGNATURE_INJECTED === %s",
+                'data:image/png;base64' in rendered_html,
+            )
 
             # 4. Store and Update State
             self.write({
                 'contract_template_html': rendered_html,
                 'state': 'generated' if self.state == 'draft' else self.state
             })
-            
+
+            # CORRECTION 5 : synchronise les documents contractuels (CCTP, planning, BC)
+            # pour que le rapport QWeb puisse itérer sur contractual_document_ids
+            try:
+                self._sync_contractual_documents()
+            except Exception as _sync_err:
+                _logger.warning(
+                    "=== BLG GEN SYNC_DOCS_ERROR === contrat=%s erreur=%s",
+                    self.name, str(_sync_err),
+                )
+
             # 5. Return Action to open Editor (Directly)
             return self.action_open_contract_editor()
-            
+
         except Exception as e:
             raise UserError(_("Erreur lors de la génération du contrat: %s") % str(e))
 
@@ -1581,7 +1676,6 @@ class ConstructionContract(models.Model):
     def _generate_signing_token(self):
         """Generate unique signing token for portal access."""
         self.ensure_one()
-        import secrets
         self.signing_token = secrets.token_urlsafe(32)
 
     def action_generate_pdf_and_open_send_wizard(self):
@@ -1602,8 +1696,6 @@ class ConstructionContract(models.Model):
                 if self.state == 'draft':
                     self.state = 'generated'
         except Exception as e:
-            import logging
-            _logger = logging.getLogger(__name__)
             _logger.warning("PDF generation skipped: %s", str(e))
         
         # 2. Ensure signing token exists
@@ -1638,12 +1730,17 @@ class ConstructionContract(models.Model):
             raise UserError(_("Veuillez d'abord générer le contrat."))
 
         try:
-            _logger.info(f"[PDF] Starting QWeb PDF generation for contract {self.name}")
+            _logger.warning(
+                "=== BLG PDF START === contrat=%s state=%s html_len=%s",
+                self.name, self.state,
+                len(self.contract_template_html or ''),
+            )
+            _logger.info("[PDF] Starting QWeb PDF generation for contract %s", self.name)
             
             # 1. Generate PDF using native Odoo QWeb report
             pdf_content, _pdf_type = self.env['ir.actions.report']._render_qweb_pdf('construction_contract.action_report_contract', self.ids)
             
-            _logger.info(f"[PDF] Base contract generated: {len(pdf_content)/1024:.1f} KB")
+            _logger.info("[PDF] Base contract generated: %.1f KB", len(pdf_content) / 1024)
             
             # 2. Store Attachment
             attachment_name = f"Contrat_{self.name}_{self.subcontractor_id.name}.pdf".replace(' ', '_')
@@ -1948,8 +2045,8 @@ class ConstructionContract(models.Model):
         })
         
         _logger.info(
-            f"[SAP-PROOF] Generated proof file for contract {self.name}: "
-            f"{len(validation_logs)} page validations, signature={'Yes' if signature_data else 'No'}"
+            "[SAP-PROOF] Generated proof file for contract %s: %s page validations, signature=%s",
+            self.name, len(validation_logs), 'Yes' if signature_data else 'No',
         )
         
         return proof_json
@@ -1972,8 +2069,8 @@ class ConstructionContract(models.Model):
         try:
             # Step 1: Generate PDF if not exists
             if not self.pdf_document or not self.contract_template_html:
-                _logger.info(f"[WORKFLOW] Generating PDF for contract {self.name}")
-                self.action_generate_contract()
+                _logger.info("[WORKFLOW] Generating PDF for contract %s", self.name)
+                self.action_generate_contract_html()
                 self.action_generate_pdf()
             
             # Step 2: Merge with annexes
@@ -1987,8 +2084,8 @@ class ConstructionContract(models.Model):
                     'pdf_hash_before_signature': merge_result['hash_after'],
                 })
                 _logger.info(
-                    f"[WORKFLOW] Merged PDF for contract {self.name}: "
-                    f"{merge_result['section_count']} sections, {merge_result['total_pages']} pages"
+                    "[WORKFLOW] Merged PDF for contract %s: %s sections, %s pages",
+                    self.name, merge_result['section_count'], merge_result['total_pages'],
                 )
             
             # Step 3: Send for signature
@@ -2020,7 +2117,7 @@ class ConstructionContract(models.Model):
             }
             
         except Exception as e:
-            _logger.error(f"[WORKFLOW] Error in merge_and_send for contract {self.name}: {e}", exc_info=True)
+            _logger.error("[WORKFLOW] Error in merge_and_send for contract %s: %s", self.name, e, exc_info=True)
             raise UserError(_("Erreur lors du workflow: %s") % str(e))
 
     def action_mark_in_progress(self):
@@ -2135,8 +2232,6 @@ class ConstructionContract(models.Model):
             raise UserError(_("PDF regeneration failed. Please try again."))
         
         # 2. Calculate hash
-        import hashlib
-        import base64
         pdf_content = base64.b64decode(self.pdf_document)
         pdf_hash_after = hashlib.sha256(pdf_content).hexdigest()
         self.write({
@@ -2291,7 +2386,7 @@ class ConstructionContract(models.Model):
         self.ensure_one()
 
         if self.custom_html_override:
-            _logger.info(f"Using custom HTML override for contract {self.name}")
+            _logger.info("Using custom HTML override for contract %s", self.name)
             return self.custom_html_override
 
         renderer = self.env['construction.contract.template.renderer']
@@ -2522,9 +2617,9 @@ class ConstructionContract(models.Model):
             try:
                 contract.action_send_reminder()
             except Exception as e:
-                _logger.error(f"Failed to send reminder for contract {contract.name}: {e}")
+                _logger.error("Failed to send reminder for contract %s: %s", contract.name, e)
 
-        _logger.info(f"Sent reminders for {len(pending_contracts)} pending contracts")
+        _logger.info("Sent reminders for %s pending contracts", len(pending_contracts))
 
         return True
 
@@ -2562,7 +2657,7 @@ class ConstructionContract(models.Model):
             )
             contract.state = 'cancelled'
 
-        _logger.info(f"Cancelled {len(expired_contracts)} contracts with expired tokens")
+        _logger.info("Cancelled %s contracts with expired tokens", len(expired_contracts))
 
         return True
 

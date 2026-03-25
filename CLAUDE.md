@@ -36,14 +36,23 @@ docker-compose restart odoo_web   # Restart Odoo after code changes
 # Run a single test method
 ./odoo-bin -c debian/odoo.conf --test-enable -d odoo --stop-after-init -i construction_core --test-tags construction_core.TestConstructionChantier.test_stage_transition
 
-# In Docker
-docker-compose exec odoo_web odoo --test-enable -d odoo --stop-after-init -i construction_contract
+# In Docker (run from docker/ directory)
+cd docker/ && docker-compose exec odoo_web odoo --test-enable -d odoo --stop-after-init -i construction_contract
+```
+
+### After Each Code Change (Docker)
+
+**Always restart the container after modifying Python or XML files:**
+
+```bash
+cd docker/ && docker-compose restart odoo_web
 ```
 
 ### Linting
 
 ```bash
-flake8 custom_addons/          # Uses setup.cfg config (RST rules enabled)
+flake8 custom_addons/                          # Entire tree
+flake8 custom_addons/construction_contract/    # Single module
 ```
 
 ### Installing / Updating a Module
