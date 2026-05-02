@@ -79,8 +79,8 @@ export class ComboConfiguratorPopup extends Component {
     }
 
     async onClickProduct({ product, combo_item }, ev) {
-        if (product.isConfigurable() && product.product_template_variant_value_ids.length === 0) {
-            const payload = await this.pos.openConfigurator(product);
+        if (product.needToConfigure()) {
+            const payload = await this.pos.openConfigurator(product, { hideAlwaysVariants: true });
             if (payload) {
                 this.state.configuration[combo_item.id] = payload;
             } else {
@@ -115,5 +115,9 @@ export class ComboConfiguratorPopup extends Component {
     confirm() {
         this.props.getPayload(this.getSelectedComboItems());
         this.props.close();
+    }
+
+    getAvailableComboLines(combo) {
+        return combo.combo_item_ids.filter((line) => line.product_id?.active);
     }
 }

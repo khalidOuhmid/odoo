@@ -10,17 +10,31 @@ from odoo.http import request
 class SaleOrder(models.Model):
     _inherit = 'sale.order'
 
-    def set_delivery_line(self, carrier, amount):
-        """ Override of `website_sale` to recompute warehouse and fiscal position when a new
-        delivery method is not in-store anymore. """
-        in_store_orders = self.filtered(
+    def _compute_warehouse_id(self):
+        """ Override of `website_sale_stock` to avoid recomputations for in_store orders
+        when the warehouse was set by the pickup_location_data"""
+        in_store_orders_with_pickup_data = self.filtered(
             lambda so: (
-                so.carrier_id.delivery_type == 'in_store' and carrier.delivery_type != 'in_store'
+                so.carrier_id.delivery_type == 'in_store' and so.pickup_location_data
             )
         )
-        in_store_orders._compute_warehouse_id()
-        in_store_orders._compute_fiscal_position_id()
-        return super().set_delivery_line(carrier, amount)
+        super(SaleOrder, self - in_store_orders_with_pickup_data)._compute_warehouse_id()
+        for order in in_store_orders_with_pickup_data:
+            order.warehouse_id = order.pickup_location_data['id']
+
+    def _set_delivery_method(self, delivery_method, rate=None):
+        """ Override of `website_sale` to recompute warehouse and fiscal position when a new
+        delivery method is not in-store anymore. """
+
+        self.ensure_one()
+        was_in_store_order = (
+            self.carrier_id.delivery_type == 'in_store'
+            and delivery_method.delivery_type != 'in_store'
+        )
+        super()._set_delivery_method(delivery_method, rate=rate)
+        if was_in_store_order:
+            self._compute_warehouse_id()
+            self._compute_fiscal_position_id()
 
     def _set_pickup_location(self, pickup_location_data):
         """ Override `website_sale` to set the pickup location for in-store delivery methods.

@@ -99,13 +99,18 @@ class Meeting(models.Model):
         return res
 
     def _check_modify_event_permission(self, values):
-        # Check if event modification attempt by attendee is valid to avoid duplicate events creation.
-        for event in self:
-            # Edge case: when restarting the synchronization, guests can write 'need_sync=True' on events.
-            google_sync_restart = values.get('need_sync') and len(values)
-            if not google_sync_restart and (event.guests_readonly and self.env.user.id != event.user_id.id):
-                raise ValidationError(_("The following event can only be updated by the organizer "
-                                        "according to the event permissions set on Google Calendar."))
+        """ Check if event modification attempt by attendee is valid to avoid duplicate events creation. """
+        # Edge case: when restarting the synchronization, guests can write 'need_sync=True' on events.
+        google_sync_restart = values.get('need_sync') and len(values)
+        # Edge case 2: when resetting an account, we must be able to erase the event's google_id.
+        skip_event_permission = self.env.context.get('skip_event_permission', False)
+        if google_sync_restart or skip_event_permission:
+            return
+        if any(event.guests_readonly and self.env.user.id != event.user_id.id for event in self):
+            raise ValidationError(
+                _("The following event can only be updated by the organizer "
+                "according to the event permissions set on Google Calendar.")
+            )
 
     def _skip_send_mail_status_update(self):
         """If a google calendar is not syncing with the user, don't send a mail."""
@@ -285,16 +290,21 @@ class Meeting(models.Model):
         super(Meeting, self).action_mass_archive(recurrence_update_setting)
 
     def _google_values(self):
+        # In Google API, all-day events must have their 'dateTime' information set
+        # as null and timed events must have their 'date' information set as null.
+        # This is mandatory for allowing changing timed events to all-day and vice versa.
+        start = {'date': None, 'dateTime': None}
+        end = {'date': None, 'dateTime': None}
         if self.allday:
             # For all-day events, 'dateTime' must be set to None to indicate that it's an all-day event.
             # Otherwise, if both 'date' and 'dateTime' are set, Google may not recognize it as an all-day event.
-            start = {'date': self.start_date.isoformat(), 'dateTime': None}
-            end = {'date': (self.stop_date + relativedelta(days=1)).isoformat(), 'dateTime': None}
+            start['date'] = self.start_date.isoformat()
+            end['date'] = (self.stop_date + relativedelta(days=1)).isoformat()
         else:
             # For timed events, 'date' must be set to None to indicate that it's not an all-day event.
             # Otherwise, if both 'date' and 'dateTime' are set, Google may not recognize it as a timed event
-            start = {'dateTime': pytz.utc.localize(self.start).isoformat(), 'date': None}
-            end = {'dateTime': pytz.utc.localize(self.stop).isoformat(), 'date': None}
+            start['dateTime'] = pytz.utc.localize(self.start).isoformat()
+            end['dateTime'] = pytz.utc.localize(self.stop).isoformat()
         reminders = [{
             'method': "email" if alarm.alarm_type == "email" else "popup",
             'minutes': alarm.duration_minutes
@@ -370,3 +380,8 @@ class Meeting(models.Model):
         if self.user_id and self.user_id.sudo().google_calendar_token:
             return self.user_id
         return self.env.user
+
+    def _is_google_insertion_blocked(self, sender_user):
+        self.ensure_one()
+        has_different_owner = self.user_id and self.user_id != sender_user
+        return has_different_owner

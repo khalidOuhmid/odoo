@@ -53,7 +53,7 @@
                             <field name="name"/>
                             <field name="unit_amount" string="Time Spent" widget="timesheet_uom" decoration-danger="unit_amount &gt; 24"/>
                         </list>
-                        <kanban class="o_kanban_mobile">
+                        <kanban class="o_kanban_mobile" action="action_open_timesheet_view_portal" type="object">
                             <templates>
                                 <t t-name="card" class="row g-0">
                                     <field name="employee_id" class="col-6 fw-bold"/>
@@ -93,7 +93,7 @@
                                 <label class="fw-bold text-danger" for="remaining_hours" string="Days Remaining"
                                        invisible="allocated_hours == 0.0 or not encode_uom_in_days or remaining_hours &gt;= 0"/>
                             </span>
-                            <field name="remaining_hours" widget="timesheet_uom" class="oe_subtotal_footer_separator"
+                            <field name="remaining_hours" widget="timesheet_uom" class="oe_subtotal_footer_separator" decoration-danger="remaining_hours &lt; 0"
                                   invisible="allocated_hours == 0.0" nolabel="1"/>
                         </group>
                     </group>

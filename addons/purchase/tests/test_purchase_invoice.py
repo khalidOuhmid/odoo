@@ -450,7 +450,8 @@ class TestPurchaseToInvoice(TestPurchaseToInvoiceCommon):
         """
         Test whether, when an analytic plan is set within the scope (applicability) of purchase
         and with an account prefix set in the distribution model,
-        the default analytic account is correctly set during the conversion from po to invoice
+        the default analytic account is correctly set during the conversion from po to invoice.
+        An additional analytic account set manually in another plan is also passed to the invoice.
         """
         self.env.user.groups_id += self.env.ref('analytic.group_analytic_accounting')
         analytic_plan_default = self.env['account.analytic.plan'].create({
@@ -461,6 +462,10 @@ class TestPurchaseToInvoice(TestPurchaseToInvoiceCommon):
             })]
         })
         analytic_account_default = self.env['account.analytic.account'].create({'name': 'default', 'plan_id': analytic_plan_default.id})
+        # Create an additional analytic account in another plan
+        analytic_plan_2 = self.env['account.analytic.plan'].create({'name': 'Plan Test'})
+        analytic_account_2 = self.env['account.analytic.account'].create({'name': 'manual', 'plan_id': analytic_plan_2.id})
+        analytic_distribution_manual = {str(analytic_account_2.id): 100}
 
         analytic_distribution_model = self.env['account.analytic.distribution.model'].create({
             'account_prefix': '600',
@@ -475,11 +480,14 @@ class TestPurchaseToInvoice(TestPurchaseToInvoiceCommon):
             'product_id': self.product_a.id
         })
         self.assertFalse(po.order_line.analytic_distribution, "There should be no analytic set.")
+        # Add another analytic account to the line. It should be passed to the invoice
+        po.order_line.analytic_distribution = analytic_distribution_manual
         po.button_confirm()
         po.order_line.qty_received = 1
         po.action_create_invoice()
-        self.assertRecordValues(po.invoice_ids.invoice_line_ids,
-                                [{'analytic_distribution': analytic_distribution_model.analytic_distribution}])
+        self.assertRecordValues(po.invoice_ids.invoice_line_ids, [{
+            'analytic_distribution': analytic_distribution_model.analytic_distribution | analytic_distribution_manual
+        }])
 
     def test_sequence_invoice_lines_from_multiple_purchases(self):
         """Test if the invoice lines are sequenced by purchase order when creating an invoice
@@ -757,10 +765,10 @@ class TestPurchaseToInvoice(TestPurchaseToInvoiceCommon):
         inv = po.invoice_ids
 
         # Check the invoice line names
-        self.assertEqual(inv.invoice_line_ids[0].name, f"{pol_prod_no_redundancy.product_id.display_name} {pol_prod_no_redundancy.name}", "When the description doesn't contain the product name, it should be added to the invoice line name")
+        self.assertEqual(inv.invoice_line_ids[0].name, f"{pol_prod_no_redundancy.product_id.display_name}\n{pol_prod_no_redundancy.name}", "When the description doesn't contain the product name, it should be added to the invoice line name")
         self.assertEqual(inv.invoice_line_ids[1].name, f"{pol_prod_same.name}", "When the description is the product name, the invoice line name should only be the description")
         self.assertEqual(inv.invoice_line_ids[2].name, f"{pol_prod_product_in_name.name}", "When description contains the product name, the invoice line name should only be the description")
-        self.assertEqual(inv.invoice_line_ids[3].name, f"{pol_prod_name_in_product.product_id.display_name} {pol_prod_name_in_product.name}", "When the product name contains the description, the invoice line name should be the product name and the description")
+        self.assertEqual(inv.invoice_line_ids[3].name, f"{pol_prod_name_in_product.product_id.display_name}\n{pol_prod_name_in_product.name}", "When the product name contains the description, the invoice line name should be the product name and the description")
 
 
 @tagged('post_install', '-at_install')
@@ -819,6 +827,35 @@ class TestInvoicePurchaseMatch(TestPurchaseToInvoiceCommon):
         """
         po = self.init_purchase(confirm=True, products=[self.product_order])
         invoice = self.init_invoice('in_invoice', partner=self.partner_a, products=[self.product_order, self.service_order])
+
+        invoice._find_and_set_purchase_orders(
+            ['my_match_reference'], invoice.partner_id.id, invoice.amount_total, from_ocr=False)
+
+        self.assertTrue(invoice.id in po.invoice_ids.ids)
+        invoice_lines = invoice.line_ids.filtered(lambda l: l.price_unit)
+        self.assertEqual(len(invoice_lines), 2)
+        for line in po.order_line:
+            self.assertTrue(line in invoice_lines.purchase_line_id)
+
+    def test_subset_match_from_edi_partial_po_within_precision(self):
+        """A line of the invoice totally matches a 1-line purchase order despite
+        a slight unit price difference due to decimal precision issues
+        """
+        po = self.init_purchase(confirm=True, products=[self.product_order])
+        invoice = self.init_invoice('in_invoice', partner=self.partner_a, products=[self.product_order, self.service_order])
+
+        # Simulate a slight difference in unit_price due to decimal precision issues
+        # for example when when receiving an invoice in XML or OCR
+        po_line = po.order_line[0]
+        invoice_line = invoice.line_ids[0]
+        precision_error = 0.0000001
+        query_string = f"""
+            UPDATE account_move_line
+            SET price_unit = {po_line.price_unit + precision_error}
+            WHERE id = {invoice_line.id}
+        """
+        invoice_line.env.cr.execute(query_string)
+        invoice_line.invalidate_model(['price_unit'], flush=False)
 
         invoice._find_and_set_purchase_orders(
             ['my_match_reference'], invoice.partner_id.id, invoice.amount_total, from_ocr=False)
@@ -1176,7 +1213,7 @@ class TestInvoicePurchaseMatch(TestPurchaseToInvoiceCommon):
                         move_form.ref = '111' if w_bill_ref == 'w_bill_ref' else ''
                         move_form.payment_reference = '222' if w_payment_reference == 'w_payment_reference' else ''
                         move_form.purchase_vendor_bill_id = self.env['purchase.bill.union'].browse(-purchase_order.id).exists()
-                        payment_reference = move_form._values['payment_reference']
+                        payment_reference = move_form._values['payment_reference'] or ''
                         self.assertEqual(payment_reference, expected_value, "The payment reference should be %s" % expected_value)
 
     def test_invoice_user_id_on_bill(self):
@@ -1218,3 +1255,56 @@ class TestInvoicePurchaseMatch(TestPurchaseToInvoiceCommon):
         move_form.purchase_vendor_bill_id = self.env['purchase.bill.union'].browse(-po2.id)
         invoice2 = move_form.save()
         self.assertFalse(invoice2.invoice_user_id)
+
+    def test_link_bill_origin_to_purchase_orders(self):
+        """
+        Test if the corresponding purchase orders are linked if the bill when there is multiple origin purchase orders
+        """
+        po = self.init_purchase(confirm=True, products=[self.product_order])
+        po_2 = self.init_purchase(confirm=True, products=[self.service_order])
+
+        bill = self.init_invoice('in_invoice', partner=self.partner_a, products=[self.product_order, self.service_order])
+        bill.invoice_origin = po.name + ', ' + po_2.name
+
+        bill._link_bill_origin_to_purchase_orders()
+
+        self.assertTrue(bill.id in po.invoice_ids.ids)
+        self.assertTrue(bill.id in po_2.invoice_ids.ids)
+        self.assertEqual(bill.amount_total, po.amount_total + po_2.amount_total)
+
+    def test_link_bill_origin_to_purchase_orders_trailing_comma(self):
+        """Trailing comma in bill reference does not match a PO with an empty reference"""
+        po = self.init_purchase(confirm=True, products=[self.product_order])
+        po.partner_ref = False
+        bill = self.init_invoice('in_invoice', partner=self.partner_b, products=[self.product_order])
+        bill.invoice_origin = "OTHER PO, "
+        bill._link_bill_origin_to_purchase_orders()
+        self.assertNotIn(bill, po.invoice_ids)
+
+    def test_po_matching_credit_note(self):
+        po = self.init_purchase(partner=self.partner_a, products=[self.product_deliver])
+        pol = po.order_line
+        pol.product_qty = 3
+        po.button_confirm()
+
+        bill = self.init_invoice(move_type='in_invoice', partner=self.partner_a, products=[self.product_deliver])
+        bill.invoice_line_ids.quantity = 3
+
+        match_lines = self.env['purchase.bill.line.match'].search([('partner_id', '=', self.partner_a.id)])
+        match_lines.action_match_lines()
+
+        bill.action_post()
+        pol.qty_received = 2
+
+        credit_note = self.init_invoice(move_type='in_refund', partner=self.partner_a, amounts=[0])
+
+        self.env['purchase.order.line'].flush_model()
+        match_lines = self.env['purchase.bill.line.match'].search([('partner_id', '=', self.partner_a.id)])
+        self.assertEqual(match_lines.pol_id, pol)
+        self.assertEqual(match_lines.aml_id, credit_note.invoice_line_ids)
+
+        match_lines.action_match_lines()
+        self.assertRecordValues(credit_note.invoice_line_ids, [{
+            'quantity': 1,
+            'product_id': pol.product_id.id,
+        }])

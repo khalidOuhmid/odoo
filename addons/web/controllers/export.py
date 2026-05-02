@@ -228,7 +228,7 @@ class ExportXlsxWriter:
                 # fails note that you can't export
                 cell_value = cell_value.decode()
             except UnicodeDecodeError:
-                raise UserError(request.env._("Binary fields can not be exported to Excel unless their content is base64-encoded. That does not seem to be the case for %s.", self.field_names)[column]) from None
+                raise UserError(request.env._("Binary fields can not be exported to Excel unless their content is base64-encoded. That does not seem to be the case for %s.", self.columns_headers[column])) from None
         elif isinstance(cell_value, (list, tuple, dict)):
             cell_value = str(cell_value)
 
@@ -564,7 +564,7 @@ class ExportFormat(object):
 
         groupby = params.get('groupby')
         if not import_compat and groupby:
-            groupby_type = [Model._fields[x.split(':')[0]].type for x in groupby]
+            groupby_type = [Model._fields[x.split(':', 1)[0].split('.', 1)[0]].type for x in groupby]
             domain = [('id', 'in', ids)] if ids else domain
             read_context = Model.env.context
             if ids:

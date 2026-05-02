@@ -114,14 +114,14 @@ class TestMassMailValues(MassMailCommon):
                             <!--[if mso]>
                                 <img src="data:image/png;base64,{BASE_64_STRING}9">Fake url, in text: img src="data:image/png;base64,{BASE_64_STRING}"
                                 Fake url, in text: img src="data:image/png;base64,{BASE_64_STRING}"
-                                <img src="data:image/jpg;base64,{BASE_64_STRING}10">
-                                <div style='color: red; background-image:url("data:image/jpg;base64,{BASE_64_STRING}11"); display: block;'>Fake url, in text: style="background-image:url('data:image/png;base64,{BASE_64_STRING}');"
+                                <img src="data:image/jpg;base64,{BASE_64_STRING}A">
+                                <div style='color: red; background-image:url("data:image/jpg;base64,{BASE_64_STRING}B"); display: block;'>Fake url, in text: style="background-image:url('data:image/png;base64,{BASE_64_STRING}');"
                                 Fake url, in text: style="background-image:url('data:image/png;base64,{BASE_64_STRING}');"</div>
-                                <div style="color: red; background-image:url('data:image/jpg;base64,{BASE_64_STRING}12'); display: block;"/>
-                                <div style="color: red; background-image:url(&quot;data:image/jpg;base64,{BASE_64_STRING}13&quot;); display: block;"/>
-                                <div style="color: red; background-image:url(&#34;data:image/jpg;base64,{BASE_64_STRING}14&#34;); display: block;"/>
-                                <div style="color: red; background-image:url(data:image/jpg;base64,{BASE_64_STRING}15); display: block;"/>
-                                <div style="color: red; background-image: url(data:image/jpg;base64,{BASE_64_STRING}16); background: url('data:image/jpg;base64,{BASE_64_STRING}17'); display: block;"/>
+                                <div style="color: red; background-image:url('data:image/jpg;base64,{BASE_64_STRING}C'); display: block;"/>
+                                <div style="color: red; background-image:url(&quot;data:image/jpg;base64,{BASE_64_STRING}D&quot;); display: block;"/>
+                                <div style="color: red; background-image:url(&#34;data:image/jpg;base64,{BASE_64_STRING}E&#34;); display: block;"/>
+                                <div style="color: red; background-image:url(data:image/jpg;base64,{BASE_64_STRING}F); display: block;"/>
+                                <div style="color: red; background-image: url(data:image/jpg;base64,{BASE_64_STRING}G); background: url('data:image/jpg;base64,{BASE_64_STRING}H'); display: block;"/>
                             <![endif]-->
                             <img src="data:image/png;base64,{BASE_64_STRING}0">
                         </section>
@@ -553,6 +553,23 @@ class TestMassMailUTM(MassMailCommon):
         mailing_0.subject = 'First subject'
         self.assertEqual(mailing_0.name, 'First subject (Mass Mailing created on 2022-01-02)',
             msg='The name should be back to first one')
+
+    def test_mailing_create_with_context(self):
+        """ Test that the default_name provided via context is ignored to prevent constraint violations."""
+        mailing_1, mailing_2 = self.env["mailing.mailing"].create([
+            {
+                "subject": "First subject",
+                "name": "Mailing",
+            },
+            {
+                "subject": "Second subject",
+                "name": "Mailing",
+            },
+        ])
+        self.assertEqual(mailing_1.name, "Mailing")
+        self.assertEqual(mailing_2.name, "Mailing [2]")
+        mailing_3 = self.env["mailing.mailing"].with_context({"default_name": "Mailing"}).create({"subject": "Third subject"})
+        self.assertEqual(mailing_3.name, "Mailing [3]")
 
 
 @tagged('mass_mailing')

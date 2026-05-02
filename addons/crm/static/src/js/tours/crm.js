@@ -36,8 +36,10 @@ registry.category("web_tour.tours").add('crm_tour', {
     run: "edit Brandon Freeman",
 }, {
     isActive: ["auto"],
-    trigger: ".ui-menu-item > a",
+    trigger: ".ui-menu-item > a:contains('Brandon Freeman')",
     run: "click",
+}, {
+    trigger: ".o_kanban_quick_create .o_field_widget[name='name'] input:value('Brandon Freeman')",
 }, {
     trigger: ".o_kanban_quick_create .o_kanban_add",
     content: markup(_t("Now, <b>add your Opportunity</b> to your Pipeline.")),
@@ -48,7 +50,7 @@ registry.category("web_tour.tours").add('crm_tour', {
     trigger: ".o_opportunity_kanban",
 },
 {
-    trigger: ".o_opportunity_kanban .o_kanban_group:first-child .o_kanban_record:last-of-type",
+    trigger: ".o_opportunity_kanban:not(:has(.o_view_sample_data)) .o_kanban_group .o_kanban_record:last-of-type",
     content: markup(_t("<b>Drag &amp; drop opportunities</b> between columns as you progress in your sales cycle.")),
     tooltipPosition: "right",
     run: "drag_and_drop(.o_opportunity_kanban .o_kanban_group:eq(2))",

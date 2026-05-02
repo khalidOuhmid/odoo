@@ -45,7 +45,7 @@ class AccountMove(models.Model):
         # EXTENDS 'account'
         super()._compute_show_reset_to_draft_button()
         for move in self:
-            if move.l10n_ro_edi_state in ('invoice_sent', 'invoice_validated'):
+            if move.move_type in ('out_invoice', 'out_refund') and move.l10n_ro_edi_state in ('invoice_sent', 'invoice_validated'):
                 move.show_reset_to_draft_button = False
 
     ################################################################################
@@ -57,8 +57,9 @@ class AccountMove(models.Model):
         self.ensure_one()
         res_model = res_model or self._name
         res_id = res_id or self.id
+        name = self.name or ""
         return {
-            'name': f"ciusro_signature_{self.name.replace('/', '_')}.xml",
+            'name': f"ciusro_signature_{name.replace('/', '_')}.xml",
             'res_model': res_model,
             'res_id': res_id,
             'raw': raw,

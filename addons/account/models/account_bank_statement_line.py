@@ -492,29 +492,21 @@ class AccountBankStatementLine(models.Model):
 
     def _find_or_create_bank_account(self):
         self.ensure_one()
-
-        # There is a sql constraint on res.partner.bank ensuring an unique pair <partner, account number>.
-        # Since it's not dependent of the company, we need to search on others company too to avoid the creation
-        # of an extra res.partner.bank raising an error coming from this constraint.
-        # However, at the end, we need to filter out the results to not trigger the check_company when trying to
-        # assign a res.partner.bank owned by another company.
-        bank_account = self.env['res.partner.bank'].sudo().with_context(active_test=False).search([
-            ('acc_number', '=', self.account_number),
-            ('partner_id', '=', self.partner_id.id),
-        ])
-        if not bank_account and not str2bool(
-                self.env['ir.config_parameter'].sudo().get_param("account.skip_create_bank_account_on_reconcile")
-        ):
-            bank_account = self.env['res.partner.bank'].create({
-                'acc_number': self.account_number,
-                'partner_id': self.partner_id.id,
-                'journal_id': None,
-            })
-        return bank_account.filtered(lambda x: x.company_id.id in (False, self.company_id.id))
+        if str2bool(self.env['ir.config_parameter'].sudo().get_param("account.skip_create_bank_account_on_reconcile")):
+            return self.env['res.partner.bank'].search([
+                ('acc_number', '=', self.account_number),
+                ('partner_id', '=', self.partner_id.id),
+                ('company_id', 'in', [False, self.company_id.id]),
+            ], limit=1)
+        return self.env['res.partner.bank']._find_or_create_bank_account(
+            account_number=self.account_number,
+            partner=self.partner_id,
+            company=self.company_id,
+        )
 
     def _get_default_amls_matching_domain(self):
         self.ensure_one()
-        all_reconcilable_account_ids = self.env['account.account'].search([
+        all_reconcilable_account_ids = self.env['account.account'].sudo().search([
             ("company_ids", "child_of", self.company_id.root_id.id),
             ('reconcile', '=', True),
         ]).ids
@@ -522,7 +514,7 @@ class AccountBankStatementLine(models.Model):
             # Base domain.
             ('display_type', 'not in', ('line_section', 'line_note')),
             ('parent_state', '=', 'posted'),
-            ('company_id', 'child_of', self.company_id.id),  # allow to match invoices from same or children companies to be consistant with what's shown in the interface
+            ('company_id', 'in', self.env['res.company'].search([('id', 'child_of', self.company_id.id)]).ids),  # allow to match invoices from same or children companies to be consistant with what's shown in the interface
             # Reconciliation domain.
             ('reconciled', '=', False),
             # Domain to use the account_move_line__unreconciled_index
@@ -819,7 +811,8 @@ class AccountBankStatementLine(models.Model):
         for st_line in self.with_context(skip_account_move_synchronization=True):
             liquidity_lines, suspense_lines, other_lines = st_line._seek_for_lines()
             journal = st_line.journal_id
-            company_currency = journal.company_id.currency_id
+            # bypassing access rights restrictions for branch-specific users in a branch company environment.
+            company_currency = journal.company_id.sudo().currency_id
             journal_currency = journal.currency_id if journal.currency_id != company_currency else False
 
             line_vals_list = st_line._prepare_move_line_default_vals()

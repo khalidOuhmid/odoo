@@ -13,12 +13,12 @@ from zeep.wsdl import Document
 class TestStructure(TransactionCase):
     @classmethod
     def setUpClass(cls):
-        def check_vies(vat_number):
-            return {'valid': vat_number == 'BE0477472701'}
+        def _check_vies_iap(record):
+            return "valid" if record.vat == 'BE0477472701' else "unassigned"
 
         super().setUpClass()
         cls.env.user.company_id.vat_check_vies = False
-        cls._vies_check_func = check_vies
+        cls._check_vies_iap = _check_vies_iap
 
     def test_peru_ruc_format(self):
         """Only values that has the length of 11 will be checked as RUC, that's what we are proving. The second part
@@ -52,7 +52,7 @@ class TestStructure(TransactionCase):
         })
 
         # reactivate it and correct the vat number
-        with patch('odoo.addons.base_vat.models.res_partner.check_vies', type(self)._vies_check_func):
+        with patch('odoo.addons.base_vat.models.res_partner.ResPartner._check_vies_iap', TestStructure._check_vies_iap):
             self.env.user.company_id.vat_check_vies = True
             with self.assertRaises(ValidationError), self.env.cr.savepoint():
                 company.vat = "BE0987654321"  # VIES refused, don't fallback on other check
@@ -131,6 +131,80 @@ class TestStructure(TransactionCase):
             test_partner.vat = "21.55217500.17"
         with self.assertRaisesRegex(ValidationError, msg):
             test_partner.vat = "2155 ABC 21750017"
+
+    def test_vat_vn(self):
+        test_partner = self.env['res.partner'].create({'name': "DuongDepTrai", 'country_id': self.env.ref('base.vn').id})
+        # Valid vn vat
+        test_partner.vat = "000012345679"  # individual
+        test_partner.vat = "0123457890"  # enterprise
+        test_partner.vat = "0123457890-111"  # branch
+
+        # Test invalid VAT (should raise a ValidationError)
+        msg = "The VAT number.*does not seem to be valid"
+        with self.assertRaisesRegex(ValidationError, msg):
+            test_partner.write({'vat': '00001234567912'})
+        with self.assertRaisesRegex(ValidationError, msg):
+            test_partner.write({'vat': '10123457890'})
+        with self.assertRaisesRegex(ValidationError, msg):
+            test_partner.write({'vat': '0123457890-11134'})
+
+    def test_vat_tw(self):
+        test_partner = self.env["res.partner"].create({"name": "TW Company", "country_id": self.env.ref("base.tw").id})
+
+        for ubn in ['88117254', '12345601', '90183275']:
+            test_partner.vat = ubn
+
+        for ubn in ['88117250', '12345600', '90183272', '1234567A']:
+            with self.assertRaises(ValidationError):
+                test_partner.vat = ubn
+
+    def test_vat_with_el_prefix(self):
+        """Ensure VAT numbers starting with 'EL' are validated correctly as Greek VATs"""
+        partner = self.env['res.partner'].create({
+            'name': 'Greek Company EL',
+            'country_id': self.env.ref('base.gr').id,
+            'vat': 'EL033910442',
+        })
+        vat_country, vat_id_no = partner._split_vat(partner.vat)
+        vat_is_valid = partner.simple_vat_check(vat_country, vat_id_no)
+
+        self.assertTrue(
+            vat_is_valid,
+            f"Expected EL-prefixed VAT ({partner.vat}) to be recognized as valid Greek VAT, "
+            f"but simple_vat_check({vat_country}, {vat_id_no}) returned False."
+        )
+
+    def test_vat_th(self):
+        test_partner = self.env["res.partner"].create({
+            "name": "TH Company",
+            "country_id": self.env.ref("base.th").id,
+        })
+
+        for tin in ['1234545678781', '1-2345-45678-78-1', '0-99-4-000-61772-1']:
+            test_partner.vat = tin
+
+        for tin in ['1234545678782', '1-2345-45678-78-2', '0-99-4-000-61772-2', 'X-99-4-000-61772-1']:
+            with self.assertRaises(ValidationError):
+                test_partner.vat = tin
+
+    def test_vat_do(self):
+        test_partner = self.env["res.partner"].create({"name": "DO Company", "country_id": self.env.ref("base.do").id})
+        # Valid do vat
+        test_partner.write({"vat": "152-0000706-8"})
+        test_partner.write({"vat": "4-01-00707-1"})
+        # Test invalid VAT (should raise a ValidationError)
+        msg = "The VAT number.*does not seem to be valid"
+        with self.assertRaisesRegex(ValidationError, msg):
+            test_partner.write({'vat': '152-0000706-7'})
+        with self.assertRaisesRegex(ValidationError, msg):
+            test_partner.write({'vat': '10123457890'})
+        with self.assertRaisesRegex(ValidationError, msg):
+            test_partner.write({'vat': '152-0000706-99'})
+
+    def test_revised_nri_gstin_format(self):
+        """Test valid NRI GSTIN number is accepted"""
+        in_partner = self.env["res.partner"].create({"name": "IN Company", "country_id": self.env.ref("base.in").id})
+        in_partner.vat = "9922JPN29001OSU"
 
 
 @tagged('-standard', 'external')

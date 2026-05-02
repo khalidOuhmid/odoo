@@ -2,8 +2,8 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
 from odoo import Command
-from odoo.exceptions import UserError
-from odoo.tests import tagged, common, Form
+from odoo.exceptions import AccessError, UserError
+from odoo.tests import tagged, common, Form, HttpCase
 from odoo.tools import float_compare, float_is_zero
 
 
@@ -910,6 +910,9 @@ class TestRepair(common.TransactionCase):
             'quantity': 1.0,
         })]
         self.assertEqual(repair_order.lot_id, sn_1)
+        # duplicate the move and check that the link to the repair order is not copied
+        copied_move = repair_order.move_ids.copy()
+        self.assertFalse(copied_move.repair_id)
 
     def test_missing_production_location_raises_user_error(self):
         """
@@ -937,3 +940,75 @@ class TestRepair(common.TransactionCase):
         self.assertEqual(self.product_consu_order_repair.type, 'consu')
         self.assertTrue(self.product_consu_order_repair.filtered_domain(domain))
         self.assertFalse(self.product_service_order_repair.filtered_domain(domain))
+
+    def test_copy_repair_product_with_different_groups(self):
+        """
+            This test checks if the product can be copied with users that don't have access on the Inventory app
+        """
+        product_templ = self.env['product.template'].create({
+            'name': "Repair Consumable",
+            'type': 'consu',
+            'create_repair': True,
+        })
+        mitchell_user = self.env['res.users'].create({
+            'name': "Mitchell not Admin",
+            'login': "m_user",
+            'email': "m@user.com",
+            'groups_id': [Command.set(self.env.ref('sales_team.group_sale_manager').ids)],
+        })
+        product_templ.invalidate_recordset(['create_repair'])
+        with self.assertRaises(AccessError):
+            product_templ.with_user(mitchell_user).create_repair
+        copied_without_access = product_templ.with_user(mitchell_user).copy()
+        mitchell_user.write({
+            'groups_id': [Command.link(self.env.ref('stock.group_stock_user').id)]
+        })
+        self.assertFalse(copied_without_access.create_repair)
+        copied_with_access = product_templ.copy().with_user(mitchell_user)
+        self.assertTrue(copied_with_access.create_repair)
+
+    def test_sale_order_line_discount_on_repair_order(self):
+        """
+        Test that the discount on the sale order line created from a repair order is correctly set.
+        """
+        repair_order = self.repair0
+        repair_order.action_create_sale_order()
+        sale_line = repair_order.move_ids.sale_line_id
+        sale_line.discount = 15
+        repair_order.action_validate()
+        repair_order.action_repair_start()
+        repair_order.action_repair_end()
+        self.assertEqual(sale_line.discount, 15)
+
+    def test_delete_repair_resets_outgoing_stock_moves(self):
+        """
+        Test that deleting draft repair order clears its outgoing stock quantities and
+        related moves are unlinked
+        """
+        repair = self._create_simple_repair_order()
+        self._create_simple_part_move(repair.id, 1.0)
+        moves = repair.move_ids
+        self.assertEqual(repair.state, 'draft')
+        self.assertEqual(moves.state, 'draft')
+        repair.unlink()
+        self.assertFalse(repair.exists())
+        self.assertFalse(moves.exists())
+
+
+@tagged('post_install', '-at_install')
+class TestRepairHttp(HttpCase):
+
+    def test_repair_without_product_in_parts(self):
+        """Test that setting and unsetting a product in repair line triggers has_uncomplete_moves compute correctly."""
+        self.env['res.partner'].create({'name': 'A Partner'})
+        product = self.env['product.product'].create({'name': 'A Product', 'default_code': '1234'})
+        repair = self.env['repair.order'].create({
+            'move_ids': [Command.create({
+                'product_id': product.id,
+                'product_uom_qty': 1.0,
+                'repair_line_type': 'add',
+            })],
+        })
+
+        self.start_tour(f"/odoo/repairs/{repair.id}", "test_repair_without_product_in_parts", login='admin')
+        self.assertTrue(repair.has_uncomplete_moves)

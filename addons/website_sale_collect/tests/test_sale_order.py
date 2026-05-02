@@ -1,5 +1,7 @@
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+import json
+
 from odoo.fields import Command
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
@@ -19,13 +21,26 @@ class TestSaleOrder(ClickAndCollectCommon):
         self.warehouse_2 = self._create_warehouse()
         self.website.warehouse_id = self.warehouse
         so = self._create_in_store_delivery_order(warehouse_id=self.warehouse_2.id)
-        so.set_delivery_line(self.free_delivery, 0)
+        so._set_delivery_method(self.free_delivery)
         self.assertEqual(so.warehouse_id, self.warehouse)
 
     def test_setting_pickup_location_assigns_warehouse(self):
         so = self._create_in_store_delivery_order()
         so._set_pickup_location('{"id":' + str(self.warehouse.id) + '}')
         self.assertEqual(so.warehouse_id, self.warehouse)
+
+    def test_warehouse_is_not_reset_on_public_user_checkout(self):
+        warehouse_2 = self._create_warehouse()
+        so = self._create_in_store_delivery_order(partner_id=self.public_user.id)
+        so._set_pickup_location('{"id":' + str(warehouse_2.id) + '}')
+        # change the partner_id as would happen in a checkout
+        so.partner_id = self.partner.id
+        self.assertEqual(so.warehouse_id, warehouse_2)
+
+    def test_warehouse_is_computed_based_on_pickup_location(self):
+        warehouse_2 = self._create_warehouse()
+        so = self._create_in_store_delivery_order(pickup_location_data={'id': warehouse_2.id})
+        self.assertEqual(so.warehouse_id, warehouse_2)
 
     def test_setting_pickup_location_assigns_correct_fiscal_position(self):
         fp_us = self.env['account.fiscal.position'].create({
@@ -48,7 +63,7 @@ class TestSaleOrder(ClickAndCollectCommon):
         })
         so = self._create_in_store_delivery_order()
         so.fiscal_position_id = fp_us
-        so.set_delivery_line(self.free_delivery, 0)
+        so._set_delivery_method(self.free_delivery)
         self.assertNotEqual(so.fiscal_position_id, fp_us)
 
     def test_free_qty_calculated_from_order_wh_if_dm_is_in_store(self):
@@ -104,3 +119,20 @@ class TestSaleOrder(ClickAndCollectCommon):
         )
         unavailable_ol = cart._get_unavailable_order_lines(self.warehouse_2.id)
         self.assertIn(self.storable_product.id, unavailable_ol.product_id.ids)
+
+    def test_archive_pick_up_location_address_after_ecommerce_creation(self):
+        """Store pickup location address should be archived if created on during eCommerce flow."""
+        wh_partner = self.warehouse.partner_id
+        new_so = self._create_in_store_delivery_order()
+        new_so._set_pickup_location(json.dumps({
+            'id': self.warehouse.id,
+            'name': wh_partner.name,
+            'street': "New test street",
+            'zip_code': wh_partner.zip,
+            'city': "New test city",
+            'state': wh_partner.state_id.code,
+            'country_code': wh_partner.country_code,
+        }))
+        new_so._action_confirm()
+        self.assertTrue(new_so.partner_shipping_id)
+        self.assertFalse(new_so.partner_shipping_id.active)

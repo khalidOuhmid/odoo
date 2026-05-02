@@ -1959,6 +1959,23 @@ class TestStockValuation(TestStockValuationBase):
         self._make_in_move(product, 1, unit_cost=77)
         self.assertEqual(product.standard_price, 77)
 
+    def test_fifo_manual_revaluation_after_manual_standard_price(self):
+        self.product1.categ_id.property_cost_method = 'fifo'
+        self._make_in_move(self.product1, 1, unit_cost=200)
+        self._make_in_move(self.product1, 1, unit_cost=300)
+        self.assertEqual(self.product1.standard_price, 250)
+
+        self.product1.standard_price = 300
+
+        Form(self.env['stock.valuation.layer.revaluation'].with_context({
+            'default_product_id': self.product1.id,
+            'default_company_id': self.env.company.id,
+            'default_account_id': self.stock_valuation_account,
+            'default_added_value': 200.0,
+        })).save().action_validate_revaluation()
+
+        self.assertEqual(self.product1.standard_price, 350)
+
     def test_create_done_move(self):
         """Stock Move created directly in Done state must impact de valuation."""
         self.product1.categ_id.property_cost_method = 'average'
@@ -2391,7 +2408,7 @@ class TestStockValuation(TestStockValuationBase):
         move2.picked = True
         move2._action_done()
 
-        self.assertAlmostEqual(self.product1.standard_price, 16.67)
+        self.assertAlmostEqual(self.product1.standard_price, 16.6666667)
         self.assertAlmostEqual(move2.stock_valuation_layer_ids.value, 200)
         self.assertAlmostEqual(self.product1.quantity_svl, 15)
         self.assertAlmostEqual(self.product1.value_svl, 250)
@@ -3074,14 +3091,14 @@ class TestStockValuation(TestStockValuationBase):
         self.assertRecordValues(
             amls,
             [
-                {'account_id': self.stock_input_account.id, 'debit': 240, 'credit': 0},
-                {'account_id': self.stock_valuation_account.id, 'debit': 0, 'credit': 240},
-                {'account_id': self.stock_valuation_account.id, 'debit': 239.97, 'credit': 0},
-                {'account_id': self.stock_input_account.id, 'debit': 0, 'credit': 239.97},
+                {'account_id': self.stock_input_account.id, 'debit': 240.0, 'credit': 0},
+                {'account_id': self.stock_valuation_account.id, 'debit': 0, 'credit': 240.0},
+                {'account_id': self.stock_valuation_account.id, 'debit': 240.0, 'credit': 0},
+                {'account_id': self.stock_input_account.id, 'debit': 0, 'credit': 240.0},
             ]
         )
 
-        self.assertEqual(self.product1.standard_price, 12.63)
+        self.assertAlmostEqual(self.product1.standard_price, 12.63157895)
 
     def test_change_cost_method_2(self):
         """ Change the cost method from FIFO to standard.
@@ -3159,12 +3176,12 @@ class TestStockValuation(TestStockValuationBase):
             [
                 {'account_id': self.stock_input_account.id, 'debit': 240, 'credit': 0},
                 {'account_id': self.stock_valuation_account.id, 'debit': 0, 'credit': 240},
-                {'account_id': self.stock_valuation_account.id, 'debit': 239.97, 'credit': 0},
-                {'account_id': self.stock_input_account.id, 'debit': 0, 'credit': 239.97},
+                {'account_id': self.stock_valuation_account.id, 'debit': 240.0, 'credit': 0},
+                {'account_id': self.stock_input_account.id, 'debit': 0, 'credit': 240.0},
             ]
         )
 
-        self.assertEqual(self.product1.standard_price, 12.63)
+        self.assertAlmostEqual(self.product1.standard_price, 12.63157895)
 
     def test_fifo_sublocation_valuation_1(self):
         """ Set the main stock as a view location. Receive 2 units of a

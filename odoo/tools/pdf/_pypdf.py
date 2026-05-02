@@ -3,6 +3,7 @@ from typing import Dict, Any
 import pypdf
 from pypdf import errors, filters, generic, PdfReader as _Reader, PdfWriter as _Writer
 from pypdf.generic import create_string_object
+from pypdf import __version__  # noqa: F401
 
 __all__ = [
     "PdfReader",
@@ -64,8 +65,8 @@ class PdfWriter(_Writer):
     def appendPagesFromReader(self, reader):
         return self.append_pages_from_reader(reader)
 
-    def addBlankPage(self):
-        return self.add_blank_page()
+    def addBlankPage(self, width=None, height=None):
+        return self.add_blank_page(width=width, height=height)
 
     def addAttachment(self, fname, data):
         return self.add_attachment(fname, data)

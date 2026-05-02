@@ -72,6 +72,51 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
                     fields.Date.from_string('2019-01-11') or False
                 )
 
+    def test_early_payment_date_eligibility(self):
+        """
+        Test to check early payment eligibility is based on the date stored
+        on the payment term line
+        """
+        inv = self.env['account.move'].create({
+            'move_type': 'in_invoice',
+            'partner_id': self.partner_a.id,
+            'invoice_date': '2019-01-01',
+            'date': '2019-01-01',
+            'invoice_line_ids': [Command.create({
+                'name': 'line', 'price_unit': 1200.0, 'tax_ids': []
+            })],
+            'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
+        })
+        inv.action_post()
+        self.assertTrue(inv._is_eligible_for_early_payment_discount(inv.currency_id, fields.Date.from_string('2019-01-10')))
+        self.assertFalse(inv._is_eligible_for_early_payment_discount(inv.currency_id, fields.Date.from_string('2019-01-12')))
+        # Changing number of days on payment term should not change the discount eligibility
+        self.early_pay_10_percents_10_days.discount_days = 5
+        self.assertTrue(inv._is_eligible_for_early_payment_discount(inv.currency_id, fields.Date.from_string('2019-01-10')))
+        self.assertFalse(inv._is_eligible_for_early_payment_discount(inv.currency_id, fields.Date.from_string('2019-01-12')))
+
+    def test_early_payment_date_eligibility2(self):
+        self.early_pay_10_percents_10_days.early_discount = False
+        inv = self.env['account.move'].create({
+            'move_type': 'in_invoice',
+            'partner_id': self.partner_a.id,
+            'invoice_date': '2019-01-01',
+            'date': '2019-01-01',
+            'invoice_line_ids': [Command.create({
+                'name': 'line', 'price_unit': 1200.0, 'tax_ids': []
+            })],
+            'invoice_payment_term_id': self.early_pay_10_percents_10_days.id,
+        })
+        inv.action_post()
+        self.assertFalse(inv._is_eligible_for_early_payment_discount(inv.currency_id, fields.Date.from_string('2019-01-10')))
+        self.assertFalse(inv._is_eligible_for_early_payment_discount(inv.currency_id, fields.Date.from_string('2019-01-12')))
+
+        # Activate the early discount after the invoice has been posted.
+        # Calling _is_eligible_for_early_payment_discount shouldn't fail
+        self.early_pay_10_percents_10_days.early_discount = True
+        self.assertFalse(inv._is_eligible_for_early_payment_discount(inv.currency_id, fields.Date.from_string('2019-01-10')))
+        self.assertFalse(inv._is_eligible_for_early_payment_discount(inv.currency_id, fields.Date.from_string('2019-01-12')))
+
     def test_invoice_report_without_invoice_date(self):
         """
         Ensure that an invoice with an early discount payment term
@@ -771,6 +816,48 @@ class TestAccountEarlyPaymentDiscount(AccountTestInvoicingCommon):
                 }) for price_unit, quantity, taxes in line_create_vals
             ]
         })
+
+    def test_mixed_epd_global_rounding(self):
+        """
+            Ensure the early payment discount journal item is computed by rounding globally.
+        """
+        tax_15 = self.percent_tax(15.0)
+
+        early_pay_1_percents_7_days = self.env['account.payment.term'].create({
+            'name': '1% discount if paid within 7 days',
+            'company_id': self.company_data['company'].id,
+            'early_pay_discount_computation': 'mixed',
+            'discount_percentage': 1,
+            'discount_days': 7,
+            'early_discount': True,
+            'line_ids': [Command.create({
+                'value': 'percent',
+                'nb_days': 0,
+                'value_amount': 100,
+            })]
+        })
+
+        invoice = self._create_invoice(
+            date='2022-02-01',
+            invoice_payment_term_id=early_pay_1_percents_7_days,
+            invoice_line_ids=[
+                self._prepare_invoice_line(price_unit=4.76, tax_ids=tax_15)
+                for _ in range(4)
+            ],
+        )
+        self.assertRecordValues(invoice.line_ids, [
+            {'display_type': 'product', 'balance': -4.76},
+            {'display_type': 'product', 'balance': -4.76},
+            {'display_type': 'product', 'balance': -4.76},
+            {'display_type': 'product', 'balance': -4.76},
+            {'display_type': 'epd', 'balance': 0.19},
+            {'display_type': 'epd', 'balance': -0.19},
+            {'display_type': 'tax', 'balance': -2.81},
+            {'display_type': 'payment_term', 'balance': 21.85},
+        ])
+        [term_vals] = invoice.needed_terms.values()
+        discount = term_vals['balance'] - term_vals['discount_balance']
+        self.assertAlmostEqual(discount, 0.19)
 
     def test_register_payment_batch_with_discount_and_without_discount(self):
         """

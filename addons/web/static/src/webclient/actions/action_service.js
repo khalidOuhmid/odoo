@@ -1110,8 +1110,10 @@ export function makeActionManager(env, router = _router) {
         if (url && !(url.startsWith("http") || url.startsWith("/"))) {
             url = "/" + url;
         }
-        if (action.target === "download" || action.target === "self") {
+        if (action.target === "self") {
             browser.location.assign(url);
+        } else if (action.target === "download") {
+            browser.open(url, "_blank");
         } else {
             const w = browser.open(url, "_blank");
             if (!w || w.closed || typeof w.closed === "undefined") {
@@ -1293,6 +1295,12 @@ export function makeActionManager(env, router = _router) {
         for (const handler of handlers) {
             const result = await handler(action, options, env);
             if (result) {
+                const { onClose } = options;
+                if (action.close_on_report_download) {
+                    return doAction({ type: "ir.actions.act_window_close" }, { onClose });
+                } else if (onClose) {
+                    onClose();
+                }
                 return result;
             }
         }

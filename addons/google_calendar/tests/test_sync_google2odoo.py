@@ -16,23 +16,23 @@ from unittest.mock import patch
 
 @patch.object(User, '_get_google_calendar_token', lambda user: 'dummy-token')
 class TestSyncGoogle2Odoo(TestSyncGoogle):
-
-    def setUp(self):
-        super().setUp()
-        self.other_company = self.env['res.company'].create({'name': 'Other Company'})
-        self.public_partner = self.env['res.partner'].create({
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.other_company = cls.env['res.company'].create({'name': 'Other Company'})
+        cls.public_partner = cls.env['res.partner'].create({
             'name': 'Public Contact',
             'email': 'public_email@example.com',
             'type': 'contact',
         })
-        self.env.ref('base.partner_admin').write({
+        cls.env.ref('base.partner_admin').write({
             'name': 'Mitchell Admin',
             'email': 'admin@yourcompany.example.com',
         })
-        self.private_partner = self.env['res.partner'].create({
+        cls.private_partner = cls.env['res.partner'].create({
             'name': 'Private Contact',
             'email': 'private_email@example.com',
-            'company_id': self.other_company.id,
+            'company_id': cls.other_company.id,
         })
 
     def generate_recurring_event(self, mock_dt, **values):
@@ -1290,6 +1290,49 @@ class TestSyncGoogle2Odoo(TestSyncGoogle):
         new_triggers = triggers_after - triggers_before
         self.assertFalse(new_triggers, "The event should not be created with triggers.")
         self.assertGoogleAPINotCalled()
+
+    @patch_api
+    def test_event_reminder_emails_with_google_id(self):
+        """
+        Odoo shouldn't send email reminders for synced events.
+        Test that events synced to Google (with a `google_id`)
+        are excluded from email alarm notifications.
+        """
+        now = datetime.now()
+        google_id = 'oj44nep1ldf8a3ll02uip0c9aa'
+        start = now - relativedelta(minutes=30)
+        end = now + relativedelta(hours=2)
+        alarm = self.env['calendar.alarm'].create({
+            'name': 'Alarm',
+            'alarm_type': 'email',
+            'interval': 'minutes',
+            'duration': 30,
+        })
+        values = {
+            'id': google_id,
+            "alarm_id": alarm.id,
+            'description': 'Small mini desc',
+            'organizer': {'email': 'odoocalendarref@gmail.com', 'self': True},
+            'summary': 'Pricing new update',
+            'visibility': 'public',
+            'attendees': [{
+                'displayName': 'Mitchell Admin',
+                'email': self.public_partner.email,
+                'responseStatus': 'needsAction'
+            }],
+            'start': {
+                'dateTime': pytz.utc.localize(start).isoformat(),
+                'timeZone': 'Europe/Brussels'
+            },
+            'reminders': {'overrides': [{"method": "email", "minutes": 30}], 'useDefault': False},
+            'end': {
+                'dateTime': pytz.utc.localize(end).isoformat(),
+                'timeZone': 'Europe/Brussels'
+            },
+        }
+        self.env['calendar.event']._sync_google2odoo(GoogleEvent([values]))
+        events_by_alarm = self.env['calendar.alarm_manager']._get_events_by_alarm_to_notify('email')
+        self.assertFalse(events_by_alarm, "Events with google_id should not trigger reminders")
 
     @patch_api
     def test_attendee_state(self):

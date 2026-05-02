@@ -321,7 +321,7 @@ class TestSalePurchase(TestCommonSalePurchaseNoChart):
         })
         sale_order.action_confirm()
         pol = sale_order._get_purchase_orders().order_line
-        self.assertEqual(pol.name, f"{self.service_purchase_1.display_name}\n{product_attribute.name}: {product_attribute_value.name}: {custom_value}")
+        self.assertEqual(pol.name, f"{self.service_purchase_1.display_name}\n\n{product_attribute.name}: {product_attribute_value.name}: {custom_value}")
 
     def test_service_to_purchase_multi_company(self):
         """Test the service to purchase in a multi-company environment
@@ -375,3 +375,65 @@ class TestSalePurchase(TestCommonSalePurchaseNoChart):
         # FIXME: same sudo issue as above
         order2.sudo().with_company(company_2).action_confirm()
         self.assertTrue(order2.purchase_order_count)
+
+    def test_service_to_purchase_branch_tax_propagation(self):
+        """
+        Ensure that SO/PO of a branch can use root company's taxes
+        """
+        branch = self.env['res.company'].create({
+            'name': "Branch Company",
+            'parent_id': self.env.company.id,
+        })
+        self.env.user.company_id = branch
+        service_product = self.env['product.product'].create({
+            'name': "Branch Out-sourced Service",
+            'standard_price': 200.0,
+            'type': 'service',
+            'invoice_policy': 'delivery',
+            'taxes_id': self.company_data['default_tax_sale'],
+            'supplier_taxes_id': self.company_data['default_tax_purchase'],
+            'service_to_purchase': True,
+            'seller_ids': [Command.create({
+                'partner_id': self.partner_b.id,
+                'min_qty': 1,
+                'price': 100,
+            })],
+        })
+        so = self.env['sale.order'].create({
+            'partner_id': self.partner_a.id,
+            'order_line': [Command.create({
+                'product_id': service_product.id,
+            })],
+        })
+        self.assertEqual(so.order_line.tax_id, self.company_data['default_tax_sale'])
+        so.action_confirm()
+        self.assertEqual(so.order_line.purchase_line_ids.taxes_id, self.company_data['default_tax_purchase'])
+
+    def test_purchase_service_qty_increase_with_uom_conversion(self):
+        """Ensure that increasing the quantity of a service-to-purchase product
+        with different Sales UoM and Purchase UoM correctly computes the qty
+        in the Purchase Order.
+
+        Case:
+        - SO created with 1 dozen → PO = 12 units
+        - SO increased to 2 dozen → new PO should be 12 units
+        """
+        so = self.env['sale.order'].create({
+            'partner_id': self.partner_a.id,
+            'order_line': [
+                Command.create({
+                    'name': self.service_purchase_2.name,
+                    'product_id': self.service_purchase_2.id,
+                    'product_uom_qty': 1,
+                })
+            ],
+        })
+        so.action_confirm()
+        # Case 1: initial confirmation with 1 dozen
+        po_1 = so._get_purchase_orders()
+        self.assertEqual(po_1.order_line.product_qty, 12, "Initial PO should have 12 units (1 dozen  from SOL converted to PO uom)")
+        po_1.button_confirm()
+        # Case 2: increase SO quantity to 2 dozen
+        so.order_line.product_uom_qty = 2
+        po_2 = so._get_purchase_orders() - po_1
+        self.assertEqual(po_2.order_line.product_qty, 12, "The quantity on the SO line should be converted to the purchase UoM.")
